@@ -79,7 +79,7 @@ Materiel :
 ### Phase 5 : Ville vivante
 - [ ] PNJ pietons (marche sur trottoirs, vendeurs, groupes)
 - [ ] Trafic simple (zem, voitures, taxis sur chemins definis)
-- [ ] Cycle jour/nuit et eclairage (lampadaires, coupures de courant)
+- [ ] Cycle jour/nuit et eclairage (lampadaires, coupures de courant) [ciel + nuages animes faits]
 - [ ] Ambiances sonores par zone
 - [ ] Jalon : le quartier "respire"
 
@@ -139,6 +139,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : animations encore jugees pas assez realistes par Olympe -> passage prevu a la Universal Animation Library de Quaternius (CC0, motion capture), Olympe telecharge le pack.
 - 14/10/2026 : Phase 4 zem : modele, conduite (bicyclette, adherence, inclinaison), monter/descendre, camera, son synthetise. Tests auto OK (0-65 km/h en 6 s, virage 32 deg, freinage).
 - 14/10/2026 : support manette (Xbox / PlayStation / generique) facon GTA V : sticks, gachettes analogiques pour le zem. Test auto tests/test_manette.gd OK.
+- 14/10/2026 : limites du monde (murs invisibles, fond marin, retour si chute), ciel realiste avec nuages qui derivent (shader), soleil corrige (il eclairait vers le haut), tonemapping AgX. Olympe signale des erreurs dans l editeur : capture demandee.
 
 ---
 

@@ -29,6 +29,7 @@ var _facing := 0.0        # direction du corps (yaw)
 var _prev_facing := 0.0
 var _prev_hspeed := 0.0
 var _fall_speed := 0.0
+var _last_safe := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -39,6 +40,7 @@ func _ready() -> void:
 	cam_pivot.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	cam_pivot.global_position = global_position + _cam_offset
 	_facing = body.rotation.y
+	_last_safe = global_position
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
@@ -139,6 +141,13 @@ func _physics_process(delta: float) -> void:
 	if vehicle:
 		_ride(delta)
 		return
+	# filet de securite : si on passe sous la carte, retour au dernier endroit sur
+	if global_position.y < -20.0:
+		global_position = _last_safe + Vector3.UP * 1.0
+		velocity = Vector3.ZERO
+		reset_physics_interpolation()
+	elif is_on_floor() and global_position.y > -0.5:
+		_last_safe = global_position
 	var was_on_floor := is_on_floor()
 	if not is_on_floor():
 		velocity.y -= gravity * delta

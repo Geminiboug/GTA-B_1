@@ -37,6 +37,14 @@ func _ready() -> void:
 	_playback = _player.get_stream_playback()
 
 
+func _exit_tree() -> void:
+	# libere le generateur audio a la fermeture (sinon fuite memoire signalee par Godot)
+	_playback = null
+	if _player:
+		_player.stop()
+		_player.stream = null
+
+
 func horn() -> void:
 	_horn_time = 0.45
 
@@ -63,14 +71,14 @@ func _process(delta: float) -> void:
 	var frames := _playback.get_frames_available()
 	# un monocylindre 4 temps explose une fois tous les 2 tours
 	var fire_hz := rpm / 60.0 / 2.0
-	var load: float = 0.35 + 0.65 * _zem.throttle
+	var engine_load: float = 0.35 + 0.65 * _zem.throttle
 	for i in frames:
 		_phase = fmod(_phase + fire_hz / _rate, 1.0)
 		# impulsion d'explosion qui decroit vite, + harmoniques
 		var pulse := exp(-_phase * 9.0) * 2.0 - 0.45
 		var body := sin(_phase * TAU) * 0.5 + sin(_phase * TAU * 2.0) * 0.25
 		var noise := _rng.randf_range(-1.0, 1.0) * exp(-_phase * 5.0) * 0.6
-		var s := (pulse * 0.6 + body * 0.4 + noise * load) * (0.25 + 0.35 * load)
+		var s := (pulse * 0.6 + body * 0.4 + noise * engine_load) * (0.25 + 0.35 * engine_load)
 		# filtre passe-bas simple : son d'echappement etouffe
 		_lp += (s - _lp) * 0.35
 		var out := _lp

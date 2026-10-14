@@ -108,3 +108,13 @@ Nommage Xbox ; PlayStation : A = Croix, B = Rond, X = Carre, Y = Triangle, LB/RB
 | Frein arriere (zem) | Espace | RB |
 | Klaxon (zem) | H | L3 |
 Les actions sont dans godot/project.godot (generees par un script, voir l historique). Test : tests/test_manette.gd
+
+## Ciel et limites du monde
+- Ciel : godot/shaders/ciel_nuages.gdshader (atmosphere, soleil lie a la DirectionalLight3D, cumulus + cirrus en bruit fractal
+  qui derivent avec le vent). Reglages dans l'inspecteur du ShaderMaterial : cloud_coverage, wind, cloud_scale, high_cloud_amount.
+- Soleil : 55 deg de hauteur, apres-midi. Tonemapping AgX.
+- Limites : godot/scripts/world_bounds.gd (noeud "Limites") : murs invisibles x [-677, 677], z [-386, 786], fond marin a -1,2 m
+  (on entre dans l'eau jusqu'aux cuisses). Joueur : retour au dernier point sur s'il passe sous y = -20.
+- Test : tests/test_limites.gd. Captures du ciel : tests/capture_ciel.gd, docs/images/ciel_*.png
+- Avertissement connu : "1 ObjectDB instance was leaked" a la fermeture = AudioStreamGeneratorPlayback du son du zem
+  retenu par le serveur audio de Godot. Sans effet en jeu.
