@@ -18,6 +18,7 @@ extends Node3D
 
 var hour := 16.0
 var power := 1.0
+var night := 0.0   # 0 jour, 1 nuit (lu par ambience.gd et les autres systemes)
 var _cut_left := 0.0           # secondes reelles de coupure restantes
 var _next_cut_check := 0.0
 var _flicker := 0.0
@@ -92,7 +93,7 @@ func _process(delta: float) -> void:
 func _update(delta: float) -> void:
 	var sd := sun_direction(hour)
 	var elev := asin(clamp(sd.y, -1.0, 1.0))
-	var night := 1.0 - smoothstep(-0.12, 0.06, elev)
+	night = 1.0 - smoothstep(-0.12, 0.06, elev)
 	var low := 1.0 - smoothstep(0.0, 0.45, elev)  # soleil bas : lumiere doree
 
 	# --- soleil ---

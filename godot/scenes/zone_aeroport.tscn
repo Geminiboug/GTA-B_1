@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -10,6 +10,9 @@
 [ext_resource type="Script" path="res://scripts/vegetation.gd" id="9_veg"]
 [ext_resource type="Script" path="res://scripts/props.gd" id="10_props"]
 [ext_resource type="Script" path="res://scripts/day_night.gd" id="11_daynight"]
+[ext_resource type="Script" path="res://scripts/traffic.gd" id="12_traffic"]
+[ext_resource type="Script" path="res://scripts/pedestrians.gd" id="13_peds"]
+[ext_resource type="Script" path="res://scripts/ambience.gd" id="14_amb"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -77,3 +80,12 @@ script = ExtResource("10_props")
 
 [node name="JourNuit" type="Node3D" parent="."]
 script = ExtResource("11_daynight")
+
+[node name="Circulation" type="Node3D" parent="."]
+script = ExtResource("12_traffic")
+
+[node name="Pietons" type="Node3D" parent="."]
+script = ExtResource("13_peds")
+
+[node name="Ambiance" type="Node3D" parent="."]
+script = ExtResource("14_amb")

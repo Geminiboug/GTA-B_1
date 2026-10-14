@@ -172,3 +172,17 @@ ambiance et brouillard, variables globales gtb_night / gtb_power, pool de 14 Spo
 48 min reelles = 24 h de jeu. F2 : +1 heure. Horloge en haut a droite. Captures : tests/capture_heures.gd -> docs/images/cycle_*.png
 Note : les variables globales gtb_night / gtb_power sont declarees dans project.godot [shader_globals] ; si l'editeur
 etait ouvert pendant une modification de project.godot, il faut le fermer et rouvrir le projet.
+
+## Ville vivante (passes 6 et 7)
+- godot/scripts/traffic.gd (noeud "Circulation") : 32 zems (conducteur chemise jaune, 35 % avec passager) et 14 voitures sur
+  le reseau reel (json). Conduite a droite, sens uniques respectes, choix aleatoire aux carrefours, ralentissement en virage,
+  distances de securite, arret devant le joueur + klaxon, AnimatableBody3D (on ne les traverse pas), phares la nuit,
+  son moteur en boucle dont la hauteur suit la vitesse.
+- godot/scripts/pedestrians.gd (noeud "Pietons") : 36 pietons animes sur le bas-cote droit, tenues variees, 30 % avec une
+  bassine sur la tete ; vendeurs / clients assis aux etals, kpayos et maquis (positions fournies par props.gd, MultiMesh).
+  Pietons lointains caches et mis a jour une image sur 4.
+- godot/scripts/pnj_util.gd : tenues, poses (assis, vendeur), fusion d'un personnage pose en un seul mesh.
+- godot/scripts/audio_synth.gd : sons synthetises (moteurs, klaxons, ressac, rumeur de ville, oiseaux, grillons).
+- godot/scripts/ambience.gd (noeud "Ambiance") : ressac le long du trait de cote reel, rumeur, oiseaux le jour, grillons la nuit.
+Tests : tests/test_circulation.gd (46/46 vehicules roulent, ~27 km/h, arret + klaxon devant le joueur),
+tests/perf_frames.gd (cout CPU : ~9 ms de physique par image avec tout actif). Captures : tests/capture_vie.gd.

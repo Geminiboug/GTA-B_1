@@ -77,10 +77,10 @@ Materiel :
 - [ ] Jalon : conduire un zem de l aeroport a la plage (a valider par Olympe)
 
 ### Phase 5 : Ville vivante
-- [ ] PNJ pietons (marche sur trottoirs, vendeurs, groupes)
-- [ ] Trafic simple (zem, voitures, taxis sur chemins definis)
+- [x] PNJ pietons (marche sur les bas-cotes, vendeurs assis, porteuses de bassine) : pedestrians.gd
+- [x] Trafic (zems avec conducteur, voitures, sur le reseau reel) : traffic.gd
 - [x] Cycle jour/nuit et eclairage (lampadaires, coupures de courant)
-- [ ] Ambiances sonores par zone
+- [x] Ambiances sonores (ressac, ville, oiseaux, grillons, moteurs, klaxons) synthetisees
 - [ ] Jalon : le quartier "respire"
 
 ### Phase 6 : Modelisation detaillee et textures
@@ -145,6 +145,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : realisme passe 3 : toits (tole 2 pans, parapets, fers en attente, citernes, clims), routes (paves, sable, marquage, bas-cotes, piste d aviation), facades enrichies, etalonnage sRGB des couleurs.
 - 14/10/2026 : realisme passe 4 : poteaux et cables, lampadaires, kpayo, vendeuses, maquis, cabines, ordures, voitures et zems gares, panneaux pub et enseignes fictifs, avions aux postes OSM, terminal vitre, hangars, tarmac en dalles.
 - 14/10/2026 : realisme passe 5 : cycle jour/nuit (soleil reel, coucher, etoiles, lune), eclairage de nuit, fenetres allumees, delestages. Correction : requetes physiques des props limitees a la couche du decor (presque tout le mobilier de bord de route etait rejete). Suppression du singleton LampRegistry (erreurs dans l editeur reste ouvert).
+- 15/10/2026 : passes 6 et 7 : circulation (46 vehicules), pietons (36) et vendeurs assis (56), ambiance sonore synthetisee. Tous les tests passent, aucune erreur.
 
 ---
 

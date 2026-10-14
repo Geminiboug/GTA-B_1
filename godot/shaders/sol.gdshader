@@ -108,8 +108,8 @@ void fragment() {
 	} else if (mode == 5) {
 		// piste en sable et laterite tassee : ornieres, flaques sechees, cailloux
 		float large = fbm(p * 0.06);
-		vec3 sand = vec3(0.70, 0.52, 0.34);
-		col = mix(sand, vec3(0.55, 0.32, 0.18), smoothstep(0.35, 0.7, large));
+		vec3 sand = vec3(0.66, 0.55, 0.43);
+		col = mix(sand, vec3(0.6, 0.42, 0.3), smoothstep(0.35, 0.7, large));
 		col *= 0.9 + 0.15 * noise(p * 4.0) * fine;
 		// zones tassees plus sombres (passage des roues)
 		col = mix(col, col * 0.78, smoothstep(0.55, 0.75, fbm(p * 0.35 + 2.0)) * 0.6);

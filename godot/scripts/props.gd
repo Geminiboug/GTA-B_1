@@ -47,7 +47,10 @@ var _wire_pts := PackedVector3Array()
 var _roads: Array = []
 var _signs: Node3D
 var counts := {}
-var lamp_positions := PackedVector3Array()  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
+var lamp_positions := PackedVector3Array()
+var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
+var placed := false
+signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "veh_berline": 300.0,
 	"veh_4x4": 300.0, "veh_avion": 1500.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
@@ -75,6 +78,8 @@ func _ready() -> void:
 	_place_shop_signs(data["buildings"])
 	_place_wall_texts(data.get("walls", []))
 	_build()
+	placed = true
+	placement_done.emit()
 	print("Props : ", counts)
 
 
@@ -419,6 +424,15 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		kind = ["prop_etal_rouge", "prop_etal_jaune", "prop_etal_bleu"][_rng.randi() % 3]
 	var xf := Transform3D(basis.rotated(Vector3.UP, _rng.randf_range(-0.25, 0.25)), Vector3(pos.x, y, pos.y))
 	_add(kind, xf)
+	# vendeur assis sur le tabouret, face a la route (positions locales du modele, Godot = Blender (x, z, -y))
+	if kind == "prop_kpayo":
+		vendor_spots.append(xf * Transform3D(Basis.IDENTITY, Vector3(-0.85, 0, 0.3)))
+	elif kind.begins_with("prop_etal"):
+		vendor_spots.append(xf * Transform3D(Basis.IDENTITY, Vector3(0.3, 0, 0.45)))
+	elif kind == "prop_maquis" and _rng.randf() < 0.7:
+		vendor_spots.append(xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0, -0.85)))
+		if _rng.randf() < 0.5:
+			vendor_spots.append(xf * Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(0.85, 0, 0)))
 	if kind == "prop_cabine":
 		_box_col(xf, Vector3(1.6, 2.3, 1.3), 1.15)
 		_label(xf * Transform3D(Basis.IDENTITY, Vector3(0, 1.85, -0.7)), "TRANSFERT D'ARGENT - CREDIT", 1.4, Color(0.1, 0.1, 0.1))
