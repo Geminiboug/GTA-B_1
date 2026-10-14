@@ -75,6 +75,8 @@ Piege : Godot lit les suffixes -col ET _col (et -colonly, -convcol...) dans les 
 ## Personnage joueur (blockout)
 blender/tools/build_character.py -> blender/chr/chr_joueur.blend + godot/assets/models/chr_joueur.glb
 Pieces rigides sur pivots aux articulations (piv_bassin, piv_tronc, piv_tete, piv_epaule_G/D, piv_coude_G/D, piv_hanche_G/D, piv_genou_G/D).
-Animation procedurale : godot/scripts/character_anim.gd (idle, marche, course, saut ; phase du pas liee a la distance, pas de glissement).
+Animation procedurale : godot/scripts/character_anim.gd. 3 allures melangees selon la vitesse (marche 1,6 / trot 4,2 / sprint 7 m/s), phase de vol en course,
+pose de saut figee (montee / chute), reception amortie, inclinaison virages et acceleration. Tourne dans _physics_process (interpolation physique active).
+Controles : ZQSD trot, Shift sprint, Ctrl marche, Espace saut. Inertie : 9 m/s2 au demarrage, 14 au freinage, virages plus larges en sprint.
 Captures des poses : godot --path godot --script res://tests/capture_anim.gd -- <dossier> (ouvre une fenetre quelques secondes). Apercus : docs/images/chr_pose_*.png
 Remplacement futur par Mixamo : garder player.gd, remplacer Body/Model et character_anim.gd par un AnimationTree.

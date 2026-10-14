@@ -1,22 +1,36 @@
 extends Node3D
 ## Animation procedurale du personnage blockout (blender/tools/build_character.py).
-## Tourne les pivots aux articulations selon l'etat du joueur : idle, marche, course, saut.
-## La phase du pas avance avec la distance parcourue : les pieds ne glissent pas.
+## Trois allures melangees selon la vitesse : marche (~1,6 m/s), trot (~4,2), sprint (~7).
+## - La phase du pas avance avec la distance parcourue : pas de glissement des pieds.
+## - Marche : le corps est haut au milieu de l'appui. Course : phase de vol, corps haut entre deux appuis.
+## - En l'air la phase est figee : pose de saut selon la vitesse verticale (pas de gigotage).
+## - Reception amortie selon la hauteur de chute, inclinaison dans les virages et a l'acceleration.
 ## Convention : rotation.x positive = membre vers l'avant.
-
-@export var stride_walk := 1.3   # metres par cycle complet (2 pas)
-@export var stride_run := 2.4
-@export var run_threshold := 6.0  # vitesse a partir de laquelle on court
+## Tourne dans _physics_process : avec l interpolation physique activee, c est ce qui rend le mouvement fluide.
 
 var speed := 0.0
 var on_floor := true
 var vertical_speed := 0.0
+var turn_rate := 0.0
+var accel := 0.0
+
+# Allures : [vitesse, longueur de cycle (2 pas), amplitude hanche, flexion genou en vol de jambe,
+#            amplitude bras, coude, penche du buste, rebond vertical (+ = vol), twist]
+const GAITS := [
+	[1.6, 1.45, 0.38, 0.55, 0.28, 0.15, 0.03, -0.025, 0.08],
+	[4.2, 2.3, 0.62, 1.35, 0.55, 1.35, 0.12, 0.05, 0.12],
+	[7.0, 3.3, 0.85, 1.9, 0.8, 1.55, 0.24, 0.07, 0.16],
+]
 
 var _phase := 0.0
-var _run_blend := 0.0
-var _move_blend := 0.0
-var _air_blend := 0.0
+var _move := 0.0
+var _air := 0.0
+var _land := 0.0
+var _land_strength := 0.0
+var _lean_fwd := 0.0
+var _lean_side := 0.0
 var _t := 0.0
+var _g := GAITS[0].duplicate()
 var _p := {}
 
 
@@ -27,44 +41,87 @@ func _ready() -> void:
 	_p["bassin_y"] = _p["piv_bassin"].position.y
 
 
-func _process(delta: float) -> void:
-	_t += delta
-	var k := 1.0 - exp(-10.0 * delta)
-	_move_blend = lerp(_move_blend, clamp(speed / 1.5, 0.0, 1.0), k)
-	_run_blend = lerp(_run_blend, clamp((speed - 4.0) / (run_threshold - 4.0), 0.0, 1.0), k)
-	_air_blend = lerp(_air_blend, 0.0 if on_floor else 1.0, 1.0 - exp(-12.0 * delta))
+func land(fall_speed: float) -> void:
+	_land_strength = clamp((fall_speed - 2.0) / 8.0, 0.15, 1.0)
+	_land = 1.0
 
-	var stride: float = lerp(stride_walk, stride_run, _run_blend)
-	_phase = fmod(_phase + speed * delta / stride * TAU, TAU)
+
+func _gait_at(v: float) -> Array:
+	if v <= GAITS[0][0]:
+		return GAITS[0]
+	for i in range(GAITS.size() - 1):
+		var a: Array = GAITS[i]
+		var b: Array = GAITS[i + 1]
+		if v <= b[0]:
+			var t: float = smoothstep(a[0], b[0], v)
+			var out := []
+			for k in a.size():
+				out.append(lerp(float(a[k]), float(b[k]), t))
+			return out
+	return GAITS[GAITS.size() - 1]
+
+
+func _physics_process(delta: float) -> void:
+	_t += delta
+	var k := 1.0 - exp(-8.0 * delta)
+	_move = lerp(_move, clamp(speed / 1.2, 0.0, 1.0), k)
+	_air = lerp(_air, 0.0 if on_floor else 1.0, 1.0 - exp(-14.0 * delta))
+	_land = max(0.0, _land - delta * 3.5)
+
+	var target_g := _gait_at(speed)
+	for i in _g.size():
+		_g[i] = lerp(float(_g[i]), float(target_g[i]), k)
+	var stride: float = _g[1]
+	if on_floor:
+		_phase = fmod(_phase + speed * delta / stride * TAU, TAU)
+
 	var s := sin(_phase)
 	var c := cos(_phase)
+	var m := _move
+	var hip_amp: float = _g[2] * m
+	var knee_amp: float = _g[3] * m
+	var arm_amp: float = _g[4] * m
 
-	# --- Marche / course ---
-	var leg_amp: float = lerp(0.45, 0.85, _run_blend) * _move_blend
-	var arm_amp: float = lerp(0.35, 0.7, _run_blend) * _move_blend
-	var hip_g := s * leg_amp
-	var hip_d := -s * leg_amp
-	# le genou plie surtout quand la jambe revient vers l'avant
-	var knee_g: float = -max(0.0, -c) * lerp(0.6, 1.4, _run_blend) * _move_blend - 0.05
-	var knee_d: float = -max(0.0, c) * lerp(0.6, 1.4, _run_blend) * _move_blend - 0.05
-	var arm_g := -s * arm_amp
-	var arm_d := s * arm_amp
-	var elbow: float = lerp(0.15, 1.3, _run_blend) * _move_blend + 0.1
-	var lean: float = 0.18 * _run_blend * _move_blend
-	var bob: float = abs(s) * lerp(0.03, 0.07, _run_blend) * _move_blend
+	# jambe gauche : phase, jambe droite : phase + PI
+	var hip_g: float = s * hip_amp
+	var hip_d: float = -s * hip_amp
+	# genou : flexion forte pendant le retour de la jambe (cos > 0), legere pendant l'appui
+	var knee_g: float = -pow(max(0.0, c), 1.3) * knee_amp - max(0.0, -c) * 0.12 * m - 0.04
+	var knee_d: float = -pow(max(0.0, -c), 1.3) * knee_amp - max(0.0, c) * 0.12 * m - 0.04
+	var arm_g: float = -s * arm_amp
+	var arm_d: float = s * arm_amp
+	var elbow: float = _g[5] * m + 0.1
+	var bounce: float = _g[7] * m
+	var bob: float = (abs(s) * bounce) if bounce > 0.0 else (-abs(s) * -bounce + -bounce)
+	# corps : penche avec l'allure, l'acceleration et les virages
+	_lean_fwd = lerp(_lean_fwd, clamp(accel * 0.03, -0.2, 0.25), k)
+	_lean_side = lerp(_lean_side, clamp(-turn_rate * speed * 0.025, -0.35, 0.35), k)
+	var lean: float = _g[6] * m + _lean_fwd
+	var breath := sin(_t * 1.7) * 0.02 * (1.0 - m)
 
-	# --- Idle : respiration ---
-	var breath := sin(_t * 1.8) * 0.02 * (1.0 - _move_blend)
+	# --- En l'air : pose figee selon la montee / la descente ---
+	if _air > 0.001:
+		var rising: float = clamp(vertical_speed / 4.0, 0.0, 1.0)
+		var falling: float = clamp(-vertical_speed / 6.0, 0.0, 1.0)
+		var a := _air
+		hip_g = lerp(hip_g, 0.75 * rising + 0.25 * falling + 0.2, a)
+		knee_g = lerp(knee_g, -1.3 * rising - 0.35 * falling - 0.3, a)
+		hip_d = lerp(hip_d, -0.25 * rising + 0.1 * falling, a)
+		knee_d = lerp(knee_d, -0.5 * rising - 0.2 * falling - 0.15, a)
+		arm_g = lerp(arm_g, -0.5 + 0.3 * falling, a)
+		arm_d = lerp(arm_d, 0.7 - 0.3 * falling, a)
+		elbow = lerp(elbow, 0.7, a)
+		bob = lerp(bob, 0.0, a)
+		lean = lerp(lean, 0.1 + 0.1 * falling, a)
 
-	# --- Saut / chute ---
-	var tuck: float = clamp(0.4 + vertical_speed * -0.05, 0.2, 0.7) * _air_blend
-	hip_g = lerp(hip_g, 0.5 + tuck * 0.3, _air_blend)
-	hip_d = lerp(hip_d, 0.15, _air_blend)
-	knee_g = lerp(knee_g, -0.9 - tuck, _air_blend)
-	knee_d = lerp(knee_d, -0.4, _air_blend)
-	arm_g = lerp(arm_g, -0.6, _air_blend)
-	arm_d = lerp(arm_d, 0.9, _air_blend)
-	elbow = lerp(elbow, 0.6, _air_blend)
+	# --- Reception : flexion amortie ---
+	var squat := _land * _land_strength
+	hip_g += 0.55 * squat
+	hip_d += 0.55 * squat
+	knee_g -= 1.0 * squat
+	knee_d -= 1.0 * squat
+	lean += 0.25 * squat
+	bob -= 0.16 * squat
 
 	_p["piv_hanche_G"].rotation.x = hip_g
 	_p["piv_hanche_D"].rotation.x = hip_d
@@ -72,11 +129,12 @@ func _process(delta: float) -> void:
 	_p["piv_genou_D"].rotation.x = knee_d
 	_p["piv_epaule_G"].rotation.x = arm_g
 	_p["piv_epaule_D"].rotation.x = arm_d
-	_p["piv_epaule_G"].rotation.z = -0.08 - 0.15 * _air_blend
-	_p["piv_epaule_D"].rotation.z = 0.08 + 0.15 * _air_blend
+	_p["piv_epaule_G"].rotation.z = -0.07 - 0.25 * _air
+	_p["piv_epaule_D"].rotation.z = 0.07 + 0.25 * _air
 	_p["piv_coude_G"].rotation.x = elbow
 	_p["piv_coude_D"].rotation.x = elbow
 	_p["piv_tronc"].rotation.x = -lean + breath
-	_p["piv_tronc"].rotation.y = s * 0.12 * _move_blend
-	_p["piv_tete"].rotation.x = lean * 0.6
-	_p["piv_bassin"].position.y = _p["bassin_y"] - bob
+	_p["piv_tronc"].rotation.y = s * _g[8] * m * (1.0 - _air)
+	_p["piv_tete"].rotation.x = lean * 0.5
+	_p["piv_bassin"].position.y = _p["bassin_y"] + bob
+	rotation.z = _lean_side

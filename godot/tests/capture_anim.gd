@@ -8,9 +8,11 @@ var cam: Camera3D
 var out_dir := "user://"
 var states := [
 	["idle", 0.0, true, 0.0],
-	["marche", 4.0, true, 0.0],
-	["course", 8.5, true, 0.0],
-	["saut", 3.0, false, 2.0],
+	["marche", 1.6, true, 0.0],
+	["trot", 4.2, true, 0.0],
+	["sprint", 7.0, true, 0.0],
+	["saut_montee", 7.0, false, 3.5],
+	["saut_chute", 7.0, false, -5.0],
 ]
 var idx := 0
 
