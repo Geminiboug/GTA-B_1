@@ -1,7 +1,7 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
 Derniere mise a jour : 14/10/2026
-Phase en cours : Phase 0 (cadrage et setup)
+Phase en cours : Phase 1 (pipeline assets)
 
 ---
 
@@ -47,7 +47,7 @@ Materiel :
 - [x] Installer Blender, Godot, Blender-OSM
 - [x] Choisir le nom du projet : GTB (Gbê Town Bénin)
 - [x] Definir la zone exacte aeroport / Erevan / plage : bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), fichier refs/osm/zone-aeroport.osm
-- [ ] Collecter 50+ photos de reference classees par type
+- [x] Collecter 50+ photos de reference classees par type (57 images Wikimedia Commons, sources et licences dans refs/SOURCES.md ; photos terrain perso a ajouter)
 
 ### Phase 1 : Pipeline assets
 - [ ] Conventions : echelle, nommage (prefixes bld_, prop_, veh_, chr_), origines des objets
@@ -121,6 +121,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : premiere zone changee, Zogbo remplace par aeroport / Erevan / plage.
 - 14/10/2026 : bbox de la zone fixee, export OSM (186 batiments, 95 routes, piste, Erevan, Route des Peches, plage) dans refs/osm/.
 - 14/10/2026 : nom choisi, GTB (Gbê Town Bénin). Decision : pas de textures avant la Phase 6.
+- 14/10/2026 : 57 photos de reference collectees sur Wikimedia Commons (aeroport, erevan, plage, rues, vehicules, facades, props). Phase 0 terminee.
 
 ---
 
@@ -143,9 +144,9 @@ CONVENTIONS
 - Nom : GTB (Gbê Town Bénin), jamais GTA ni "Grand Theft"
 
 ETAT ACTUEL
-- Phase en cours : Phase 0 (cadrage et setup)
-- Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere
-- Prochaine tache : collecter 50+ photos de reference (refs/), puis Phase 1 (test cube Blender vers Godot) et import OSM dans Blender
+- Phase en cours : Phase 1 (pipeline assets)
+- Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
+- Prochaine tache : Phase 1, test cube Blender vers .glb vers Godot avec collision, puis import OSM (refs/osm/zone-aeroport.osm) dans Blender
 - Bloquants : aucun
 
 ROADMAP
