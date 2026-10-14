@@ -1,0 +1,57 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/free_camera.gd" id="1_cam"]
+
+[sub_resource type="BoxShape3D" id="1_ground_shape"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="BoxMesh" id="2_ground_mesh"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="StandardMaterial3D" id="3_sand"]
+albedo_color = Color(0.85, 0.76, 0.58, 1)
+
+[sub_resource type="SphereShape3D" id="4_ball_shape"]
+radius = 0.5
+
+[sub_resource type="SphereMesh" id="5_ball_mesh"]
+radius = 0.5
+height = 1.0
+
+[sub_resource type="Environment" id="6_env"]
+background_mode = 1
+background_color = Color(0.53, 0.75, 0.95, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.8, 0.8, 0.8, 1)
+
+[node name="TestPipeline" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("6_env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866, 0, -0.866, 0.5, 0, 20, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("1_ground_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("2_ground_mesh")
+surface_material_override/0 = SubResource("3_sand")
+
+[node name="TestBall" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="TestBall"]
+shape = SubResource("4_ball_shape")
+
+[node name="Mesh" type="MeshInstance3D" parent="TestBall"]
+mesh = SubResource("5_ball_mesh")
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, 0.34, 0, -0.34, 0.94, 0, 4, 10)
+script = ExtResource("1_cam")

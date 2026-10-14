@@ -50,9 +50,9 @@ Materiel :
 - [x] Collecter 50+ photos de reference classees par type (57 images Wikimedia Commons, sources et licences dans refs/SOURCES.md ; photos terrain perso a ajouter)
 
 ### Phase 1 : Pipeline assets
-- [ ] Conventions : echelle, nommage (prefixes bld_, prop_, veh_, chr_), origines des objets
+- [x] Conventions : echelle, nommage (prefixes bld_, prop_, veh_, chr_), origines des objets (docs/PIPELINE.md)
 - [ ] Test complet : un cube modelise sous Blender, exporte en .glb, importe dans Godot avec collision
-- [ ] Script ou procedure d'export en un clic
+- [x] Script ou procedure d export en un clic (blender/tools/export_glb.py)
 - [ ] Bibliotheque de materiaux de base (beton, tole, terre rouge, bitume, peinture ecaillee)
 
 ### Phase 2 : Blockout de la zone aeroport
@@ -124,6 +124,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : 57 photos de reference collectees sur Wikimedia Commons (aeroport, erevan, plage, rues, vehicules, facades, props). Phase 0 terminee.
 - 14/10/2026 : ajout de docs/LEGAL.md (regles legales, noms fictifs) et docs/CREDITS.md (OSM ODbL).
 - 14/10/2026 : noms fictifs des lieux de la zone definis dans docs/LEGAL.md.
+- 14/10/2026 : projet Godot cree (godot/, scene test_pipeline avec sol, boule physique et camera libre), script d export Blender, docs/PIPELINE.md.
 
 ---
 
@@ -148,7 +149,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 1 (pipeline assets)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Phase 1, test cube Blender vers .glb vers Godot avec collision, puis import OSM (refs/osm/zone-aeroport.osm) dans Blender
+- Prochaine tache : Olympe fait le test du cube (docs/PIPELINE.md), puis bibliotheque de materiaux de base, puis import OSM dans Blender
 - Bloquants : aucun
 
 ROADMAP
