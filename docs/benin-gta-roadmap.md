@@ -66,7 +66,7 @@ Materiel :
 ### Phase 3 : Joueur a pied
 - [x] Personnage 3e personne (marche, course, saut, camera) : godot/scenes/player.tscn, godot/scripts/player.gd (capsule en attendant le modele)
 - [ ] Animations Mixamo (idle, walk, run)
-- [ ] Collisions propres avec le decor
+- [x] Collisions propres avec le decor (test auto godot/tests/test_player.gd ; murs OSM obsoletes sur la plage retires, promenade sans collision)
 - [ ] Jalon : balade fluide dans tout le quartier
 
 ### Phase 4 : Le zem (premier vehicule)
@@ -133,6 +133,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : littoral mesure sur image Copernicus Sentinel-2 du 24/01/2026 (legal) : cote reelle ~120 m plus au sud qu OSM, plage 150 a 250 m. Blockout regenere (545 batiments).
 - 14/10/2026 : blockout valide par Olympe ("ressemblant"). Reperes ajoutes (blender/tools/landmarks.py). Phase 2 terminee.
 - 14/10/2026 : joueur 3e personne (capsule, ZQSD, Shift course, Espace saut, camera orbitale souris + molette) place dans zone_aeroport.tscn. A tester par Olympe.
+- 14/10/2026 : Godot 4.7.2 trouve (Telechargements). Test auto du joueur OK : marche 4 m/s, course 8,5 m/s, saut, aucun blocage depuis la plage. Apparition deplacee sur la plage.
 
 ---
 
@@ -157,7 +158,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 3 (joueur a pied)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Olympe teste le joueur (F5). Puis animations Mixamo (idle, walk, run, jump : compte Adobe gratuit d Olympe), modele humanoide, collisions propres
+- Prochaine tache : animations du personnage. Option A : Mixamo (compte Adobe d Olympe). Option B : humanoide low poly + animations generes par script Blender (aucun compte)
 - Bloquants : aucun
 
 ROADMAP

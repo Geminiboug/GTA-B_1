@@ -63,3 +63,10 @@ ronds-points (terre-plein, stele), L'Epave Volante (avion), Sweet Dream Beach (p
   blender -b --python blender/tools/landmarks.py -- blender/materials/lib_materiaux.blend blender/zone/zone_aeroport_reperes.blend godot/assets/models/zone_aeroport_reperes.glb
 Chaque repere est un Empty "rep_*" : deplacer / tourner l'Empty deplace tout le repere. Positions OSM, "approx" dans le code = estime.
 Apercus : docs/images/repere_*.png
+
+## Tests automatiques Godot
+Godot 4.7.2 : C:\Users\La Paix Technology\Downloads\Godot_v4.7.2-stable_win64.exe\ (utiliser le _console.exe pour la ligne de commande)
+  Godot_v4.7.2-stable_win64_console.exe --headless --path godot --import
+  Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://tests/test_player.gd
+test_player.gd : chute, 3 s de marche, 3 s de course, saut, avec les collisions rencontrees.
+Regle : pas de collision sur les surfaces plates posees au sol (routes, promenade, parvis), le joueur bute sur leur rebord.

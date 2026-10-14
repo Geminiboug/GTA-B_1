@@ -414,7 +414,7 @@ if coast:
     band = clip_poly(clean(coast + beach_edge[::-1]), ymin=YMIN - SEA_EXTRA)
     if len(band) > 2:
         make_obj("plage_front_de_mer", *flat(ccw(band), 0.03), "mat_sable", "Zones")
-    for name, d, w, mat, z in (("promenade-col", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.15),
+    for name, d, w, mat, z in (("promenade", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.15),
                                ("piste_cyclable", BEACH_W + PROMENADE_W + BIKE_W / 2, BIKE_W, "mat_peinture_vert", 0.16)):
         bt = Batch()
         base, dd = (beach_inner, d - BEACH_W) if beach_inner else (coast, d)
@@ -482,7 +482,7 @@ for w in ways.values():
     thick, height = WALL[kind]
     for piece in clip_line(w["pts"]):
         piece = clean(piece) if len(piece) > 2 else piece
-        if len(piece) < 2 or all(on_waterfront(*p) for p in piece):
+        if len(piece) < 2 or any(on_waterfront(*p) for p in piece):  # murs OSM obsoletes sur la plage actuelle
             continue
         rv, rf = ribbon(piece, thick)
         n = len(piece)

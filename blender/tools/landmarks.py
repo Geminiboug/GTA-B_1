@@ -92,7 +92,7 @@ g = group("rep_terminal", 397, 318)
 box("terminal_auvent", (90, 16, 0.6), (0, 0, 7.5), "mat_tole", g, collision=False)
 for i, dx in enumerate(range(-40, 41, 16)):
     cyl(f"terminal_pilier_{i}", 0.4, 7.5, (dx, -6, 3.75), "mat_beton", g, verts=8)
-box("terminal_parvis", (100, 22, 0.2), (0, -2, 0.1), "mat_paves", g)
+box("terminal_parvis", (100, 22, 0.2), (0, -2, 0.1), "mat_paves", g, collision=False)
 box("terminal_enseigne_fond", (64, 0.5, 3.2), (0, -8.4, 9.6), "mat_peinture_bleu", g, collision=False)
 sign("terminal_enseigne", "AEROPORT INTERNATIONAL CARDINAL COTODJI", (0, -8.75, 9.6), 1.6, g)
 

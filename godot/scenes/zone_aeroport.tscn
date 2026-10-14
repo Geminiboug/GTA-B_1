@@ -36,4 +36,4 @@ directional_shadow_max_distance = 200.0
 [node name="zone_aeroport_reperes" parent="." instance=ExtResource("3_reperes")]
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 150)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 250)
