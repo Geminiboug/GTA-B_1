@@ -35,7 +35,7 @@ func _physics_process(_delta: float) -> bool:
 			rig.rotation.y = zem.rotation.y + 1.2  # vue de 3/4 avant gauche
 		90:
 			_shot("arret")
-			Input.action_press("move_forward")
+			Input.action_press("accelerate")
 		260:
 			Input.action_press("move_left")
 		330:

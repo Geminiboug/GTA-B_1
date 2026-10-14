@@ -1,6 +1,7 @@
 extends CharacterBody3D
 ## Joueur a pied, vue 3e personne.
-## ZQSD : bouger (relatif a la camera). Par defaut : trot. Shift : sprint. Ctrl : marcher. Espace : sauter.
+## Clavier : ZQSD bouger (trot), Shift sprint, Ctrl marcher, Espace sauter, E monter/descendre.
+## Manette : stick gauche bouger, stick droit camera, A (Croix) sprint, X (Carre) sauter, L3 marcher, Y (Triangle) monter/descendre.
 ## Souris : tourner la camera. Molette : zoom. Echap : liberer / reprendre la souris.
 ## Vitesses reelles : marche ~1,6 m/s, trot ~4,2 m/s, sprint ~7 m/s.
 
@@ -56,8 +57,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
-func _process(_delta: float) -> void:
+@export var stick_look_speed := 2.6  # rad/s au stick droit
+
+
+func _process(delta: float) -> void:
 	cam_pivot.global_position = get_global_transform_interpolated().origin + _cam_offset
+	# stick droit de la manette (quand on est a pied)
+	if vehicle == null:
+		var look := Input.get_vector("look_left", "look_right", "look_up", "look_down")
+		cam_pivot.rotation.y -= look.x * stick_look_speed * delta
+		cam_pivot.rotation.x = clamp(cam_pivot.rotation.x - look.y * stick_look_speed * 0.7 * delta, -1.2, 0.5)
 
 
 # ---------- Vehicules : E pour monter / descendre ----------

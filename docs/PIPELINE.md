@@ -92,3 +92,19 @@ Scene : godot/scenes/zem.tscn (groupe "vehicules"). Scripts :
 Joueur : E pour monter / descendre (rayon 2,5 m), pose assise dans character_anim.gd (seated).
 Controles moto : Z gaz, S frein puis marche arriere, Q / D direction, Espace frein arriere, H klaxon, E descendre.
 Tests : tests/test_zem.gd (headless), tests/capture_zem.gd (captures). Apercus : docs/images/zem_*.png
+
+## Commandes (clavier AZERTY + manette)
+Nommage Xbox ; PlayStation : A = Croix, B = Rond, X = Carre, Y = Triangle, LB/RB = L1/R1, LT/RT = L2/R2, L3 = clic stick gauche.
+| Action | Clavier | Manette |
+|---|---|---|
+| Bouger / diriger | ZQSD | stick gauche |
+| Camera | souris | stick droit |
+| Sprint | Shift | A |
+| Marcher | Ctrl | L3 |
+| Sauter | Espace | X |
+| Monter / descendre | E | Y |
+| Gaz (zem) | Z | RT (analogique) |
+| Frein / marche arriere (zem) | S | LT (analogique) |
+| Frein arriere (zem) | Espace | RB |
+| Klaxon (zem) | H | L3 |
+Les actions sont dans godot/project.godot (generees par un script, voir l historique). Test : tests/test_manette.gd

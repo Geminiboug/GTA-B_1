@@ -30,7 +30,7 @@ func _physics_process(_delta: float) -> bool:
 			Input.action_release("interact")
 			_log("monte sur le zem : %s, collision joueur coupee : %s" % [player.vehicle != null, player.get_node("Collision").disabled])
 			start = zem.global_position
-			Input.action_press("move_forward")
+			Input.action_press("accelerate")
 		392:
 			_log("apres 6 s de gaz : vitesse %.1f km/h, distance %.1f m" % [zem.speed * 3.6, start.distance_to(zem.global_position)])
 			Input.action_press("move_left")
@@ -39,11 +39,11 @@ func _physics_process(_delta: float) -> bool:
 		512:
 			_log("apres 2 s a gauche : cap %.0f deg" % rad_to_deg(zem.rotation.y))
 			Input.action_release("move_left")
-			Input.action_release("move_forward")
-			Input.action_press("move_back")
+			Input.action_release("accelerate")
+			Input.action_press("brake")
 		632:
 			_log("apres 2 s de frein : vitesse %.1f km/h" % (zem.speed * 3.6))
-			Input.action_release("move_back")
+			Input.action_release("brake")
 			Input.action_press("interact")
 		634:
 			Input.action_release("interact")

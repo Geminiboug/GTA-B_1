@@ -40,6 +40,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	global_position = zem.get_global_transform_interpolated().origin + Vector3.UP * follow_height
 	_mouse_idle += delta
+	if cam.current:
+		# stick droit de la manette
+		var look := Input.get_vector("look_left", "look_right", "look_up", "look_down")
+		if look.length() > 0.0:
+			rotation.y -= look.x * 2.6 * delta
+			rotation.x = clamp(rotation.x - look.y * 1.8 * delta, -1.0, 0.3)
+			_mouse_idle = 0.0
 	# apres 1,5 s sans souris, la camera revient derriere la moto quand elle roule
 	if _mouse_idle > 1.5 and abs(zem.speed) > 2.0:
 		rotation.y = rotate_toward(rotation.y, zem.rotation.y, auto_align_speed * delta)

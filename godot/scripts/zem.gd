@@ -1,7 +1,7 @@
 extends CharacterBody3D
 ## Zem (moto-taxi) : conduite arcade-realiste.
-## Z : accelerer. S : freiner puis reculer lentement. Q / D : tourner. Espace : frein arriere (derapage leger).
-## H : klaxon. E : descendre (gere par le joueur).
+## Clavier : Z gaz, S frein puis marche arriere, Q / D direction, Espace frein arriere, H klaxon.
+## Manette : RT gaz, LT frein, stick gauche direction, RB frein arriere, L3 klaxon, Y descendre.
 ## Physique simplifiee d'une 125 cc : ~80 km/h max, rayon de braquage qui grandit avec la vitesse,
 ## inclinaison dans les virages, inertie, roues et guidon animes.
 
@@ -50,10 +50,11 @@ func _physics_process(delta: float) -> void:
 	var steer_in := 0.0
 	var rear_brake := false
 	if has_rider:
-		accel_in = Input.get_action_strength("move_forward")
-		brake_in = Input.get_action_strength("move_back")
+		# clavier : Z / S ; manette : gachettes RT / LT (analogiques), stick gauche pour diriger
+		accel_in = Input.get_action_strength("accelerate")
+		brake_in = Input.get_action_strength("brake")
 		steer_in = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
-		rear_brake = Input.is_action_pressed("jump")
+		rear_brake = Input.is_action_pressed("handbrake")
 		if Input.is_action_just_pressed("horn") and audio:
 			audio.horn()
 
