@@ -1,6 +1,6 @@
 # Benin GTA (nom provisoire)
 
-Jeu open world 3D ancre au Benin. Premier quartier : Zogbo, Cotonou.
+Jeu open world 3D ancre au Benin. Premiere zone : aeroport de Cotonou, Erevan, la plage.
 
 ## Stack
 - Blender 4.x, export glTF 2.0 (.glb)

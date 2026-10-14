@@ -7,7 +7,7 @@ Phase en cours : Phase 0 (cadrage et setup)
 
 ## 1. Vision
 
-Un jeu open world 3D type GTA, ancre dans le Benin. On commence par UN quartier (Zogbo, Cotonou), jouable de bout en bout, puis on etend.
+Un jeu open world 3D type GTA, ancre dans le Benin. On commence par UNE zone (aeroport de Cotonou, Erevan, la plage), jouable de bout en bout, puis on etend.
 
 ## 2. Decisions actees
 
@@ -15,7 +15,7 @@ Un jeu open world 3D type GTA, ancre dans le Benin. On commence par UN quartier 
 - Moteur : Godot 4.x
 - Modelisation : Blender, export glTF 2.0 (.glb)
 - Echelle : 1 unite = 1 metre, axe Z vers le haut dans Blender, export en Y up
-- Premier quartier : Zogbo
+- Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage (remplace Zogbo, decision du 14/10/2026)
 - Style : semi-realiste, low a mid poly pour tenir sur PC modeste
 - Langue du jeu : francais (et possibilite d'ajouter fon/anglais plus tard)
 
@@ -29,7 +29,7 @@ Logiciels (tous gratuits) :
 - Plugin Blender : Blender-OSM (import de la geometrie des rues depuis OpenStreetMap)
 
 Ressources :
-- Photos et videos de reference de Zogbo (rues, enseignes, zem, marches, poteaux, maisons)
+- Photos et videos de reference de la zone aeroport (rues, enseignes, zem, Erevan, plage, poteaux, maisons)
 - Releve terrain : prendre des photos a plat de facades, carrefours, sols
 - Animations humanoides : Mixamo (gratuit)
 - Sons ambiance : enregistrements terrain (klaxons, zem, marche, appels a la priere, musique) + libres de droits
@@ -42,9 +42,9 @@ Materiel :
 
 ### Phase 0 : Cadrage et setup
 - [x] Creer le depot Git (structure : /blender, /godot, /docs, /refs)
-- [ ] Installer Blender, Godot, Blender-OSM
+- [x] Installer Blender, Godot, Blender-OSM
 - [ ] Choisir le nom du projet
-- [ ] Definir la zone exacte de Zogbo (limites, environ 500 m x 500 m pour commencer)
+- [x] Definir la zone exacte aeroport / Erevan / plage : bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), fichier refs/osm/zone-aeroport.osm
 - [ ] Collecter 50+ photos de reference classees par type
 
 ### Phase 1 : Pipeline assets
@@ -53,7 +53,7 @@ Materiel :
 - [ ] Script ou procedure d'export en un clic
 - [ ] Bibliotheque de materiaux de base (beton, tole, terre rouge, bitume, peinture ecaillee)
 
-### Phase 2 : Blockout de Zogbo
+### Phase 2 : Blockout de la zone aeroport
 - [ ] Import du plan des rues via Blender-OSM
 - [ ] Ajustement des rues, carrefours, trottoirs, relief reel
 - [ ] Blockout des batiments (volumes simples, bonnes hauteurs)
@@ -72,7 +72,7 @@ Materiel :
 - [ ] Controleur (acceleration, freinage, virages, inclinaison)
 - [ ] Monter / descendre, camera vehicule
 - [ ] Sons moteur et klaxon
-- [ ] Jalon : conduire un zem dans Zogbo
+- [ ] Jalon : conduire un zem de l aeroport a la plage
 
 ### Phase 5 : Ville vivante
 - [ ] PNJ pietons (marche sur trottoirs, vendeurs, groupes)
@@ -115,6 +115,9 @@ Option plus tard : multijoueur.
 
 - 14/10/2026 : roadmap creee, aucune tache faite.
 - 14/10/2026 : depot Git local initialise (branche main), structure /blender /godot /docs /refs (sous-dossiers refs par type), .gitignore Godot+Blender, .gitattributes, README. Roadmap deplacee dans docs/.
+- 14/10/2026 : depot pousse sur GitHub, logiciels installes.
+- 14/10/2026 : premiere zone changee, Zogbo remplace par aeroport / Erevan / plage.
+- 14/10/2026 : bbox de la zone fixee, export OSM (186 batiments, 95 routes, piste, Erevan, Route des Peches, plage) dans refs/osm/.
 
 ---
 
@@ -127,7 +130,7 @@ STACK
 - Modelisation : Blender 4.x, export glTF 2.0 (.glb)
 - Moteur : Godot 4.x
 - Echelle : 1 unite = 1 metre
-- Premier quartier : Zogbo (Cotonou), zone d'environ 500 m x 500 m
+- Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage. Bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), OSM dans refs/osm/zone-aeroport.osm
 - Cible : PC d'abord, web ensuite
 
 CONVENTIONS
@@ -137,12 +140,12 @@ CONVENTIONS
 
 ETAT ACTUEL
 - Phase en cours : Phase 0 (cadrage et setup)
-- Fait : depot Git local cree (main), structure en place, roadmap dans docs/benin-gta-roadmap.md
-- Prochaine tache : creer le depot prive GitHub et pousser, installer Blender, Godot et Blender-OSM, definir les limites exactes de Zogbo
+- Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere
+- Prochaine tache : collecter 50+ photos de reference (refs/), puis Phase 1 (test cube Blender vers Godot) et import OSM dans Blender
 - Bloquants : aucun
 
 ROADMAP
-Phase 0 Setup, 1 Pipeline assets, 2 Blockout Zogbo, 3 Joueur a pied, 4 Zem, 5 Ville vivante, 6 Modelisation detaillee, 7 Gameplay de base, 8 Police/danger, 9 Extension, 10 Finition et sortie.
+Phase 0 Setup, 1 Pipeline assets, 2 Blockout zone aeroport, 3 Joueur a pied, 4 Zem, 5 Ville vivante, 6 Modelisation detaillee, 7 Gameplay de base, 8 Police/danger, 9 Extension, 10 Finition et sortie.
 
 REGLES DE TRAVAIL AVEC OLYMPE
 - Repondre en francais, de facon courte et directe, orientee action
