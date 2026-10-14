@@ -70,3 +70,11 @@ Godot 4.7.2 : C:\Users\La Paix Technology\Downloads\Godot_v4.7.2-stable_win64.ex
   Godot_v4.7.2-stable_win64_console.exe --headless --path godot --script res://tests/test_player.gd
 test_player.gd : chute, 3 s de marche, 3 s de course, saut, avec les collisions rencontrees.
 Regle : pas de collision sur les surfaces plates posees au sol (routes, promenade, parvis), le joueur bute sur leur rebord.
+Piege : Godot lit les suffixes -col ET _col (et -colonly, -convcol...) dans les noms d objets. Ne jamais nommer un objet decoratif en *_col (ex : un cou "chr_col" a cree un mur invisible dans le joueur).
+
+## Personnage joueur (blockout)
+blender/tools/build_character.py -> blender/chr/chr_joueur.blend + godot/assets/models/chr_joueur.glb
+Pieces rigides sur pivots aux articulations (piv_bassin, piv_tronc, piv_tete, piv_epaule_G/D, piv_coude_G/D, piv_hanche_G/D, piv_genou_G/D).
+Animation procedurale : godot/scripts/character_anim.gd (idle, marche, course, saut ; phase du pas liee a la distance, pas de glissement).
+Captures des poses : godot --path godot --script res://tests/capture_anim.gd -- <dossier> (ouvre une fenetre quelques secondes). Apercus : docs/images/chr_pose_*.png
+Remplacement futur par Mixamo : garder player.gd, remplacer Body/Model et character_anim.gd par un AnimationTree.

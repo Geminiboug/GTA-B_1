@@ -65,9 +65,9 @@ Materiel :
 
 ### Phase 3 : Joueur a pied
 - [x] Personnage 3e personne (marche, course, saut, camera) : godot/scenes/player.tscn, godot/scripts/player.gd (capsule en attendant le modele)
-- [ ] Animations Mixamo (idle, walk, run)
+- [x] Animations (idle, walk, run, jump) : humanoide low poly fait par script + animation procedurale (Mixamo plus tard pour la finition)
 - [x] Collisions propres avec le decor (test auto godot/tests/test_player.gd ; murs OSM obsoletes sur la plage retires, promenade sans collision)
-- [ ] Jalon : balade fluide dans tout le quartier
+- [ ] Jalon : balade fluide dans tout le quartier (a valider par Olympe)
 
 ### Phase 4 : Le zem (premier vehicule)
 - [ ] Modele de moto-taxi (cadre, jaune/vert selon reference locale)
@@ -134,6 +134,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : blockout valide par Olympe ("ressemblant"). Reperes ajoutes (blender/tools/landmarks.py). Phase 2 terminee.
 - 14/10/2026 : joueur 3e personne (capsule, ZQSD, Shift course, Espace saut, camera orbitale souris + molette) place dans zone_aeroport.tscn. A tester par Olympe.
 - 14/10/2026 : Godot 4.7.2 trouve (Telechargements). Test auto du joueur OK : marche 4 m/s, course 8,5 m/s, saut, aucun blocage depuis la plage. Apparition deplacee sur la plage.
+- 14/10/2026 : personnage humanoide low poly (blender/tools/build_character.py) + animation procedurale (character_anim.gd), verifies par captures et test auto. Bug corrige : un objet nomme *_col cree une collision cachee dans Godot.
 
 ---
 
@@ -158,7 +159,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 3 (joueur a pied)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : animations du personnage. Option A : Mixamo (compte Adobe d Olympe). Option B : humanoide low poly + animations generes par script Blender (aucun compte)
+- Prochaine tache : Olympe valide la balade (jalon Phase 3). Puis Phase 4 : le zem (modele moto-taxi, controleur, monter/descendre, sons)
 - Bloquants : aucun
 
 ROADMAP

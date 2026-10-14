@@ -1,23 +1,12 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://assets/models/chr_joueur.glb" id="2_model"]
+[ext_resource type="Script" path="res://scripts/character_anim.gd" id="3_anim"]
 
 [sub_resource type="CapsuleShape3D" id="1_shape"]
 radius = 0.35
 height = 1.75
-
-[sub_resource type="CapsuleMesh" id="2_mesh"]
-radius = 0.35
-height = 1.75
-
-[sub_resource type="StandardMaterial3D" id="3_mat"]
-albedo_color = Color(0.95, 0.75, 0.1, 1)
-
-[sub_resource type="BoxMesh" id="4_nose"]
-size = Vector3(0.2, 0.15, 0.3)
-
-[sub_resource type="StandardMaterial3D" id="5_nose_mat"]
-albedo_color = Color(0.1, 0.1, 0.1, 1)
 
 [node name="Player" type="CharacterBody3D"]
 floor_snap_length = 0.3
@@ -29,15 +18,8 @@ shape = SubResource("1_shape")
 
 [node name="Body" type="Node3D" parent="."]
 
-[node name="Mesh" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-mesh = SubResource("2_mesh")
-surface_material_override/0 = SubResource("3_mat")
-
-[node name="Nose" type="MeshInstance3D" parent="Body"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.38)
-mesh = SubResource("4_nose")
-surface_material_override/0 = SubResource("5_nose_mat")
+[node name="Model" parent="Body" instance=ExtResource("2_model")]
+script = ExtResource("3_anim")
 
 [node name="CamPivot" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.94, -0.34, 0, 0.34, 0.94, 0, 1.6, 0)

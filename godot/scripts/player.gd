@@ -16,6 +16,7 @@ extends CharacterBody3D
 @onready var cam_pivot: Node3D = $CamPivot
 @onready var spring_arm: SpringArm3D = $CamPivot/SpringArm3D
 @onready var body: Node3D = $Body
+@onready var anim: Node = get_node_or_null("Body/Model")
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -60,3 +61,8 @@ func _physics_process(delta: float) -> void:
 		body.rotation.y = lerp_angle(body.rotation.y, angle, turn_speed * delta)
 
 	move_and_slide()
+
+	if anim:
+		anim.speed = Vector2(velocity.x, velocity.z).length()
+		anim.on_floor = is_on_floor()
+		anim.vertical_speed = velocity.y
