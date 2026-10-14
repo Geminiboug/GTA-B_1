@@ -194,3 +194,10 @@ tests/perf_frames.gd (cout CPU : ~9 ms de physique par image avec tout actif). C
   Test : tests/test_avion.gd
 - Mesure reelle : tests/perf_fps.gd (fenetre 1600x900, synchro coupee) sur RTX 2050 : 120 a 135 images/s selon la vue
   (750 a 1300 objets dessines, 0,8 a 1,5 M de primitives).
+
+## Meteo tropicale (passe 9)
+godot/scripts/weather.gd (noeud "Meteo", apres "JourNuit") : episodes degage / nuageux / averse / orage (4 a 12 min),
+transitions douces (le ciel se couvre avant la pluie), pluie en particules autour de la camera (discrete la nuit),
+sol et murs mouilles via la variable globale gtb_wet (sol.gdshader : plus sombre, brillant, flaques ; facade.gdshader :
+ruissellement, toits luisants), sechage lent apres l'averse, eclairs puis tonnerre avec delai, ciel d'orage (uniform storm).
+F3 : declencher / arreter l'averse. Captures : tests/capture_meteo.gd -> docs/images/meteo_*.png

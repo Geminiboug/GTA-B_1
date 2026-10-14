@@ -105,3 +105,7 @@ gtb_power={
 "type": "float",
 "value": 1.0
 }
+gtb_wet={
+"type": "float",
+"value": 0.0
+}

@@ -5,6 +5,7 @@
 // mode 3 = beton / paves : joints et taches.
 shader_type spatial;
 
+global uniform float gtb_wet;  // 0 sec, 1 detrempe (scripts/weather.gd)
 uniform int mode = 0;
 // couleurs ecrites en sRGB, converties en lineaire a la fin
 uniform vec3 tint = vec3(1.0);
@@ -124,7 +125,20 @@ void fragment() {
 		col = mix(col, col * 0.6, clamp(joint, 0.0, 1.0) * fine);
 		col = mix(col, col * 0.7, smoothstep(0.6, 0.8, fbm(p * 0.3)) * 0.5);
 	}
+	float spec = 0.15;  // sols mats : pas de reflet bleu du ciel
+	// --- pluie : sol plus sombre et plus brillant, flaques dans les creux (pas sur le sable de plage) ---
+	if (gtb_wet > 0.001 && mode != 1) {
+		col *= mix(1.0, 0.6, gtb_wet);
+		rough = mix(rough, 0.35, gtb_wet * 0.8);
+		spec = mix(spec, 0.5, gtb_wet);
+		float puddle = smoothstep(0.6, 0.66, fbm(p * 0.09 + 17.0)) * smoothstep(0.3, 0.8, gtb_wet);
+		col = mix(col, col * 0.45, puddle);
+		rough = mix(rough, 0.02, puddle);
+		spec = mix(spec, 0.9, puddle);
+	} else if (gtb_wet > 0.001) {
+		col *= mix(1.0, 0.8, gtb_wet);  // sable mouille plus fonce
+	}
 	ALBEDO = pow(clamp(col * tint, 0.0, 1.0), vec3(2.2));
-	SPECULAR = 0.15;  // sols mats : pas de reflet bleu du ciel
+	SPECULAR = spec;
 	ROUGHNESS = rough;
 }

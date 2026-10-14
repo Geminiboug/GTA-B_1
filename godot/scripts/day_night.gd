@@ -112,7 +112,7 @@ func _update(delta: float) -> void:
 	if _sky_mat:
 		_sky_mat.set_shader_parameter("sun_dir_u", sd)
 		_sky_mat.set_shader_parameter("night", night)
-	_env.ambient_light_energy = lerp(0.6, 0.12, night)
+	_env.ambient_light_energy = lerp(0.6, 0.2, night)  # nuit lisible (comme dans les jeux du genre)
 	_env.ambient_light_color = Color(0.55, 0.5, 0.45).lerp(Color(0.25, 0.3, 0.5), night)
 	_env.fog_light_color = Color(0.72, 0.8, 0.88).lerp(Color(0.05, 0.06, 0.1), night).lerp(Color(0.95, 0.6, 0.4), low * (1.0 - night) * 0.6)
 	_env.background_energy_multiplier = lerp(1.0, 0.6, night)

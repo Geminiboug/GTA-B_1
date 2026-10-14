@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/pedestrians.gd" id="13_peds"]
 [ext_resource type="Script" path="res://scripts/ambience.gd" id="14_amb"]
 [ext_resource type="Script" path="res://scripts/air_traffic.gd" id="15_air"]
+[ext_resource type="Script" path="res://scripts/weather.gd" id="16_meteo"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -93,3 +94,6 @@ script = ExtResource("14_amb")
 
 [node name="TraficAerien" type="Node3D" parent="."]
 script = ExtResource("15_air")
+
+[node name="Meteo" type="Node3D" parent="."]
+script = ExtResource("16_meteo")

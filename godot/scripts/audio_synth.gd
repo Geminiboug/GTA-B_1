@@ -178,5 +178,44 @@ static func jet_loop() -> AudioStreamWAV:
 	return _wav(out, true)
 
 
+static func pluie_loop() -> AudioStreamWAV:
+	## Pluie tropicale : bruit large bande + crepitement de gouttes sur la tole, boucle de 6 s.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 21
+	var n := RATE * 6
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	var drop := 0.0
+	for i in n:
+		lp += (rng.randf_range(-1.0, 1.0) - lp) * 0.6
+		if rng.randf() < 0.004:
+			drop = rng.randf_range(0.3, 0.8)  # goutte qui claque sur un toit en tole
+		drop *= 0.985
+		out[i] = lp * 0.35 + rng.randf_range(-1.0, 1.0) * drop * 0.5
+	for i in 3000:
+		var k := float(i) / 3000.0
+		out[i] *= k
+		out[n - 1 - i] *= k
+	return _wav(out, true)
+
+
+static func tonnerre() -> AudioStreamWAV:
+	## Tonnerre : craquement puis long grondement grave qui roule et s'eteint (5 s).
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var n := RATE * 5
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var b := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		b = b * 0.995 + rng.randf_range(-1.0, 1.0) * 0.1
+		var crack := rng.randf_range(-1.0, 1.0) * exp(-t * 12.0) * 0.6
+		var roll := b * (1.0 + 0.6 * sin(TAU * 0.7 * t + rng.randf() * 0.2)) * exp(-t * 0.7) * 2.5
+		out[i] = clamp(crack + roll, -1.0, 1.0)
+	return _wav(out, false)
+
+
 static func step_f(x: float, edge: float) -> float:
 	return 1.0 if x < edge else 0.0

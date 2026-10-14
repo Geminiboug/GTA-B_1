@@ -1,7 +1,7 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
-Derniere mise a jour : 14/10/2026
-Phase en cours : Phase 3 (animations a finaliser) et Phase 4 (zem)
+Derniere mise a jour : 15/10/2026
+Phase en cours : validation des jalons 3, 4 et 5 par Olympe, animations Quaternius a integrer, puis Phase 7 (gameplay)
 
 ---
 
@@ -17,7 +17,7 @@ Un jeu open world 3D type GTA, ancre dans le Benin. On commence par UNE zone (ae
 - Echelle : 1 unite = 1 metre, axe Z vers le haut dans Blender, export en Y up
 - Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage (remplace Zogbo, decision du 14/10/2026)
 - Style : semi-realiste, low a mid poly pour tenir sur PC modeste
-- Pas de textures avant la Phase 6 : couleurs unies (beton gris, tole bleu-gris, terre rouge, sable, bitume, eau)
+- Pas de textures image avant la Phase 6 : materiaux proceduraux (shaders godot/shaders/*.gdshader : facades, sols, mer, ciel)
 - Nom : GTB, Gbê Town Bénin (ne jamais utiliser GTA ni "Grand Theft" pour eviter un conflit de marque)
 - Langue du jeu : francais (et possibilite d'ajouter fon/anglais plus tard)
 
@@ -85,9 +85,9 @@ Materiel :
 
 ### Phase 6 : Modelisation detaillee et textures
 - [ ] Remplacer le blockout par des batiments detailles (facades, portes, toits en tole)
-- [ ] Props locaux (etals, poteaux SBEE, enseignes, vehicules, ordures, barrieres)
+- [x] Props locaux (etals, poteaux, lampadaires, enseignes fictives, vehicules, ordures, kpayo, maquis, cabines, avions) : build_props.py + props.gd
 - [ ] Textures reelles issues des photos
-- [ ] Optimisation (instances, LOD, occlusion)
+- [ ] Optimisation (instances, LOD, occlusion) [MultiMesh par quartiers + distances d affichage faits ; 120-135 img/s sur RTX 2050]
 
 ### Phase 7 : Gameplay de base
 - [ ] Systeme d'argent (FCFA), inventaire, interactions (acheter, parler)
@@ -147,6 +147,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : realisme passe 5 : cycle jour/nuit (soleil reel, coucher, etoiles, lune), eclairage de nuit, fenetres allumees, delestages. Correction : requetes physiques des props limitees a la couche du decor (presque tout le mobilier de bord de route etait rejete). Suppression du singleton LampRegistry (erreurs dans l editeur reste ouvert).
 - 15/10/2026 : passes 6 et 7 : circulation (46 vehicules), pietons (36) et vendeurs assis (56), ambiance sonore synthetisee. Tous les tests passent, aucune erreur.
 - 15/10/2026 : passe 8 : decollages et atterrissages sur la vraie piste. Mesure : 120-135 images/s en 1600x900 sur la RTX 2050 d Olympe.
+- 15/10/2026 : passe 9 : meteo tropicale (averses, orages avec eclairs et tonnerre, sol et murs mouilles, flaques, sechage). Prompt de passation reecrit. Tous les tests passent.
 
 ---
 
@@ -156,8 +157,8 @@ Option plus tard : multijoueur.
 Tu reprends un projet en cours : GTB (Gbê Town Bénin), un jeu open world 3D type GTA ancre dans le Benin, developpe par Olympe (Lib), etudiant Tek3 a Epitech Benin, qui vit a Cotonou (quartier Zogbo).
 
 STACK
-- Modelisation : Blender 5.2 (Microsoft Store), export glTF 2.0 (.glb)
-- Moteur : Godot 4.7
+- Modelisation : Blender 5.2 (Microsoft Store), export glTF 2.0 (.glb), tout par script (blender/tools/)
+- Moteur : Godot 4.7.2 (Forward+), physique interpolee, RTX 2050 chez Olympe
 - Echelle : 1 unite = 1 metre
 - Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage. Bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), OSM dans refs/osm/zone-aeroport.osm
 - Cible : PC d'abord, web ensuite
@@ -165,15 +166,28 @@ STACK
 CONVENTIONS
 - Nommage : bld_ (batiments), prop_ (objets), veh_ (vehicules), chr_ (personnages)
 - Depot : /blender, /godot, /docs, /refs
-- Style : semi-realiste, low a mid poly, couleurs unies sans textures jusqu a la Phase 6
+- Style : semi-realiste, low a mid poly, materiaux proceduraux (pas de textures image) jusqu a la Phase 6
 - Nom : GTB (Gbê Town Bénin), jamais GTA ni "Grand Theft"
+- Couleurs dans les shaders : ecrites en sRGB, converties en lineaire a la fin (pow 2.2)
+- Objets : jamais de nom en *_col / *-col pour un objet decoratif (Godot cree une collision)
+- Tout son est synthetise (godot/scripts/audio_synth.gd) ; tout modele est fait par script Blender (blender/tools/)
 
-ETAT ACTUEL
-- Phase en cours : Phase 3 (animations a finaliser) et Phase 4 (zem)
-- Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : integrer les animations Quaternius UAL (CC0) des qu Olympe les a telechargees (refs/quaternius/). Olympe teste le zem (jalon Phase 4). Ensuite Phase 5 : ville vivante
-- Bloquants : aucun
-
+ETAT ACTUEL (15/10/2026)
+- Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu.
+- Fait : zone OSM + batiments Overture + littoral Sentinel-2 (blender/tools/osm_import.py, donnees godot/assets/data/zone_aeroport.json),
+  toits (tole 2 pans, parapets, fers en attente, citernes, clims), routes (bitume/paves/sable, marquage, bas-cotes, piste),
+  materiaux proceduraux (godot/scripts/realism.gd + godot/shaders/), vegetation (vegetation.gd), mobilier/enseignes/vehicules
+  gares/avions (props.gd), joueur 3e personne + zem conduisible (player.gd, zem.gd), manette, cycle jour/nuit + delestages
+  (day_night.gd), meteo tropicale pluie/orage/sol mouille (weather.gd), circulation 46 vehicules (traffic.gd), 36 pietons +
+  56 vendeurs assis (pedestrians.gd), ambiance sonore synthetisee (ambience.gd, audio_synth.gd), decollages/atterrissages
+  (air_traffic.gd). Tests auto dans godot/tests/ (test_player, test_zem, test_limites, test_manette, test_circulation, test_avion).
+- Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
+  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md).
+- Prochaine tache : integrer les animations Quaternius Universal Animation Library (CC0) des qu Olympe les a mises dans
+  refs/quaternius/ (remplacer Body/Model + character_anim.gd par un AnimationTree, pietons inclus). Faire valider les jalons
+  3, 4, 5 par Olympe. Puis Phase 7 : HUD, argent FCFA, premieres missions (course de zem).
+- Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et
+  rouvrir le projet (sinon erreurs "global uniform does not exist", fichiers non importes).
 ROADMAP
 Phase 0 Setup, 1 Pipeline assets, 2 Blockout zone aeroport, 3 Joueur a pied, 4 Zem, 5 Ville vivante, 6 Modelisation detaillee, 7 Gameplay de base, 8 Police/danger, 9 Extension, 10 Finition et sortie.
 

@@ -11,6 +11,7 @@ render_mode diffuse_burley;
 
 global uniform float gtb_night;   // 0 = jour, 1 = nuit noire
 global uniform float gtb_power;   // 1 = courant, 0 = coupure (delestage)
+global uniform float gtb_wet;     // pluie : murs et toits mouilles
 
 // couleurs ecrites en sRGB (comme dans un logiciel de dessin), converties en lineaire a la fin
 uniform vec3 wall_color = vec3(0.85, 0.82, 0.76);
@@ -222,6 +223,12 @@ void fragment() {
 		// coulures
 		float streak = smoothstep(0.6, 1.0, noise(vec2(u * 3.0, y * 0.25))) * (1.0 - fy) * 0.25;
 		albedo *= 1.0 - streak;
+	}
+	if (gtb_wet > 0.001) {
+		// murs assombris par l'eau (plus en haut, ruissellement), toits luisants
+		float run = n.y > 0.7 ? 1.0 : (0.55 + 0.45 * noise(vec2(dot(wpos.xz, vec2(0.7, 0.7)) * 2.0, wpos.y * 0.3)));
+		albedo *= mix(1.0, 0.68, gtb_wet * run);
+		rough = mix(rough, 0.25, gtb_wet * (n.y > 0.7 ? 1.0 : 0.4));
 	}
 	ALBEDO = pow(clamp(albedo, 0.0, 1.0), vec3(2.2));
 	EMISSION = emit;

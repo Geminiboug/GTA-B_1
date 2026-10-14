@@ -8,6 +8,7 @@ shader_type sky;
 
 uniform vec3 sun_dir_u = vec3(0.3, 0.75, 0.1);   // direction vers le soleil
 uniform float night = 0.0;
+uniform float storm = 0.0;   // 0 normal, 1 ciel d'orage (scripts/weather.gd)
 
 uniform vec3 zenith_color : source_color = vec3(0.16, 0.38, 0.78);
 uniform vec3 horizon_color : source_color = vec3(0.72, 0.82, 0.92);
@@ -71,6 +72,8 @@ void sky() {
 	zen = mix(zen, vec3(0.35, 0.3, 0.5), golden * 0.25);
 	float t = pow(clamp(h, 0.0, 1.0), horizon_softness);
 	vec3 col = mix(hor, zen, t);
+	// ciel couvert : gris plombe
+	col = mix(col, vec3(0.42, 0.45, 0.5) * mix(0.08, 1.0, day), storm * 0.85);
 	if (h < 0.0) {
 		col = mix(hor, ground_color * mix(0.08, 1.0, day), clamp(-h * 6.0, 0.0, 1.0));
 	}
@@ -105,7 +108,8 @@ void sky() {
 		float base = fbm(uv + drift);
 		float detail = fbm(uv * 2.7 - drift * 1.6);
 		float dens = base * 0.75 + detail * 0.25;
-		float c = smoothstep(1.0 - cloud_coverage, 1.0 - cloud_coverage + cloud_softness, dens);
+		float cov = mix(cloud_coverage, 0.97, storm);
+		float c = smoothstep(1.0 - cov, 1.0 - cov + cloud_softness, dens);
 		vec2 to_sun = sxz * 0.06;
 		float dens_sun = fbm(uv + drift + to_sun) * 0.75 + detail * 0.25;
 		float lit = clamp(1.0 - (dens_sun - dens) * 6.0, 0.0, 1.0);
@@ -114,6 +118,7 @@ void sky() {
 		vec3 ccol = mix(cs, cl, lit * 0.7 + 0.3 * (1.0 - c * 0.5));
 		ccol += stint * pow(max(sd, 0.0), 8.0) * 0.35 * (1.0 - c) * above;
 		ccol *= mix(0.06, 1.0, day);                                            // sombres la nuit
+		ccol *= mix(1.0, 0.42, storm);                                          // nuages d'orage
 		ccol += vec3(0.5, 0.55, 0.65) * pow(max(md, 0.0), 12.0) * 0.12 * night;   // eclaires par la lune
 		float hi = fbm(uv * vec2(0.6, 2.2) * 0.7 + drift * 2.5);
 		float cir = smoothstep(0.55, 0.85, hi) * high_cloud_amount;
