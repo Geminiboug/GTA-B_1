@@ -56,3 +56,10 @@ Apercus : docs/images/blockout_zone_aeroport_dessus.png et blockout_zone_aeropor
 4. Import avec 6e argument : ... godot/assets/models/zone_aeroport.glb refs/overture/building.geojson refs/sentinel2/littoral_20260124.geojson
 Resolution 10 m : bon pour cote, plage, grandes zones ; jamais pour le detail des batiments.
 Constat 01/2026 : la cote reelle est ~120 m plus au sud que dans OSM (plage elargie depuis les epis), plage de 150 a 250 m.
+
+## Reperes (separes de l'import OSM)
+blender/tools/landmarks.py : terminal (auvent, enseigne, tour de controle), Ararat Hypermarket (totem),
+ronds-points (terre-plein, stele), L'Epave Volante (avion), Sweet Dream Beach (paillotes), Maquis La Plaja.
+  blender -b --python blender/tools/landmarks.py -- blender/materials/lib_materiaux.blend blender/zone/zone_aeroport_reperes.blend godot/assets/models/zone_aeroport_reperes.glb
+Chaque repere est un Empty "rep_*" : deplacer / tourner l'Empty deplace tout le repere. Positions OSM, "approx" dans le code = estime.
+Apercus : docs/images/repere_*.png

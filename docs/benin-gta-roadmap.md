@@ -1,7 +1,7 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
 Derniere mise a jour : 14/10/2026
-Phase en cours : Phase 2 (blockout de la zone aeroport)
+Phase en cours : Phase 3 (joueur a pied)
 
 ---
 
@@ -57,11 +57,11 @@ Materiel :
 
 ### Phase 2 : Blockout de la zone aeroport
 - [x] Import du plan des rues (importeur maison blender/tools/osm_import.py, Blender-OSM indisponible)
-- [ ] Ajustement des rues, carrefours, trottoirs, relief reel
+- [x] Ajustement des rues, carrefours, trottoirs, relief reel (littoral Sentinel-2, batiments Overture, relief plat conserve)
 - [x] Blockout des batiments (volumes simples, hauteurs estimees, a affiner)
-- [ ] Placement des reperes importants (marche, carrefour principal, stations, eglises, etc.)
-- [ ] Import dans Godot, test de balade en camera libre
-- [ ] Jalon : "le quartier est reconnaissable en blockout"
+- [x] Placement des reperes importants (terminal, tour, Ararat, ronds-points, Epave Volante, plage, maquis : blender/tools/landmarks.py)
+- [x] Import dans Godot, test de balade en camera libre
+- [x] Jalon : "le quartier est reconnaissable en blockout" (valide par Olympe le 14/10/2026)
 
 ### Phase 3 : Joueur a pied
 - [ ] Personnage 3e personne (marche, course, saut, camera)
@@ -131,6 +131,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : importeur OSM maison ecrit. Blockout de la zone genere (180 batiments, routes, piste, tarmac, plage, mer, murs) : blender/zone/zone_aeroport_blockout.blend, godot/scenes/zone_aeroport.tscn.
 - 14/10/2026 : retour Olympe : OSM pas a jour. Batiments remplaces par Overture Maps (594 dans la zone, dont detections Google 2023), plage continue jusqu a la mer, promenade et piste cyclable (amenagement Route des Peches, largeurs estimees). Bug de la plage corrige.
 - 14/10/2026 : littoral mesure sur image Copernicus Sentinel-2 du 24/01/2026 (legal) : cote reelle ~120 m plus au sud qu OSM, plage 150 a 250 m. Blockout regenere (545 batiments).
+- 14/10/2026 : blockout valide par Olympe ("ressemblant"). Reperes ajoutes (blender/tools/landmarks.py). Phase 2 terminee.
 
 ---
 
@@ -153,9 +154,9 @@ CONVENTIONS
 - Nom : GTB (Gbê Town Bénin), jamais GTA ni "Grand Theft"
 
 ETAT ACTUEL
-- Phase en cours : Phase 2 (blockout de la zone aeroport)
+- Phase en cours : Phase 3 (joueur a pied)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Olympe teste la balade en camera libre dans Godot (F5). Puis ajustements : hauteurs reelles des batiments reperes (terminal, Ararat Hypermarket), carrefours, trottoirs, reperes importants
+- Prochaine tache : Phase 3, personnage 3e personne (CharacterBody3D, camera orbitale, marche, course, saut) dans godot/scenes/zone_aeroport.tscn, puis animations Mixamo
 - Bloquants : aucun
 
 ROADMAP
