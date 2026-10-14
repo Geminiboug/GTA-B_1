@@ -60,7 +60,76 @@ func _process(_delta: float) -> void:
 	cam_pivot.global_position = get_global_transform_interpolated().origin + _cam_offset
 
 
+# ---------- Vehicules : E pour monter / descendre ----------
+var vehicle: Node3D = null
+const ENTER_DISTANCE := 2.5
+const HIP_HEIGHT := 0.92  # hauteur du bassin au-dessus des pieds
+
+
+func _nearest_vehicle() -> Node3D:
+	var best: Node3D = null
+	var best_d := ENTER_DISTANCE
+	for v in get_tree().get_nodes_in_group("vehicules"):
+		var d: float = global_position.distance_to(v.global_position)
+		if d < best_d:
+			best_d = d
+			best = v
+	return best
+
+
+func enter_vehicle(v: Node3D) -> void:
+	vehicle = v
+	$Collision.disabled = true
+	velocity = Vector3.ZERO
+	v.set_rider(true)
+	v.get_node("CamRig").activate(true)
+	if anim:
+		anim.seated = true
+	# le joueur suit la selle : pas d'interpolation propre pour eviter un decalage d'une image
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+
+
+func exit_vehicle() -> void:
+	var v := vehicle
+	vehicle = null
+	v.set_rider(false)
+	v.get_node("CamRig").activate(false)
+	$CamPivot/SpringArm3D/Camera3D.current = true
+	# on descend a gauche de la moto, debout, en regardant dans le meme sens
+	var left: Vector3 = -v.global_transform.basis.x
+	global_transform = Transform3D(Basis.IDENTITY, v.global_position + left * 0.9 + Vector3.UP * 0.1)
+	_facing = v.rotation.y
+	body.rotation = Vector3(0, _facing, 0)
+	cam_pivot.rotation.y = v.get_node("CamRig").rotation.y
+	$Collision.disabled = false
+	if anim:
+		anim.seated = false
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_INHERIT
+	reset_physics_interpolation()
+
+
+func _ride(_delta: float) -> void:
+	var seat: Transform3D = vehicle.seat_transform()
+	global_transform = Transform3D(seat.basis, seat.origin - seat.basis.y * HIP_HEIGHT)
+	body.rotation = Vector3.ZERO
+	if anim:
+		anim.speed = 0.0
+		anim.on_floor = true
+		anim.turn_rate = 0.0
+		anim.accel = 0.0
+
+
 func _physics_process(delta: float) -> void:
+	if Input.is_action_just_pressed("interact"):
+		if vehicle:
+			exit_vehicle()
+			return
+		var v := _nearest_vehicle()
+		if v:
+			enter_vehicle(v)
+	if vehicle:
+		_ride(delta)
+		return
 	var was_on_floor := is_on_floor()
 	if not is_on_floor():
 		velocity.y -= gravity * delta

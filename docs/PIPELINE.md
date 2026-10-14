@@ -80,3 +80,15 @@ pose de saut figee (montee / chute), reception amortie, inclinaison virages et a
 Controles : ZQSD trot, Shift sprint, Ctrl marche, Espace saut. Inertie : 9 m/s2 au demarrage, 14 au freinage, virages plus larges en sprint.
 Captures des poses : godot --path godot --script res://tests/capture_anim.gd -- <dossier> (ouvre une fenetre quelques secondes). Apercus : docs/images/chr_pose_*.png
 Remplacement futur par Mixamo : garder player.gd, remplacer Body/Model et character_anim.gd par un AnimationTree.
+
+## Zem (Phase 4)
+Modele : blender/tools/build_zem.py -> blender/veh/veh_zem.blend + godot/assets/models/veh_zem.glb (125 cc generique, sans marque).
+Pivots animes : piv_guidon (direction, colonne inclinee), piv_roue_av, piv_roue_ar. Reperes : pt_conducteur, pt_passager.
+Scene : godot/scenes/zem.tscn (groupe "vehicules"). Scripts :
+- zem.gd : modele bicyclette, couple decroissant, ~80 km/h max, freins, marche arriere lente, adherence limitee (~0,7 g),
+  inclinaison physique tan(angle) = v * lacet / g, choc frontal qui coupe la vitesse.
+- zem_audio.gd : son synthetise en temps reel (monocylindre 4 temps, boite 4 vitesses, klaxon 2 tons). Aucun fichier audio.
+- zem_camera.gd : camera de conduite, se replace derriere la moto, recule et elargit le champ avec la vitesse.
+Joueur : E pour monter / descendre (rayon 2,5 m), pose assise dans character_anim.gd (seated).
+Controles moto : Z gaz, S frein puis marche arriere, Q / D direction, Espace frein arriere, H klaxon, E descendre.
+Tests : tests/test_zem.gd (headless), tests/capture_zem.gd (captures). Apercus : docs/images/zem_*.png

@@ -1,0 +1,33 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/zem.gd" id="1_zem"]
+[ext_resource type="PackedScene" path="res://assets/models/veh_zem.glb" id="2_model"]
+[ext_resource type="Script" path="res://scripts/zem_audio.gd" id="3_audio"]
+[ext_resource type="Script" path="res://scripts/zem_camera.gd" id="4_cam"]
+
+[sub_resource type="BoxShape3D" id="1_shape"]
+size = Vector3(0.5, 0.9, 1.95)
+
+[node name="Zem" type="CharacterBody3D" groups=["vehicules"]]
+floor_snap_length = 0.4
+script = ExtResource("1_zem")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("1_shape")
+
+[node name="Visual" parent="." instance=ExtResource("2_model")]
+
+[node name="Audio" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+script = ExtResource("3_audio")
+
+[node name="CamRig" type="Node3D" parent="."]
+script = ExtResource("4_cam")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CamRig"]
+spring_length = 4.5
+margin = 0.2
+
+[node name="Camera3D" type="Camera3D" parent="CamRig/SpringArm3D"]
+far = 3000.0

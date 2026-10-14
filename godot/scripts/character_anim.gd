@@ -13,6 +13,9 @@ var on_floor := true
 var vertical_speed := 0.0
 var turn_rate := 0.0
 var accel := 0.0
+var seated := false  # assis sur un vehicule
+
+var _seat := 0.0
 
 # Allures : [vitesse, longueur de cycle (2 pas), amplitude hanche, flexion genou en vol de jambe,
 #            amplitude bras, coude, penche du buste, rebond vertical (+ = vol), twist]
@@ -122,6 +125,20 @@ func _physics_process(delta: float) -> void:
 	knee_d -= 1.0 * squat
 	lean += 0.25 * squat
 	bob -= 0.16 * squat
+
+	# --- Assis sur le zem : cuisses vers l'avant, genoux plies, mains au guidon ---
+	_seat = lerp(_seat, 1.0 if seated else 0.0, 1.0 - exp(-10.0 * delta))
+	if _seat > 0.001:
+		var st := _seat
+		hip_g = lerp(hip_g, 1.35, st)
+		hip_d = lerp(hip_d, 1.35, st)
+		knee_g = lerp(knee_g, -1.45, st)
+		knee_d = lerp(knee_d, -1.45, st)
+		arm_g = lerp(arm_g, 0.95, st)
+		arm_d = lerp(arm_d, 0.95, st)
+		elbow = lerp(elbow, 0.45, st)
+		lean = lerp(lean, 0.25, st)
+		bob = lerp(bob, 0.0, st)
 
 	_p["piv_hanche_G"].rotation.x = hip_g
 	_p["piv_hanche_D"].rotation.x = hip_d

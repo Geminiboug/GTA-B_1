@@ -1,7 +1,7 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
 Derniere mise a jour : 14/10/2026
-Phase en cours : Phase 3 (joueur a pied)
+Phase en cours : Phase 3 (animations a finaliser) et Phase 4 (zem)
 
 ---
 
@@ -70,11 +70,11 @@ Materiel :
 - [ ] Jalon : balade fluide dans tout le quartier (a valider par Olympe)
 
 ### Phase 4 : Le zem (premier vehicule)
-- [ ] Modele de moto-taxi (cadre, jaune/vert selon reference locale)
-- [ ] Controleur (acceleration, freinage, virages, inclinaison)
-- [ ] Monter / descendre, camera vehicule
-- [ ] Sons moteur et klaxon
-- [ ] Jalon : conduire un zem de l aeroport a la plage
+- [x] Modele de moto-taxi (blender/tools/build_zem.py, 125 cc generique)
+- [x] Controleur (acceleration, freinage, virages, inclinaison) : godot/scripts/zem.gd
+- [x] Monter / descendre (E), camera vehicule (zem_camera.gd)
+- [x] Sons moteur et klaxon (synthese temps reel, zem_audio.gd)
+- [ ] Jalon : conduire un zem de l aeroport a la plage (a valider par Olympe)
 
 ### Phase 5 : Ville vivante
 - [ ] PNJ pietons (marche sur trottoirs, vendeurs, groupes)
@@ -136,6 +136,8 @@ Option plus tard : multijoueur.
 - 14/10/2026 : Godot 4.7.2 trouve (Telechargements). Test auto du joueur OK : marche 4 m/s, course 8,5 m/s, saut, aucun blocage depuis la plage. Apparition deplacee sur la plage.
 - 14/10/2026 : personnage humanoide low poly (blender/tools/build_character.py) + animation procedurale (character_anim.gd), verifies par captures et test auto. Bug corrige : un objet nomme *_col cree une collision cachee dans Godot.
 - 14/10/2026 : retour Olympe (saccades, course pas credible, gigote en l air). Interpolation physique, camera lissee, vitesses reelles (marche 1,6 / trot 4,2 / sprint 7 m/s, Ctrl pour marcher), 3 allures avec phase de vol, saut fige, reception amortie, inertie et inclinaison en virage.
+- 14/10/2026 : animations encore jugees pas assez realistes par Olympe -> passage prevu a la Universal Animation Library de Quaternius (CC0, motion capture), Olympe telecharge le pack.
+- 14/10/2026 : Phase 4 zem : modele, conduite (bicyclette, adherence, inclinaison), monter/descendre, camera, son synthetise. Tests auto OK (0-65 km/h en 6 s, virage 32 deg, freinage).
 
 ---
 
@@ -158,9 +160,9 @@ CONVENTIONS
 - Nom : GTB (Gbê Town Bénin), jamais GTA ni "Grand Theft"
 
 ETAT ACTUEL
-- Phase en cours : Phase 3 (joueur a pied)
+- Phase en cours : Phase 3 (animations a finaliser) et Phase 4 (zem)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Olympe valide la balade (jalon Phase 3). Puis Phase 4 : le zem (modele moto-taxi, controleur, monter/descendre, sons)
+- Prochaine tache : integrer les animations Quaternius UAL (CC0) des qu Olympe les a telechargees (refs/quaternius/). Olympe teste le zem (jalon Phase 4). Ensuite Phase 5 : ville vivante
 - Bloquants : aucun
 
 ROADMAP
