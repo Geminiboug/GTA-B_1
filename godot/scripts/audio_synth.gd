@@ -154,5 +154,29 @@ static func grillons_loop() -> AudioStreamWAV:
 	return _wav(out, true)
 
 
+static func jet_loop() -> AudioStreamWAV:
+	## Reacteur d'avion de ligne : souffle large bande grave + sifflement de turbine, boucle de 4 s.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 13
+	var n := RATE * 4
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var b := 0.0
+	var lp := 0.0
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		b = b * 0.97 + rng.randf_range(-1.0, 1.0) * 0.3            # grondement
+		lp += (rng.randf_range(-1.0, 1.0) - lp) * 0.45              # souffle
+		ph += (2600.0 + 40.0 * sin(TAU * 0.5 * t)) / RATE
+		var whine := sin(TAU * ph) * 0.08 + sin(TAU * ph * 1.5) * 0.04
+		out[i] = b * 0.55 + lp * 0.3 + whine
+	for i in 3000:
+		var k := float(i) / 3000.0
+		out[i] *= k
+		out[n - 1 - i] *= k
+	return _wav(out, true)
+
+
 static func step_f(x: float, edge: float) -> float:
 	return 1.0 if x < edge else 0.0

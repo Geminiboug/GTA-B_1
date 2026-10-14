@@ -186,3 +186,11 @@ etait ouvert pendant une modification de project.godot, il faut le fermer et rou
 - godot/scripts/ambience.gd (noeud "Ambiance") : ressac le long du trait de cote reel, rumeur, oiseaux le jour, grillons la nuit.
 Tests : tests/test_circulation.gd (46/46 vehicules roulent, ~27 km/h, arret + klaxon devant le joueur),
 tests/perf_frames.gd (cout CPU : ~9 ms de physique par image avec tout actif). Captures : tests/capture_vie.gd.
+
+## Trafic aerien (passe 8) et performances
+- godot/scripts/air_traffic.gd (noeud "TraficAerien") : decollages / atterrissages sur l'axe de piste OSM, toutes les 2 a 5 min
+  (premier apres 25 s). Decollage : 2,8 m/s2, rotation a ~270 km/h, montee ~10 degres. Atterrissage : approche a 3 degres
+  depuis 7 km, freinage apres le toucher. Son de reacteur synthetise (AudioSynth.jet_loop), feu anticollision la nuit.
+  Test : tests/test_avion.gd
+- Mesure reelle : tests/perf_fps.gd (fenetre 1600x900, synchro coupee) sur RTX 2050 : 120 a 135 images/s selon la vue
+  (750 a 1300 objets dessines, 0,8 a 1,5 M de primitives).
