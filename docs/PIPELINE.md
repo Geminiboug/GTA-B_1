@@ -128,3 +128,12 @@ godot/scripts/realism.gd (noeud "Realisme" de la scene) applique au lancement, d
 - mer : remplacee par une surface subdivisee + godot/shaders/mer.gdshader (houle, ecume du rivage, reflets)
 Eclairage : soleil 1,6, ambiance ciel reduite, SSAO + SSIL, leger glow. Apercus : docs/images/realisme_*.png
 Zem : collision abaissee au niveau des roues (il ne s'enfoncait plus de 15 cm).
+
+## Realisme : vegetation (passe 2)
+Modeles : blender/tools/build_vegetation.py -> blender/veg/vegetation.blend + godot/assets/models/vegetation.glb
+(veg_cocotier : tronc courbe annele + palmes + noix ; veg_arbre : neem / manguier ; veg_buisson).
+Repartition : godot/scripts/vegetation.gd (noeud "Vegetation"), deterministe (seed) :
+- cocotiers en ligne cote mer de la promenade, penches vers la mer ;
+- arbres, buissons, quelques cocotiers dans les espaces libres a terre (grille 9 m + hasard).
+Jamais sur batiment / mur (requete physique), ni sur route, piste, tarmac, plage, piscine (surfaces temporaires sur la couche 10).
+Rendu MultiMesh + collisions cylindriques sur les troncs. Resultat actuel : 258 cocotiers, 531 arbres, 557 buissons.
