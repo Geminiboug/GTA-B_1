@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/free_camera.gd" id="1_cam"]
+[ext_resource type="PackedScene" path="res://assets/models/prop_cube_test.glb" id="2_cube"]
 
 [sub_resource type="BoxShape3D" id="1_ground_shape"]
 size = Vector3(100, 1, 100)
@@ -42,6 +43,8 @@ shape = SubResource("1_ground_shape")
 [node name="Mesh" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("2_ground_mesh")
 surface_material_override/0 = SubResource("3_sand")
+
+[node name="prop_cube_test" parent="." instance=ExtResource("2_cube")]
 
 [node name="TestBall" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, 0)

@@ -125,6 +125,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : ajout de docs/LEGAL.md (regles legales, noms fictifs) et docs/CREDITS.md (OSM ODbL).
 - 14/10/2026 : noms fictifs des lieux de la zone definis dans docs/LEGAL.md.
 - 14/10/2026 : projet Godot cree (godot/, scene test_pipeline avec sol, boule physique et camera libre), script d export Blender, docs/PIPELINE.md.
+- 14/10/2026 : Blender 5.2 (Microsoft Store) trouve. Cube de test genere et exporte en headless (blender/test/prop_cube_test.blend, godot/assets/models/prop_cube_test.glb), ajoute a test_pipeline.tscn. Godot introuvable sur le PC.
 
 ---
 
@@ -134,7 +135,7 @@ Option plus tard : multijoueur.
 Tu reprends un projet en cours : GTB (Gbê Town Bénin), un jeu open world 3D type GTA ancre dans le Benin, developpe par Olympe (Lib), etudiant Tek3 a Epitech Benin, qui vit a Cotonou (quartier Zogbo).
 
 STACK
-- Modelisation : Blender 4.x, export glTF 2.0 (.glb)
+- Modelisation : Blender 5.2 (Microsoft Store), export glTF 2.0 (.glb)
 - Moteur : Godot 4.x
 - Echelle : 1 unite = 1 metre
 - Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage. Bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), OSM dans refs/osm/zone-aeroport.osm
@@ -149,7 +150,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 1 (pipeline assets)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Olympe fait le test du cube (docs/PIPELINE.md), puis bibliotheque de materiaux de base, puis import OSM dans Blender
+- Prochaine tache : installer ou localiser Godot 4, ouvrir godot/project.godot, F5 sur test_pipeline (la boule doit rester sur le cube), puis materiaux de base et import OSM dans Blender
 - Bloquants : aucun
 
 ROADMAP
