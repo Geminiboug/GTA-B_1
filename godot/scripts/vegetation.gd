@@ -16,7 +16,7 @@ extends Node3D
 @export var seed_value := 2026
 
 const ROAD_LAYER := 1 << 9   # couche 10 : surfaces "a eviter", jamais vues par le joueur ni les vehicules
-const AVOID := ["route_", "zone_parking", "aeroport_", "promenade", "piste_cyclable", "plage", "zone_plage", "zone_piscine", "zone_eau"]
+const AVOID := ["route_", "accotement", "zone_parking", "aeroport_", "promenade", "piste_cyclable", "plage", "zone_plage", "zone_piscine", "zone_eau", "abri_toit"]
 
 var _rng := RandomNumberGenerator.new()
 var _meshes := {}

@@ -94,3 +94,14 @@ handbrake={
 [physics]
 
 common/physics_interpolation=true
+
+[shader_globals]
+
+gtb_night={
+"type": "float",
+"value": 0.0
+}
+gtb_power={
+"type": "float",
+"value": 1.0
+}

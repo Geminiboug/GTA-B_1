@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "mat_peinture_jaune"
+albedo_color = Color(0.92, 0.72, 0.12, 1.0)
+roughness = 0.7

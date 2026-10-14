@@ -38,27 +38,46 @@ func _ground(mode: int) -> ShaderMaterial:
 	return _ground_mats[mode]
 
 
+var _facade_cache := {}
+
+
+func _orig_color(mi: MeshInstance3D, fallback: Color) -> Color:
+	var orig := mi.get_active_material(0)
+	return (orig as BaseMaterial3D).albedo_color if orig is BaseMaterial3D else fallback
+
+
+func _facade(color: Color, plain: bool, roof: int) -> ShaderMaterial:
+	var key := "%s|%s|%d" % [color.to_html(), plain, roof]
+	if not _facade_cache.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = FACADE
+		m.set_shader_parameter("wall_color", color)
+		m.set_shader_parameter("plain_wall", plain)
+		m.set_shader_parameter("roof_force", roof)
+		_facade_cache[key] = m
+	return _facade_cache[key]
+
+
 func _apply(mi: MeshInstance3D) -> void:
 	var n := String(mi.name).to_lower()
 	var mat: Material = null
 	if n.begins_with("bld_"):
-		var orig := mi.get_active_material(0)
-		var m := ShaderMaterial.new()
-		m.shader = FACADE
-		if orig is BaseMaterial3D:
-			m.set_shader_parameter("wall_color", (orig as BaseMaterial3D).albedo_color)
-		mat = m
-	elif n.begins_with("mur_"):
-		# murs d'enceinte : enduit ciment sans fenetres, salis en bas
-		var w := ShaderMaterial.new()
-		w.shader = FACADE
-		w.set_shader_parameter("plain_wall", true)
-		w.set_shader_parameter("wall_color", Color(0.74, 0.7, 0.64))
-		mat = w
+		mat = _facade(_orig_color(mi, Color(0.85, 0.82, 0.76)), false, 0)
+	elif n.begins_with("pignon_"):
+		mat = _facade(_orig_color(mi, Color(0.85, 0.82, 0.76)), true, 0)
+	elif n.begins_with("mur_") or n.begins_with("parapet") or n.begins_with("poteau_attente"):
+		# murs d'enceinte, parapets, poteaux : enduit ou parpaings, sans fenetres
+		mat = _facade(Color(0.74, 0.7, 0.64), true, 0)
+	elif n.begins_with("toit_tole") or n.begins_with("abri_toit"):
+		mat = _facade(Color(0.5, 0.48, 0.46), true, 1)
 	elif n.begins_with("sol_terre"):
 		mat = _ground(0)
 	elif n.begins_with("zone_plage") or n.begins_with("plage") or n.begins_with("fond_marin"):
 		mat = _ground(1)
+	elif n.begins_with("route_") and n.ends_with("_paves"):
+		mat = _ground(4)
+	elif (n.begins_with("route_") and n.ends_with("_terre")) or n.begins_with("accotement"):
+		mat = _ground(5)
 	elif n.begins_with("route_") or n.begins_with("zone_parking") or n in ["aeroport_runway", "aeroport_taxiway", "aeroport_stopway"]:
 		mat = _ground(2)
 	elif n.begins_with("aeroport_tarmac") or n.begins_with("promenade"):

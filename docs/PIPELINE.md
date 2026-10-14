@@ -137,3 +137,15 @@ Repartition : godot/scripts/vegetation.gd (noeud "Vegetation"), deterministe (se
 - arbres, buissons, quelques cocotiers dans les espaces libres a terre (grille 9 m + hasard).
 Jamais sur batiment / mur (requete physique), ni sur route, piste, tarmac, plage, piscine (surfaces temporaires sur la couche 10).
 Rendu MultiMesh + collisions cylindriques sur les troncs. Resultat actuel : 258 cocotiers, 531 arbres, 557 buissons.
+
+## Realisme : batiments et routes (passe 3)
+osm_import.py (7e argument : godot/assets/data/zone_aeroport.json, donnees pour Godot : routes, batiments, cote, parkings avions) :
+- Hauteurs Cotonou : 50 % plain-pied, 35 % R+1, 15 % R+2.
+- Toits a 2 pans en tole (rectangle d'aire minimale, debord 45 cm, pignons) pour ~70 % du plain-pied rectangulaire ;
+  toits plats : parapet 0,9 m, fers en attente sur poteaux entames (40 %), citerne noire sur pieds (50 %),
+  climatiseurs en facade (R+1 et plus). Abris (amenity=shelter) : toit tole ouvert sur poteaux.
+- Routes : revetement (tag OSM sinon : axes bitumes, quartiers paves / sable / bitume), bas-cotes sableux,
+  marquage (axe en tirets, rives), piste d'aviation (axe, bords, seuils), axe jaune des taxiways.
+Shaders : facade = parpaings bruts (1 batiment sur 5), persiennes peintes, portes peintes, boutiques, portails
+dans les murs d'enceinte, fenetres allumees la nuit (globals gtb_night / gtb_power). sol = modes 4 paves autobloquants,
+5 piste en sable. Couleurs des shaders ecrites en sRGB et converties en lineaire (correction d'un rendu delave).

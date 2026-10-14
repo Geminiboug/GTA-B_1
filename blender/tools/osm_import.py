@@ -17,7 +17,16 @@ from mathutils.geometry import tessellate_polygon
 args = sys.argv[sys.argv.index("--") + 1:]
 OSM, MATLIB, OUT_BLEND, OUT_GLB = args[:4]
 OVERTURE = args[4] if len(args) > 4 and args[4] != "-" else None  # optionnel : batiments Overture (GeoJSON)
-LITTORAL = args[5] if len(args) > 5 else None  # optionnel : trait de cote + limite de plage mesures (GeoJSON Sentinel-2)
+LITTORAL = args[5] if len(args) > 5 and args[5] != "-" else None  # optionnel : trait de cote + limite de plage (GeoJSON Sentinel-2)
+OUT_JSON = args[6] if len(args) > 6 else None  # optionnel : donnees de la zone pour Godot (routes, batiments, ...)
+
+import json
+import zlib
+
+
+def stable_hash(s, mod=100):
+    """Hasard stable d'un import a l'autre (meme id -> meme resultat)."""
+    return zlib.crc32(str(s).encode()) % mod
 
 # ---------- Reglages ----------
 ROAD_WIDTH = {
@@ -454,24 +463,132 @@ def tag_width(t, default):
         return default
 
 
+def road_surface(hw, t, wid):
+    """Revetement : tag OSM si present, sinon repartition realiste pour Cotonou
+    (grands axes bitumes, rues de quartier souvent pavees ou en sable)."""
+    s = t.get("surface", "")
+    if s == "asphalt":
+        return "bitume"
+    if s in ("paving_stones", "sett", "concrete", "concrete:plates", "unhewn_cobblestone"):
+        return "paves"
+    if s in ("sand", "unpaved", "dirt", "ground", "earth", "compacted", "gravel", "fine_gravel"):
+        return "terre"
+    if hw in ("primary", "secondary", "tertiary", "trunk"):
+        return "bitume"
+    if hw in ("footway", "path", "pedestrian"):
+        return "paves"
+    if hw == "track":
+        return "terre"
+    r = stable_hash("route" + str(wid))
+    if hw in ("residential", "unclassified", "living_street"):
+        return "paves" if r < 45 else ("terre" if r < 75 else "bitume")
+    if hw == "service":
+        return "terre" if r < 55 else ("paves" if r < 80 else "bitume")
+    return "bitume"
+
+
+def dashes(pts, on, off):
+    """Decoupe une polyligne en tirets (on metres traces, off metres vides)."""
+    out, cur, state_on, remain = [], [pts[0]], True, on
+    for a, b in zip(pts, pts[1:]):
+        seg = math.hypot(b[0] - a[0], b[1] - a[1])
+        pos = 0.0
+        while seg - pos > remain:
+            pos += remain
+            p = (a[0] + (b[0] - a[0]) * pos / seg, a[1] + (b[1] - a[1]) * pos / seg)
+            if state_on:
+                cur.append(p)
+                out.append(cur)
+                cur = []
+            else:
+                cur = [p]
+            state_on = not state_on
+            remain = on if state_on else off
+        remain -= seg - pos
+        if state_on:
+            cur.append(b)
+    if state_on and len(cur) > 1:
+        out.append(cur)
+    return out
+
+
+SURFACE_MAT = {"bitume": "mat_bitume", "paves": "mat_paves", "terre": "mat_sable"}
+SURFACE_DZ = {"bitume": 0.0, "paves": -0.01, "terre": -0.04}
 line_batches = {}
-for w in ways.values():
+marking_batches = {}
+road_data = []
+runway_data = []
+
+
+def add_marking(name, mat, z, piece, width):
+    if len(piece) > 1:
+        marking_batches.setdefault((name, mat, z), Batch()).add(*ribbon(piece, width))
+
+
+for wid, w in ways.items():
     t = w["tags"]
     hw, aw = t.get("highway"), t.get("aeroway")
     if hw in ROAD_WIDTH and not (w["closed"] and t.get("area") == "yes"):
         width = tag_width(t, ROAD_WIDTH[hw])
-        key = ("route_" + hw, "mat_paves" if hw in ("footway", "path", "pedestrian") else "mat_bitume", ROAD_Z.get(hw, ROAD_Z_DEFAULT), "Routes")
+        surf = road_surface(hw, t, wid)
+        z = ROAD_Z.get(hw, ROAD_Z_DEFAULT) + SURFACE_DZ[surf]
+        key = (f"route_{hw}_{surf}", SURFACE_MAT[surf], z, "Routes")
+        for piece in clip_line(w["pts"]):
+            piece = clean(piece) if not w["closed"] else piece
+            if len(piece) < 2:
+                continue
+            line_batches.setdefault(key, Batch()).add(*ribbon(piece, width))
+            road_data.append({"kind": hw, "surface": surf, "width": width,
+                              "oneway": t.get("oneway") == "yes", "name": t.get("name", ""),
+                              "pts": [[round(p[0], 2), round(-p[1], 2)] for p in piece]})
+            if surf == "bitume" and hw in ("primary", "secondary", "tertiary"):
+                # bas-cotes sableux ou se garent les zems, plus larges que la chaussee
+                line_batches.setdefault(("accotement", "mat_sable", 0.085, "Routes"), Batch()).add(*ribbon(piece, width + 5.0))
+                # marquage : axe en tirets, lignes de rive continues
+                mz = z + 0.012
+                if not t.get("oneway") == "yes":
+                    for d in dashes(piece, 3.0, 6.0):
+                        add_marking("marquage_route", "mat_marquage_blanc", mz, d, 0.15)
+                for side in (-1, 1):
+                    add_marking("marquage_route", "mat_marquage_blanc", mz, offset_line(piece, side * (width / 2 - 0.35)), 0.12)
     elif aw in AEROWAY_WIDTH:
         width = tag_width(t, AEROWAY_WIDTH[aw])
-        key = ("aeroport_" + aw, "mat_bitume", 0.12 if aw != "taxiway" else 0.11, "Aeroport")
+        z = 0.12 if aw != "taxiway" else 0.11
+        key = ("aeroport_" + aw, "mat_bitume", z, "Aeroport")
+        for piece in clip_line(w["pts"]):
+            piece = clean(piece)
+            if len(piece) < 2:
+                continue
+            line_batches.setdefault(key, Batch()).add(*ribbon(piece, width))
+            mz = z + 0.012
+            if aw == "taxiway":
+                add_marking("marquage_taxiway", "mat_marquage_jaune", mz, piece, 0.3)
+                continue
+            runway_data.append([[round(p[0], 2), round(-p[1], 2)] for p in piece])
+            # piste : axe en tirets de 30 m, bords continus, seuil (bandes) aux extremites dans la zone
+            for d in dashes(piece, 30.0, 20.0):
+                add_marking("marquage_piste", "mat_marquage_blanc", mz, d, 0.9)
+            for side in (-1, 1):
+                add_marking("marquage_piste", "mat_marquage_blanc", mz, offset_line(piece, side * (width / 2 - 1.0)), 0.9)
+            for end, nxt in ((piece[0], piece[1]), (piece[-1], piece[-2])):
+                if not (XMIN + 1 < end[0] < XMAX - 1 and YMIN + 1 < end[1] < YMAX - 1):
+                    continue
+                dx, dy = nxt[0] - end[0], nxt[1] - end[1]
+                l = math.hypot(dx, dy) or 1
+                ux, uy = dx / l, dy / l
+                for k in range(-5, 6):
+                    if k == 0:
+                        continue
+                    off = k * 3.6 + (0.9 if k > 0 else -0.9)
+                    a = (end[0] + ux * 6 - uy * off, end[1] + uy * 6 + ux * off)
+                    b = (a[0] + ux * 30, a[1] + uy * 30)
+                    add_marking("marquage_piste", "mat_marquage_blanc", mz, [a, b], 1.8)
     else:
         continue
-    for piece in clip_line(w["pts"]):
-        piece = clean(piece) if not w["closed"] else piece
-        if len(piece) > 1:
-            line_batches.setdefault(key, Batch()).add(*ribbon(piece, width))
 for (name, mat, z, collection), bt in line_batches.items():
     batch_obj(name, bt, mat, collection, z)
+for (name, mat, z), bt in marking_batches.items():
+    batch_obj(name, bt, mat, "Marquage", z)
 
 # --- Murs et clotures ---
 wall_batches = {}
@@ -529,6 +646,146 @@ else:
     buildings = [(wid, w["tags"], w["pts"]) for wid, w in ways.items()
                  if "building" in w["tags"] and w["closed"] and len(w["pts"]) > 3]
 
+# ---------- Toits et details de toiture (realisme) ----------
+def convex_hull(pts):
+    pts = sorted(set((round(p[0], 3), round(p[1], 3)) for p in pts))
+    if len(pts) < 3:
+        return pts
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower, upper = [], []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+
+def min_rect(poly):
+    """Rectangle d'aire minimale (centre, axe u, axe v, demi-longueurs) : sert a poser les toits a 2 pans."""
+    hull = convex_hull(poly)
+    best = None
+    for i in range(len(hull)):
+        a, b = hull[i], hull[(i + 1) % len(hull)]
+        ang = math.atan2(b[1] - a[1], b[0] - a[0])
+        c, s = math.cos(ang), math.sin(ang)
+        xs = [p[0] * c + p[1] * s for p in hull]
+        ys = [-p[0] * s + p[1] * c for p in hull]
+        ar = (max(xs) - min(xs)) * (max(ys) - min(ys))
+        if best is None or ar < best[0]:
+            best = (ar, c, s, min(xs), max(xs), min(ys), max(ys))
+    _, c, s, x0, x1, y0, y1 = best
+    cu, cv = (x0 + x1) / 2, (y0 + y1) / 2
+    return (cu * c - cv * s, cu * s + cv * c), (c, s), (-s, c), (x1 - x0) / 2, (y1 - y0) / 2
+
+
+def add_face(bt, pts3, toward):
+    """Ajoute un polygone 3D oriente vers 'toward' (pour que la face soit visible du bon cote)."""
+    a, b, c = Vector(pts3[0]), Vector(pts3[1]), Vector(pts3[2])
+    if (b - a).cross(c - a).dot(Vector(toward)) < 0:
+        pts3 = pts3[::-1]
+    bt.add([tuple(p) for p in pts3], [tuple(range(len(pts3)))])
+
+
+def box_at(bt, cx, cy, sx, sy, z0, z1, ang=0.0):
+    c, s = math.cos(ang), math.sin(ang)
+    corners = [(-sx / 2, -sy / 2), (sx / 2, -sy / 2), (sx / 2, sy / 2), (-sx / 2, sy / 2)]
+    poly = [(cx + x * c - y * s, cy + x * s + y * c) for x, y in corners]
+    bt.add(*prism(poly, z0, z1))
+
+
+def cylinder_at(bt, cx, cy, r, z0, z1, n=12):
+    bt.add(*prism([(cx + r * math.cos(i / n * math.tau), cy + r * math.sin(i / n * math.tau)) for i in range(n)], z0, z1))
+
+
+def gable_roof(roof_bt, gable_bt, poly, h, pitch_deg=18.0, over=0.45):
+    center, u, v, hu, hv = min_rect(poly)
+    if hv > hu:  # faitage dans le sens de la longueur
+        u, v, hu, hv = v, (-u[0], -u[1]), hv, hu
+    rh = hv * math.tan(math.radians(pitch_deg))
+    drop = over * math.tan(math.radians(pitch_deg))
+
+    def P(L, W, z):
+        return (center[0] + u[0] * L + v[0] * W, center[1] + u[1] * L + v[1] * W, z)
+
+    L = hu + over
+    for side in (1, -1):
+        slope = [P(-L, side * (hv + over), h - drop), P(L, side * (hv + over), h - drop), P(L, 0, h + rh), P(-L, 0, h + rh)]
+        up = (v[0] * side * 0.3, v[1] * side * 0.3, 1.0)
+        add_face(roof_bt, slope, up)
+        # dessous de la tole (visible sous le debord)
+        under = [(p[0], p[1], p[2] - 0.05) for p in slope]
+        add_face(roof_bt, under, (-up[0], -up[1], -1.0))
+    for end in (1, -1):
+        tri = [P(end * hu, hv, h), P(end * hu, -hv, h), P(end * hu, 0, h + rh)]
+        add_face(gable_bt, tri, (u[0] * end, u[1] * end, 0.0))
+    return h + rh
+
+
+def roof_details(det, poly, h, wid, kind):
+    """Toit plat : parapet, et selon le batiment fers en attente (etage inacheve), citerne, climatiseurs."""
+    r = stable_hash(wid)
+    n = len(poly)
+    cx = sum(p[0] for p in poly) / n
+    cy = sum(p[1] for p in poly) / n
+    pc = ccw(poly)
+    # parapet de 0,9 m le long de chaque facade
+    for i in range(n):
+        a, b = pc[i], pc[(i + 1) % n]
+        L = math.hypot(b[0] - a[0], b[1] - a[1])
+        if L < 0.3:
+            continue
+        box_at(det["parapet"], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, L + 0.2, 0.2, h, h + 0.9, math.atan2(b[1] - a[1], b[0] - a[0]))
+    if kind in ("hangar",):
+        return
+    # fers en attente : poteaux beton entames + armatures rouillees (tres courant a Cotonou)
+    if r < 40 and abs(area(poly)) > 30:
+        for i in range(n):
+            a = pc[i]
+            k = 0.35 / max(math.hypot(cx - a[0], cy - a[1]), 0.01)
+            px, py = a[0] + (cx - a[0]) * k, a[1] + (cy - a[1]) * k
+            box_at(det["poteau_attente"], px, py, 0.25, 0.25, h, h + 0.6)
+            for ox, oy in ((-0.07, -0.07), (0.07, -0.07), (0.07, 0.07), (-0.07, 0.07)):
+                box_at(det["fers"], px + ox, py + oy, 0.025, 0.025, h + 0.6, h + 1.5 + 0.2 * ((i + r) % 3))
+    # citerne d'eau noire sur pieds
+    if r % 2 == 0 and abs(area(poly)) > 40:
+        a = pc[0]
+        k = 1.6 / max(math.hypot(cx - a[0], cy - a[1]), 0.01)
+        tx, ty = a[0] + (cx - a[0]) * k, a[1] + (cy - a[1]) * k
+        for ox, oy in ((-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5)):
+            box_at(det["fers"], tx + ox, ty + oy, 0.06, 0.06, h, h + 0.6)
+        cylinder_at(det["citerne"], tx, ty, 0.62, h + 0.6, h + 2.0)
+    # climatiseurs sur les facades des immeubles
+    if h >= 5.9:
+        for i in range(n):
+            a, b = pc[i], pc[(i + 1) % n]
+            L = math.hypot(b[0] - a[0], b[1] - a[1])
+            if L < 4.0 or stable_hash(f"{wid}-{i}") > 45:
+                continue
+            ex, ey = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+            nx, ny = ey, -ex  # normale exterieure (polygone dans le sens trigo)
+            t = 0.3 + 0.4 * stable_hash(f"{wid}+{i}") / 100
+            mx, my = a[0] + (b[0] - a[0]) * t + nx * 0.18, a[1] + (b[1] - a[1]) * t + ny * 0.18
+            box_at(det["clim"], mx, my, 0.82, 0.3, 3.15, 3.7, math.atan2(ey, ex))
+
+
+def shelter(det, poly, h):
+    """Abri / preau : toit en tole sur poteaux, ouvert (au lieu d'un bloc plein)."""
+    det["abri_toit"].add(*prism(poly, h - 0.12, h))
+    for p in poly:
+        box_at(det["abri_poteaux"], p[0], p[1], 0.12, 0.12, 0.0, h - 0.12)
+
+
+DETAILS = {k: Batch() for k in ("parapet", "poteau_attente", "fers", "citerne", "clim", "toit_tole", "abri_toit", "abri_poteaux")}
+gable_batches = {}
+building_data = []
+
 bld_batches = {}
 nb_bld = 0
 for wid, t, pts in buildings:
@@ -554,7 +811,8 @@ for wid, t, pts in buildings:
     elif kind == "retail":
         h = 8.0
     else:
-        h = (1 + seed % 3) * LEVEL_H  # 1 a 3 niveaux, varie mais stable d'un import a l'autre
+        lv = stable_hash("niveaux" + str(wid))  # repartition Cotonou : surtout du plain-pied
+        h = (1 if lv < 50 else 2 if lv < 85 else 3) * LEVEL_H
     if kind == "hangar":
         mat = "mat_tole"
     elif kind == "roof" or t.get("amenity") == "shelter":
@@ -563,11 +821,62 @@ for wid, t, pts in buildings:
         mat = "mat_peinture_blanc"
     else:
         mat = PAINTS[seed % len(PAINTS)]
+    # --- type de toit ---
+    r = stable_hash("toit" + str(wid))
+    roof = "plat"
+    top = h
+    if kind == "roof" or t.get("amenity") == "shelter":
+        shelter(DETAILS, ccw(poly), h)
+        building_data.append({"id": str(wid), "h": h, "roof": "abri", "pts": [[round(p[0], 2), round(-p[1], 2)] for p in poly]})
+        nb_bld += 1
+        continue
+    _, _, _, hu, hv = min_rect(poly)
+    rect_fill = abs(area(poly)) / max(4 * hu * hv, 0.01)
+    if kind == "hangar" and rect_fill > 0.7:
+        roof = "tole"
+        top = gable_roof(DETAILS["toit_tole"], gable_batches.setdefault(mat, Batch()), poly, h, pitch_deg=10.0, over=0.3)
+    elif h <= 3.5 and r < 70 and rect_fill > 0.75 and min(hu, hv) < 8.0:
+        roof = "tole"
+        top = gable_roof(DETAILS["toit_tole"], gable_batches.setdefault(mat, Batch()), poly, h)
+    else:
+        roof_details(DETAILS, poly, h, wid, kind)
     # Regroupes par materiau : quelques objets au lieu de milliers (bien plus leger pour Godot)
     bld_batches.setdefault(mat, Batch()).add(*prism(poly, 0.0, h))
+    building_data.append({"id": str(wid), "h": h, "roof": roof, "top": round(top, 2),
+                          "pts": [[round(p[0], 2), round(-p[1], 2)] for p in ccw(poly)]})
     nb_bld += 1
 for mat, bt in bld_batches.items():
     batch_obj("bld_" + mat[4:] + "-col", bt, mat, "Batiments", 0)
+for mat, bt in gable_batches.items():
+    batch_obj("pignon_" + mat[4:], bt, mat, "Toits", 0)
+DETAIL_MATS = {"parapet": "mat_beton", "poteau_attente": "mat_beton_brut", "fers": "mat_rouille", "citerne": "mat_citerne",
+               "clim": "mat_blanc_plastique", "toit_tole": "mat_tole_rouillee", "abri_toit": "mat_tole_rouillee",
+               "abri_poteaux": "mat_metal_peint"}
+for k, bt in DETAILS.items():
+    batch_obj(k + ("-col" if k == "abri_poteaux" else ""), bt, DETAIL_MATS[k], "Toits", 0)
+
+# ---------- Donnees pour Godot (coordonnees Godot : x = est, z = sud) ----------
+if OUT_JSON:
+    def gz(line):
+        return [[round(p[0], 2), round(-p[1], 2)] for p in line] if line else []
+
+    parking = []
+    for n in root.iter("node"):
+        tg = tags_of(n)
+        if tg.get("aeroway") == "parking_position":
+            x, y = proj(float(n.get("lat")), float(n.get("lon")))
+            if inside_box((x, y)):
+                parking.append([round(x, 2), round(-y, 2), tg.get("ref", "")])
+    data = {
+        "bounds": [round(XMIN, 2), round(-YMAX, 2), round(XMAX, 2), round(-YMIN, 2)],
+        "roads": road_data, "runways": runway_data, "buildings": building_data,
+        "walls": [gz(w["pts"]) for w in ways.values() if w["tags"].get("barrier") in WALL],
+        "coast": gz(coast), "beach_inner": gz(beach_inner),
+        "promenade": gz(offset_line(beach_inner, PROMENADE_W / 2)) if beach_inner else [],
+        "parking_positions": parking,
+    }
+    json.dump(data, open(OUT_JSON, "w", encoding="utf-8"))
+    print("Donnees Godot :", OUT_JSON, len(road_data), "routes,", len(building_data), "batiments")
 
 # ---------- Sauvegarde et export ----------
 for m in MAT.values():
