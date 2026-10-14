@@ -12,7 +12,7 @@ Un jeu open world 3D type GTA, ancre dans le Benin. On commence par UNE zone (ae
 ## 2. Decisions actees
 
 - Cible : PC d'abord, export web possible plus tard (hypothese par defaut, a confirmer)
-- Moteur : Godot 4.x
+- Moteur : Godot 4.7
 - Modelisation : Blender, export glTF 2.0 (.glb)
 - Echelle : 1 unite = 1 metre, axe Z vers le haut dans Blender, export en Y up
 - Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage (remplace Zogbo, decision du 14/10/2026)
@@ -51,7 +51,7 @@ Materiel :
 
 ### Phase 1 : Pipeline assets
 - [x] Conventions : echelle, nommage (prefixes bld_, prop_, veh_, chr_), origines des objets (docs/PIPELINE.md)
-- [ ] Test complet : un cube modelise sous Blender, exporte en .glb, importe dans Godot avec collision
+- [x] Test complet : un cube modelise sous Blender, exporte en .glb, importe dans Godot avec collision
 - [x] Script ou procedure d export en un clic (blender/tools/export_glb.py)
 - [ ] Bibliotheque de materiaux de base (beton, tole, terre rouge, bitume, peinture ecaillee)
 
@@ -126,6 +126,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : noms fictifs des lieux de la zone definis dans docs/LEGAL.md.
 - 14/10/2026 : projet Godot cree (godot/, scene test_pipeline avec sol, boule physique et camera libre), script d export Blender, docs/PIPELINE.md.
 - 14/10/2026 : Blender 5.2 (Microsoft Store) trouve. Cube de test genere et exporte en headless (blender/test/prop_cube_test.blend, godot/assets/models/prop_cube_test.glb), ajoute a test_pipeline.tscn. Godot introuvable sur le PC.
+- 14/10/2026 : test du cube valide dans Godot 4.7 (collision OK). Pipeline Blender vers Godot fonctionnel.
 
 ---
 
@@ -136,7 +137,7 @@ Tu reprends un projet en cours : GTB (Gbê Town Bénin), un jeu open world 3D ty
 
 STACK
 - Modelisation : Blender 5.2 (Microsoft Store), export glTF 2.0 (.glb)
-- Moteur : Godot 4.x
+- Moteur : Godot 4.7
 - Echelle : 1 unite = 1 metre
 - Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage. Bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), OSM dans refs/osm/zone-aeroport.osm
 - Cible : PC d'abord, web ensuite
@@ -150,7 +151,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 1 (pipeline assets)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : installer ou localiser Godot 4, ouvrir godot/project.godot, F5 sur test_pipeline (la boule doit rester sur le cube), puis materiaux de base et import OSM dans Blender
+- Prochaine tache : bibliotheque de materiaux de base (couleurs unies), puis import OSM de la zone dans Blender (Phase 2)
 - Bloquants : aucun
 
 ROADMAP
