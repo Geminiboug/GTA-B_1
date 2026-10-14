@@ -39,8 +39,10 @@ Si la boule traverse le cube : le suffixe -col manque ou est mal tape.
 ## Import OpenStreetMap (blockout de zone)
 Importeur maison (pas de plugin) : blender/tools/osm_import.py
   blender -b --python blender/tools/osm_import.py -- refs/osm/zone-aeroport.osm blender/materials/lib_materiaux.blend blender/zone/zone_aeroport_blockout.blend godot/assets/models/zone_aeroport.glb
-Genere : sol (sol_terre-col), mer (prolongee de 400 m au sud), plage, zones, routes en rubans, piste et taxiways,
-batiments extrudes (bld_osm_<id>-col), murs d'enceinte (mur_wall-col).
+Option : 5e argument = refs/overture/building.geojson (batiments Overture, plus recents qu OSM).
+Telechargement : overturemaps download --bbox=2.370,6.343,2.392,6.356 -f geojson --type=building -o refs/overture/building.geojson
+Genere : sol (sol_terre-col), mer (prolongee de 400 m au sud), plage continue + promenade-col + piste cyclable (front de mer apres travaux de la Route des Peches, largeurs estimees), zones, routes, piste et taxiways,
+batiments extrudes regroupes par materiau (bld_<materiau>-col), murs d enceinte (mur_wall-col).
 - Hauteur des batiments : tag height, sinon building:levels x 3 m, sinon 3 a 9 m (stable d'un import a l'autre).
 - Repere : origine au centre de la zone, X = est, Y = nord (Blender).
 - Le .blend genere est ecrase a chaque import : les retouches manuelles se font dans un autre fichier.

@@ -19,6 +19,8 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 ## 3. Donnees OpenStreetMap
 - Licence ODbL. Utilisation autorisee.
 - Credits obligatoires dans le jeu : "© les contributeurs d'OpenStreetMap, licence ODbL".
+- Batiments Overture Maps (ODbL, avec Google Open Buildings et Microsoft) : credits obligatoires, voir docs/CREDITS.md.
+- Interdit : decalquer des images satellite (Google, Bing, Esri) pour le jeu.
 
 ## 4. Marques et lieux reels
 - Aucune marque reelle (nom, logo, enseigne) sans autorisation ecrite.

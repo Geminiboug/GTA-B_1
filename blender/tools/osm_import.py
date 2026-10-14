@@ -16,6 +16,7 @@ from mathutils.geometry import tessellate_polygon
 
 args = sys.argv[sys.argv.index("--") + 1:]
 OSM, MATLIB, OUT_BLEND, OUT_GLB = args[:4]
+OVERTURE = args[4] if len(args) > 4 else None  # optionnel : batiments Overture (GeoJSON)
 
 # ---------- Reglages ----------
 ROAD_WIDTH = {
@@ -30,6 +31,12 @@ AEROWAY_WIDTH = {"runway": 45.0, "stopway": 45.0, "taxiway": 23.0}
 WALL = {"wall": (0.2, 2.2), "fence": (0.1, 1.8)}
 LEVEL_H = 3.0
 SEA_EXTRA = 400.0
+# Front de mer apres l'amenagement de la Route des Peches (travaux depuis 2023) :
+# plage continue depuis la mer, puis promenade pietonne et piste cyclable.
+# Largeurs estimees d'apres la carte OSM et la description publique du projet, pas un releve exact.
+BEACH_W = 90.0
+PROMENADE_W = 8.0
+BIKE_W = 3.0
 
 # ---------- Lecture OSM ----------
 root = ET.parse(OSM).getroot()
@@ -356,6 +363,47 @@ if sea_poly:
     fv, ff = flat(ccw(sea_poly), -3.0)
     make_obj("fond_marin", fv, ff, "mat_sable", "Sol")
 
+# --- Front de mer : plage continue, promenade, piste cyclable ---
+def offset_line(pts, d):
+    """Decale une polyligne de d metres vers la gauche (cote terre pour un trait de cote OSM)."""
+    out = []
+    for i in range(len(pts)):
+        a, c = pts[max(i - 1, 0)], pts[min(i + 1, len(pts) - 1)]
+        dx, dy = c[0] - a[0], c[1] - a[1]
+        l = math.hypot(dx, dy) or 1
+        out.append((pts[i][0] - dy / l * d, pts[i][1] + dx / l * d))
+    return out
+
+
+def coast_y_at(x):
+    """Ordonnee du trait de cote a l'abscisse x (cote orientee ouest -> est)."""
+    pts = coast if coast[0][0] < coast[-1][0] else coast[::-1]
+    for a, c in zip(pts, pts[1:]):
+        if a[0] <= x <= c[0]:
+            return a[1] + (c[1] - a[1]) * (x - a[0]) / ((c[0] - a[0]) or 1)
+    return pts[0][1] if x < pts[0][0] else pts[-1][1]
+
+
+WATERFRONT = BEACH_W + PROMENADE_W + BIKE_W + 2.0
+
+
+def on_waterfront(x, y):
+    return coast is not None and y < coast_y_at(x) + WATERFRONT
+
+
+if coast:
+    beach_edge = offset_line(coast, BEACH_W)
+    band = clip_poly(clean(coast + beach_edge[::-1]), ymin=YMIN - SEA_EXTRA)
+    if len(band) > 2:
+        make_obj("plage_front_de_mer", *flat(ccw(band), 0.03), "mat_sable", "Zones")
+    for name, d, w, mat, z in (("promenade-col", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.15),
+                               ("piste_cyclable", BEACH_W + PROMENADE_W + BIKE_W / 2, BIKE_W, "mat_peinture_vert", 0.16)):
+        bt = Batch()
+        for piece in clip_line(offset_line(coast, d)):
+            if len(piece) > 1:
+                bt.add(*ribbon(piece, w))
+        batch_obj(name, bt, mat, "Front de mer", z)
+
 # --- Zones au sol ---
 ZONE_RULES = [
     (lambda t: t.get("natural") == "beach" or t.get("surface") == "sand", "mat_sable", 0.03, "zone_plage"),
@@ -415,7 +463,7 @@ for w in ways.values():
     thick, height = WALL[kind]
     for piece in clip_line(w["pts"]):
         piece = clean(piece) if len(piece) > 2 else piece
-        if len(piece) < 2:
+        if len(piece) < 2 or all(on_waterfront(*p) for p in piece):
             continue
         rv, rf = ribbon(piece, thick)
         n = len(piece)
@@ -427,21 +475,53 @@ for kind, bt in wall_batches.items():
     batch_obj("mur_" + kind + "-col", bt, "mat_beton_brut" if kind == "wall" else "mat_metal_peint", "Murs", 0)
 
 # --- Batiments ---
+# Source : Overture Maps si fourni (OSM + emprises Google Open Buildings / Microsoft detectees
+# sur images satellite recentes), sinon OSM seul. Les tags OSM sont repris quand le batiment vient d'OSM.
 PAINTS = ["mat_peinture_blanc", "mat_peinture_ocre", "mat_beton", "mat_peinture_bleu", "mat_peinture_vert", "mat_peinture_ecaillee"]
+
+
+def overture_buildings(path):
+    import json
+    out = []
+    for i, f in enumerate(json.load(open(path, encoding="utf-8"))["features"]):
+        g, p = f["geometry"], f["properties"]
+        rings = [g["coordinates"][0]] if g["type"] == "Polygon" else [c[0] for c in g["coordinates"]] if g["type"] == "MultiPolygon" else []
+        srcs = p.get("sources") or []
+        if isinstance(srcs, str):
+            srcs = json.loads(srcs)
+        osm_id = None
+        for s in srcs:
+            rid = s.get("record_id") or ""
+            if s.get("dataset") == "OpenStreetMap" and rid.startswith("w"):
+                osm_id = rid[1:].split("@")[0]
+        tags = dict(ways[osm_id]["tags"]) if osm_id in ways else {"building": p.get("class") or "yes"}
+        if p.get("height"):
+            tags["height"] = str(p["height"])
+        if p.get("num_floors"):
+            tags["building:levels"] = str(p["num_floors"])
+        for k, ring in enumerate(rings):
+            out.append((osm_id or f"ov{i}_{k}", tags, [proj(lat, lon) for lon, lat in ring]))
+    return out
+
+
+if OVERTURE:
+    buildings = overture_buildings(OVERTURE)
+else:
+    buildings = [(wid, w["tags"], w["pts"]) for wid, w in ways.items()
+                 if "building" in w["tags"] and w["closed"] and len(w["pts"]) > 3]
+
+bld_batches = {}
 nb_bld = 0
-for wid, w in ways.items():
-    t = w["tags"]
-    if "building" not in t or not w["closed"] or len(w["pts"]) < 4:
-        continue
-    poly = clean(w["pts"])
-    if len(poly) < 3:
+for wid, t, pts in buildings:
+    poly = clean(pts)
+    if len(poly) < 3 or abs(area(poly)) < 4.0:
         continue
     cx = sum(p[0] for p in poly) / len(poly)
     cy = sum(p[1] for p in poly) / len(poly)
-    if not inside_box((cx, cy)):
+    if not inside_box((cx, cy)) or on_waterfront(cx, cy):
         continue
-    kind = t["building"]
-    seed = int(wid) % 97
+    kind = t.get("building", "yes")
+    seed = int("".join(ch for ch in str(wid) if ch.isdigit()) or 0) % 97
     if t.get("height", "").replace(".", "").isdigit():
         h = float(t["height"])
     elif t.get("building:levels", "").isdigit():
@@ -464,9 +544,11 @@ for wid, w in ways.items():
         mat = "mat_peinture_blanc"
     else:
         mat = PAINTS[seed % len(PAINTS)]
-    verts, faces = prism(poly, 0.0, h)
-    make_obj(f"bld_osm_{wid}-col", verts, faces, mat, "Batiments")
+    # Regroupes par materiau : quelques objets au lieu de milliers (bien plus leger pour Godot)
+    bld_batches.setdefault(mat, Batch()).add(*prism(poly, 0.0, h))
     nb_bld += 1
+for mat, bt in bld_batches.items():
+    batch_obj("bld_" + mat[4:] + "-col", bt, mat, "Batiments", 0)
 
 # ---------- Sauvegarde et export ----------
 for m in MAT.values():
