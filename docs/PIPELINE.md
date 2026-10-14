@@ -48,3 +48,11 @@ batiments extrudes regroupes par materiau (bld_<materiau>-col), murs d enceinte 
 - Le .blend genere est ecrase a chaque import : les retouches manuelles se font dans un autre fichier.
 - Godot : scenes/zone_aeroport.tscn (scene principale, F5).
 Apercus : docs/images/blockout_zone_aeroport_dessus.png et blockout_zone_aeroport_3d.png
+
+## Littoral mesure par satellite (Sentinel-2, legal)
+1. Chercher une image recente sans nuages (STAC earth-search.aws.element84.com, collection sentinel-2-l2a).
+2. python blender/tools/s2_crop.py <url TCI.tif> refs/sentinel2/s2_<date>.png
+3. python blender/tools/s2_littoral_run.py -> refs/sentinel2/littoral_<date>.geojson (trait de cote + limite de plage)
+4. Import avec 6e argument : ... godot/assets/models/zone_aeroport.glb refs/overture/building.geojson refs/sentinel2/littoral_20260124.geojson
+Resolution 10 m : bon pour cote, plage, grandes zones ; jamais pour le detail des batiments.
+Constat 01/2026 : la cote reelle est ~120 m plus au sud que dans OSM (plage elargie depuis les epis), plage de 150 a 250 m.

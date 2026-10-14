@@ -16,7 +16,8 @@ from mathutils.geometry import tessellate_polygon
 
 args = sys.argv[sys.argv.index("--") + 1:]
 OSM, MATLIB, OUT_BLEND, OUT_GLB = args[:4]
-OVERTURE = args[4] if len(args) > 4 else None  # optionnel : batiments Overture (GeoJSON)
+OVERTURE = args[4] if len(args) > 4 and args[4] != "-" else None  # optionnel : batiments Overture (GeoJSON)
+LITTORAL = args[5] if len(args) > 5 else None  # optionnel : trait de cote + limite de plage mesures (GeoJSON Sentinel-2)
 
 # ---------- Reglages ----------
 ROAD_WIDTH = {
@@ -337,6 +338,17 @@ for w in ways.values():
         if coast is None or len(w["pts"]) > len(coast):
             coast = w["pts"]
 
+# Trait de cote et limite de plage mesures sur image Sentinel-2 (plus recents qu'OSM)
+beach_inner = None
+if LITTORAL:
+    import json
+    for f in json.load(open(LITTORAL, encoding="utf-8"))["features"]:
+        line = [proj(lat, lon) for lon, lat in f["geometry"]["coordinates"]]
+        if f["properties"]["name"] == "trait_de_cote":
+            coast = line
+        elif f["properties"]["name"] == "limite_plage":
+            beach_inner = line
+
 land_poly = [(XMIN, YMIN), (XMAX, YMIN), (XMAX, YMAX), (XMIN, YMAX)]
 sea_poly = None
 if coast:
@@ -375,9 +387,10 @@ def offset_line(pts, d):
     return out
 
 
-def coast_y_at(x):
-    """Ordonnee du trait de cote a l'abscisse x (cote orientee ouest -> est)."""
-    pts = coast if coast[0][0] < coast[-1][0] else coast[::-1]
+def coast_y_at(x, line=None):
+    """Ordonnee d'une ligne orientee ouest -> est (par defaut le trait de cote) a l'abscisse x."""
+    line = line or coast
+    pts = line if line[0][0] < line[-1][0] else line[::-1]
     for a, c in zip(pts, pts[1:]):
         if a[0] <= x <= c[0]:
             return a[1] + (c[1] - a[1]) * (x - a[0]) / ((c[0] - a[0]) or 1)
@@ -388,18 +401,24 @@ WATERFRONT = BEACH_W + PROMENADE_W + BIKE_W + 2.0
 
 
 def on_waterfront(x, y):
-    return coast is not None and y < coast_y_at(x) + WATERFRONT
+    if coast is None:
+        return False
+    if beach_inner:
+        return y < coast_y_at(x, beach_inner) + PROMENADE_W + BIKE_W + 2.0
+    return y < coast_y_at(x) + WATERFRONT
 
 
 if coast:
-    beach_edge = offset_line(coast, BEACH_W)
+    # limite de plage mesuree si disponible, sinon largeur estimee
+    beach_edge = beach_inner or offset_line(coast, BEACH_W)
     band = clip_poly(clean(coast + beach_edge[::-1]), ymin=YMIN - SEA_EXTRA)
     if len(band) > 2:
         make_obj("plage_front_de_mer", *flat(ccw(band), 0.03), "mat_sable", "Zones")
     for name, d, w, mat, z in (("promenade-col", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.15),
                                ("piste_cyclable", BEACH_W + PROMENADE_W + BIKE_W / 2, BIKE_W, "mat_peinture_vert", 0.16)):
         bt = Batch()
-        for piece in clip_line(offset_line(coast, d)):
+        base, dd = (beach_inner, d - BEACH_W) if beach_inner else (coast, d)
+        for piece in clip_line(offset_line(base, dd)):
             if len(piece) > 1:
                 bt.add(*ribbon(piece, w))
         batch_obj(name, bt, mat, "Front de mer", z)
