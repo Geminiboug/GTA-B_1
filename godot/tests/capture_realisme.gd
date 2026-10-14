@@ -7,6 +7,10 @@ var player: CharacterBody3D
 var out_dir := "user://"
 # [nom, position du joueur, rotation de la camera (x, y), zoom]
 var shots := [
+	["route_peches", Vector3(43.7, 1, 10.2), Vector2(-0.1, 1.45), 5.0],
+	["axe_principal", Vector3(528, 1, -301), Vector2(-0.1, 2.2), 6.0],
+	["tarmac", Vector3(215, 1, -340), Vector2(-0.12, -0.62), 9.0],
+	["terminal", Vector3(330, 1, -300), Vector2(-0.1, 0.4), 7.0],
 	["rue", Vector3(420, 1, -20), Vector2(-0.12, 0.6), 6.0],
 	["maisons", Vector3(300, 1, 120), Vector2(-0.25, 2.4), 9.0],
 	["plage_mer", Vector3(0, 1, 330), Vector2(-0.15, PI), 6.0],

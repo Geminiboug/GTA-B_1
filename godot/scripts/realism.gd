@@ -1,12 +1,15 @@
 extends Node3D
 ## Applique les materiaux realistes (shaders proceduraux) a la carte importee, d'apres le nom des objets.
 ## Garde le pipeline OSM intact : on peut reimporter la zone, les materiaux seront reappliques au lancement.
-## - bld_*                         -> facade.gdshader (fenetres, portes, toits), couleur d'origine conservee
-## - sol_terre                     -> terre rouge (sol.gdshader mode 0)
+## - bld_*                         -> facade.gdshader (habitat), bld_terminal (mur-rideau), bld_hangar (bardage)
+## - pignon_*, mur_*, parapet...   -> facade.gdshader sans ouvertures ; toit_tole / abri_toit -> tole
+## - sol_terre                     -> laterite (sol.gdshader mode 0)
 ## - zone_plage, plage_*, fond_*   -> sable (mode 1)
-## - route_*, aeroport_runway...   -> bitume (mode 2)
-## - aeroport_tarmac, promenade    -> beton / paves (mode 3)
+## - route_*_bitume, piste...      -> bitume (mode 2) ; route_*_paves (4) ; route_*_terre, accotement (5)
+## - aeroport_tarmac (6), promenade (3)
 ## - mer                           -> remplacee par une surface subdivisee avec mer.gdshader (vagues)
+## Cree aussi les "surfaces a eviter" (couche 10, invisibles pour le joueur) utilisees par la vegetation et
+## le mobilier pour ne rien poser sur les routes, la piste, le tarmac, les piscines...
 
 @export var zone_path: NodePath = ^"../zone_aeroport"
 @export var sea_rect := Rect2(-720, 300, 1440, 520)   # x, z, largeur, profondeur (Godot)
@@ -15,8 +18,12 @@ extends Node3D
 const FACADE := preload("res://shaders/facade.gdshader")
 const SOL := preload("res://shaders/sol.gdshader")
 const MER := preload("res://shaders/mer.gdshader")
+const AVOID_LAYER := 1 << 9
+const AVOID := ["route_", "accotement", "zone_parking", "aeroport_", "promenade", "piste_cyclable", "plage",
+	"zone_plage", "zone_piscine", "zone_eau", "abri_toit"]
 
 var _ground_mats := {}
+var _facade_cache := {}
 
 
 func _ready() -> void:
@@ -24,9 +31,29 @@ func _ready() -> void:
 	if zone == null:
 		push_warning("realism.gd : zone introuvable (%s)" % zone_path)
 		return
+	var avoid := Node3D.new()
+	avoid.name = "SurfacesEvitement"
+	add_child(avoid)
 	for mi in zone.find_children("*", "MeshInstance3D", true, false):
 		_apply(mi)
+		_add_avoid(mi, avoid)
 	_build_sea()
+
+
+func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:
+	var n := String(mi.name).to_lower()
+	for prefix in AVOID:
+		if n.begins_with(prefix):
+			var body := StaticBody3D.new()
+			body.name = n
+			body.collision_layer = AVOID_LAYER
+			body.collision_mask = 0
+			var cs := CollisionShape3D.new()
+			cs.shape = mi.mesh.create_trimesh_shape()
+			body.add_child(cs)
+			body.transform = mi.global_transform
+			parent.add_child(body)
+			return
 
 
 func _ground(mode: int) -> ShaderMaterial:
@@ -38,22 +65,20 @@ func _ground(mode: int) -> ShaderMaterial:
 	return _ground_mats[mode]
 
 
-var _facade_cache := {}
-
-
 func _orig_color(mi: MeshInstance3D, fallback: Color) -> Color:
 	var orig := mi.get_active_material(0)
 	return (orig as BaseMaterial3D).albedo_color if orig is BaseMaterial3D else fallback
 
 
-func _facade(color: Color, plain: bool, roof: int) -> ShaderMaterial:
-	var key := "%s|%s|%d" % [color.to_html(), plain, roof]
+func _facade(color: Color, plain: bool, roof: int, style := 0) -> ShaderMaterial:
+	var key := "%s|%s|%d|%d" % [color.to_html(), plain, roof, style]
 	if not _facade_cache.has(key):
 		var m := ShaderMaterial.new()
 		m.shader = FACADE
-		m.set_shader_parameter("wall_color", color)
+		m.set_shader_parameter("wall_color", Vector3(color.r, color.g, color.b))
 		m.set_shader_parameter("plain_wall", plain)
 		m.set_shader_parameter("roof_force", roof)
+		m.set_shader_parameter("style", style)
 		_facade_cache[key] = m
 	return _facade_cache[key]
 
@@ -61,7 +86,11 @@ func _facade(color: Color, plain: bool, roof: int) -> ShaderMaterial:
 func _apply(mi: MeshInstance3D) -> void:
 	var n := String(mi.name).to_lower()
 	var mat: Material = null
-	if n.begins_with("bld_"):
+	if n.begins_with("bld_terminal"):
+		mat = _facade(Color(0.85, 0.85, 0.85), false, 2, 1)
+	elif n.begins_with("bld_hangar"):
+		mat = _facade(Color(0.72, 0.74, 0.76), false, 1, 2)
+	elif n.begins_with("bld_"):
 		mat = _facade(_orig_color(mi, Color(0.85, 0.82, 0.76)), false, 0)
 	elif n.begins_with("pignon_"):
 		mat = _facade(_orig_color(mi, Color(0.85, 0.82, 0.76)), true, 0)
@@ -80,7 +109,9 @@ func _apply(mi: MeshInstance3D) -> void:
 		mat = _ground(5)
 	elif n.begins_with("route_") or n.begins_with("zone_parking") or n in ["aeroport_runway", "aeroport_taxiway", "aeroport_stopway"]:
 		mat = _ground(2)
-	elif n.begins_with("aeroport_tarmac") or n.begins_with("promenade"):
+	elif n.begins_with("aeroport_tarmac"):
+		mat = _ground(6)
+	elif n.begins_with("promenade"):
 		mat = _ground(3)
 	elif n == "mer":
 		mi.visible = false

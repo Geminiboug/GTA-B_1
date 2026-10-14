@@ -841,12 +841,13 @@ for wid, t, pts in buildings:
     else:
         roof_details(DETAILS, poly, h, wid, kind)
     # Regroupes par materiau : quelques objets au lieu de milliers (bien plus leger pour Godot)
-    bld_batches.setdefault(mat, Batch()).add(*prism(poly, 0.0, h))
-    building_data.append({"id": str(wid), "h": h, "roof": roof, "top": round(top, 2),
+    style = "terminal" if t.get("aeroway") == "terminal" else ("hangar" if kind == "hangar" else mat[4:])
+    bld_batches.setdefault((style, mat), Batch()).add(*prism(poly, 0.0, h))
+    building_data.append({"id": str(wid), "h": h, "roof": roof, "top": round(top, 2), "style": style,
                           "pts": [[round(p[0], 2), round(-p[1], 2)] for p in ccw(poly)]})
     nb_bld += 1
-for mat, bt in bld_batches.items():
-    batch_obj("bld_" + mat[4:] + "-col", bt, mat, "Batiments", 0)
+for (style, mat), bt in bld_batches.items():
+    batch_obj("bld_" + style + "-col", bt, mat, "Batiments", 0)
 for mat, bt in gable_batches.items():
     batch_obj("pignon_" + mat[4:], bt, mat, "Toits", 0)
 DETAIL_MATS = {"parapet": "mat_beton", "poteau_attente": "mat_beton_brut", "fers": "mat_rouille", "citerne": "mat_citerne",
@@ -867,6 +868,13 @@ if OUT_JSON:
             x, y = proj(float(n.get("lat")), float(n.get("lon")))
             if inside_box((x, y)):
                 parking.append([round(x, 2), round(-y, 2), tg.get("ref", "")])
+    # postes de stationnement avion dessines en ligne de guidage : l'avion s'arrete au bout, nez dans l'axe
+    for w in ways.values():
+        if w["tags"].get("aeroway") == "parking_position" and len(w["pts"]) >= 2:
+            (ax, ay), (bx, by) = w["pts"][-2], w["pts"][-1]
+            if inside_box((bx, by)):
+                l = math.hypot(bx - ax, by - ay) or 1
+                parking.append([round(bx, 2), round(-by, 2), w["tags"].get("ref", ""), round((bx - ax) / l, 3), round(-(by - ay) / l, 3)])
     data = {
         "bounds": [round(XMIN, 2), round(-YMAX, 2), round(XMAX, 2), round(-YMIN, 2)],
         "roads": road_data, "runways": runway_data, "buildings": building_data,

@@ -82,6 +82,16 @@ void fragment() {
 		// poussiere rouge apportee par les roues
 		col = mix(col, vec3(0.6, 0.42, 0.32), smoothstep(0.55, 0.85, fbm(p * 0.05 + 3.0)) * 0.35);
 		rough = 0.8;
+	} else if (mode == 6) {
+		// dalles de beton du tarmac (5 x 5 m) : joints, taches d'huile et de kerosene, traces de pneus
+		vec2 q = p / 5.0;
+		vec2 f = fract(q);
+		float joint = step(f.x, 0.006) + step(f.y, 0.006);
+		col = vec3(0.68, 0.66, 0.62) * (0.9 + 0.12 * hash(floor(q)));
+		col = mix(col, vec3(0.35, 0.34, 0.33), clamp(joint, 0.0, 1.0) * fine);
+		col = mix(col, vec3(0.3, 0.29, 0.28), smoothstep(0.7, 0.85, fbm(p * 0.15)) * 0.6);
+		col = mix(col, col * 0.8, smoothstep(0.5, 0.7, fbm(p * 0.03 + 4.0)) * 0.5);
+		rough = 0.85;
 	} else if (mode == 4) {
 		// paves autobloquants (rues de quartier) : rangees decalees, gris et ocre, sable dans les joints
 		vec2 q = p / vec2(0.22, 0.11);

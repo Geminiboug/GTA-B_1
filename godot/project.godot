@@ -19,6 +19,10 @@ config/description="Gbê Town Bénin"
 run/main_scene="res://scenes/zone_aeroport.tscn"
 config/features=PackedStringArray("4.7")
 
+[autoload]
+
+LampRegistry="*res://scripts/lamp_registry.gd"
+
 [display]
 
 window/size/viewport_width=1280

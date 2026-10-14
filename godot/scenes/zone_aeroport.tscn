@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://scripts/world_bounds.gd" id="7_bounds"]
 [ext_resource type="Script" path="res://scripts/realism.gd" id="8_realism"]
 [ext_resource type="Script" path="res://scripts/vegetation.gd" id="9_veg"]
+[ext_resource type="Script" path="res://scripts/props.gd" id="10_props"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -69,3 +70,6 @@ script = ExtResource("8_realism")
 
 [node name="Vegetation" type="Node3D" parent="."]
 script = ExtResource("9_veg")
+
+[node name="Props" type="Node3D" parent="."]
+script = ExtResource("10_props")

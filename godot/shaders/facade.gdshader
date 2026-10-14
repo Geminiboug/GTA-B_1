@@ -19,6 +19,7 @@ uniform float window_spacing = 3.4;
 uniform float roof_tin_ratio : hint_range(0.0, 1.0) = 0.55;  // part des toits plats rendus en tole (auto)
 uniform int roof_force = 0;       // 0 auto, 1 tole, 2 beton
 uniform bool plain_wall = false;  // mur d'enceinte / pignon : pas de fenetres ni portes
+uniform int style = 0;            // 0 habitat, 1 mur-rideau vitre (terminal), 2 bardage tole (hangar)
 
 varying vec3 wpos;
 varying vec3 wnorm;
@@ -128,7 +129,32 @@ void fragment() {
 		}
 		albedo = base;
 
-		if (plain_wall) {
+		if (style == 1) {
+			// terminal : mur-rideau vitre, meneaux tous les 1,5 m, traverses a chaque niveau, socle beton
+			float mx = fract(u / 1.5);
+			float my = fract(y / 3.75);
+			float frame = step(mx, 0.04) + step(my, 0.035);
+			vec3 view = normalize(CAMERA_POSITION_WORLD - wpos);
+			float fres = pow(1.0 - abs(dot(n, view)), 2.5);
+			vec3 glass = mix(vec3(0.12, 0.2, 0.26), vec3(0.55, 0.68, 0.8), fres) * (0.9 + 0.1 * hash(floor(vec2(u / 1.5, y / 3.75))));
+			albedo = mix(glass, vec3(0.78, 0.8, 0.82), clamp(frame, 0.0, 1.0));
+			rough = mix(0.08, 0.4, clamp(frame, 0.0, 1.0));
+			metal = 0.2;
+			if (y < 0.5) {
+				albedo = vec3(0.6, 0.58, 0.55);
+				rough = 0.9;
+			}
+			emit = vec3(1.0, 0.92, 0.8) * night_light * 1.2 * (1.0 - clamp(frame, 0.0, 1.0)) * step(0.5, y);
+		} else if (style == 2) {
+			// hangar : bardage en tole ondulee verticale, grande porte coulissante, rouille en bas
+			float ribs = 0.5 + 0.5 * sin(u * 22.0);
+			albedo = vec3(0.72, 0.74, 0.76) * (0.85 + 0.15 * ribs);
+			float door = step(fract(u / 60.0 + bid), 0.35) * step(y, 9.0);
+			albedo = mix(albedo, vec3(0.5, 0.55, 0.6) * (0.85 + 0.15 * ribs), door);
+			albedo = mix(albedo, vec3(0.45, 0.25, 0.12), (1.0 - smoothstep(0.0, 1.5, y)) * smoothstep(0.4, 0.7, fbm(vec2(u, y) * 1.5)));
+			metal = 0.5;
+			rough = 0.5;
+		} else if (plain_wall) {
 			// portail metallique peint (3 m) environ tous les 21 m
 			float gu = u / 21.0 + bid * 3.0;
 			float gx = fract(gu);

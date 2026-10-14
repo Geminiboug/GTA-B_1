@@ -34,16 +34,14 @@ func _ready() -> void:
 	var zone := get_node_or_null(zone_path)
 	if zone == null:
 		return
-	_build_avoid_shapes(zone)
-	# les collisions temporaires doivent etre enregistrees avant les requetes
+	# les surfaces a eviter sont creees par realism.gd (noeud Realisme) ; attendre qu'elles soient enregistrees
+	await get_tree().physics_frame
 	await get_tree().physics_frame
 	_trunks = StaticBody3D.new()
 	_trunks.name = "Troncs"
 	add_child(_trunks)
 	_scatter_beach_palms(zone)
 	_scatter_inland()
-	for b in _temp_bodies:
-		b.queue_free()
 	_build_multimeshes()
 	print("Vegetation : %d cocotiers, %d arbres, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()])
 
@@ -80,7 +78,7 @@ func _free_spot(p: Vector3, radius: float, allow_beach := false) -> float:
 	ray2.collision_mask = ROAD_LAYER
 	var hit2 := space.intersect_ray(ray2)
 	if not hit2.is_empty():
-		var n2 := String(hit2.collider.get_parent().name).to_lower()
+		var n2 := String(hit2.collider.name).to_lower()
 		if not (allow_beach and (n2.begins_with("plage") or n2.begins_with("zone_plage"))):
 			return NAN
 	# pas de batiment / mur dans le rayon

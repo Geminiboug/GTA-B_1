@@ -149,3 +149,17 @@ osm_import.py (7e argument : godot/assets/data/zone_aeroport.json, donnees pour 
 Shaders : facade = parpaings bruts (1 batiment sur 5), persiennes peintes, portes peintes, boutiques, portails
 dans les murs d'enceinte, fenetres allumees la nuit (globals gtb_night / gtb_power). sol = modes 4 paves autobloquants,
 5 piste en sable. Couleurs des shaders ecrites en sRGB et converties en lineaire (correction d'un rendu delave).
+
+## Realisme : mobilier urbain, vehicules, enseignes, avions (passe 4)
+Modeles : blender/tools/build_props.py -> blender/props/props.blend + godot/assets/models/props.glb
+(poteau bois +/- transformateur, lampadaire, etal de kpayo, etals de vendeuses sous parasol x3, tas d'ordures,
+pile de pneus, table de maquis + chaises, cabine de transfert d'argent, panneau publicitaire, berline, 4x4, avion).
+Placement : godot/scripts/props.gd (noeud "Props"), a partir de godot/assets/data/zone_aeroport.json :
+- poteaux tous les ~35 m le long des rues + cables (chainette), lampadaires en quinconce sur les grands axes et la promenade ;
+- commerces de bord de route, voitures et zems gares (stations), panneaux publicitaires fictifs ;
+- enseignes de boutiques fictives sur les facades qui donnent sur une rue, inscriptions sur les murs d'enceinte ;
+- avions aux postes de stationnement OSM (lignes de guidage), livree fictive "AIR GBE".
+MultiMesh decoupes en carres de 160 m (affichage limite par la distance) + collisions simples.
+Surfaces a eviter (routes, tarmac, piscines, plage...) : creees une fois par realism.gd sur la couche 10.
+Styles de facade : bld_terminal = mur-rideau vitre, bld_hangar = bardage tole. Tarmac = dalles beton 5 m (sol mode 6).
+Lampes : godot/shaders/lampe.gdshader (allumees la nuit, eteintes en coupure), positions dans l'autoload LampRegistry.
