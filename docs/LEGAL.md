@@ -1,0 +1,47 @@
+# GTB : regles legales
+
+Regle de base : rester dans une stricte legalite. En cas de doute, on ne l'utilise pas.
+Avant toute sortie commerciale : validation par un avocat en propriete intellectuelle.
+
+## 1. Nom et identite
+- Jamais "GTA", "Grand Theft Auto", ni logo, police ou charte graphique de Rockstar.
+- Nom du jeu : GTB (Gbê Town Bénin).
+
+## 2. Images et assets tiers
+- Photos de refs/ : reference uniquement, jamais integrees telles quelles dans le jeu.
+- Chaque fichier tiers : auteur, licence et source notes (refs/SOURCES.md, docs/CREDITS.md).
+- Textures et sons du jeu : uniquement nos propres creations ou du CC0 (ambientCG, Poly Haven, etc.).
+- Pas de CC BY-SA, CC BY-NC ni de licence inconnue dans le jeu final.
+- Mixamo : autorise dans le jeu (conditions Adobe), pas de redistribution des fichiers bruts.
+- Musique : uniquement originale, CC0 ou avec un accord ecrit de l'artiste.
+- Jamais d'images Google, de captures d'autres jeux ni d'assets "trouves" sans licence claire.
+
+## 3. Donnees OpenStreetMap
+- Licence ODbL. Utilisation autorisee.
+- Credits obligatoires dans le jeu : "© les contributeurs d'OpenStreetMap, licence ODbL".
+
+## 4. Marques et lieux reels
+- Aucune marque reelle (nom, logo, enseigne) sans autorisation ecrite.
+- Chaque commerce ou lieu reel recoit un nom fictif (voir tableau ci-dessous).
+- L'aeroport porte un nom fictif. Zone militaire : reproduction vague, pas de details reels.
+- Aucun lieu reel nomme ne doit etre associe a une activite criminelle.
+
+## 5. Personnes
+- Aucun visage, nom ou voix de personne reelle identifiable.
+- Aucune vraie plaque d'immatriculation, aucun vrai numero de telephone.
+- Enregistrements sonores terrain : pas de conversations privees identifiables.
+
+## 6. Correspondance lieux reels / noms fictifs
+
+| Lieu reel | Nom dans GTB |
+|---|---|
+| Aeroport Cardinal Bernardin Gantin | a definir |
+| Erevan Hypermarket | a definir |
+| Base aerienne de Cotonou | a definir |
+| Banque Atlantique | a definir |
+| Societe Generale | a definir |
+| Dream Beach | a definir |
+| Maquis de la Playa | a definir |
+| Code Bar | a definir |
+| Route des Peches | nom de rue reel, autorise |
+| Avenue Pape Jean-Paul II | nom de rue reel, autorise |

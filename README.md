@@ -17,3 +17,5 @@ Jeu open world 3D ancre au Benin. Premiere zone : aeroport de Cotonou, Erevan, l
 `bld_` batiments, `prop_` objets, `veh_` vehicules, `chr_` personnages
 
 Roadmap : [docs/benin-gta-roadmap.md](docs/benin-gta-roadmap.md)
+
+Regles legales : [docs/LEGAL.md](docs/LEGAL.md). Credits : [docs/CREDITS.md](docs/CREDITS.md).
