@@ -1,4 +1,4 @@
-# Benin GTA (nom provisoire)
+# GTB (Gbê Town Bénin)
 
 Jeu open world 3D ancre au Benin. Premiere zone : aeroport de Cotonou, Erevan, la plage.
 

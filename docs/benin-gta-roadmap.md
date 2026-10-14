@@ -1,4 +1,4 @@
-# BENIN GTA (nom provisoire) : Roadmap et prompt de passation
+# GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
 Derniere mise a jour : 14/10/2026
 Phase en cours : Phase 0 (cadrage et setup)
@@ -17,6 +17,8 @@ Un jeu open world 3D type GTA, ancre dans le Benin. On commence par UNE zone (ae
 - Echelle : 1 unite = 1 metre, axe Z vers le haut dans Blender, export en Y up
 - Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage (remplace Zogbo, decision du 14/10/2026)
 - Style : semi-realiste, low a mid poly pour tenir sur PC modeste
+- Pas de textures avant la Phase 6 : couleurs unies (beton gris, tole bleu-gris, terre rouge, sable, bitume, eau)
+- Nom : GTB, Gbê Town Bénin (ne jamais utiliser GTA ni "Grand Theft" pour eviter un conflit de marque)
 - Langue du jeu : francais (et possibilite d'ajouter fon/anglais plus tard)
 
 ## 3. Ce dont tu as besoin
@@ -43,7 +45,7 @@ Materiel :
 ### Phase 0 : Cadrage et setup
 - [x] Creer le depot Git (structure : /blender, /godot, /docs, /refs)
 - [x] Installer Blender, Godot, Blender-OSM
-- [ ] Choisir le nom du projet
+- [x] Choisir le nom du projet : GTB (Gbê Town Bénin)
 - [x] Definir la zone exacte aeroport / Erevan / plage : bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), fichier refs/osm/zone-aeroport.osm
 - [ ] Collecter 50+ photos de reference classees par type
 
@@ -118,13 +120,14 @@ Option plus tard : multijoueur.
 - 14/10/2026 : depot pousse sur GitHub, logiciels installes.
 - 14/10/2026 : premiere zone changee, Zogbo remplace par aeroport / Erevan / plage.
 - 14/10/2026 : bbox de la zone fixee, export OSM (186 batiments, 95 routes, piste, Erevan, Route des Peches, plage) dans refs/osm/.
+- 14/10/2026 : nom choisi, GTB (Gbê Town Bénin). Decision : pas de textures avant la Phase 6.
 
 ---
 
 ## 6. PROMPT DE PASSATION (a copier tel quel dans un autre Claude ou agent IA)
 
 ```
-Tu reprends un projet en cours : un jeu open world 3D type GTA ancre dans le Benin, developpe par Olympe (Lib), etudiant Tek3 a Epitech Benin, qui vit a Cotonou (quartier Zogbo).
+Tu reprends un projet en cours : GTB (Gbê Town Bénin), un jeu open world 3D type GTA ancre dans le Benin, developpe par Olympe (Lib), etudiant Tek3 a Epitech Benin, qui vit a Cotonou (quartier Zogbo).
 
 STACK
 - Modelisation : Blender 4.x, export glTF 2.0 (.glb)
@@ -136,7 +139,8 @@ STACK
 CONVENTIONS
 - Nommage : bld_ (batiments), prop_ (objets), veh_ (vehicules), chr_ (personnages)
 - Depot : /blender, /godot, /docs, /refs
-- Style : semi-realiste, low a mid poly
+- Style : semi-realiste, low a mid poly, couleurs unies sans textures jusqu a la Phase 6
+- Nom : GTB (Gbê Town Bénin), jamais GTA ni "Grand Theft"
 
 ETAT ACTUEL
 - Phase en cours : Phase 0 (cadrage et setup)
