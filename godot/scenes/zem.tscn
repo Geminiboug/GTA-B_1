@@ -7,13 +7,14 @@
 
 [sub_resource type="BoxShape3D" id="1_shape"]
 size = Vector3(0.5, 0.9, 1.95)
+margin = 0.02
 
 [node name="Zem" type="CharacterBody3D" groups=["vehicules"]]
 floor_snap_length = 0.4
 script = ExtResource("1_zem")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
 shape = SubResource("1_shape")
 
 [node name="Visual" parent="." instance=ExtResource("2_model")]

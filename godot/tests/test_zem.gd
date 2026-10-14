@@ -23,6 +23,8 @@ func _log(msg: String) -> void:
 func _physics_process(_delta: float) -> bool:
 	frame += 1
 	match frame:
+		29:
+			_log("zem pose au sol : bas des roues a y = %.3f (sol a 0)" % zem.global_position.y)
 		30:
 			_log("distance joueur-zem au depart : %.2f m" % player.global_position.distance_to(zem.global_position))
 			Input.action_press("interact")

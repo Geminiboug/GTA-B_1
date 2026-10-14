@@ -1,0 +1,45 @@
+extends SceneTree
+## Captures de controle du realisme : rue avec maisons, plage et mer, vue d'ensemble.
+## Lancement (avec fenetre) : godot --path godot --script res://tests/capture_realisme.gd -- <dossier_sortie>
+
+var frame := 0
+var player: CharacterBody3D
+var out_dir := "user://"
+# [nom, position du joueur, rotation de la camera (x, y), zoom]
+var shots := [
+	["rue", Vector3(420, 1, -20), Vector2(-0.12, 0.6), 6.0],
+	["maisons", Vector3(300, 1, 120), Vector2(-0.25, 2.4), 9.0],
+	["plage_mer", Vector3(0, 1, 330), Vector2(-0.15, PI), 6.0],
+	["vue_haute", Vector3(150, 1, 200), Vector2(-0.55, 0.3), 12.0],
+]
+var idx := 0
+
+
+func _initialize() -> void:
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 0:
+		out_dir = args[0]
+	var scene: Node = load("res://scenes/zone_aeroport.tscn").instantiate()
+	root.add_child(scene)
+	player = scene.get_node("Player")
+
+
+func _physics_process(_delta: float) -> bool:
+	frame += 1
+	if frame < 30:
+		return false
+	var s = shots[idx]
+	var local := frame - 30 - idx * 60
+	if local == 0:
+		player.global_position = s[1]
+		player.velocity = Vector3.ZERO
+		player.reset_physics_interpolation()
+		player.cam_pivot.rotation = Vector3(s[2].x, s[2].y, 0)
+		player.spring_arm.spring_length = s[3]
+	elif local == 50:
+		root.get_viewport().get_texture().get_image().save_png(out_dir.path_join("real_%s.png" % s[0]))
+		print("capture ", s[0])
+		idx += 1
+		if idx >= shots.size():
+			return true
+	return false

@@ -118,3 +118,13 @@ Les actions sont dans godot/project.godot (generees par un script, voir l histor
 - Test : tests/test_limites.gd. Captures du ciel : tests/capture_ciel.gd, docs/images/ciel_*.png
 - Avertissement connu : "1 ObjectDB instance was leaked" a la fermeture = AudioStreamGeneratorPlayback du son du zem
   retenu par le serveur audio de Godot. Sans effet en jeu.
+
+## Realisme : materiaux proceduraux (passe 1)
+godot/scripts/realism.gd (noeud "Realisme" de la scene) applique au lancement, d'apres le nom des objets importes :
+- bld_* : godot/shaders/facade.gdshader (etages de 3 m, fenetres cadre + vitre + grille, rez-de-chaussee portes /
+  rideaux metalliques, bandeaux, peinture ecaillee, salissure en bas, toits tole ondulee ou dalle beton)
+- mur_* : facade.gdshader en mode plain_wall (enduit sans ouverture)
+- sol_terre / plages / routes / tarmac-promenade : godot/shaders/sol.gdshader modes 0 a 3 (laterite, sable, bitume, beton)
+- mer : remplacee par une surface subdivisee + godot/shaders/mer.gdshader (houle, ecume du rivage, reflets)
+Eclairage : soleil 1,6, ambiance ciel reduite, SSAO + SSIL, leger glow. Apercus : docs/images/realisme_*.png
+Zem : collision abaissee au niveau des roues (il ne s'enfoncait plus de 15 cm).

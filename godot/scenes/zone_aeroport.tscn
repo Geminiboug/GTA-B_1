@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/zem.tscn" id="5_zem"]
 [ext_resource type="Shader" path="res://shaders/ciel_nuages.gdshader" id="6_sky"]
 [ext_resource type="Script" path="res://scripts/world_bounds.gd" id="7_bounds"]
+[ext_resource type="Script" path="res://scripts/realism.gd" id="8_realism"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -18,13 +19,22 @@ radiance_size = 1
 background_mode = 2
 sky = SubResource("2_sky")
 ambient_light_source = 3
-ambient_light_sky_contribution = 0.8
+ambient_light_sky_contribution = 0.45
+ambient_light_color = Color(0.55, 0.5, 0.45, 1)
+ambient_light_energy = 0.6
 reflected_light_source = 2
 tonemap_mode = 4
 tonemap_white = 6.0
 fog_enabled = true
 fog_light_color = Color(0.72, 0.8, 0.88, 1)
-fog_density = 0.0006
+fog_density = 0.0003
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.5
+ssil_enabled = true
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.05
 fog_aerial_perspective = 0.6
 fog_sky_affect = 0.0
 
@@ -36,7 +46,7 @@ environment = SubResource("3_env")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866, 0, -0.5, -0.4096, 0.5736, 0.7094, 0.2868, 0.8192, -0.4967, 0, 50, 0)
 light_color = Color(1, 0.96, 0.88, 1)
-light_energy = 1.3
+light_energy = 1.6
 shadow_enabled = true
 directional_shadow_max_distance = 200.0
 
@@ -52,3 +62,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 250)
 
 [node name="Zem" parent="." instance=ExtResource("5_zem")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.3, 248.6)
+
+[node name="Realisme" type="Node3D" parent="."]
+script = ExtResource("8_realism")
