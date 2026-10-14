@@ -37,7 +37,7 @@ func _physics_process(_delta: float) -> bool:
 			if a["speed"] > 1.0:
 				moving += 1
 			dist += (a["vis_pos"] as Vector3).distance_to(start_cars[k])
-			max_y = max(max_y, abs((a["vis_pos"] as Vector3).y - 0.18))
+			max_y = max(max_y, abs((a["vis_pos"] as Vector3).y - 0.02))
 		var n: int = traffic._agents.size()
 		print("TEST vehicules : %d / %d roulent, vitesse moyenne %.1f km/h, distance moyenne en 20 s : %.0f m, ecart vertical max %.2f m" % [moving, n, total_speed / n * 3.6, dist / n, max_y])
 		var wdist := 0.0
@@ -46,7 +46,7 @@ func _physics_process(_delta: float) -> bool:
 		print("TEST pietons : distance moyenne en 20 s : %.1f m (%d marcheurs)" % [wdist / peds._walkers.size(), peds._walkers.size()])
 		# le joueur se met devant un vehicule en mouvement
 		for k in traffic._agents.size():
-			if traffic._agents[k]["speed"] > 5.0:
+			if traffic._agents[k]["speed"] > 5.0 and traffic._remaining(traffic._agents[k]) > 28.0:
 				target_index = k
 				break
 		var a: Dictionary = traffic._agents[target_index]
@@ -54,7 +54,7 @@ func _physics_process(_delta: float) -> bool:
 		var p: Node3D = scene.get_node("Player")
 		p.global_position = (a["vis_pos"] as Vector3) + fwd * 14.0 + Vector3(0, 1, 0)
 		p.reset_physics_interpolation()
-		print("TEST joueur place 14 m devant un vehicule a %.1f km/h" % (a["speed"] * 3.6))
+		print("TEST joueur place 14 m devant le vehicule %d a %.1f km/h (carrefour suivant a %.0f m)" % [target_index, a["speed"] * 3.6, traffic._remaining(a)])
 	if frame == 60 + 23 * 60:
 		var a: Dictionary = traffic._agents[target_index]
 		var p: Node3D = scene.get_node("Player")

@@ -3,12 +3,17 @@
 // mode 1 = sable de plage : rides de vent, sable plus fonce et humide (marques), debris.
 // mode 2 = bitume : grain, reparations, usure plus claire au centre, nids de poule.
 // mode 3 = beton / paves : joints et taches.
+// mode 4 = paves autobloquants, 5 = piste en sable, 6 = dalles du tarmac, 7 = peinture au sol (marquage, piste
+// cyclable : couleur = tint), 8 = herbe, 9 = eau calme (bassin, piscine : couleur = tint).
+// Les couches sont presque a plat (quelques mm, voir osm_import.py) : le vertex shader avance tres legerement
+// vers la camera les couches les plus hautes (meme position a l'ecran) pour qu'elles ne scintillent jamais.
 shader_type spatial;
 
 global uniform float gtb_wet;  // 0 sec, 1 detrempe (scripts/weather.gd)
 uniform int mode = 0;
 // couleurs ecrites en sRGB, converties en lineaire a la fin
 uniform vec3 tint = vec3(1.0);
+uniform float depth_pull = 0.05;
 
 varying vec3 wpos;
 
@@ -38,6 +43,9 @@ float fbm(vec2 p) {
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec4 view = MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+	view.xyz *= 1.0 - clamp(wpos.y, 0.0, 0.04) * depth_pull;
+	POSITION = PROJECTION_MATRIX * view;
 }
 
 void fragment() {
@@ -118,6 +126,25 @@ void fragment() {
 		float puddle = smoothstep(0.72, 0.78, fbm(p * 0.12 + 9.0));
 		col = mix(col, vec3(0.45, 0.33, 0.24), puddle * 0.7);
 		rough = 1.0;
+	} else if (mode == 7) {
+		// peinture routiere : usee par endroits (le bitume reapparait), salie de poussiere rouge
+		col = tint * (0.92 + 0.08 * noise(p * 3.0));
+		float wear = smoothstep(0.5, 0.8, fbm(p * 1.3 + 7.0));
+		col = mix(col, vec3(0.36, 0.35, 0.35), wear * 0.55);
+		col = mix(col, vec3(0.62, 0.45, 0.35), smoothstep(0.6, 0.9, fbm(p * 0.05 + 3.0)) * 0.25);
+		rough = 0.7;
+	} else if (mode == 8) {
+		// herbe tropicale : touffes vertes, plaques jaunies, terre rouge visible
+		float large = fbm(p * 0.05);
+		float tuft = noise(p * 2.5) * fine;
+		col = mix(vec3(0.33, 0.45, 0.17), vec3(0.5, 0.52, 0.24), smoothstep(0.35, 0.7, large));
+		col *= 0.85 + 0.25 * tuft;
+		col = mix(col, vec3(0.62, 0.4, 0.27), smoothstep(0.66, 0.82, fbm(p * 0.18 + 5.0)) * 0.6);
+		rough = 1.0;
+	} else if (mode == 9) {
+		// eau calme : sombre au fond, reflets du ciel par la specularite
+		col = tint * (0.85 + 0.1 * fbm(p * 0.3 + TIME * 0.05));
+		rough = 0.08;
 	} else {
 		vec2 tile = fract(p / vec2(0.3, 0.2));
 		float joint = step(0.92, tile.x) + step(0.9, tile.y);
@@ -125,9 +152,9 @@ void fragment() {
 		col = mix(col, col * 0.6, clamp(joint, 0.0, 1.0) * fine);
 		col = mix(col, col * 0.7, smoothstep(0.6, 0.8, fbm(p * 0.3)) * 0.5);
 	}
-	float spec = 0.15;  // sols mats : pas de reflet bleu du ciel
+	float spec = mode == 9 ? 0.5 : 0.15;  // sols mats : pas de reflet bleu du ciel
 	// --- pluie : sol plus sombre et plus brillant, flaques dans les creux (pas sur le sable de plage) ---
-	if (gtb_wet > 0.001 && mode != 1) {
+	if (gtb_wet > 0.001 && mode != 1 && mode != 9) {
 		col *= mix(1.0, 0.6, gtb_wet);
 		rough = mix(rough, 0.35, gtb_wet * 0.8);
 		spec = mix(spec, 0.5, gtb_wet);

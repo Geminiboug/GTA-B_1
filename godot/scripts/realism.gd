@@ -6,7 +6,7 @@ extends Node3D
 ## - sol_terre                     -> laterite (sol.gdshader mode 0)
 ## - zone_plage, plage_*, fond_*   -> sable (mode 1)
 ## - route_*_bitume, piste...      -> bitume (mode 2) ; route_*_paves (4) ; route_*_terre, accotement (5)
-## - aeroport_tarmac (6), promenade (3)
+## - aeroport_tarmac (6), promenade (3), marquage / piste cyclable (7), herbe / terre-plein (8), bassins (9)
 ## - mer                           -> remplacee par une surface subdivisee avec mer.gdshader (vagues)
 ## Cree aussi les "surfaces a eviter" (couche 10, invisibles pour le joueur) utilisees par la vegetation et
 ## le mobilier pour ne rien poser sur les routes, la piste, le tarmac, les piscines...
@@ -56,13 +56,15 @@ func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:
 			return
 
 
-func _ground(mode: int) -> ShaderMaterial:
-	if not _ground_mats.has(mode):
+func _ground(mode: int, tint := Color(1, 1, 1)) -> ShaderMaterial:
+	var key := "%d|%s" % [mode, tint.to_html()]
+	if not _ground_mats.has(key):
 		var m := ShaderMaterial.new()
 		m.shader = SOL
 		m.set_shader_parameter("mode", mode)
-		_ground_mats[mode] = m
-	return _ground_mats[mode]
+		m.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
+		_ground_mats[key] = m
+	return _ground_mats[key]
 
 
 func _orig_color(mi: MeshInstance3D, fallback: Color) -> Color:
@@ -113,6 +115,18 @@ func _apply(mi: MeshInstance3D) -> void:
 		mat = _ground(6)
 	elif n.begins_with("promenade"):
 		mat = _ground(3)
+	elif n.begins_with("marquage_taxiway"):
+		mat = _ground(7, Color(0.95, 0.75, 0.12))
+	elif n.begins_with("marquage_"):
+		mat = _ground(7, Color(0.93, 0.93, 0.9))
+	elif n.begins_with("piste_cyclable"):
+		mat = _ground(7, Color(0.27, 0.5, 0.32))
+	elif n.begins_with("zone_herbe") or n.begins_with("zone_humide") or n.begins_with("terre_plein"):
+		mat = _ground(8)
+	elif n.begins_with("zone_piscine"):
+		mat = _ground(9, Color(0.3, 0.68, 0.78))
+	elif n.begins_with("zone_eau"):
+		mat = _ground(9, Color(0.3, 0.4, 0.38))
 	elif n == "mer":
 		mi.visible = false
 		return

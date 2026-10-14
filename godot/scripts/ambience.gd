@@ -4,7 +4,6 @@ extends Node3D
 ## - rumeur de la ville : fond sonore discret ;
 ## - oiseaux le jour (gazouillis autour du joueur), grillons et insectes la nuit.
 
-@export var data_path := "res://assets/data/zone_aeroport.json"
 @export var wave_spacing := 110.0
 @export var day_night_path: NodePath = ^"../JourNuit"
 
@@ -17,7 +16,7 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(data_path))
+	var data: Dictionary = Carte.zone().data
 	var waves := AudioSynth.vagues_loop()
 	var coast: Array = data.get("coast", [])
 	var acc := 0.0

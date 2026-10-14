@@ -5,7 +5,6 @@ extends Node3D
 ## - grondement des reacteurs synthetise (audible de loin), feux anticollision clignotants la nuit.
 ## Un mouvement toutes les 2 a 5 minutes reelles (premier mouvement peu apres le lancement).
 
-@export var data_path := "res://assets/data/zone_aeroport.json"
 @export var min_interval := 120.0
 @export var max_interval := 300.0
 @export var first_delay := 25.0
@@ -31,7 +30,7 @@ var _pitch := 0.0
 
 func _ready() -> void:
 	_rng.randomize()
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(data_path))
+	var data: Dictionary = Carte.zone().data
 	var best: Array = []
 	for r in data.get("runways", []):
 		if r.size() > best.size():
@@ -148,7 +147,7 @@ func _landing(delta: float) -> void:
 
 func _place(pos: Vector3, pitch: float) -> void:
 	var basis := Basis.looking_at(_dir, Vector3.UP) * Basis(Vector3.RIGHT, pitch)
-	_plane.global_transform = Transform3D(basis, pos + Vector3(0, 0.12, 0))
+	_plane.global_transform = Transform3D(basis, pos + Vector3(0, 0.02, 0))
 
 
 func _finish() -> void:

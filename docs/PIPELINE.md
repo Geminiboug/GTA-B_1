@@ -201,3 +201,27 @@ transitions douces (le ciel se couvre avant la pluie), pluie en particules autou
 sol et murs mouilles via la variable globale gtb_wet (sol.gdshader : plus sombre, brillant, flaques ; facade.gdshader :
 ruissellement, toits luisants), sechage lent apres l'averse, eclairs puis tonnerre avec delai, ciel d'orage (uniform storm).
 F3 : declencher / arreter l'averse. Captures : tests/capture_meteo.gd -> docs/images/meteo_*.png
+
+## Coherence du monde (passe 10)
+- Couches au sol presque a plat (osm_import.py : 0 a 0,03 m au lieu de 0,1 a 0,2 m) : joueur, zem, vehicules et pietons
+  sont poses sur la chaussee. L'ordre d'affichage est garanti par sol.gdshader (vertex : la couche la plus haute est
+  avancee de quelques mm vers la camera, meme position a l'ecran), donc pas de scintillement de loin.
+  Marquage, piste cyclable, herbe, terre-plein et bassins passent aussi par sol.gdshader (modes 7, 8, 9).
+- osm_import.py :
+  - chaussees separees (deux sens uniques paralleles) : largeur deduite de l'ecart entre les axes (tag lanes sinon) ;
+    terre-plein central biseaute (terre_plein-col) avec ouverture goudronnee aux carrefours ;
+  - batiments qui debordent sur une chaussee : retrecis, sinon retires (souvent des maisons demolies pour la Route des Peches) ;
+  - rues anterieures au front de mer coupees au bord de la piste cyclable, bouts de rue de moins de 6 m au bord du cadre
+    supprimes, impasses terminees par une aire de retournement, rues qui s'arretent pres d'une autre raccordees ;
+  - JSON : "medians" (axes des terre-pleins).
+- godot/scripts/carte.gd (class_name Carte, Carte.zone()) : donnees partagees. Graphe routier sur les noeuds OSM communs
+  (carrefours reels, raccord des impasses a moins de 5 m), masques 1 m (chaussees, batiments/murs, terre-pleins),
+  itineraire A* (sens uniques respectes).
+- traffic.gd : circulation sur le graphe (voie de droite, deux voies sur les boulevards, plutot tout droit aux carrefours,
+  cede-le-passage a celui qui est engage, demi-tour en impasse), s'arrete devant les obstacles (groupe "vehicules",
+  pietons qui traversent : groupe "obstacles_route"). Signal honked(body, at_player).
+- pedestrians.gd : trottoirs / bas-cotes verifies sur le masque, contournement des maisons au bord de la rue, traversees
+  droites aux carrefours, 25 % des pietons sur la promenade du front de mer.
+- props.gd : rien sur la chaussee (verification du rayon complet), voitures garees sur le bas-cote (liste props.parked).
+- Test : tests/test_coherence.gd (batiments, voitures garees, vehicules, pietons sur la chaussee, joueur et zem au sol).
+  Captures : tests/capture_coherence.gd (vues du dessus et au sol).

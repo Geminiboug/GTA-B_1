@@ -14,7 +14,7 @@ floor_snap_length = 0.4
 script = ExtResource("1_zem")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.43, 0)
 shape = SubResource("1_shape")
 
 [node name="Visual" parent="." instance=ExtResource("2_model")]

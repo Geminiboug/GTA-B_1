@@ -34,9 +34,15 @@ ROAD_WIDTH = {
     "unclassified": 6.0, "service": 4.0, "living_street": 5.0, "track": 3.0,
     "footway": 2.0, "path": 1.5, "pedestrian": 4.0,
 }
-# Hauteurs des couches au sol : assez espacees pour eviter le scintillement (z-fighting) de loin.
-ROAD_Z = {"primary": 0.2, "secondary": 0.18, "tertiary": 0.16}
-ROAD_Z_DEFAULT = 0.14
+# Couches au sol presque a plat (quelques mm au-dessus du sol physique z = 0) : joueur, vehicules et pietons
+# posent les pieds sur la chaussee au lieu de s'y enfoncer. L'ordre d'affichage des couches est garanti par
+# sol.gdshader (petit decalage de profondeur proportionnel a la hauteur), pas par l'ecart en metres.
+ROAD_Z = {"primary": 0.024, "secondary": 0.022, "tertiary": 0.02}
+ROAD_Z_DEFAULT = 0.018
+MARK_DZ = 0.003
+# Chaussees separees (deux sens uniques paralleles) : largeur deduite de l'ecart entre les deux axes
+ONEWAY_WIDTH = {"primary": 9.0, "secondary": 7.5, "tertiary": 7.0}
+MEDIAN_H = 0.12
 AEROWAY_WIDTH = {"runway": 45.0, "stopway": 45.0, "taxiway": 23.0}
 WALL = {"wall": (0.2, 2.2), "fence": (0.1, 1.8)}
 LEVEL_H = 3.0
@@ -422,9 +428,9 @@ if coast:
     beach_edge = beach_inner or offset_line(coast, BEACH_W)
     band = clip_poly(clean(coast + beach_edge[::-1]), ymin=YMIN - SEA_EXTRA)
     if len(band) > 2:
-        make_obj("plage_front_de_mer", *flat(ccw(band), 0.03), "mat_sable", "Zones")
-    for name, d, w, mat, z in (("promenade", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.15),
-                               ("piste_cyclable", BEACH_W + PROMENADE_W + BIKE_W / 2, BIKE_W, "mat_peinture_vert", 0.16)):
+        make_obj("plage_front_de_mer", *flat(ccw(band), 0.004), "mat_sable", "Zones")
+    for name, d, w, mat, z in (("promenade", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.016),
+                               ("piste_cyclable", BEACH_W + PROMENADE_W + BIKE_W / 2, BIKE_W, "mat_peinture_vert", 0.017)):
         bt = Batch()
         base, dd = (beach_inner, d - BEACH_W) if beach_inner else (coast, d)
         for piece in clip_line(offset_line(base, dd)):
@@ -434,13 +440,13 @@ if coast:
 
 # --- Zones au sol ---
 ZONE_RULES = [
-    (lambda t: t.get("natural") == "beach" or t.get("surface") == "sand", "mat_sable", 0.03, "zone_plage"),
-    (lambda t: t.get("natural") == "wetland", "mat_vegetation", 0.04, "zone_humide"),
-    (lambda t: t.get("landuse") in ("grass", "meadow") or t.get("leisure") in ("park", "garden"), "mat_vegetation", 0.05, "zone_herbe"),
-    (lambda t: t.get("aeroway") == "apron", "mat_beton", 0.08, "aeroport_tarmac"),
-    (lambda t: t.get("amenity") in ("parking", "motorcycle_parking") and "building" not in t, "mat_bitume", 0.09, "zone_parking"),
-    (lambda t: t.get("natural") == "water", "mat_eau", 0.06, "zone_eau"),
-    (lambda t: t.get("leisure") == "swimming_pool", "mat_eau", 0.1, "zone_piscine"),
+    (lambda t: t.get("natural") == "beach" or t.get("surface") == "sand", "mat_sable", 0.004, "zone_plage"),
+    (lambda t: t.get("natural") == "wetland", "mat_vegetation", 0.006, "zone_humide"),
+    (lambda t: t.get("landuse") in ("grass", "meadow") or t.get("leisure") in ("park", "garden"), "mat_vegetation", 0.007, "zone_herbe"),
+    (lambda t: t.get("aeroway") == "apron", "mat_beton", 0.01, "aeroport_tarmac"),
+    (lambda t: t.get("amenity") in ("parking", "motorcycle_parking") and "building" not in t, "mat_bitume", 0.012, "zone_parking"),
+    (lambda t: t.get("natural") == "water", "mat_eau", 0.008, "zone_eau"),
+    (lambda t: t.get("leisure") == "swimming_pool", "mat_eau", 0.009, "zone_piscine"),
 ]
 zone_batches = {}
 for t, poly in areas:
@@ -513,7 +519,8 @@ def dashes(pts, on, off):
 
 
 SURFACE_MAT = {"bitume": "mat_bitume", "paves": "mat_paves", "terre": "mat_sable"}
-SURFACE_DZ = {"bitume": 0.0, "paves": -0.01, "terre": -0.04}
+SURFACE_DZ = {"bitume": 0.0, "paves": -0.001, "terre": -0.002}
+NOT_CAR = ("footway", "path", "pedestrian", "steps")
 line_batches = {}
 marking_batches = {}
 road_data = []
@@ -525,42 +532,332 @@ def add_marking(name, mat, z, piece, width):
         marking_batches.setdefault((name, mat, z), Batch()).add(*ribbon(piece, width))
 
 
+def seg_dist(p, a, c):
+    dx, dy = c[0] - a[0], c[1] - a[1]
+    l2 = dx * dx + dy * dy or 1e-9
+    t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2))
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+
+
+def line_dist(p, pts):
+    return min(seg_dist(p, a, c) for a, c in zip(pts, pts[1:]))
+
+
+def closest_on_line(p, pts):
+    best, bq = 1e18, None
+    for a, c in zip(pts, pts[1:]):
+        dx, dy = c[0] - a[0], c[1] - a[1]
+        l2 = dx * dx + dy * dy or 1e-9
+        t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2))
+        q = (a[0] + t * dx, a[1] + t * dy)
+        d = math.hypot(p[0] - q[0], p[1] - q[1])
+        if d < best:
+            best, bq = d, q
+    return bq, best
+
+
+def resample(pts, step):
+    """Points tous les 'step' metres le long d'une polyligne (extremites incluses)."""
+    out = [pts[0]]
+    acc = 0.0
+    for a, c in zip(pts, pts[1:]):
+        seg = math.hypot(c[0] - a[0], c[1] - a[1])
+        pos = step - acc
+        while pos < seg:
+            out.append((a[0] + (c[0] - a[0]) * pos / seg, a[1] + (c[1] - a[1]) * pos / seg))
+            pos += step
+        acc = (acc + seg) % step
+    out.append(pts[-1])
+    return out
+
+
+def at_border(p, m=0.5):
+    return not (XMIN + m < p[0] < XMAX - m and YMIN + m < p[1] < YMAX - m)
+
+
+def disc(cx, cy, r, n=14):
+    return [(cx + r * math.cos(i / n * math.tau), cy + r * math.sin(i / n * math.tau)) for i in range(n)]
+
+
+def cut_waterfront(pts):
+    """Rues tracees avant l'amenagement du front de mer : elles continuaient sur ce qui est aujourd'hui la plage.
+    On les arrete au bord de la piste cyclable (cote terre) ; elles debouchent sur la promenade."""
+    if coast is None:
+        return [pts]
+    pieces, cur = [], []
+    for k, p in enumerate(pts):
+        if not on_waterfront(*p):
+            if cur == [] and k > 0:
+                cur.append(edge_cross(pts[k - 1], p))
+            cur.append(p)
+        else:
+            if cur:
+                cur.append(edge_cross(cur[-1], p))
+                pieces.append(cur)
+                cur = []
+    if cur:
+        pieces.append(cur)
+    return [c for c in pieces if len(c) > 1]
+
+
+def edge_cross(land, sea):
+    """Point de passage terre -> front de mer sur le segment (dichotomie)."""
+    a, b = land, sea
+    if on_waterfront(*a):
+        a, b = b, a
+    for _ in range(20):
+        m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        if on_waterfront(*m):
+            b = m
+        else:
+            a = m
+    return a
+
+
+nb_cut = 0
+# --- 1) Morceaux de routes (decoupes au cadre de la zone et au front de mer) ---
+road_pieces = []
 for wid, w in ways.items():
     t = w["tags"]
-    hw, aw = t.get("highway"), t.get("aeroway")
-    if hw in ROAD_WIDTH and not (w["closed"] and t.get("area") == "yes"):
-        width = tag_width(t, ROAD_WIDTH[hw])
-        surf = road_surface(hw, t, wid)
-        z = ROAD_Z.get(hw, ROAD_Z_DEFAULT) + SURFACE_DZ[surf]
-        key = (f"route_{hw}_{surf}", SURFACE_MAT[surf], z, "Routes")
-        for piece in clip_line(w["pts"]):
-            piece = clean(piece) if not w["closed"] else piece
-            if len(piece) < 2:
+    hw = t.get("highway")
+    if hw not in ROAD_WIDTH or (w["closed"] and t.get("area") == "yes"):
+        continue
+    raw = clip_line(w["pts"])
+    clipped = []
+    for piece in raw:
+        cut = cut_waterfront(piece)
+        if len(cut) != 1 or len(cut[0]) != len(piece):
+            nb_cut += 1
+        clipped += cut
+    for piece in clipped:
+        piece = clean(piece) if not w["closed"] else piece
+        if len(piece) < 2:
+            continue
+        L = sum(math.hypot(c[0] - a[0], c[1] - a[1]) for a, c in zip(piece, piece[1:]))
+        if L < 6.0 and (at_border(piece[0]) or at_border(piece[-1])):
+            continue  # bout de rue coupe par le cadre : une simple tache de bitume au bord de la carte
+        road_pieces.append({"wid": wid, "hw": hw, "t": t, "pts": piece, "L": L, "closed": w["closed"],
+                            "oneway": t.get("oneway") == "yes", "width": tag_width(t, ROAD_WIDTH[hw]),
+                            "surf": road_surface(hw, t, wid),
+                            "bb": (min(p[0] for p in piece), min(p[1] for p in piece),
+                                   max(p[0] for p in piece), max(p[1] for p in piece))})
+
+
+def bb_near(a, b, m):
+    return a[0] - m <= b[2] and b[0] - m <= a[2] and a[1] - m <= b[3] and b[1] - m <= a[3]
+
+# --- 2) Chaussees separees : OSM dessine les boulevards comme deux sens uniques paralleles. La largeur par
+# defaut (route a double sens) les faisait se chevaucher : on la deduit de l'ecart entre les deux axes. ---
+def lanes_width(t):
+    try:
+        return int(t.get("lanes", "")) * 3.5 + 0.5
+    except ValueError:
+        return None
+
+
+twins = []
+for i, r in enumerate(road_pieces):
+    if not r["oneway"] or r["hw"] not in ONEWAY_WIDTH or "width" in r["t"]:
+        continue
+    base = lanes_width(r["t"]) or ONEWAY_WIDTH[r["hw"]]
+    if r["closed"]:
+        r["width"] = base  # rond-point
+        continue
+    samples = resample(r["pts"], 10.0)
+    best = None
+    for j, s in enumerate(road_pieces):
+        if j == i or not s["oneway"] or s["hw"] not in ONEWAY_WIDTH or s["closed"] or not bb_near(r["bb"], s["bb"], 25.0):
+            continue
+        ds = [line_dist(p, s["pts"]) for p in samples]
+        close = sorted(d for d in ds if 4.0 < d < 25.0)
+        if len(close) >= max(2, len(ds) // 2):
+            med = close[len(close) // 2]
+            if best is None or med < best[0]:
+                best = (med, j)
+    if best:
+        r["width"] = max(5.5, min(10.5, base, best[0] - 1.6))
+        if i < best[1]:
+            twins.append((i, best[1]))
+    else:
+        r["width"] = base  # bretelle : une chaussee a sens unique
+
+# --- 2b) Rues qui s'arretent quelques metres avant une autre (trace anterieur aux travaux, ex. le long de la
+# nouvelle Route des Peches) : on les prolonge jusqu'a l'axe de la rue qu'elles visaient, pour un vrai carrefour ---
+def _ekey(p):
+    return (round(p[0], 1), round(p[1], 1))
+
+
+ends = {}
+for r in road_pieces:
+    for k, p in enumerate(r["pts"]):
+        ends[_ekey(p)] = ends.get(_ekey(p), 0) + (1 if k in (0, len(r["pts"]) - 1) else 2)
+joined = set()
+nb_ext = 0
+for r in road_pieces:
+    if r["hw"] in NOT_CAR or r["closed"]:
+        continue
+    for which in (0, -1):
+        p = r["pts"][which]
+        if ends.get(_ekey(p), 0) != 1 or at_border(p, 2.0):
+            continue
+        prev = r["pts"][1] if which == 0 else r["pts"][-2]
+        L = math.hypot(p[0] - prev[0], p[1] - prev[1]) or 1
+        d = ((p[0] - prev[0]) / L, (p[1] - prev[1]) / L)
+        best = None
+        for s in road_pieces:
+            if s is r or s["hw"] in NOT_CAR:
                 continue
-            line_batches.setdefault(key, Batch()).add(*ribbon(piece, width))
-            road_data.append({"kind": hw, "surface": surf, "width": width,
-                              "oneway": t.get("oneway") == "yes", "name": t.get("name", ""),
-                              "pts": [[round(p[0], 2), round(-p[1], 2)] for p in piece]})
-            if surf == "bitume" and hw in ("primary", "secondary", "tertiary"):
-                # bas-cotes sableux ou se garent les zems, plus larges que la chaussee
-                line_batches.setdefault(("accotement", "mat_sable", 0.085, "Routes"), Batch()).add(*ribbon(piece, width + 5.0))
-                # marquage : axe en tirets, lignes de rive continues
-                mz = z + 0.012
-                if not t.get("oneway") == "yes":
-                    for d in dashes(piece, 3.0, 6.0):
-                        add_marking("marquage_route", "mat_marquage_blanc", mz, d, 0.15)
-                for side in (-1, 1):
-                    add_marking("marquage_route", "mat_marquage_blanc", mz, offset_line(piece, side * (width / 2 - 0.35)), 0.12)
-    elif aw in AEROWAY_WIDTH:
+            q, dist = closest_on_line(p, s["pts"])
+            if 0.3 < dist < 14.0:
+                v = ((q[0] - p[0]) / dist, (q[1] - p[1]) / dist)
+                if v[0] * d[0] + v[1] * d[1] > 0.7 and (best is None or dist < best[1]):
+                    best = (q, dist)
+        if best:
+            if which == 0:
+                r["pts"].insert(0, best[0])
+            else:
+                r["pts"].append(best[0])
+            joined.add(_ekey(best[0]))
+            nb_ext += 1
+
+car_lines = [(r["pts"], r["width"] / 2) for r in road_pieces if r["hw"] not in NOT_CAR]
+
+# --- 3) Rubans de chaussee, bas-cotes, marquage, bouts d'impasse arrondis ---
+end_count = {}
+for r in road_pieces:
+    for p in (r["pts"][0], r["pts"][-1]):
+        k = (round(p[0], 1), round(p[1], 1))
+        end_count[k] = end_count.get(k, 0) + 1
+for r in road_pieces:
+    for p in r["pts"][1:-1]:
+        k = (round(p[0], 1), round(p[1], 1))
+        if k in end_count:
+            end_count[k] += 2
+
+for r in road_pieces:
+    hw, t, piece, width, surf = r["hw"], r["t"], r["pts"], r["width"], r["surf"]
+    z = ROAD_Z.get(hw, ROAD_Z_DEFAULT) + SURFACE_DZ[surf]
+    key = (f"route_{hw}_{surf}", SURFACE_MAT[surf], z, "Routes")
+    bt = line_batches.setdefault(key, Batch())
+    bt.add(*ribbon(piece, width))
+    # impasse : bout arrondi (aire de retournement) au lieu d'une coupure nette
+    if hw not in NOT_CAR and not r["closed"]:
+        for p in (piece[0], piece[-1]):
+            if end_count.get(_ekey(p), 0) == 1 and _ekey(p) not in joined and not at_border(p, 2.0):
+                bt.add(*flat(disc(p[0], p[1], width / 2 + 0.6), z))
+    road_data.append({"kind": hw, "surface": surf, "width": round(width, 2),
+                      "oneway": r["oneway"], "name": t.get("name", ""),
+                      "pts": [[round(p[0], 2), round(-p[1], 2)] for p in piece]})
+    if surf == "bitume" and hw in ("primary", "secondary", "tertiary"):
+        # bas-cotes sableux ou se garent les zems, plus larges que la chaussee
+        line_batches.setdefault(("accotement", "mat_sable", 0.014, "Routes"), Batch()).add(*ribbon(piece, width + 5.0))
+        # marquage : axe en tirets, lignes de rive continues
+        mz = z + MARK_DZ
+        if not r["oneway"]:
+            for d in dashes(piece, 3.0, 6.0):
+                add_marking("marquage_route", "mat_marquage_blanc", mz, d, 0.15)
+        elif width >= 6.5:
+            # deux voies dans le meme sens : ligne de separation en tirets
+            for d in dashes(piece, 3.0, 6.0):
+                add_marking("marquage_route", "mat_marquage_blanc", mz, d, 0.12)
+        for side in (-1, 1):
+            add_marking("marquage_route", "mat_marquage_blanc", mz, offset_line(piece, side * (width / 2 - 0.35)), 0.12)
+
+# --- 4) Terre-plein central entre deux chaussees separees : bordure biseautee (on peut monter dessus a pied
+# ou en roulant lentement), ouvert aux carrefours pour laisser passer les rues transversales ---
+median = Batch()
+median_data = []
+for i, j in twins:
+    r, s = road_pieces[i], road_pieces[j]
+    run = []
+
+    def flush(run):
+        if len(run) >= 3:
+            mid = [q[0] for q in run]
+            gaps = [q[1] for q in run]
+            n = len(mid)
+            top_l, top_r, bot_l, bot_r = [], [], [], []
+            for k in range(n):
+                a, c = mid[max(k - 1, 0)], mid[min(k + 1, n - 1)]
+                dx, dy = c[0] - a[0], c[1] - a[1]
+                l = math.hypot(dx, dy) or 1
+                nx, ny = -dy / l, dx / l
+                hb = gaps[k] / 2 - 0.02
+                ht = max(hb - 0.3, hb * 0.5)
+                top_l.append((mid[k][0] + nx * ht, mid[k][1] + ny * ht, MEDIAN_H))
+                top_r.append((mid[k][0] - nx * ht, mid[k][1] - ny * ht, MEDIAN_H))
+                bot_l.append((mid[k][0] + nx * hb, mid[k][1] + ny * hb, 0.0))
+                bot_r.append((mid[k][0] - nx * hb, mid[k][1] - ny * hb, 0.0))
+            o = len(median.verts)
+            median.verts += top_l + top_r + bot_l + bot_r
+            TL, TR, BL, BR = o, o + n, o + 2 * n, o + 3 * n
+            for k in range(n - 1):
+                median.faces.append((TR + k, TR + k + 1, TL + k + 1, TL + k))      # dessus
+                median.faces.append((TL + k, TL + k + 1, BL + k + 1, BL + k))      # biseau gauche
+                median.faces.append((BR + k, BR + k + 1, TR + k + 1, TR + k))      # biseau droit
+            median_data.append([[round(p[0], 2), round(-p[1], 2)] for p in mid])
+
+    opening = []
+    road_z = ROAD_Z.get(r["hw"], ROAD_Z_DEFAULT)
+    open_bt = line_batches.setdefault((f"route_{r['hw']}_bitume", "mat_bitume", road_z, "Routes"), Batch())
+
+    def flush_opening(op):
+        # ouverture du terre-plein au carrefour : goudronnee pour que les vehicules puissent traverser
+        if len(op) >= 2:
+            open_bt.add(*ribbon([q[0] for q in op], max(q[1] for q in op) + 0.6))
+
+    for p in resample(r["pts"], 3.0):
+        q, d = closest_on_line(p, s["pts"])
+        gap = d - (r["width"] + s["width"]) / 2
+        ok = 0.2 < gap < 12.0
+        junction = False
+        if ok:
+            m = ((p[0] + q[0]) / 2, (p[1] + q[1]) / 2)
+            for k, (pts, half) in enumerate(car_lines):
+                if pts is r["pts"] or pts is s["pts"]:
+                    continue
+                if line_dist(m, pts) < half + 4.0:
+                    ok = False  # carrefour : ouverture dans le terre-plein
+                    junction = True
+                    break
+        if ok:
+            run.append((m, gap))
+            flush_opening(opening)
+            opening = []
+        else:
+            flush(run)
+            run = []
+            if junction:
+                opening.append((m, gap))
+            else:
+                flush_opening(opening)
+                opening = []
+    flush(run)
+    flush_opening(opening)
+if median.faces:
+    # orientation des faces vers le haut / l'exterieur selon le sens de la polyligne
+    me_faces = []
+    for f in median.faces:
+        a, b, c = (Vector(median.verts[f[0]]), Vector(median.verts[f[1]]), Vector(median.verts[f[2]]))
+        nz = (b - a).cross(c - a).z
+        me_faces.append(f if nz >= -1e-6 else f[::-1])
+    median.faces = me_faces
+    make_obj("terre_plein-col", median.verts, median.faces, "mat_beton", "Routes")
+
+# --- 5) Piste et taxiways de l'aeroport ---
+for wid, w in ways.items():
+    t = w["tags"]
+    aw = t.get("aeroway")
+    if aw in AEROWAY_WIDTH:
         width = tag_width(t, AEROWAY_WIDTH[aw])
-        z = 0.12 if aw != "taxiway" else 0.11
+        z = 0.017 if aw != "taxiway" else 0.015
         key = ("aeroport_" + aw, "mat_bitume", z, "Aeroport")
         for piece in clip_line(w["pts"]):
             piece = clean(piece)
             if len(piece) < 2:
                 continue
             line_batches.setdefault(key, Batch()).add(*ribbon(piece, width))
-            mz = z + 0.012
+            mz = z + MARK_DZ
             if aw == "taxiway":
                 add_marking("marquage_taxiway", "mat_marquage_jaune", mz, piece, 0.3)
                 continue
@@ -786,8 +1083,63 @@ DETAILS = {k: Batch() for k in ("parapet", "poteau_attente", "fers", "citerne", 
 gable_batches = {}
 building_data = []
 
+def point_in_poly(p, poly):
+    x, y = p
+    c = False
+    n = len(poly)
+    for k in range(n):
+        x1, y1 = poly[k]
+        x2, y2 = poly[(k + 1) % n]
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            c = not c
+    return c
+
+
+LINE_BB = [((min(p[0] for p in pts) - half, min(p[1] for p in pts) - half,
+             max(p[0] for p in pts) + half, max(p[1] for p in pts) + half), pts, half) for pts, half in car_lines]
+
+
+def on_road(poly):
+    """Le batiment empiete-t-il sur une chaussee ? (sommets, milieux des cotes et centre dans la bande de roulement,
+    ou axe de la route qui traverse le batiment)"""
+    bb = (min(p[0] for p in poly), min(p[1] for p in poly), max(p[0] for p in poly), max(p[1] for p in poly))
+    n = len(poly)
+    probes = list(poly) + [((poly[k][0] + poly[(k + 1) % n][0]) / 2, (poly[k][1] + poly[(k + 1) % n][1]) / 2) for k in range(n)]
+    probes.append((sum(p[0] for p in poly) / n, sum(p[1] for p in poly) / n))
+    for lbb, pts, half in LINE_BB:
+        if not bb_near(bb, lbb, 0.0):
+            continue
+        if any(line_dist(p, pts) < half - 0.3 for p in probes):
+            return True
+        for a, c in zip(pts, pts[1:]):
+            sbb = (min(a[0], c[0]), min(a[1], c[1]), max(a[0], c[0]), max(a[1], c[1]))
+            if not bb_near(bb, sbb, 0.0):
+                continue
+            for q in resample([a, c], 1.0):
+                if point_in_poly(q, poly):
+                    return True
+    return False
+
+
+def fit_off_road(poly):
+    """Emprise detectee sur image ou trace OSM ancien qui deborde sur la route : on la retrecit un peu,
+    sinon on l'enleve (souvent une maison demolie pour elargir la voie, ex. Route des Peches)."""
+    if not on_road(poly):
+        return poly
+    n = len(poly)
+    cx = sum(p[0] for p in poly) / n
+    cy = sum(p[1] for p in poly) / n
+    for k in (0.88, 0.76):
+        cand = [(cx + (p[0] - cx) * k, cy + (p[1] - cy) * k) for p in poly]
+        if not on_road(cand):
+            return cand
+    return None
+
+
 bld_batches = {}
 nb_bld = 0
+nb_off = 0
+nb_fit = 0
 for wid, t, pts in buildings:
     poly = clean(pts)
     if len(poly) < 3 or abs(area(poly)) < 4.0:
@@ -795,6 +1147,15 @@ for wid, t, pts in buildings:
     cx = sum(p[0] for p in poly) / len(poly)
     cy = sum(p[1] for p in poly) / len(poly)
     if not inside_box((cx, cy)) or on_waterfront(cx, cy):
+        continue
+    fitted = fit_off_road(poly)
+    if fitted is None:
+        nb_off += 1
+        continue
+    if fitted is not poly:
+        nb_fit += 1
+    poly = fitted
+    if abs(area(poly)) < 4.0:
         continue
     kind = t.get("building", "yes")
     seed = int("".join(ch for ch in str(wid) if ch.isdigit()) or 0) % 97
@@ -882,6 +1243,7 @@ if OUT_JSON:
         "coast": gz(coast), "beach_inner": gz(beach_inner),
         "promenade": gz(offset_line(beach_inner, PROMENADE_W / 2)) if beach_inner else [],
         "parking_positions": parking,
+        "medians": median_data,
     }
     json.dump(data, open(OUT_JSON, "w", encoding="utf-8"))
     print("Donnees Godot :", OUT_JSON, len(road_data), "routes,", len(building_data), "batiments")
@@ -891,4 +1253,6 @@ for m in MAT.values():
     m.use_fake_user = False
 bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_apply=True, export_yup=True)
-print(f"Zone : {XMAX - XMIN:.0f} m x {YMAX - YMIN:.0f} m, batiments : {nb_bld}, routes : {len(line_batches)} types, cote : {'oui' if coast else 'non'}")
+print(f"Zone : {XMAX - XMIN:.0f} m x {YMAX - YMIN:.0f} m, batiments : {nb_bld} (retires de la chaussee : {nb_off}, "
+      f"retrecis : {nb_fit}), routes : {len(line_batches)} types, chaussees separees : {len(twins)}, "
+      f"rues arretees au front de mer : {nb_cut}, rues raccordees : {nb_ext}, cote : {'oui' if coast else 'non'}")

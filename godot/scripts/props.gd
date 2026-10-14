@@ -5,7 +5,6 @@ extends Node3D
 ## (pour que les objets lointains ne soient pas affiches) + collisions simples.
 ## Tous les noms d'enseignes et de marques sont FICTIFS (voir docs/LEGAL.md).
 
-@export var data_path := "res://assets/data/zone_aeroport.json"
 @export var props_scene: PackedScene = preload("res://assets/models/props.glb")
 @export var zem_scene: PackedScene = preload("res://assets/models/veh_zem.glb")
 @export var seed_value := 229
@@ -39,6 +38,7 @@ const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.92,
 	Color(0.15, 0.35, 0.2)]
 
 var _rng := RandomNumberGenerator.new()
+var _carte: Carte
 var _meshes := {}
 var _chunks := {}         # "kind|cx|cz" -> {"kind", "xf": [], "col": []}
 var _occupied := {}       # grille 2 m -> true (evite les superpositions)
@@ -48,6 +48,7 @@ var _roads: Array = []
 var _signs: Node3D
 var counts := {}
 var lamp_positions := PackedVector3Array()
+var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
 var placed := false
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
@@ -59,7 +60,8 @@ const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadai
 func _ready() -> void:
 	_rng.seed = seed_value
 	_load_meshes()
-	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(data_path))
+	_carte = Carte.zone()
+	var data: Dictionary = _carte.data
 	_roads = data["roads"]
 	_bodies = StaticBody3D.new()
 	_bodies.name = "Collisions"
@@ -206,6 +208,9 @@ func _ground(p: Vector2, radius: float, allow_roads := false, allow_front := fal
 				return NAN
 		if not allow_roads and sn.begins_with("route_"):
 			return NAN
+	# l'objet entier (pas seulement son centre) doit rester hors de la chaussee
+	if not allow_roads and _carte.on_carriageway(p, radius):
+		return NAN
 	var ray := PhysicsRayQueryParameters3D.create(Vector3(p.x, 60, p.y), Vector3(p.x, -5, p.y))
 	ray.collision_mask = 1  # decor seulement (pas les surfaces a eviter de la couche 10)
 	var hit := space.intersect_ray(ray)
@@ -333,7 +338,7 @@ func _place_promenade_lamps(prom: Array) -> void:
 		var y := _ground(pos, 0.3)
 		if is_nan(y):
 			y = 0.0
-		var xf := Transform3D(_facing(-n), Vector3(pos.x, y + 0.15, pos.y))
+		var xf := Transform3D(_facing(-n), Vector3(pos.x, y + 0.016, pos.y))
 		_add("prop_lampadaire", xf)
 		_cyl_col(xf.origin, 0.2, 8.5)
 		lamp_positions.append(xf * Vector3(0, 8.1, -1.75))
@@ -383,24 +388,40 @@ func _place_roadside() -> void:
 		)
 
 
+func _footprint_ok(pos: Vector2, dir: Vector2, half_w: float, half_l: float) -> bool:
+	## Les 4 coins et le centre d'un objet allonge (voiture) sont hors chaussee et hors batiment.
+	var side := Vector2(-dir.y, dir.x)
+	for c in [Vector2.ZERO, dir * half_l + side * half_w, dir * half_l - side * half_w, -dir * half_l + side * half_w,
+			-dir * half_l - side * half_w]:
+		var q: Vector2 = pos + c
+		if _carte.on_carriageway(q, 0.2) or _carte.in_building(q) or not _carte.in_bounds(q):
+			return false
+	return true
+
+
 func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -> void:
+	# bord de route : trottoir / bande de marche jusqu'a ~2 m du bord de chaussee (pietons, poteaux),
+	# puis la bande ou l'on se gare et ou s'installent les commerces
 	var side := 1.0 if _rng.randf() < 0.5 else -1.0
 	var n := Vector2(-t.y, t.x) * side
 	if kind == "voiture":
-		# garee le long de la chaussee (sur le bas-cote si la rue est etroite)
-		var off := w / 2.0 - 1.1 if w >= 7.0 else w / 2.0 + 1.3
-		var pos := p + n * off
-		var y := _ground(pos, 0.9, true)
-		if is_nan(y) or not _is_free(pos, radius):
+		# garee sur le bas-cote, parallele a la rue, jamais sur la chaussee
+		for s in [n, -n]:
+			var pos: Vector2 = p + s * (w / 2.0 + 3.2)
+			var y := _ground(pos, 0.9)
+			if is_nan(y) or not _is_free(pos, radius) or not _footprint_ok(pos, t, 1.0, 2.4):
+				continue
+			_occupy(pos, radius)
+			var dir := t if _rng.randf() < 0.5 else -t
+			var model := "veh_4x4" if _rng.randf() < 0.3 else "veh_berline"
+			var xf := Transform3D(_facing(dir), Vector3(pos.x, y, pos.y))
+			var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
+			_add(model, xf, col)
+			_box_col(xf, Vector3(1.85, 1.5, 4.6), 0.75)
+			parked.append({"model": model, "xf": xf, "color": col})
 			return
-		_occupy(pos, radius)
-		var dir := t if _rng.randf() < 0.5 else -t
-		var model := "veh_4x4" if _rng.randf() < 0.3 else "veh_berline"
-		var xf := Transform3D(_facing(dir), Vector3(pos.x, y, pos.y))
-		_add(model, xf, CAR_COLORS[_rng.randi() % CAR_COLORS.size()])
-		_box_col(xf, Vector3(1.85, 1.5, 4.6), 0.75)
 		return
-	var dist := w / 2.0 + _rng.randf_range(1.6, 3.2)
+	var dist := w / 2.0 + _rng.randf_range(2.6, 3.8)
 	var pos := p + n * dist
 	var y := _ground(pos, radius * 0.6)
 	if is_nan(y) or not _is_free(pos, radius):
@@ -593,7 +614,7 @@ func _place_planes(spots: Array) -> void:
 		if s.size() >= 5:
 			dir = Vector2(float(s[3]), float(s[4])).normalized()  # cap de la ligne de guidage OSM
 			pos -= dir * 18.0  # la ligne s'arrete sous le nez : on recule le centre de l'avion
-		var xf := Transform3D(_facing(dir), Vector3(pos.x, 0.12, pos.y))
+		var xf := Transform3D(_facing(dir), Vector3(pos.x, 0.01, pos.y))
 		_add("veh_avion", xf)
 		_box_col(xf, Vector3(4.2, 4.5, 38.0), 3.3)
 		_box_col(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0, 1.2)), Vector3(31.0, 0.6, 4.5), 2.3)
