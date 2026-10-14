@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3]
 
-[ext_resource type="Script" path="res://scripts/free_camera.gd" id="1_cam"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="4_player"]
 
 [sub_resource type="ProceduralSkyMaterial" id="1_sky_mat"]
 sky_top_color = Color(0.35, 0.6, 0.9, 1)
@@ -29,13 +29,11 @@ environment = SubResource("3_env")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866, -0.25, 0.433, 0, 0.866, 0.5, -0.5, -0.433, 0.75, 0, 50, 0)
 shadow_enabled = true
-directional_shadow_max_distance = 300.0
+directional_shadow_max_distance = 200.0
 
 [node name="zone_aeroport" parent="." instance=ExtResource("2_zone")]
 
 [node name="zone_aeroport_reperes" parent="." instance=ExtResource("3_reperes")]
 
-[node name="Camera" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966, 0, 25, 150)
-far = 3000.0
-script = ExtResource("1_cam")
+[node name="Player" parent="." instance=ExtResource("4_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 150)

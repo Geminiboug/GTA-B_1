@@ -64,7 +64,7 @@ Materiel :
 - [x] Jalon : "le quartier est reconnaissable en blockout" (valide par Olympe le 14/10/2026)
 
 ### Phase 3 : Joueur a pied
-- [ ] Personnage 3e personne (marche, course, saut, camera)
+- [x] Personnage 3e personne (marche, course, saut, camera) : godot/scenes/player.tscn, godot/scripts/player.gd (capsule en attendant le modele)
 - [ ] Animations Mixamo (idle, walk, run)
 - [ ] Collisions propres avec le decor
 - [ ] Jalon : balade fluide dans tout le quartier
@@ -132,6 +132,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : retour Olympe : OSM pas a jour. Batiments remplaces par Overture Maps (594 dans la zone, dont detections Google 2023), plage continue jusqu a la mer, promenade et piste cyclable (amenagement Route des Peches, largeurs estimees). Bug de la plage corrige.
 - 14/10/2026 : littoral mesure sur image Copernicus Sentinel-2 du 24/01/2026 (legal) : cote reelle ~120 m plus au sud qu OSM, plage 150 a 250 m. Blockout regenere (545 batiments).
 - 14/10/2026 : blockout valide par Olympe ("ressemblant"). Reperes ajoutes (blender/tools/landmarks.py). Phase 2 terminee.
+- 14/10/2026 : joueur 3e personne (capsule, ZQSD, Shift course, Espace saut, camera orbitale souris + molette) place dans zone_aeroport.tscn. A tester par Olympe.
 
 ---
 
@@ -156,7 +157,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 3 (joueur a pied)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Phase 3, personnage 3e personne (CharacterBody3D, camera orbitale, marche, course, saut) dans godot/scenes/zone_aeroport.tscn, puis animations Mixamo
+- Prochaine tache : Olympe teste le joueur (F5). Puis animations Mixamo (idle, walk, run, jump : compte Adobe gratuit d Olympe), modele humanoide, collisions propres
 - Bloquants : aucun
 
 ROADMAP
