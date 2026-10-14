@@ -123,6 +123,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : nom choisi, GTB (Gbê Town Bénin). Decision : pas de textures avant la Phase 6.
 - 14/10/2026 : 57 photos de reference collectees sur Wikimedia Commons (aeroport, erevan, plage, rues, vehicules, facades, props). Phase 0 terminee.
 - 14/10/2026 : ajout de docs/LEGAL.md (regles legales, noms fictifs) et docs/CREDITS.md (OSM ODbL).
+- 14/10/2026 : noms fictifs des lieux de la zone definis dans docs/LEGAL.md.
 
 ---
 

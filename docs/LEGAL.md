@@ -35,13 +35,21 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 
 | Lieu reel | Nom dans GTB |
 |---|---|
-| Aeroport Cardinal Bernardin Gantin | a definir |
-| Erevan Hypermarket | a definir |
-| Base aerienne de Cotonou | a definir |
-| Banque Atlantique | a definir |
-| Societe Generale | a definir |
-| Dream Beach | a definir |
-| Maquis de la Playa | a definir |
-| Code Bar | a definir |
+| Aeroport International Cardinal Bernardin Gantin | Aeroport International Cardinal Cotodji |
+| Erevan Hypermarket | Ararat Hypermarket |
+| Base aerienne de Cotonou | Base Aerienne du Littoral (reproduction vague) |
+| Banque Atlantique | Banque Oceanique |
+| Societe Generale | Societe Generique |
+| Dream Beach | Sweet Dream Beach |
+| Maquis de la Playa | Maquis La Plaja |
+| Code Bar | Mot de Passe Bar |
+| Avion sur la plage | L Epave Volante |
+| Wellness Fitness Center | Wellbeing Gym |
+| Nico s Hair | Coco s Hair |
+| FADOUL | Fadil Market |
+| JNP | JMP |
+| Consulat de l Armenie | non represente |
 | Route des Peches | nom de rue reel, autorise |
 | Avenue Pape Jean-Paul II | nom de rue reel, autorise |
+
+Nouveaux lieux : meme principe, un nom proche a l oreille mais different, sans logo ni charte graphique reelle.
