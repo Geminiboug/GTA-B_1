@@ -1,0 +1,23 @@
+{
+  "_info": "Source unique des materiaux de base GTB. Couleurs en sRGB (0-1). Regenerer avec blender/tools/build_materials.py et blender/tools/build_godot_materials.py",
+  "mat_beton": {"color": [0.62, 0.60, 0.57], "roughness": 0.9},
+  "mat_beton_brut": {"color": [0.50, 0.49, 0.47], "roughness": 0.95},
+  "mat_peinture_blanc": {"color": [0.90, 0.88, 0.84], "roughness": 0.8},
+  "mat_peinture_ocre": {"color": [0.85, 0.60, 0.30], "roughness": 0.8},
+  "mat_peinture_bleu": {"color": [0.35, 0.55, 0.75], "roughness": 0.8},
+  "mat_peinture_vert": {"color": [0.45, 0.65, 0.40], "roughness": 0.8},
+  "mat_peinture_ecaillee": {"color": [0.75, 0.70, 0.60], "roughness": 0.9},
+  "mat_tole": {"color": [0.60, 0.63, 0.66], "roughness": 0.45, "metallic": 0.8},
+  "mat_tole_rouillee": {"color": [0.55, 0.33, 0.20], "roughness": 0.85, "metallic": 0.4},
+  "mat_terre_rouge": {"color": [0.62, 0.30, 0.18], "roughness": 1.0},
+  "mat_sable": {"color": [0.86, 0.78, 0.60], "roughness": 1.0},
+  "mat_bitume": {"color": [0.13, 0.13, 0.14], "roughness": 0.9},
+  "mat_paves": {"color": [0.55, 0.45, 0.40], "roughness": 0.9},
+  "mat_marquage_blanc": {"color": [0.95, 0.95, 0.92], "roughness": 0.7},
+  "mat_marquage_jaune": {"color": [0.95, 0.78, 0.15], "roughness": 0.7},
+  "mat_eau": {"color": [0.15, 0.38, 0.48], "roughness": 0.05, "alpha": 0.85},
+  "mat_vitre": {"color": [0.55, 0.70, 0.78], "roughness": 0.05, "metallic": 0.3},
+  "mat_vegetation": {"color": [0.25, 0.45, 0.18], "roughness": 0.9},
+  "mat_bois": {"color": [0.45, 0.30, 0.18], "roughness": 0.85},
+  "mat_metal_peint": {"color": [0.25, 0.30, 0.28], "roughness": 0.6, "metallic": 0.6}
+}

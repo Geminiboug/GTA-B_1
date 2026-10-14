@@ -1,7 +1,7 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
 Derniere mise a jour : 14/10/2026
-Phase en cours : Phase 1 (pipeline assets)
+Phase en cours : Phase 2 (blockout de la zone aeroport)
 
 ---
 
@@ -53,7 +53,7 @@ Materiel :
 - [x] Conventions : echelle, nommage (prefixes bld_, prop_, veh_, chr_), origines des objets (docs/PIPELINE.md)
 - [x] Test complet : un cube modelise sous Blender, exporte en .glb, importe dans Godot avec collision
 - [x] Script ou procedure d export en un clic (blender/tools/export_glb.py)
-- [ ] Bibliotheque de materiaux de base (beton, tole, terre rouge, bitume, peinture ecaillee)
+- [x] Bibliotheque de materiaux de base (20 materiaux, blender/materials/lib_materiaux.blend et godot/assets/materials/)
 
 ### Phase 2 : Blockout de la zone aeroport
 - [ ] Import du plan des rues via Blender-OSM
@@ -127,6 +127,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : projet Godot cree (godot/, scene test_pipeline avec sol, boule physique et camera libre), script d export Blender, docs/PIPELINE.md.
 - 14/10/2026 : Blender 5.2 (Microsoft Store) trouve. Cube de test genere et exporte en headless (blender/test/prop_cube_test.blend, godot/assets/models/prop_cube_test.glb), ajoute a test_pipeline.tscn. Godot introuvable sur le PC.
 - 14/10/2026 : test du cube valide dans Godot 4.7 (collision OK). Pipeline Blender vers Godot fonctionnel.
+- 14/10/2026 : 20 materiaux de base en couleurs unies generes depuis blender/tools/materials.json (Blender + Godot). Phase 1 terminee.
 
 ---
 
@@ -149,9 +150,9 @@ CONVENTIONS
 - Nom : GTB (Gbê Town Bénin), jamais GTA ni "Grand Theft"
 
 ETAT ACTUEL
-- Phase en cours : Phase 1 (pipeline assets)
+- Phase en cours : Phase 2 (blockout de la zone aeroport)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : bibliotheque de materiaux de base (couleurs unies), puis import OSM de la zone dans Blender (Phase 2)
+- Prochaine tache : Phase 2, import OSM (refs/osm/zone-aeroport.osm) dans Blender avec Blender-OSM (verifier que le plugin est active dans Blender 5.2)
 - Bloquants : aucun
 
 ROADMAP

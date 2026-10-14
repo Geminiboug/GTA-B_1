@@ -26,3 +26,12 @@ Regle : decor detaille = mesh visible sans suffixe + une boite simplifiee en -co
 8. Ouvrir scenes/test_pipeline.tscn, glisser prop_cube_test.glb dans la scene, le placer en (0, 0, 0). Ctrl+S.
 9. F5 : la boule tombe et doit rester posee sur le cube. Camera : ZQSD, clic droit maintenu pour tourner, Shift pour accelerer.
 Si la boule traverse le cube : le suffixe -col manque ou est mal tape.
+
+## Materiaux de base
+- Source unique : blender/tools/materials.json (couleurs sRGB, rugosite, metal, transparence).
+- Blender : blender/materials/lib_materiaux.blend. Chaque materiau est un Asset (Asset Browser) avec une sphere d'apercu.
+  Pour l'utiliser : Edit > Preferences > File Paths > Asset Libraries > ajouter le dossier blender/materials, puis glisser le materiau depuis l'Asset Browser.
+- Godot : godot/assets/materials/<nom>.tres, memes noms que dans Blender.
+- Ajouter ou modifier un materiau : editer materials.json, puis regenerer les deux :
+  blender -b --python blender/tools/build_materials.py -- blender/tools/materials.json blender/materials/lib_materiaux.blend
+  python3 blender/tools/build_godot_materials.py

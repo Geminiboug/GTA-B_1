@@ -1,0 +1,6 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "mat_paves"
+albedo_color = Color(0.55, 0.45, 0.4, 1.0)
+roughness = 0.9
