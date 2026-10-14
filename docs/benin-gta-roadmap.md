@@ -79,7 +79,7 @@ Materiel :
 ### Phase 5 : Ville vivante
 - [ ] PNJ pietons (marche sur trottoirs, vendeurs, groupes)
 - [ ] Trafic simple (zem, voitures, taxis sur chemins definis)
-- [ ] Cycle jour/nuit et eclairage (lampadaires, coupures de courant) [ciel + nuages animes faits]
+- [x] Cycle jour/nuit et eclairage (lampadaires, coupures de courant)
 - [ ] Ambiances sonores par zone
 - [ ] Jalon : le quartier "respire"
 
@@ -144,6 +144,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : realisme passe 2 : vegetation (cocotiers de plage, arbres, buissons) repartie automatiquement, troncs avec collision.
 - 14/10/2026 : realisme passe 3 : toits (tole 2 pans, parapets, fers en attente, citernes, clims), routes (paves, sable, marquage, bas-cotes, piste d aviation), facades enrichies, etalonnage sRGB des couleurs.
 - 14/10/2026 : realisme passe 4 : poteaux et cables, lampadaires, kpayo, vendeuses, maquis, cabines, ordures, voitures et zems gares, panneaux pub et enseignes fictifs, avions aux postes OSM, terminal vitre, hangars, tarmac en dalles.
+- 14/10/2026 : realisme passe 5 : cycle jour/nuit (soleil reel, coucher, etoiles, lune), eclairage de nuit, fenetres allumees, delestages. Correction : requetes physiques des props limitees a la couche du decor (presque tout le mobilier de bord de route etait rejete). Suppression du singleton LampRegistry (erreurs dans l editeur reste ouvert).
 
 ---
 

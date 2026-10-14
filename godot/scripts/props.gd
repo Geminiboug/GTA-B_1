@@ -47,7 +47,7 @@ var _wire_pts := PackedVector3Array()
 var _roads: Array = []
 var _signs: Node3D
 var counts := {}
-var rejects := {}  # debug : surfaces qui ont empeche un placement
+var lamp_positions := PackedVector3Array()  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "veh_berline": 300.0,
 	"veh_4x4": 300.0, "veh_avion": 1500.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
@@ -68,15 +68,14 @@ func _ready() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	_place_planes(data.get("parking_positions", []))
+	_place_billboards()  # en premier : ils ont besoin de place
 	_place_poles_and_lamps()
 	_place_promenade_lamps(data.get("promenade", []))
 	_place_roadside()
-	_place_billboards()
 	_place_shop_signs(data["buildings"])
 	_place_wall_texts(data.get("walls", []))
 	_build()
 	print("Props : ", counts)
-	print("Props rejets : ", rejects)
 
 
 # ---------------------------------------------------------------- chargement
@@ -199,12 +198,11 @@ func _ground(p: Vector2, radius: float, allow_roads := false, allow_front := fal
 			if allow_front and prefix in ["plage", "promenade", "piste_cyclable"]:
 				continue  # lampadaires et poteaux du front de mer : poses sur la promenade, c'est normal
 			if sn.begins_with(prefix):
-				rejects[sn] = rejects.get(sn, 0) + 1
 				return NAN
 		if not allow_roads and sn.begins_with("route_"):
-			rejects[sn] = rejects.get(sn, 0) + 1
 			return NAN
 	var ray := PhysicsRayQueryParameters3D.create(Vector3(p.x, 60, p.y), Vector3(p.x, -5, p.y))
+	ray.collision_mask = 1  # decor seulement (pas les surfaces a eviter de la couche 10)
 	var hit := space.intersect_ray(ray)
 	if hit.is_empty():
 		return NAN
@@ -216,6 +214,7 @@ func _ground(p: Vector2, radius: float, allow_roads := false, allow_front := fal
 	var q := PhysicsShapeQueryParameters3D.new()
 	q.shape = sphere
 	q.transform = Transform3D(Basis.IDENTITY, Vector3(p.x, hit.position.y + radius + 0.25, p.y))
+	q.collision_mask = 1
 	if not space.intersect_shape(q, 1).is_empty():
 		return NAN
 	return hit.position.y
@@ -314,7 +313,7 @@ func _place_poles_and_lamps() -> void:
 				var xf := Transform3D(_facing(-n), Vector3(pos.x, y, pos.y))
 				_add("prop_lampadaire", xf)
 				_cyl_col(xf.origin, 0.2, 8.5)
-				LampRegistry.add(xf * Vector3(0, 8.1, -1.75))
+				lamp_positions.append(xf * Vector3(0, 8.1, -1.75))
 			)
 
 
@@ -332,7 +331,7 @@ func _place_promenade_lamps(prom: Array) -> void:
 		var xf := Transform3D(_facing(-n), Vector3(pos.x, y + 0.15, pos.y))
 		_add("prop_lampadaire", xf)
 		_cyl_col(xf.origin, 0.2, 8.5)
-		LampRegistry.add(xf * Vector3(0, 8.1, -1.75))
+		lamp_positions.append(xf * Vector3(0, 8.1, -1.75))
 	)
 
 

@@ -163,3 +163,12 @@ MultiMesh decoupes en carres de 160 m (affichage limite par la distance) + colli
 Surfaces a eviter (routes, tarmac, piscines, plage...) : creees une fois par realism.gd sur la couche 10.
 Styles de facade : bld_terminal = mur-rideau vitre, bld_hangar = bardage tole. Tarmac = dalles beton 5 m (sol mode 6).
 Lampes : godot/shaders/lampe.gdshader (allumees la nuit, eteintes en coupure), positions dans l'autoload LampRegistry.
+
+## Cycle jour / nuit (passe 5)
+godot/scripts/day_night.gd (noeud "JourNuit") : soleil de Cotonou (lever ~6 h 30 est, zenith a midi, coucher ~18 h 30 ouest),
+lune la nuit, ciel (ciel_nuages.gdshader : uniforms sun_dir_u et night ; coucher dore, etoiles, nuages sombres la nuit),
+ambiance et brouillard, variables globales gtb_night / gtb_power, pool de 14 SpotLight3D sous les lampadaires proches
+(positions dans Props.lamp_positions), delestages aleatoires la nuit (scintillement puis coupure de 1 a 6 min).
+48 min reelles = 24 h de jeu. F2 : +1 heure. Horloge en haut a droite. Captures : tests/capture_heures.gd -> docs/images/cycle_*.png
+Note : les variables globales gtb_night / gtb_power sont declarees dans project.godot [shader_globals] ; si l'editeur
+etait ouvert pendant une modification de project.godot, il faut le fermer et rouvrir le projet.
