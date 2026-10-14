@@ -28,7 +28,7 @@ Logiciels (tous gratuits) :
 - Godot 4.x (version standard, pas .NET sauf si tu veux du C#)
 - Git + GitHub (depot prive du projet)
 - Krita ou GIMP (textures), Audacity (sons)
-- Plugin Blender : Blender-OSM (import de la geometrie des rues depuis OpenStreetMap)
+- Import OSM : importeur maison blender/tools/osm_import.py (Blender-OSM non disponible)
 
 Ressources :
 - Photos et videos de reference de la zone aeroport (rues, enseignes, zem, Erevan, plage, poteaux, maisons)
@@ -56,9 +56,9 @@ Materiel :
 - [x] Bibliotheque de materiaux de base (20 materiaux, blender/materials/lib_materiaux.blend et godot/assets/materials/)
 
 ### Phase 2 : Blockout de la zone aeroport
-- [ ] Import du plan des rues via Blender-OSM
+- [x] Import du plan des rues (importeur maison blender/tools/osm_import.py, Blender-OSM indisponible)
 - [ ] Ajustement des rues, carrefours, trottoirs, relief reel
-- [ ] Blockout des batiments (volumes simples, bonnes hauteurs)
+- [x] Blockout des batiments (volumes simples, hauteurs estimees, a affiner)
 - [ ] Placement des reperes importants (marche, carrefour principal, stations, eglises, etc.)
 - [ ] Import dans Godot, test de balade en camera libre
 - [ ] Jalon : "le quartier est reconnaissable en blockout"
@@ -128,6 +128,7 @@ Option plus tard : multijoueur.
 - 14/10/2026 : Blender 5.2 (Microsoft Store) trouve. Cube de test genere et exporte en headless (blender/test/prop_cube_test.blend, godot/assets/models/prop_cube_test.glb), ajoute a test_pipeline.tscn. Godot introuvable sur le PC.
 - 14/10/2026 : test du cube valide dans Godot 4.7 (collision OK). Pipeline Blender vers Godot fonctionnel.
 - 14/10/2026 : 20 materiaux de base en couleurs unies generes depuis blender/tools/materials.json (Blender + Godot). Phase 1 terminee.
+- 14/10/2026 : importeur OSM maison ecrit. Blockout de la zone genere (180 batiments, routes, piste, tarmac, plage, mer, murs) : blender/zone/zone_aeroport_blockout.blend, godot/scenes/zone_aeroport.tscn.
 
 ---
 
@@ -152,7 +153,7 @@ CONVENTIONS
 ETAT ACTUEL
 - Phase en cours : Phase 2 (blockout de la zone aeroport)
 - Fait : depot GitHub https://github.com/Geminiboug/GTA-B_1 (main), structure en place, roadmap dans docs/benin-gta-roadmap.md, Blender, Godot et Blender-OSM installes, limites de la zone fixees et export OSM recupere, nom GTB choisi, 57 photos de reference dans refs/ (Phase 0 terminee)
-- Prochaine tache : Phase 2, import OSM (refs/osm/zone-aeroport.osm) dans Blender avec Blender-OSM (verifier que le plugin est active dans Blender 5.2)
+- Prochaine tache : Olympe teste la balade en camera libre dans Godot (F5). Puis ajustements : hauteurs reelles des batiments reperes (terminal, Ararat Hypermarket), carrefours, trottoirs, reperes importants
 - Bloquants : aucun
 
 ROADMAP

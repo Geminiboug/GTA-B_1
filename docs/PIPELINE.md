@@ -35,3 +35,14 @@ Si la boule traverse le cube : le suffixe -col manque ou est mal tape.
 - Ajouter ou modifier un materiau : editer materials.json, puis regenerer les deux :
   blender -b --python blender/tools/build_materials.py -- blender/tools/materials.json blender/materials/lib_materiaux.blend
   python3 blender/tools/build_godot_materials.py
+
+## Import OpenStreetMap (blockout de zone)
+Importeur maison (pas de plugin) : blender/tools/osm_import.py
+  blender -b --python blender/tools/osm_import.py -- refs/osm/zone-aeroport.osm blender/materials/lib_materiaux.blend blender/zone/zone_aeroport_blockout.blend godot/assets/models/zone_aeroport.glb
+Genere : sol (sol_terre-col), mer (prolongee de 400 m au sud), plage, zones, routes en rubans, piste et taxiways,
+batiments extrudes (bld_osm_<id>-col), murs d'enceinte (mur_wall-col).
+- Hauteur des batiments : tag height, sinon building:levels x 3 m, sinon 3 a 9 m (stable d'un import a l'autre).
+- Repere : origine au centre de la zone, X = est, Y = nord (Blender).
+- Le .blend genere est ecrase a chaque import : les retouches manuelles se font dans un autre fichier.
+- Godot : scenes/zone_aeroport.tscn (scene principale, F5).
+Apercus : docs/images/blockout_zone_aeroport_dessus.png et blockout_zone_aeroport_3d.png

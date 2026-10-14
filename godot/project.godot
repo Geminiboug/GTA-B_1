@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="GTB"
 config/description="Gbê Town Bénin"
-run/main_scene="res://scenes/test_pipeline.tscn"
+run/main_scene="res://scenes/zone_aeroport.tscn"
 config/features=PackedStringArray("4.7")
 
 [display]
