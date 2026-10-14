@@ -1,0 +1,25 @@
+# Godot
+.godot/
+*.import
+export_presets.cfg
+*.translation
+mono_crash.*.json
+.mono/
+data_*/
+
+# Blender
+*.blend1
+*.blend2
+*.blend@
+blender/**/backup/
+
+# Systeme
+*:Zone.Identifier
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Builds
+builds/
+*.exe
+*.pck
