@@ -198,7 +198,7 @@ CONVENTIONS
 - Objets : jamais de nom en *_col / *-col pour un objet decoratif (Godot cree une collision)
 - Tout son est synthetise (godot/scripts/audio_synth.gd) ; tout modele est fait par script Blender (blender/tools/)
 
-ETAT ACTUEL (15/10/2026)
+ETAT ACTUEL (16/10/2026)
 - Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu avec le mode debug
   (F1, teleportation 1 a 8) et la checklist docs/validation_phases_3_5.md. Phase 6 bien avancee.
 - Fait :
@@ -210,16 +210,16 @@ ETAT ACTUEL (15/10/2026)
   - Personnages (etapes 12 a 15, blender/tools/build_character.py + godot/scripts/pnj_util.gd) : tailles et mensurations
     reelles, 10 morphologies, visages (7 traits cuits a la creation), 10 teintes de peau, coiffures, tenues, uniformes,
     accessoires. Noms reels remplaces (docs/correspondance_noms.md).
-  - Retours d Olympe du 15/10 (saut, PNJ des interieurs, vol de vehicule, conducteurs, virages, voitures, epave, avions
-    visitables, frequence des vols) : faits, voir le journal.
+  - Retours d Olympe des 15 et 16/10 (saut, PNJ des interieurs, vol de vehicule, conducteurs, virages, voitures, epave, avions
+    visitables, frequence des vols, joueur assis, corps Quaternius, vetements amples, chutes captees, escaliers d avion) : faits, voir le journal.
   - Tests : godot/tests/test_*.gd (17 suites, dont saut, interieurs, carjack, cabine) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
-    tests/perf_fps.gd en 1280x720 : 86 a 97 images/s dehors, 67 a 71 dans les interieurs.
+    tests/perf_fps.gd en 1280x720 : 78 a 88 images/s dehors, 63 a 66 dans les interieurs.
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
   %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md) ; Python geo dans WSL
   (~/.venvs/geo). Envoi git : depuis le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
 - Plan valide par Olympe (une etape a la fois, captures a chaque etape dans docs/images/) :
   - fait : A avions, B echelle reelle, C carte reelle, etapes 12 a 15 (personnages), noms fictifs, mode debug ;
-  - en cours : etape 16, locomotion facon GTA V (diagnostic fait ; en attente du pack Quaternius dans Telechargements) :
+  - en cours : fin de l etape 16 (fait : squelette, clips, controles, camera, saut, conduite assise, chutes ; reste : accroupi, escalade, PNJ sur anim_ctrl, ragdoll) :
     squelette humanoide standard, retargeting des clips, AnimationTree en machine a etats avec root motion, controles GTA V
     (sprint en tapotant, marche lente, endurance, saut contextuel, accroupi), IK des pieds, regard, idles, reactions
     physiques et ragdoll, camera GTA V, vehicules (entree / sortie animees, passager), PNJ sur le meme systeme ;
@@ -228,7 +228,7 @@ ETAT ACTUEL (15/10/2026)
     interactions, dialogues, missions, histoire "Le Dernier Vol" : prologue et acte 1), phase 8 (police fictive,
     niveau de recherche), phases 9 et 10.
 - Personnages : base Quaternius Universal Base Characters (refs/ubc, non versionne) calee par blender/tools/ubc_body.py.
-- Reste a faire, signale : cheveux mouilles sous la pluie, casquette de la policiere, traversees du corps pendant la marche
+- Reste a faire, signale : bout de pagne visible sous les voitures avec certaines conductrices, cheveux mouilles sous la pluie, casquette de la policiere, traversees du corps pendant la marche
   (a verifier avec les animations de l'etape 16).
 - Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; aucun nom reel en jeu (signaler
   avant de renommer) ; budget 70 images/s dehors et 60 en interieur ; tests au vert a chaque commit ; demander avant
