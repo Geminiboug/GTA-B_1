@@ -7,13 +7,13 @@ class_name PnjUtil
 const VARIANTS := {"homme": "homme", "homme_fort": "homme", "femme": "femme", "femme_ronde": "femme",
 	"garcon": "homme", "fille": "femme", "homme_mince": "homme", "femme_mince": "femme", "homme_age": "homme",
 	"femme_agee": "femme"}
-const HAIR_PARTS := ["chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_meches"]
+const HAIR_PARTS := ["chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches"]
 const WAX := preload("res://shaders/wax.gdshader")
 const KHAKI := Color(0.72, 0.62, 0.42)
 
 # pieces optionnelles : affichees selon la tenue (le corps chr_corps est toujours visible)
 const OPTIONAL := ["chr_haut", "chr_haut_long", "chr_pantalon", "chr_short", "chr_chaussures", "chr_semelle", "chr_jupe",
-	"chr_pagne_long", "chr_boubou", "chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_meches", "chr_foulard",
+	"chr_pagne_long", "chr_boubou", "chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches", "chr_foulard", "chr_bonnet",
 	"chr_casquette"]
 
 const SHIRTS := [Color(0.85, 0.15, 0.1), Color(0.1, 0.35, 0.75), Color(0.95, 0.95, 0.92), Color(0.1, 0.55, 0.3),
@@ -21,8 +21,10 @@ const SHIRTS := [Color(0.85, 0.15, 0.1), Color(0.1, 0.35, 0.75), Color(0.95, 0.9
 	Color(0.3, 0.65, 0.85), Color(0.92, 0.9, 0.84)]
 const PANTS := [Color(0.15, 0.18, 0.3), Color(0.1, 0.1, 0.1), Color(0.45, 0.35, 0.25), Color(0.3, 0.3, 0.32),
 	Color(0.22, 0.3, 0.45), Color(0.55, 0.5, 0.42)]
-const SKINS := [Color(0.36, 0.22, 0.15), Color(0.3, 0.18, 0.12), Color(0.42, 0.27, 0.18), Color(0.25, 0.15, 0.1),
-	Color(0.47, 0.31, 0.21)]
+# teintes de peau du Benin : du brun tres fonce au brun moyen (les plus frequentes en double pour le tirage)
+const SKINS := [Color(0.2, 0.12, 0.08), Color(0.25, 0.15, 0.1), Color(0.25, 0.15, 0.1), Color(0.3, 0.18, 0.12),
+	Color(0.3, 0.18, 0.12), Color(0.34, 0.21, 0.14), Color(0.36, 0.22, 0.15), Color(0.4, 0.26, 0.17),
+	Color(0.44, 0.29, 0.2), Color(0.5, 0.34, 0.23)]
 const WAX_PALETTES := [
 	[Color(0.85, 0.2, 0.08), Color(0.98, 0.78, 0.12), Color(0.08, 0.22, 0.55)],
 	[Color(0.1, 0.45, 0.3), Color(0.98, 0.85, 0.2), Color(0.85, 0.25, 0.15)],
@@ -89,6 +91,83 @@ static func wax(palette: Array, motif: int) -> Material:
 	return _mat_cache[key]
 
 
+static var _face_deltas := {}
+
+
+static func _deltas(src: ArrayMesh) -> Array:
+	## Par surface et par trait : sommets deplaces et deplacements (positions, normales), calcules une fois par modele.
+	var key := src.get_rid()
+	if _face_deltas.has(key):
+		return _face_deltas[key]
+	var relative := src.blend_shape_mode == Mesh.BLEND_SHAPE_MODE_RELATIVE
+	var per_surface := []
+	for sidx in src.get_surface_count():
+		var arr := src.surface_get_arrays(sidx)
+		var base_v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var base_n: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		var shapes := src.surface_get_blend_shape_arrays(sidx)
+		var per_shape := []
+		for b in shapes.size():
+			var sv: PackedVector3Array = shapes[b][Mesh.ARRAY_VERTEX]
+			var sn: PackedVector3Array = shapes[b][Mesh.ARRAY_NORMAL]
+			var idx := PackedInt32Array()
+			var dv := PackedVector3Array()
+			var dn := PackedVector3Array()
+			for i in base_v.size():
+				var d: Vector3 = sv[i] if relative else sv[i] - base_v[i]
+				if d.length_squared() > 1e-10:
+					idx.append(i)
+					dv.append(d)
+					dn.append((sn[i] if relative else sn[i] - base_n[i]) if sn.size() == base_n.size() else Vector3.ZERO)
+			per_shape.append([idx, dv, dn])
+		per_surface.append(per_shape)
+	_face_deltas[key] = per_surface
+	return per_surface
+
+
+static func bake_face(mi: MeshInstance3D, face: Dictionary) -> void:
+	## Traits du visage cuits une fois dans un maillage propre au PNJ (sans morph targets) : aucun cout par image
+	## (les morph targets d'un maillage anime sont recalcules a chaque image : -10 images/s dans l'hypermarche).
+	var src := mi.mesh as ArrayMesh
+	if src == null or src.get_blend_shape_count() == 0:
+		return
+	var deltas := _deltas(src)
+	var out := ArrayMesh.new()
+	for sidx in src.get_surface_count():
+		var arr := src.surface_get_arrays(sidx)
+		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var n: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		for b in src.get_blend_shape_count():
+			var w := float(face.get(String(src.get_blend_shape_name(b)), 0.0))
+			if w <= 0.0:
+				continue
+			var e: Array = deltas[sidx][b]
+			var idx: PackedInt32Array = e[0]
+			var dv: PackedVector3Array = e[1]
+			var dn: PackedVector3Array = e[2]
+			for j in idx.size():
+				v[idx[j]] += dv[j] * w
+				n[idx[j]] = (n[idx[j]] + dn[j] * w).normalized()
+		arr[Mesh.ARRAY_VERTEX] = v
+		arr[Mesh.ARRAY_NORMAL] = n
+		out.add_surface_from_arrays(src.surface_get_primitive_type(sidx), arr, [], {},
+			src.surface_get_format(sidx) & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
+		out.surface_set_material(sidx, src.surface_get_material(sidx))
+		out.surface_set_name(sidx, src.surface_get_name(sidx))
+	mi.mesh = out
+
+
+static func random_face(rng: RandomNumberGenerator) -> Dictionary:
+	## Traits du visage au hasard (0..1 par morph target) : deux PNJ voisins ne se ressemblent pas.
+	var f := {}
+	var nose := rng.randf_range(-1.0, 1.0)
+	f["nez_large"] = maxf(nose, 0.0)
+	f["nez_fin"] = maxf(-nose, 0.0) * 0.8
+	for key in ["levres_pleines", "machoire_large", "pommettes", "visage_long", "yeux_grands"]:
+		f[key] = clampf(rng.randfn(0.4, 0.3), 0.0, 1.0)
+	return f
+
+
 static func salt_pepper(white: float) -> Material:
 	## Cheveux poivre et sel : melange de meches grises et noires (bruit fin), part de blanc 0..1.
 	var key := "sp_%.2f" % white
@@ -122,16 +201,21 @@ static func skin_mat(c: Color) -> Material:
 	if not _mat_cache.has(key):
 		var m := StandardMaterial3D.new()
 		m.albedo_color = c
-		m.roughness = 0.55
+		m.roughness = 0.6
+		m.metallic_specular = 0.35
 		m.rim_enabled = true          # leger reflet de bord : la peau parait moins "plastique"
 		m.rim = 0.12
 		m.rim_tint = 0.6
+		# pas de diffusion sous la peau (subsurf_scatter) : -9 images/s dans l'hypermarche pour un effet invisible a distance
+		m.clearcoat_enabled = true                # fine pellicule de transpiration (chaleur), sans effet "plastique"
+		m.clearcoat = 0.06
+		m.clearcoat_roughness = 0.6
 		_mat_cache[key] = m
 	return _mat_cache[key]
 
 
 # familles de pieces (tresse_0..8, foulard + haut + noeud, casquette + visiere, semelles G et D)
-const GROUPS := ["chr_tresse", "chr_foulard", "chr_casquette", "chr_semelle"]
+const GROUPS := ["chr_tresse", "chr_vanille", "chr_foulard", "chr_casquette", "chr_bonnet", "chr_semelle"]
 
 
 static func _starts(n: String, names: Array) -> bool:
@@ -147,6 +231,10 @@ static func apply(ch: Node, look: Dictionary) -> void:
 	for mi in ch.find_children("chr_*", "MeshInstance3D", true, false):
 		var n := String(mi.name)
 		if n == "chr_corps":
+			# visage : morph targets (build_character.py, FACE_KEYS)
+			var face: Dictionary = look.get("face", {})
+			if not face.is_empty():
+				bake_face(mi as MeshInstance3D, face)
 			for s in (mi as MeshInstance3D).mesh.get_surface_count():
 				var m: Material = (mi as MeshInstance3D).mesh.surface_get_material(s)
 				if m and m.resource_name == "chr_peau":
@@ -161,7 +249,7 @@ static func apply(ch: Node, look: Dictionary) -> void:
 			mat = look["legs"]
 		elif n.begins_with("chr_boubou") or n.begins_with("chr_jupe") or n.begins_with("chr_pagne") or n.begins_with("chr_foulard"):
 			mat = look["cloth"]
-		elif n.begins_with("chr_casquette"):
+		elif n.begins_with("chr_casquette") or n.begins_with("chr_bonnet"):
 			mat = look.get("cap", null)
 		elif look.has("hair") and _starts(n, HAIR_PARTS):
 			mat = look["hair"]
@@ -183,6 +271,7 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 	var look := {"skin": skin, "top": shirt, "legs": pants, "cloth": cloth, "show": [],
 		"cap": plain(SHIRTS[rng.randi() % SHIRTS.size()].darkened(0.2))}
 	var show: Array = look["show"]
+	look["face"] = random_face(rng)
 	if ch.get_meta("vieux", false):
 		look["hair"] = salt_pepper(rng.randf_range(0.35, 0.8))   # poivre et sel, plus ou moins blanchi
 	if enfant and (kind == "ecole" or rng.randf() < 0.55):
@@ -228,8 +317,11 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 		elif h < 0.8:
 			show.append("chr_afro")
 		# sinon crane rase
-		if kind != "zem" and rng.randf() < 0.18 and not show.has("chr_boubou"):
+		var hat := rng.randf()
+		if kind != "zem" and hat < 0.18 and not show.has("chr_boubou"):
 			show.append("chr_casquette")
+		elif kind != "zem" and hat < 0.23:
+			show.append("chr_bonnet")     # bonnet de laine (matins frais, harmattan)
 	else:
 		var r := rng.randf()
 		if r < 0.42:
@@ -249,8 +341,10 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 			show.append_array(["chr_foulard"])
 		elif h < 0.55:
 			show.append_array(["chr_cheveux", "chr_chignon"])
-		elif h < 0.75:
+		elif h < 0.67:
 			show.append_array(["chr_cheveux", "chr_tresse"])   # nattes collees sur le crane, pas de crane chauve
+		elif h < 0.79:
+			show.append_array(["chr_cheveux", "chr_vanille"])  # vanilles (vrilles torsadees)
 		elif h < 0.9:
 			show.append_array(["chr_meches"])
 		else:

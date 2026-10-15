@@ -158,6 +158,8 @@ Option plus tard : multijoueur.
 - 15/10/2026 : maison du joueur (signale par Olympe) : buffet vitre deplace (il bloquait la porte d entree), poteau de veranda retire de l axe de la porte (4 poteaux). Test : passage libre de la veranda au salon (test_echelle.gd).
 - 15/10/2026 : etape 12, corps de base : mensurations reelles (homme poitrine 0,88 / taille 0,80 / hanches 0,85 m, femme 0,83 / 0,73 / 0,88 m, bras et cuisses epaissis ; avant silhouette en baton), pente des epaules, tapettes a la longueur du pied avec bride en V (avant des plaques), tresses sur cheveux (avant crane chauve). Outils : tests/mesure_corps.gd, tests/capture_studio.gd.
 - 15/10/2026 : etape 13, morphologies : homme et femme minces, homme et femme ages (dos voute, cheveux poivre et sel, couronne degarnie a la place de la calotte en casque), repartition realiste ; passagers de zem mains sur les cuisses (avant : bras a travers le conducteur), pagnes qui enveloppent les cuisses assis. FPS 74-90 dehors, 67-68 interieurs.
+- 15/10/2026 : noms reels renommes (Boulevard de l Envol, Route des Filets, La voix de Gbe Town, immatriculations GB-), mode debug F1 + teleportation 1-8, checklist docs/validation_phases_3_5.md.
+- 15/10/2026 : etape 14, visages : 7 traits par PNJ cuits a la creation (aucun cout en jeu), nez ouest-africain, 10 teintes de peau, ligne d implantation reelle (plus de frange en bol), vanilles, bonnet, couronne poivre et sel. FPS 76-88 dehors, 61-72 interieurs.
 
 ---
 
@@ -203,7 +205,7 @@ ETAT ACTUEL (15/10/2026)
   12 corps de base, 13 morphologies, 14 visages/peaux/coiffures, 15 vetements locaux, 16 animations, 17 integration + LOD.
 - C carte reelle (fait) : hauteurs mesurees Open Buildings 2.5D, piscines et bassins fideles, relief Copernicus ecarte
   (modele de surface : toits et arbres), noms verifies. Reste possible : pente reelle de la plage (~4 m sur ~100 m).
-- Prochaine tache : livrables d Olympe (noms reels, mode debug et checklist phases 3-5), puis etape 14. Etapes 12 et 13 faites. Regle d'Olympe : tout ce qui n'est
+- Prochaine tache : etape 15 (vetements locaux). Etapes 12 a 14 faites ; noms reels renommes ; mode debug pret. Regle d'Olympe : tout ce qui n'est
   pas fidele a Cotonou est corrige ou supprime.
 - Attention mesures : arreter les Blender / Godot restes en fond avant perf_fps.gd (sinon 10 images/s dans les interieurs).
 - Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et

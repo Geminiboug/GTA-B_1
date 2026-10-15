@@ -406,3 +406,19 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Test : tests/test_debug.gd ; capture : tests/capture_debug.gd -- <fichier.png>.
 - Checklist a remplir en jouant : docs/validation_phases_3_5.md.
 - Noms : docs/correspondance_noms.md (lieu reel -> nom fictif, noms reels encore affiches a valider).
+
+## Visages, peau, coiffures (etape 14)
+- Visages : 7 morph targets sur chr_corps (build_character.py, FACE_KEYS : nez_large, nez_fin, levres_pleines,
+  machoire_large, pommettes, visage_long, yeux_grands), tirees par PNJ (PnjUtil.random_face). Elles sont cuites
+  une fois dans un maillage propre au PNJ (PnjUtil.bake_face, deplacements mis en cache par modele) : les morph
+  targets d'un maillage anime coutaient ~10 images/s dans l'hypermarche.
+- Nez ouest-africain (arete basse, base large, narines marquees).
+- Peau : 10 teintes beninoises (PnjUtil.SKINS), materiau avec fine pellicule de transpiration (clearcoat 0,06) et
+  reflet de bord. Pas de subsurface scattering (-9 images/s dans l'hypermarche pour un effet invisible en jeu).
+- Coiffures : ligne d'implantation reelle (hairline : haut du front, tempes, au-dessus des oreilles, nuque), coques
+  sur anneaux densifies (dense) et bord recale exactement sur la ligne (shell(..., edge=)) : plus de frange en bol
+  ni d'escalier. Nouveau : vanilles (15 vrilles, cotes et dos), bonnet de laine (hommes), couronne poivre et sel
+  des ages. Existant : cheveux courts, afro, chignon, nattes collees + tresses, meches (tissage), foulard en wax
+  (tour + noeud), casquette, crane rase.
+- Controle : tests/capture_visages.gd -- <dossier> [variante] (planche de 8 tirages cadres sur la tete).
+- Reste a faire : cheveux mouilles sous la pluie (materiau des cheveux non relie a gtb_wet).

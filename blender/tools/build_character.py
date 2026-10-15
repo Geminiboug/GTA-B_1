@@ -298,7 +298,7 @@ def blob(name, size, loc, mat, seg=12, rings=8):
     return ob
 
 
-def shell(name, rings, mat, offset, keep, center, seg=20, bumps=0.0):
+def shell(name, rings, mat, offset, keep, center, seg=20, bumps=0.0, edge=None):
     """Coque epousant le crane (cheveux, foulard, casquette), decoupee selon keep(point local)."""
     bm = bmesh.new()
     vr = []
@@ -318,6 +318,12 @@ def shell(name, rings, mat, offset, keep, center, seg=20, bumps=0.0):
         o = offset + (bumps * (0.5 + 0.5 * math.sin(v.co.x * 90) * math.sin(v.co.y * 80) * math.sin(v.co.z * 85)) if bumps else 0.0)
         v.co += n * o
     bmesh.ops.delete(bm, geom=[f for f in bm.faces if not keep(f.calc_center_median())], context="FACES")
+    if edge:
+        # bord net : les sommets du bord sont poses exactement sur la ligne (edge = hauteur locale), pas d escalier
+        for v in bm.verts:
+            if v.is_boundary:
+                if abs(v.co.z - edge(v.co)) < 0.03 * k:
+                    v.co.z = edge(v.co)
     for v in bm.verts:
         v.co += center
     for f in bm.faces:
@@ -344,11 +350,12 @@ else:
 sk = [(r[0] * k, r[1] * k, r[2] * k) + tuple(x * k for x in r[3:]) for r in skull]
 head_parts = [loft("h_crane", sk, SKIN, seg=20, center=hc)]
 fy = 0.099 * k
-head_parts.append(loft("h_nez", [(fy - 0.012, 0.015 * k, 0.026 * k, 0, 0.118 * k), (fy + 0.008 * k, 0.019 * k, 0.019 * k, 0, 0.101 * k),
-                                 (fy + 0.019 * k, 0.025 * k, 0.013 * k, 0, 0.093 * k), (fy + 0.025 * k, 0.014 * k, 0.008 * k, 0, 0.092 * k)],
+# nez : arete basse, base large et narines marquees (morphologie ouest-africaine)
+head_parts.append(loft("h_nez", [(fy - 0.012, 0.016 * k, 0.026 * k, 0, 0.118 * k), (fy + 0.008 * k, 0.022 * k, 0.019 * k, 0, 0.101 * k),
+                                 (fy + 0.018 * k, 0.031 * k, 0.015 * k, 0, 0.092 * k), (fy + 0.023 * k, 0.02 * k, 0.01 * k, 0, 0.09 * k)],
                        SKIN, axis="Y", seg=10, center=hc))
 for sx in (-1, 1):
-    head_parts.append(blob("h_narine", (0.012 * k, 0.012 * k, 0.009 * k), hc + Vector((sx * 0.017 * k, fy + 0.012 * k, 0.091 * k)), SKIN, 8, 6))
+    head_parts.append(blob("h_narine", (0.014 * k, 0.013 * k, 0.01 * k), hc + Vector((sx * 0.021 * k, fy + 0.01 * k, 0.09 * k)), SKIN, 8, 6))
     head_parts.append(blob("h_oreille", (0.012 * k, 0.024 * k, 0.034 * k), hc + Vector((sx * 0.088 * k, -0.008 * k, 0.13 * k)), SKIN, 8, 6))
     head_parts.append(blob("h_oeil", (0.0145 * k, 0.007 * k, 0.0078 * k), hc + Vector((sx * 0.034 * k, fy - 0.001, 0.147 * k)), EYE_W, 10, 6))
     head_parts.append(blob("h_iris", (0.0072 * k, 0.004 * k, 0.0072 * k), hc + Vector((sx * 0.034 * k, fy + 0.0045, 0.147 * k)), EYE_I, 8, 6))
@@ -466,6 +473,50 @@ bpy.ops.object.join()
 body = bpy.context.view_layer.objects.active
 body.name = "chr_corps"
 body.data.name = "chr_corps"
+
+# visages : morph targets (shape keys) reglees au hasard par PNJ dans Godot (PnjUtil), pour que deux voisins ne se
+# ressemblent pas. Deplacements doux autour des traits (gauss), limites au visage (devant, sous la ligne des cheveux).
+FACE_C = {"nez": Vector((0, 0.108, 0.098)), "levres": Vector((0, 0.104, 0.063)), "pommette": Vector((0.058, 0.078, 0.118)),
+          "oeil": Vector((0.034, 0.099, 0.147))}
+
+
+def face_offset(key, L):
+    """Deplacement (repere de la tete, en metres) du point L pour la forme `key`."""
+    def g(c, r):
+        return math.exp(-((L - c * k).length / (r * k)) ** 2)
+    front = ss(-0.01 * k, 0.04 * k, L.y) * ss(-0.03 * k, 0.0, L.z) * (1.0 - ss(0.17 * k, 0.2 * k, L.z))
+    d = Vector((0, 0, 0))
+    if key == "nez_large":
+        d.x = L.x * 0.4 * g(FACE_C["nez"], 0.034)
+    elif key == "nez_fin":
+        d.x = -L.x * 0.28 * g(FACE_C["nez"], 0.034)
+        d.y = 0.004 * k * g(FACE_C["nez"], 0.03)
+    elif key == "levres_pleines":
+        d = (L - FACE_C["levres"] * k) * 0.4 * g(FACE_C["levres"], 0.028)
+        d.y += 0.003 * k * g(FACE_C["levres"], 0.025)
+    elif key == "machoire_large":
+        jaw = ss(0.1 * k, 0.07 * k, L.z) * ss(-0.005 * k, 0.03 * k, L.z)
+        d.x = L.x * 0.18 * jaw
+    elif key == "pommettes":
+        for sx in (-1, 1):
+            c = Vector((FACE_C["pommette"].x * sx, FACE_C["pommette"].y, FACE_C["pommette"].z))
+            gg = g(c, 0.03)
+            d += Vector((sx * 0.006 * k, 0.004 * k, 0.002 * k)) * gg
+    elif key == "visage_long":
+        d.z = -0.014 * k * ss(0.09 * k, 0.02 * k, L.z)
+    elif key == "yeux_grands":
+        for sx in (-1, 1):
+            c = Vector((FACE_C["oeil"].x * sx, FACE_C["oeil"].y, FACE_C["oeil"].z))
+            d += (L - c * k) * 0.22 * g(c, 0.017)
+    return d * front
+
+
+FACE_KEYS = ["nez_large", "nez_fin", "levres_pleines", "machoire_large", "pommettes", "visage_long", "yeux_grands"]
+body.shape_key_add(name="Base", from_mix=False)
+for fk in FACE_KEYS:
+    sk_ = body.shape_key_add(name=fk, from_mix=False)
+    for i, v in enumerate(body.data.vertices):
+        sk_.data[i].co = v.co + face_offset(fk, v.co - hc)
 
 
 # ------------------------------------------------------------------ vetements derives du corps
@@ -721,8 +772,34 @@ if not F:
 
 # ------------------------------------------------------------------ coiffures et couvre-chefs (os de la tete)
 hair_objs = []
-hair_objs.append(shell("chr_cheveux", sk, HAIR, 0.006 * k, lambda c: c.z > (0.135 + 0.65 * c.y) * k, hc))
-hair_objs.append(shell("chr_afro", sk, HAIR, 0.028 * k, lambda c: c.z > (0.12 + 0.6 * c.y) * k, hc, bumps=0.008 * k))
+
+
+def dense(rings, n=4):
+    """Anneaux du crane interpoles (n par intervalle) : bords de coiffure nets au lieu de suivre 9 anneaux en marches."""
+    out = []
+    for a, b in zip(rings, rings[1:]):
+        a5, b5 = (list(a) + [0.0, 0.0])[:5], (list(b) + [0.0, 0.0])[:5]
+        for j in range(n):
+            t = j / n
+            out.append(tuple(a5[i] + (b5[i] - a5[i]) * t for i in range(5)))
+    out.append(rings[-1])
+    return out
+
+
+skd = dense(sk)
+
+
+def hairline(c):
+    """Ligne d'implantation reelle : haut du front au milieu, tempes plus basses, nuque en bas (pas de frange en bol)."""
+    to_ear = ss(-0.085 * k, -0.035 * k, c.y)                # nuque (bas) -> au-dessus de l'oreille
+    to_front = ss(0.03 * k, 0.09 * k, c.y)                  # au-dessus de l'oreille -> haut du front
+    temple = ss(0.045 * k, 0.08 * k, abs(c.x)) * ss(0.03 * k, 0.07 * k, c.y)
+    return (0.03 + 0.135 * to_ear + 0.04 * to_front - 0.02 * temple) * k
+
+
+hair_objs.append(shell("chr_cheveux", skd, HAIR, 0.0045 * k, lambda c: c.z > hairline(c), hc, seg=40, edge=hairline))
+hair_objs.append(shell("chr_afro", skd, HAIR, 0.024 * k, lambda c: c.z > hairline(c) + 0.01 * k, hc, bumps=0.007 * k, seg=40,
+                       edge=lambda c: hairline(c) + 0.01 * k))
 if F:
     hair_objs.append(blob("chr_chignon", (0.055 * k, 0.05 * k, 0.05 * k), hc + Vector((0, -0.085 * k, 0.215 * k)), HAIR))
     for i in range(9):
@@ -730,7 +807,16 @@ if F:
         x, y = 0.082 * math.sin(a) * k, (-0.08 * math.cos(a) - 0.012) * k
         hair_objs.append(loft(f"chr_tresse_{i}", [(0.17 * k, 0.011 * k, 0.011 * k, x, y), (0.05, 0.011 * k, 0.011 * k, x * 1.07, y * 1.18),
                                                   (-0.07, 0.009 * k, 0.009 * k, x * 1.07, y * 1.28)], HAIR, seg=6, center=hc))
-    hair_objs.append(shell("chr_meches", [(-0.07 * k, 0.1 * k, 0.1 * k, 0, -0.03 * k)] + sk[2:], HAIR, 0.012 * k,
+    # vanilles (vrilles torsadees) : reparties sur tout le crane, tombent jusqu'aux epaules ; base = chr_cheveux
+    for i in range(15):
+        a = math.radians(-112 + i * 16)                    # cotes et arriere (rien devant le visage)
+        x0, y0 = 0.07 * math.sin(a) * k, -0.07 * math.cos(a) * k
+        lo = -0.11 - 0.03 * math.cos(a)                     # plus longues dans le dos
+        hair_objs.append(loft(f"chr_vanille_{i}", [(0.2 * k, 0.008 * k, 0.008 * k, x0 * 0.7, y0 * 0.7),
+                                                   (0.12 * k, 0.009 * k, 0.009 * k, x0 * 1.25, y0 * 1.25),
+                                                   (0.0, 0.008 * k, 0.008 * k, x0 * 1.35, y0 * 1.35),
+                                                   (lo * k, 0.006 * k, 0.006 * k, x0 * 1.4, y0 * 1.42)], HAIR, seg=6, center=hc))
+    hair_objs.append(shell("chr_meches",[(-0.07 * k, 0.1 * k, 0.1 * k, 0, -0.03 * k)] + sk[2:], HAIR, 0.012 * k,
                            lambda c: c.z > (0.15 + 0.5 * c.y) * k or (c.y < 0.02 * k and c.z > -0.07 * k), hc))
     hair_objs.append(shell("chr_foulard", sk, CLOTH, 0.018 * k, lambda c: c.z > (0.17 + 0.45 * c.y) * k, hc))
     hair_objs.append(blob("chr_foulard_haut", (0.098 * k, 0.112 * k, 0.07 * k), hc + Vector((0, -0.018 * k, 0.265 * k)), CLOTH, 14, 8))
@@ -740,12 +826,20 @@ else:
     # (pas de calotte en forme de casque) ; couleur poivre et sel donnee dans Godot (pnj_util.gd)
     def age_keep(c):
         jit = 0.0
-        above_ears = c.z > (0.105 + 0.55 * c.y) * k + jit
-        back_or_sides = c.y < -0.035 * k + jit or c.z < 0.19 * k + jit
+        above_ears = c.z > hairline(c) + jit
+        back_or_sides = c.y < -0.035 * k + jit or c.z < 0.215 * k + jit
         forehead = c.y > 0.015 * k and abs(c.x) < 0.075 * k        # front et golfes : peau nue
         return above_ears and back_or_sides and not forehead
-    hair_objs.append(shell("chr_cheveux_age", sk, HAIR, 0.005 * k, age_keep, hc, seg=44))
-    hair_objs.append(shell("chr_casquette", sk, CAP, 0.012 * k, lambda c: c.z > 0.165 * k + 0.2 * c.y, hc))
+    def age_edge(c):
+        lo, hi = hairline(c), 0.215 * k                    # bord bas (implantation) ou haut de la couronne
+        return lo if abs(c.z - lo) < abs(c.z - hi) or c.y < -0.035 * k else hi
+    hair_objs.append(shell("chr_cheveux_age", skd, HAIR, 0.005 * k, age_keep, hc, seg=44, edge=age_edge))
+    # bonnet en maille (matin frais, harmattan) : couvre le haut des oreilles, revers epais
+    hair_objs.append(shell("chr_bonnet", sk, CAP, 0.011 * k, lambda c: c.z > 0.1 * k + 0.25 * max(c.y, 0.0), hc, seg=32))
+    hair_objs.append(loft("chr_bonnet_revers", [(0.105 * k, 0.098 * k, 0.11 * k, 0, 0.0), (0.135 * k, 0.1 * k, 0.112 * k, 0, 0.0)],
+                          CAP, seg=24, caps=(False, False), center=hc))
+    hair_objs.append(shell("chr_casquette", skd, CAP, 0.012 * k, lambda c: c.z > 0.165 * k + 0.2 * c.y, hc, seg=40,
+                           edge=lambda c: 0.165 * k + 0.2 * c.y))
     hair_objs.append(loft("chr_casquette_visiere", [(0.075 * k, 0.072 * k, 0.005, 0, 0.17 * k), (0.15 * k, 0.07 * k, 0.005, 0, 0.162 * k),
                                                    (0.17 * k, 0.05 * k, 0.004, 0, 0.158 * k)], CAP, axis="Y", seg=8, center=hc))
 for o in hair_objs:
