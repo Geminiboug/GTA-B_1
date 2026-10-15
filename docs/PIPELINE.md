@@ -453,3 +453,7 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   direction de la camera, ou un avion a moins de 600 m et 250 m de haut (look_plane_range).
 - Test : tests/test_controles.gd ; capture : tests/capture_regard.gd -> docs/images/etape16_regard.png.
 - En attente des clips Quaternius : accroupi, demarrages, arrets, pivots, saut contextuel, IK, ragdoll.
+- Postures (character_anim.gd : posture, carry_head, rain_cover ; pedestrians.gd) : personnes agees 25 % plus lentes et
+  dos voute ; charge sur la tete : buste droit, main droite qui stabilise par moments (avant : le bras leve n'etait
+  jamais applique) ; averse : 70 % des pietons pressent le pas (+25 %) et se couvrent la tete. Capture :
+  tests/capture_postures.gd -> docs/images/etape16_postures.png.

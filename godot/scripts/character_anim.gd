@@ -20,6 +20,10 @@ var essouffle := 0.0 # 0..1 : essoufflement (endurance du joueur), respiration r
 var look_yaw := 0.0   # rad, regard relatif au corps (+ = a gauche)
 var look_pitch := 0.0 # rad, + = vers le haut
 var _look := Vector2.ZERO
+var posture := 0.0    # rad, dos voute (personne agee)
+var carry_head := false # charge sur la tete (buste droit, main qui stabilise)
+var rain_cover := 0.0  # 0..1 : se protege de la pluie (main sur la tete)
+var _rain := 0.0
 var _gest := 0.0
 var _punch := 0.0
 
@@ -212,6 +216,23 @@ func _physics_process(delta: float) -> void:
 		_p["piv_coude_G"].rotation.x = lerpf(_p["piv_coude_G"].rotation.x, 1.3, _gest)
 		_p["piv_tronc"].rotation.x = lerpf(_p["piv_tronc"].rotation.x, -0.12, _gest)
 		_p["piv_tete"].rotation.x = lerpf(_p["piv_tete"].rotation.x, 0.08 * sin(_t * 5.0), _gest)
+	# posture : dos voute (personne agee), tete en avant
+	if posture != 0.0:
+		_p["piv_tronc"].rotation.x -= posture
+		_p["piv_tete"].rotation.x += posture * 0.6
+	# charge sur la tete : buste droit, main droite qui vient stabiliser la charge de temps en temps
+	if carry_head:
+		var hold := smoothstep(0.1, 0.6, sin(_t * 0.35 + get_instance_id() % 7))
+		_p["piv_tronc"].rotation.x = lerpf(_p["piv_tronc"].rotation.x, 0.03, 0.85)
+		_p["piv_tete"].rotation.x = lerpf(_p["piv_tete"].rotation.x, 0.0, 0.9)
+		_p["piv_epaule_D"].rotation.x = lerpf(_p["piv_epaule_D"].rotation.x, 2.75, hold)
+		_p["piv_coude_D"].rotation.x = lerpf(_p["piv_coude_D"].rotation.x, 0.45, hold)
+	# averse : main au-dessus de la tete, dos rond
+	_rain = lerpf(_rain, rain_cover, 1.0 - exp(-3.0 * delta))
+	if _rain > 0.01 and not carry_head:
+		_p["piv_epaule_D"].rotation.x = lerpf(_p["piv_epaule_D"].rotation.x, 2.45, _rain)
+		_p["piv_coude_D"].rotation.x = lerpf(_p["piv_coude_D"].rotation.x, 1.95, _rain)
+		_p["piv_tronc"].rotation.x = lerpf(_p["piv_tronc"].rotation.x, _p["piv_tronc"].rotation.x - 0.15, _rain)
 	# coup : epaule droite vers l'avant, bras tendu, rotation du buste
 	if _punch > 0.0:
 		_punch = maxf(0.0, _punch - delta)

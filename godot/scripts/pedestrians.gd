@@ -75,6 +75,12 @@ func _new_walker(genre: String, at := Vector2.INF) -> Dictionary:
 		"talk_cd": _rng.randf_range(0.0, 8.0), "prom": at == Vector2.INF and _promenade.size() > 2 and _rng.randf() < promenade_share}
 	if basin:
 		w["basin_node"] = basin
+		ch.set("carry_head", true)             # buste droit, main qui stabilise la charge
+		w["speed"] *= 0.9
+	if ch.get_meta("vieux", false):
+		w["speed"] *= 0.75                      # personne agee : pas plus lent et dos voute
+		ch.set("posture", 0.16)
+	w["rain_shy"] = _rng.randf() < 0.7          # se protege de la pluie
 	if at != Vector2.INF:
 		w["pos"] = Vector3(at.x, GROUND_Y, at.y)
 		_resnap(w)
@@ -275,8 +281,17 @@ func _physics_process(delta: float) -> void:
 		_triggers(w, dt, ppos, pv)
 
 
+var _meteo: Node = null
+
+
+func _rain_now() -> float:
+	if _meteo == null:
+		_meteo = get_parent().get_node_or_null("Meteo")
+	return float(_meteo.get("rain")) if _meteo and _meteo.get("rain") != null else 0.0
+
+
 func _walk(w: Dictionary, delta: float, ppos: Vector3) -> void:
-	var speed: float = w["speed"]
+	var speed: float = w["speed"] * (1.25 if _rain_now() > 0.5 else 1.0)   # sous l'averse on presse le pas
 	if w["pause"] > 0.0:
 		w["pause"] -= delta
 		speed = 0.0
@@ -347,6 +362,7 @@ func _walk(w: Dictionary, delta: float, ppos: Vector3) -> void:
 	ch.global_transform = Transform3D(Basis(Vector3.UP, w["yaw"]), w["pos"])
 	ch.set("speed", speed * (1.3 if w["cross"] else 1.0))
 	ch.set("on_floor", true)
+	ch.set("rain_cover", 1.0 if w.get("rain_shy", false) and _rain_now() > 0.5 else 0.0)
 
 
 func _offsets(w: Dictionary) -> Array:
