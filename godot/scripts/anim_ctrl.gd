@@ -38,6 +38,8 @@ var look_pitch := 0.0
 var posture := 0.0
 var carry_head := false
 var rain_cover := 0.0
+# cibles en position monde (Vector3.INF : aucune) : mains sur le guidon / volant, pieds sur les repose-pieds / pedales
+var ik_targets := {"LeftHand": Vector3.INF, "RightHand": Vector3.INF, "LeftFoot": Vector3.INF, "RightFoot": Vector3.INF}
 
 static var _libs := {}            # bibliotheques chargees une fois pour tous les personnages
 static var _natural := {}         # vitesse naturelle des clips (hauteurs de hanche par seconde)
@@ -83,7 +85,8 @@ func _ready() -> void:
 	if _skel == null:
 		return
 	_load_libs()
-	for n in ["Hips", "Spine", "Chest", "UpperChest", "Neck", "Head"]:
+	for n in ["Hips", "Spine", "Chest", "UpperChest", "Neck", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm",
+			"RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"]:
 		_bone[n] = _skel.find_bone(n)
 	_player = AnimationPlayer.new()
 	_player.name = "Clips"
@@ -228,6 +231,13 @@ func _overlay(delta: float) -> void:
 	var target := clampf(-turn_rate * speed * lean_per_turn, -0.35, 0.35) if on_floor and not seated else 0.0
 	_lean = lerpf(_lean, target, 1.0 - exp(-4.0 * delta))
 	rotation.z = _lean
+	for end in ik_targets:
+		if ik_targets[end] != Vector3.INF:
+			var side: String = "Left" if end.begins_with("Left") else "Right"
+			if end.ends_with("Hand"):
+				_two_bone_ik(side + "UpperArm", side + "LowerArm", end, ik_targets[end])
+			else:
+				_two_bone_ik(side + "UpperLeg", side + "LowerLeg", end, ik_targets[end])
 
 
 func _turn_bone(name: String, euler: Vector3) -> void:
@@ -241,3 +251,58 @@ func _turn_bone(name: String, euler: Vector3) -> void:
 	var r := Basis.from_euler(Vector3(-euler.x, euler.y, -euler.z))
 	var local := pg.inverse() * r * pg
 	_skel.set_bone_pose_rotation(i, (local * Basis(_skel.get_bone_pose_rotation(i))).get_rotation_quaternion())
+
+
+func _gpose(i: int, local: Dictionary) -> Transform3D:
+	## Pose globale d'un os (repere du squelette) en tenant compte des rotations deja modifiees dans `local`.
+	var chain: Array[int] = []
+	var b := i
+	while b >= 0:
+		chain.push_front(b)
+		b = _skel.get_bone_parent(b)
+	var xf := Transform3D.IDENTITY
+	for c in chain:
+		var q: Quaternion = local.get(c, _skel.get_bone_pose_rotation(c))
+		xf = xf * Transform3D(Basis(q).scaled(_skel.get_bone_pose_scale(c)), _skel.get_bone_pose_position(c))
+	return xf
+
+
+func _two_bone_ik(upper: String, lower: String, end: String, target_world: Vector3) -> void:
+	## IK analytique a deux os (epaule-coude-main ou hanche-genou-pied) : le coude / genou garde son plan de flexion.
+	var iu: int = _bone.get(upper, -1)
+	var il: int = _bone.get(lower, -1)
+	var ie: int = _bone.get(end, -1)
+	if iu < 0 or il < 0 or ie < 0:
+		return
+	var t := _skel.global_transform.affine_inverse() * target_world
+	var gu := _gpose(iu, {})
+	var gl := _gpose(il, {})
+	var ge := _gpose(ie, {})
+	var a := gu.origin
+	var b := gl.origin
+	var c := ge.origin
+	var l1 := (b - a).length()
+	var l2 := (c - b).length()
+	var to_t := t - a
+	var d := clampf(to_t.length(), absf(l1 - l2) + 0.01, l1 + l2 - 0.005)
+	var dir := to_t.normalized()
+	# plan de flexion : direction actuelle du coude / genou, retiree de l'axe epaule -> cible
+	var pole := (b - a) - dir * (b - a).dot(dir)
+	if pole.length() < 1e-4:
+		pole = Vector3.UP.cross(dir) if absf(dir.y) < 0.9 else Vector3.RIGHT
+	pole = pole.normalized()
+	var cos_a := clampf((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0)
+	var b2 := a + dir * (l1 * cos_a) + pole * (l1 * sqrt(1.0 - cos_a * cos_a))
+	# os superieur : (b - a) -> (b2 - a)
+	var r1 := Quaternion((b - a).normalized(), (b2 - a).normalized())
+	var pu := _gpose(_skel.get_bone_parent(iu), {}).basis.get_rotation_quaternion() if _skel.get_bone_parent(iu) >= 0 else Quaternion.IDENTITY
+	var new_gu := r1 * gu.basis.get_rotation_quaternion()
+	var lu := pu.inverse() * new_gu
+	var local := {iu: lu}
+	# os inferieur : (c - b2) -> (t - b2)
+	var gl2 := _gpose(il, local)
+	var ge2 := _gpose(ie, local)
+	var r2 := Quaternion((ge2.origin - gl2.origin).normalized(), (a + dir * d - gl2.origin).normalized())
+	var ll := new_gu.inverse() * (r2 * gl2.basis.get_rotation_quaternion())
+	_skel.set_bone_pose_rotation(iu, lu.normalized())
+	_skel.set_bone_pose_rotation(il, ll.normalized())

@@ -445,6 +445,9 @@ def vehicle(name, sp):
     # bassin du conducteur assis : au-dessus de l'assise, un peu en arriere de son milieu
     empty("pt_conducteur", (-hw * 0.42, rows[0] - 0.1, sz + 0.08), root)
     empty("pt_sortie", (-hw - 0.75, rows[0] + 0.1, 0.0), root)
+    # cibles des mains (centre du volant) et des pieds (pedales) pour la pose du conducteur (IK dans Godot)
+    empty("pt_volant", (-hw * 0.42, dy - 0.3, cd["belt"] + 0.06), root)
+    empty("pt_pedales", (-hw * 0.42, dy - 0.05, st[0]["zb"] + 0.12), root)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_BLEND_DIR, name + ".blend"))
     bpy.ops.export_scene.gltf(filepath=os.path.join(OUT_GLB_DIR, name + ".glb"), export_format="GLB",
                               export_apply=True, export_yup=True)

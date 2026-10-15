@@ -216,6 +216,10 @@ func shake(amount: float) -> void:
 var vehicle: Node3D = null
 const ENTER_DISTANCE := 2.5
 const HIP_HEIGHT := 0.92  # hauteur du bassin au-dessus des pieds
+# pose de conduite (clip Driving) : le bassin est 0,39 m plus bas et 0,30 m plus en arriere que debout (tests/mesure_assis.gd)
+@export var seat_hip_drop := 0.39
+@export var seat_hip_back := 0.30
+@export var car_seat_raise := 0.0    # voiture : rehaussement de l assise (les pieds vont aux pedales par IK)
 
 
 func _nearest_vehicle() -> Node3D:
@@ -261,6 +265,7 @@ func enter_vehicle(v: Node3D) -> void:
 
 func exit_vehicle() -> void:
 	var v := vehicle
+	_clear_ik()
 	vehicle = null
 	v.set_rider(false)
 	v.get_node("CamRig").activate(false)
@@ -281,7 +286,9 @@ func exit_vehicle() -> void:
 func _ride(_delta: float) -> void:
 	var seat: Transform3D = vehicle.seat_transform()
 	var hip := HIP_HEIGHT - (0.04 if genre == "femme" else 0.0)
-	global_transform = Transform3D(seat.basis, seat.origin - seat.basis.y * hip)
+	hip -= seat_hip_drop + (car_seat_raise if vehicle.name == "Voiture" else 0.0)
+	global_transform = Transform3D(seat.basis, seat.origin - seat.basis.y * hip - seat.basis.z * seat_hip_back)
+	_ride_ik()
 	body.rotation = Vector3.ZERO
 	if anim:
 		anim.speed = 0.0
@@ -430,3 +437,37 @@ func _step_up(hvel: Vector2) -> void:
 			global_position = top.origin + col.get_travel()
 			apply_floor_snap()
 		return
+
+
+func _ride_ik() -> void:
+	## Mains sur les poignees du guidon (zem) ou sur le volant, pieds sur les repose-pieds ou les pedales.
+	if anim == null or not ("ik_targets" in anim):
+		return
+	var t: Dictionary = anim.ik_targets
+	var vx: Transform3D = vehicle.global_transform
+	var grip_l := vehicle.find_child("poignee_-1", true, false) as Node3D
+	if grip_l:
+		var grip_r := vehicle.find_child("poignee_1", true, false) as Node3D
+		var peg_l := vehicle.find_child("cale_pied_-1", true, false) as Node3D
+		var peg_r := vehicle.find_child("cale_pied_1", true, false) as Node3D
+		t["LeftHand"] = grip_l.global_position
+		t["RightHand"] = grip_r.global_position if grip_r else Vector3.INF
+		t["LeftFoot"] = peg_l.global_position + vx.basis.y * 0.05 if peg_l else Vector3.INF
+		t["RightFoot"] = peg_r.global_position + vx.basis.y * 0.05 if peg_r else Vector3.INF
+		return
+	var wheel := vehicle.find_child("pt_volant", true, false) as Node3D
+	var pedals := vehicle.find_child("pt_pedales", true, false) as Node3D
+	if wheel:
+		var side := wheel.global_transform.basis.x.normalized()
+		t["LeftHand"] = wheel.global_position - side * 0.17
+		t["RightHand"] = wheel.global_position + side * 0.17
+	if pedals:
+		var side2 := pedals.global_transform.basis.x.normalized()
+		t["LeftFoot"] = pedals.global_position - side2 * 0.12 + vx.basis.y * 0.08
+		t["RightFoot"] = pedals.global_position + side2 * 0.08 + vx.basis.y * 0.08
+
+
+func _clear_ik() -> void:
+	if anim and "ik_targets" in anim:
+		for k in anim.ik_targets:
+			anim.ik_targets[k] = Vector3.INF
