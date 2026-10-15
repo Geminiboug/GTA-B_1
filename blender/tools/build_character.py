@@ -1,27 +1,39 @@
-# GTB : personnages (homme / femme) faits par script, sans asset externe.
-# Lancement : blender -b --python blender/tools/build_character.py -- <homme|femme> <sortie.blend> <sortie.glb> [apercu.png]
+# GTB : personnages (homme, homme fort, femme, femme ronde, garcon, fille) faits par script, sans asset externe.
+# Lancement : blender -b --python blender/tools/build_character.py -- <variante> <sortie.blend> <sortie.glb> [apercu.png]
 #
-# Pieces rigides arrondies (sections elliptiques lissees : torse, bassin, membres, tete avec nez, oreilles,
-# yeux, sourcils, levres, mains avec pouce, pieds et semelles) accrochees a des pivots (Empties) places aux
-# articulations. Les animations sont procedurales dans Godot (godot/scripts/character_anim.gd), qui tourne les
-# pivots piv_* : memes noms et memes positions de reference pour les deux morphologies.
-# Silhouettes differentes : homme (1,76 m, epaules larges, bassin etroit), femme (1,66 m, epaules plus
-# etroites, taille marquee, hanches et poitrine, cou plus fin, mains et pieds plus petits).
-# Pieces de tenue optionnelles (affichees ou non par godot/scripts/pnj_util.gd) :
-#   homme : chemise / tee-shirt (torse + manches), pantalon, boubou (tunique longue + manches larges),
-#           casquette, chaussures fermees ou sandales ;
-#   femme : haut (torse + manches), pagne court ou long, foulard noue, chignon ou tresses, sandales.
-# Orientation : le personnage regarde +Y dans Blender (= -Z, l'avant, dans Godot). Pieds a Z = 0.
-# Ne jamais nommer une piece *_col / -col (Godot en ferait une collision).
+# Corps d'un seul tenant (modificateur Skin + subdivision : epaules, coudes, genoux sans jointure visible) anime par un
+# squelette (os nommes comme les anciens pivots : piv_bassin, piv_tronc, piv_tete, piv_epaule_*, piv_coude_*,
+# piv_main_*, piv_hanche_*, piv_genou_*, piv_cheville_*). Poids calcules par regions (bras, jambes, tronc, tete)
+# avec des zones de fondu aux articulations. Pose de repos en "A" (bras ecartes de 12 degres).
+# Tete : crane, pommettes, menton, nez et narines, oreilles, yeux avec paupieres, sourcils, levres.
+# Vetements (maillages separes, memes poids que le corps : ils suivent exactement les mouvements) :
+#   haut (manches courtes), haut long (manches longues), pantalon, short, chaussures, semelles (sandales),
+#   jupe / pagne long / boubou (cones lestes sur le bassin et les cuisses).
+# Coiffures : cheveux courts, afro, tresses, chignon, meches longues, foulard noue, casquette.
+# Orientation : regarde +Y Blender (= -Z Godot). Pieds a Z = 0. Ne jamais nommer une piece *_col / -col.
 import bpy
 import bmesh
 import math
 import sys
+from mathutils import Vector, kdtree
 
 args = sys.argv[sys.argv.index("--") + 1:]
-GENRE, OUT_BLEND, OUT_GLB = args[:3]
+VARIANT, OUT_BLEND, OUT_GLB = args[:3]
 PREVIEW = args[3] if len(args) > 3 else None
-F = GENRE == "femme"
+
+V = {
+    "homme": dict(sex="m", h=1.76, g=1.0, sh=1.0, hip=1.0, bust=0.0, belly=0.0, child=False),
+    "homme_fort": dict(sex="m", h=1.74, g=1.17, sh=1.05, hip=1.08, bust=0.012, belly=0.07, child=False),
+    "femme": dict(sex="f", h=1.65, g=0.95, sh=0.88, hip=1.13, bust=0.038, belly=0.0, child=False),
+    "femme_ronde": dict(sex="f", h=1.63, g=1.16, sh=0.93, hip=1.28, bust=0.055, belly=0.045, child=False),
+    "garcon": dict(sex="m", h=1.30, g=0.86, sh=0.9, hip=0.95, bust=0.0, belly=0.01, child=True),
+    "fille": dict(sex="f", h=1.27, g=0.84, sh=0.88, hip=0.98, bust=0.0, belly=0.0, child=True),
+}[VARIANT]
+F = V["sex"] == "f"
+K = V["h"] / 1.76                      # echelle verticale du corps
+HK = (V["h"] / 1.76) ** 0.45 if V["child"] else (0.95 if F else 1.0)   # tete : proportionnellement plus grosse chez l'enfant
+G = V["g"]
+A_POSE = math.radians(12.0)
 
 bpy.ops.wm.read_homefile(use_empty=True)
 scene = bpy.context.scene
@@ -53,70 +65,171 @@ def material(name, srgb, rough=0.8):
 
 
 SKIN = material("chr_peau", (0.36, 0.22, 0.15), 0.55)
-LIPS = material("chr_levres", (0.24, 0.13, 0.11), 0.5)
-EYE_W = material("chr_oeil_blanc", (0.92, 0.9, 0.86), 0.3)
-EYE_I = material("chr_oeil_iris", (0.06, 0.04, 0.03), 0.2)
+LIPS = material("chr_levres", (0.26, 0.14, 0.12), 0.45)
+EYE_W = material("chr_oeil_blanc", (0.9, 0.88, 0.84), 0.3)
+EYE_I = material("chr_oeil_iris", (0.06, 0.04, 0.03), 0.15)
 HAIR = material("chr_cheveux", (0.05, 0.04, 0.04), 0.9)
-SHIRT = material("chr_chemise", (0.95, 0.75, 0.10))
+TOP = material("chr_chemise", (0.95, 0.75, 0.10))
 PANTS = material("chr_pantalon", (0.18, 0.22, 0.30))
 SHOES = material("chr_chaussures", (0.12, 0.10, 0.09), 0.6)
 SOLE = material("chr_semelle", (0.1, 0.1, 0.11), 0.7)
-CLOTH = material("chr_tissu", (0.8, 0.3, 0.1))        # pagne / boubou / foulard (teinte et motif wax dans Godot)
+CLOTH = material("chr_tissu", (0.8, 0.3, 0.1))
 CAP = material("chr_casquette", (0.15, 0.2, 0.45))
 
-
-def pivot(name, loc, parent=None):
-    e = bpy.data.objects.new(name, None)
-    e.empty_display_size = 0.04
-    scene.collection.objects.link(e)
-    if parent:
-        e.parent = parent
-    e.location = loc
-    return e
+# ------------------------------------------------------------------ squelette (positions de reference homme 1,76 m)
+J = {}
 
 
-def _obj(name, bm, mat, parent, loc=(0, 0, 0)):
-    me = bpy.data.meshes.new(name)
-    bm.to_mesh(me)
-    bm.free()
-    ob = bpy.data.objects.new(name, me)
-    scene.collection.objects.link(ob)
-    me.materials.append(mat)
-    ob.parent = parent
-    ob.location = loc
-    return ob
+def jp(name, x, y, z):
+    J[name] = Vector((x, y, z))
 
 
-def shell(name, rings, mat, parent, offset, keep, seg=16):
-    """Coque epousant une forme (cheveux, foulard, casquette) : la forme des sections est gonflee de 'offset'
-    le long des normales, puis on ne garde que les faces ou keep(centre) est vrai (ligne d'implantation)."""
-    bm = bmesh.new()
-    vr = []
-    for ring in rings:
-        t, rx, rr = ring[:3]
-        c1, c2 = (list(ring[3:]) + [0.0, 0.0])[:2]
-        vr.append([bm.verts.new((c1 + rx * math.cos(i / seg * math.tau), c2 + rr * math.sin(i / seg * math.tau), t))
-                   for i in range(seg)])
-    for r0, r1 in zip(vr, vr[1:]):
-        for i in range(seg):
-            j = (i + 1) % seg
-            bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
-    bm.faces.new(vr[-1])
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    bm.normal_update()
-    for v in bm.verts:
-        v.co += v.normal * offset
-    bmesh.ops.delete(bm, geom=[f for f in bm.faces if not keep(f.calc_center_median())], context="FACES")
-    for f in bm.faces:
-        f.smooth = True
-    return _obj(name, bm, mat, parent)
+BASE_M = dict(bz=0.95, hip=0.89, knee=0.46, ankle=0.075, tronc=1.01, sh_z=1.45, sh_x=0.212, tete=1.535, up=0.29, lo=0.25, hip_x=0.095)
+BASE_F = dict(bz=0.91, hip=0.85, knee=0.435, ankle=0.072, tronc=0.97, sh_z=1.375, sh_x=0.183, tete=1.46, up=0.27, lo=0.235, hip_x=0.088)
+B = dict(BASE_F if F else BASE_M)
+if V["child"]:
+    # enfant : corps reduit, tete proportionnellement plus grosse (le sommet tombe a la taille voulue)
+    kb = (V["h"] - 0.265 * HK) / B["tete"]
+    for key in B:
+        B[key] *= kb
+    B["sh_x"] *= 1.06
+    B["hip_x"] *= 0.95
+    bk_scale = kb
+else:
+    kb = V["h"] / (1.65 if F else 1.76)
+    for key in ("bz", "hip", "knee", "ankle", "tronc", "sh_z", "tete", "up", "lo"):
+        B[key] *= kb
+    bk_scale = 1.0
+bz, hip_z, knee_z, ankle_z, tronc_z = B["bz"], B["hip"], B["knee"], B["ankle"], B["tronc"]
+sh_z, tete_z, up_len, lo_len = B["sh_z"], B["tete"], B["up"], B["lo"]
+sh_x = B["sh_x"] * V["sh"] * G ** 0.35
+hip_x = B["hip_x"] * V["hip"]
+
+jp("bassin", 0, 0, bz)
+jp("tronc", 0, 0, tronc_z)
+jp("cou", 0, -0.005, sh_z + 0.03)
+jp("tete", 0, -0.005, tete_z)
+jp("sommet", 0, 0, tete_z + 0.27 * HK)
+for s, sx in (("G", -1), ("D", 1)):
+    jp("epaule_" + s, sx * sh_x, 0, sh_z)
+    jp("coude_" + s, sx * (sh_x + up_len * math.sin(A_POSE)), 0.0, sh_z - up_len * math.cos(A_POSE))
+    jp("poignet_" + s, sx * (sh_x + (up_len + lo_len) * math.sin(A_POSE)), 0.015, sh_z - (up_len + lo_len) * math.cos(A_POSE))
+    jp("doigts_" + s, sx * (sh_x + (up_len + lo_len + 0.17 * K ** 0.6) * math.sin(A_POSE)), 0.025,
+       sh_z - (up_len + lo_len + 0.17 * K ** 0.6) * math.cos(A_POSE))
+    jp("hanche_" + s, sx * hip_x, 0, hip_z)
+    jp("genou_" + s, sx * hip_x * 1.02, 0.012, knee_z)
+    jp("cheville_" + s, sx * hip_x * 1.02, -0.012, ankle_z)
+    jp("orteils_" + s, sx * hip_x * 1.05, 0.16 * K ** 0.8, 0.02)
+
+# ------------------------------------------------------------------ corps (Skin + subdivision)
+me = bpy.data.meshes.new("chr_corps")
+body = bpy.data.objects.new("chr_corps", me)
+scene.collection.objects.link(body)
+verts, edges, radii = [], [], []
 
 
-def loft(name, rings, mat, parent, axis="Z", seg=14, caps=(True, True), loc=(0, 0, 0)):
-    """Volume lisse a partir de sections elliptiques.
-    rings : (t, rx, rr, c1, c2) ; axe Z : ellipse dans le plan XY (rx en X, rr en Y, centre (c1, c2)) a Z = t ;
-    axe Y : ellipse dans le plan XZ (rx en X, rr en Z, centre (c1, c2)) a Y = t."""
-    me = bpy.data.meshes.new(name)
+def node(p, rx, ry):
+    verts.append(tuple(p))
+    radii.append((rx, ry))
+    return len(verts) - 1
+
+
+SEGS = []   # segments du squelette de peau : (a, b, branche, cote) pour savoir d'ou vient chaque sommet
+
+
+def chain(ids, label="torse", side=""):
+    for a, b in zip(ids, ids[1:]):
+        edges.append((a, b))
+        SEGS.append((Vector(verts[a]), Vector(verts[b]), label, side))
+
+
+g, hk, bk = G, V["hip"], bk_scale
+pel = node(J["bassin"] + Vector((0, -0.01, -0.045 * bk)), 0.155 * hk * g * bk, 0.112 * g * bk)
+waist = node(Vector((0, 0, bz + 0.13 * bk)), (0.122 if F else 0.135) * g * bk, 0.092 * g * bk)
+chest_lo = node(Vector((0, 0.003, bz + 0.27 * bk)), (0.14 if F else 0.152) * g * bk, 0.104 * g * bk)
+chest = node(Vector((0, 0.0, sh_z - 0.1 * bk)), (0.155 if F else 0.175) * V["sh"] * g ** 0.6 * bk, 0.112 * g * bk)
+neck0 = node(Vector((0, -0.006, sh_z + 0.015)), 0.11 * V["sh"] * bk, 0.075 * bk)
+neck1 = node(J["tete"] + Vector((0, 0, 0.0)), (0.046 if F else 0.056) * HK, (0.046 if F else 0.054) * HK)
+neck2 = node(J["tete"] + Vector((0, 0.002, 0.05 * HK)), (0.044 if F else 0.052) * HK, (0.045 if F else 0.052) * HK)
+chain([pel, waist, chest_lo, chest, neck0, neck1, neck2])
+TORSO_RX = [(verts[i][2], radii[i][0]) for i in (pel, waist, chest_lo, chest, neck0)]
+TORSO_RY = [(verts[i][2], radii[i][1]) for i in (pel, waist, chest_lo, chest, neck0)]
+ab = 0.88 if F else 1.0
+for s in ("G", "D"):
+    S, E, W, D = J["epaule_" + s], J["coude_" + s], J["poignet_" + s], J["doigts_" + s]
+    sho = node(S + Vector((0, 0, 0.01)), 0.058 * ab * g ** 0.5 * bk, 0.056 * ab * g ** 0.5 * bk)
+    upm = node(S.lerp(E, 0.45), 0.05 * ab * g ** 0.6 * bk, 0.049 * ab * g ** 0.6 * bk)
+    elb = node(E, 0.041 * ab * bk, 0.04 * ab * bk)
+    ARM_R = [(S.z, 0.058 * ab * g ** 0.5 * bk), (E.z, 0.041 * ab * bk), (W.z, 0.03 * ab * bk)]
+    fom = node(E.lerp(W, 0.4), 0.041 * ab * g ** 0.4 * bk, 0.037 * ab * bk)
+    wri = node(W, 0.03 * ab * bk, 0.026 * ab * bk)
+    palm = node(W.lerp(D, 0.38), 0.019 * ab * bk, 0.044 * ab * bk)
+    fing = node(W.lerp(D, 0.75), 0.014 * ab * bk, 0.04 * ab * bk)
+    tip = node(D, 0.009 * ab * bk, 0.028 * ab * bk)
+    sxs = -1 if s == "G" else 1
+    th1 = node(W.lerp(D, 0.3) + Vector((-sxs * 0.012, 0.03, 0.0)), 0.012 * ab * bk, 0.012 * ab * bk)
+    th2 = node(W.lerp(D, 0.55) + Vector((-sxs * 0.016, 0.045, 0.0)), 0.009 * ab * bk, 0.009 * ab * bk)
+    chain([neck0, sho], "epaule", s)
+    chain([sho, upm, elb, fom, wri, palm, fing, tip], "bras", s)
+    chain([palm, th1, th2], "bras", s)
+    H, Kn, A, T = J["hanche_" + s], J["genou_" + s], J["cheville_" + s], J["orteils_" + s]
+    hp = node(H + Vector((0, -0.005, 0.02)), 0.098 * hk * g * bk, 0.105 * g * bk)
+    thm = node(H.lerp(Kn, 0.45), 0.082 * g * (1.05 if F else 1.0) * bk, 0.085 * g * bk)
+    kn = node(Kn, 0.055 * g ** 0.6 * bk, 0.058 * g ** 0.6 * bk)
+    calf = node(Kn.lerp(A, 0.3) + Vector((0, -0.012, 0)), 0.058 * g ** 0.7 * bk, 0.064 * g ** 0.7 * bk)
+    shin = node(Kn.lerp(A, 0.72), 0.042 * g ** 0.5 * bk, 0.044 * g ** 0.5 * bk)
+    ank = node(A, 0.036 * bk, 0.038 * bk)
+    ball = node(A.lerp(T, 0.6) + Vector((0, 0, -0.025)), 0.045 * bk, 0.024 * bk)
+    toe = node(T, 0.036 * bk, 0.016 * bk)
+    chain([pel, hp], "hanche", s)
+    chain([hp, thm, kn, calf, shin, ank, ball, toe], "jambe", s)
+
+me.from_pydata(verts, edges, [])
+skin = body.modifiers.new("skin", "SKIN")
+skin.use_smooth_shade = True
+for i, (rx, ry) in enumerate(radii):
+    sv = me.skin_vertices[0].data[i]
+    sv.radius = (rx, ry)
+    sv.use_root = i == pel
+sub = body.modifiers.new("sub", "SUBSURF")
+sub.levels = 1
+sub.render_levels = 1
+bpy.context.view_layer.objects.active = body
+body.select_set(True)
+bpy.ops.object.modifier_apply(modifier="skin")
+bpy.ops.object.modifier_apply(modifier="sub")
+me = body.data
+
+
+def gauss(p, c, r):
+    return math.exp(-((p - c).length / r) ** 2)
+
+
+def shape_offset(p):
+    """Deplacement doux des formes (poitrine, fesses, ventre), applique au corps et aux vetements."""
+    d = Vector((0, 0, 0))
+    if V["bust"] > 0:
+        for sx in (-1, 1):
+            c = Vector((sx * 0.085 * V["sh"], 0.08, sh_z - 0.13))
+            d.y += V["bust"] * gauss(p, c, 0.075) * (1.0 if p.y > 0 else 0.0)
+    if F or V["hip"] > 1.05:
+        c = Vector((0, -0.09, bz - 0.06))
+        d.y -= 0.03 * (V["hip"] - 0.9) * gauss(p, c, 0.13) * (1.0 if p.y < 0 else 0.0)
+    if V["belly"] > 0:
+        c = Vector((0, 0.1, bz + 0.17 * bk))
+        d.y += V["belly"] * gauss(p, c, 0.16) * (1.0 if p.y > 0 else 0.0)
+    return d
+
+
+for v in me.vertices:
+    v.co = v.co + shape_offset(v.co)
+for poly in me.polygons:
+    poly.use_smooth = True
+me.materials.append(SKIN)
+
+
+# ------------------------------------------------------------------ tete
+def loft(name, rings, mat, axis="Z", seg=16, caps=(True, True), center=Vector((0, 0, 0))):
     bm = bmesh.new()
     vr = []
     for ring in rings:
@@ -125,225 +238,518 @@ def loft(name, rings, mat, parent, axis="Z", seg=14, caps=(True, True), loc=(0, 
         row = []
         for i in range(seg):
             a = i / seg * math.tau
-            u, v = c1 + rx * math.cos(a), c2 + rr * math.sin(a)
-            row.append(bm.verts.new((u, v, t) if axis == "Z" else (u, t, v)))
+            u, w = c1 + rx * math.cos(a), c2 + rr * math.sin(a)
+            co = Vector((u, w, t)) if axis == "Z" else Vector((u, t, w))
+            row.append(bm.verts.new(co + center))
         vr.append(row)
     for r0, r1 in zip(vr, vr[1:]):
         for i in range(seg):
             j = (i + 1) % seg
             bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
-    capf = []
     if caps[0]:
-        capf.append(bm.faces.new(list(reversed(vr[0]))))
+        bm.faces.new(list(reversed(vr[0])))
     if caps[1]:
-        capf.append(bm.faces.new(vr[-1]))
+        bm.faces.new(vr[-1])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     for f in bm.faces:
-        f.smooth = f not in capf
-    bm.to_mesh(me)
+        f.smooth = True
+    m = bpy.data.meshes.new(name)
+    bm.to_mesh(m)
     bm.free()
-    ob = bpy.data.objects.new(name, me)
+    ob = bpy.data.objects.new(name, m)
     scene.collection.objects.link(ob)
-    me.materials.append(mat)
-    ob.parent = parent
-    ob.location = loc
+    m.materials.append(mat)
     return ob
 
 
-def blob(name, size, loc, mat, parent, seg=12, rings=8):
-    """Ellipsoide (yeux, oreilles, chignon...)."""
-    me = bpy.data.meshes.new(name)
+def blob(name, size, loc, mat, seg=12, rings=8):
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=rings, radius=1.0)
     for v in bm.verts:
-        v.co = (v.co.x * size[0], v.co.y * size[1], v.co.z * size[2])
+        v.co = Vector((v.co.x * size[0], v.co.y * size[1], v.co.z * size[2])) + Vector(loc)
     for f in bm.faces:
         f.smooth = True
-    bm.to_mesh(me)
+    m = bpy.data.meshes.new(name)
+    bm.to_mesh(m)
     bm.free()
-    ob = bpy.data.objects.new(name, me)
+    ob = bpy.data.objects.new(name, m)
     scene.collection.objects.link(ob)
-    me.materials.append(mat)
-    ob.parent = parent
-    ob.location = loc
+    m.materials.append(mat)
     return ob
 
 
-def box(name, size, loc, mat, parent, bevel=0.004):
-    me = bpy.data.meshes.new(name)
+def shell(name, rings, mat, offset, keep, center, seg=20, bumps=0.0):
+    """Coque epousant le crane (cheveux, foulard, casquette), decoupee selon keep(point local)."""
+    bm = bmesh.new()
+    vr = []
+    for ring in rings:
+        t, rx, rr = ring[:3]
+        c1, c2 = (list(ring[3:]) + [0.0, 0.0])[:2]
+        vr.append([bm.verts.new((c1 + rx * math.cos(i / seg * math.tau), c2 + rr * math.sin(i / seg * math.tau), t)) for i in range(seg)])
+    for r0, r1 in zip(vr, vr[1:]):
+        for i in range(seg):
+            j = (i + 1) % seg
+            bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
+    bm.faces.new(vr[-1])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.normal_update()
+    for v in bm.verts:
+        n = v.normal.copy()
+        o = offset + (bumps * (0.5 + 0.5 * math.sin(v.co.x * 90) * math.sin(v.co.y * 80) * math.sin(v.co.z * 85)) if bumps else 0.0)
+        v.co += n * o
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if not keep(f.calc_center_median())], context="FACES")
+    for v in bm.verts:
+        v.co += center
+    for f in bm.faces:
+        f.smooth = True
+    m = bpy.data.meshes.new(name)
+    bm.to_mesh(m)
+    bm.free()
+    ob = bpy.data.objects.new(name, m)
+    scene.collection.objects.link(ob)
+    m.materials.append(mat)
+    return ob
+
+
+k = HK
+hc = J["tete"]  # base du crane
+if F:
+    skull = [(0.0, 0.045, 0.05, 0, -0.005), (0.03, 0.058, 0.07, 0, 0.012), (0.06, 0.07, 0.088, 0, 0.014),
+             (0.095, 0.08, 0.098, 0, 0.01), (0.13, 0.086, 0.102, 0, 0.005), (0.17, 0.088, 0.103), (0.21, 0.082, 0.096, 0, -0.006),
+             (0.245, 0.063, 0.075, 0, -0.01), (0.266, 0.03, 0.036, 0, -0.012)]
+else:
+    skull = [(0.0, 0.05, 0.055, 0, -0.005), (0.03, 0.068, 0.078, 0, 0.012), (0.06, 0.079, 0.094, 0, 0.015),
+             (0.095, 0.087, 0.1, 0, 0.011), (0.13, 0.091, 0.104, 0, 0.005), (0.17, 0.092, 0.105), (0.21, 0.085, 0.096, 0, -0.006),
+             (0.245, 0.064, 0.074, 0, -0.01), (0.265, 0.03, 0.035, 0, -0.012)]
+sk = [(r[0] * k, r[1] * k, r[2] * k) + tuple(x * k for x in r[3:]) for r in skull]
+head_parts = [loft("h_crane", sk, SKIN, seg=20, center=hc)]
+fy = 0.099 * k
+head_parts.append(loft("h_nez", [(fy - 0.012, 0.015 * k, 0.026 * k, 0, 0.118 * k), (fy + 0.008 * k, 0.019 * k, 0.019 * k, 0, 0.101 * k),
+                                 (fy + 0.019 * k, 0.025 * k, 0.013 * k, 0, 0.093 * k), (fy + 0.025 * k, 0.014 * k, 0.008 * k, 0, 0.092 * k)],
+                       SKIN, axis="Y", seg=10, center=hc))
+for sx in (-1, 1):
+    head_parts.append(blob("h_narine", (0.012 * k, 0.012 * k, 0.009 * k), hc + Vector((sx * 0.017 * k, fy + 0.012 * k, 0.091 * k)), SKIN, 8, 6))
+    head_parts.append(blob("h_oreille", (0.012 * k, 0.024 * k, 0.034 * k), hc + Vector((sx * 0.088 * k, -0.008 * k, 0.13 * k)), SKIN, 8, 6))
+    head_parts.append(blob("h_oeil", (0.0145 * k, 0.007 * k, 0.0078 * k), hc + Vector((sx * 0.034 * k, fy - 0.001, 0.147 * k)), EYE_W, 10, 6))
+    head_parts.append(blob("h_iris", (0.0072 * k, 0.004 * k, 0.0072 * k), hc + Vector((sx * 0.034 * k, fy + 0.0045, 0.147 * k)), EYE_I, 8, 6))
+    head_parts.append(blob("h_paupiere", (0.0165 * k, 0.0078 * k, 0.0052 * k), hc + Vector((sx * 0.034 * k, fy + 0.0006, 0.1535 * k)), SKIN, 10, 6))
+    head_parts.append(blob("h_sourcil", (0.017 * k, 0.005 * k, 0.0035 * k), hc + Vector((sx * 0.036 * k, fy + 0.003, 0.1695 * k)), HAIR, 8, 4))
+lip_k = 1.15 if F else 1.0
+head_parts.append(blob("h_levre_haut", (0.024 * k, 0.008 * k, 0.0066 * k * lip_k), hc + Vector((0, fy + 0.007 * k, 0.068 * k)), LIPS, 12, 6))
+head_parts.append(blob("h_levre_bas", (0.022 * k, 0.009 * k, 0.0076 * k * lip_k), hc + Vector((0, fy + 0.006 * k, 0.057 * k)), LIPS, 12, 6))
+
+# ------------------------------------------------------------------ poids
+BONES = ["piv_bassin", "piv_tronc", "piv_tete"] + [f"piv_{n}_{s}" for s in ("G", "D") for n in
+                                                    ("epaule", "coude", "main", "hanche", "genou", "cheville")]
+
+
+def ss(e0, e1, x):
+    t = max(0.0, min(1.0, (x - e0) / (e1 - e0))) if e1 != e0 else (1.0 if x >= e1 else 0.0)
+    return t * t * (3 - 2 * t)
+
+
+def interp(table, z):
+    """Interpolation lineaire d'une table [(z, valeur)] triee par z croissant."""
+    table = sorted(table)
+    if z <= table[0][0]:
+        return table[0][1]
+    for (z0, a), (z1, b) in zip(table, table[1:]):
+        if z <= z1:
+            return a + (b - a) * (z - z0) / ((z1 - z0) or 1.0)
+    return table[-1][1]
+
+
+def nearest_branch(p):
+    best, bd = None, 1e9
+    for a, b, label, side in SEGS:
+        ab = b - a
+        t = max(0.0, min(1.0, (p - a).dot(ab) / (ab.length_squared or 1e-9)))
+        d = (a + ab * t - p).length
+        if d < bd:
+            bd, best = d, (label, side, t)
+    return best
+
+
+def weights_for(p):
+    """Poids (dict os -> poids) d'un point du corps au repos, selon la branche du squelette la plus proche."""
+    head_t = ss(J["tete"].z - 0.03, J["tete"].z + 0.02, p.z)
+    if head_t > 0.99:
+        return {"piv_tete": 1.0}
+    label, side, t = nearest_branch(p)
+    w = {}
+    if label == "bras" and p.z < J["epaule_" + side].z - 0.03:
+        # dans le volume du torse (bras colle au corps, personne forte) : c'est le flanc, pas le bras
+        rx, ry = interp(TORSO_RX, p.z), interp(TORSO_RY, p.z)
+        if (p.x / rx) ** 2 + (p.y / ry) ** 2 < 1.12:
+            label = "torse"
+    if label == "bras":
+        S, E, W = J["epaule_" + side], J["coude_" + side], J["poignet_" + side]
+        sh_mix = ss(S.z - 0.09 * bk, S.z + 0.02, p.z)          # haut de l'epaule : suit aussi le tronc
+        u = 1.0 - ss(E.z - 0.035, E.z + 0.035, p.z)            # 1 sous le coude
+        hnd = 1.0 - ss(W.z - 0.03, W.z + 0.02, p.z)            # 1 sous le poignet
+        wu = 1 - u
+        w["piv_epaule_" + side] = wu * (1 - sh_mix * 0.5)
+        w["piv_coude_" + side] = u * (1 - hnd)
+        w["piv_main_" + side] = u * hnd
+        w["piv_tronc"] = wu * sh_mix * 0.5
+        return w
+    if label == "epaule":
+        k2 = ss(0.25, 1.0, t)
+        w["piv_tronc"] = (1.0 - 0.5 * k2) * (1 - head_t)
+        w["piv_epaule_" + side] = 0.5 * k2 * (1 - head_t)
+        w["piv_tete"] = head_t
+        return w
+    if label == "jambe":
+        Hh, Kn, A = J["hanche_" + side], J["genou_" + side], J["cheville_" + side]
+        top = ss(Hh.z - 0.07 * bk, Hh.z + 0.03, p.z)          # haut de la cuisse : suit aussi le bassin
+        kk = 1.0 - ss(Kn.z - 0.035, Kn.z + 0.035, p.z)         # 1 sous le genou
+        ff = 1.0 - ss(A.z - 0.01, A.z + 0.04, p.z)             # 1 sous la cheville
+        w["piv_hanche_" + side] = (1 - kk) * (1 - top * 0.5)
+        w["piv_genou_" + side] = kk * (1 - ff)
+        w["piv_cheville_" + side] = kk * ff
+        w["piv_bassin"] = (1 - kk) * top * 0.5
+        return w
+    if label == "hanche":
+        k2 = ss(0.2, 1.0, t)
+        w["piv_bassin"] = 1.0 - 0.6 * k2
+        w["piv_hanche_" + side] = 0.6 * k2
+        return w
+    # tronc : bassin en bas, tronc en haut, tete au cou
+    t2 = ss(bz + 0.0, bz + 0.18 * bk, p.z)
+    w["piv_bassin"] = (1 - t2) * (1 - head_t)
+    w["piv_tronc"] = t2 * (1 - head_t)
+    w["piv_tete"] = head_t
+    return w
+
+
+def assign(ob, fixed=None):
+    groups = {b: ob.vertex_groups.get(b) or ob.vertex_groups.new(name=b) for b in BONES}
+    mw = ob.matrix_world
+    for v in ob.data.vertices:
+        wd = fixed if fixed else weights_for(mw @ v.co)
+        tot = sum(wd.values()) or 1.0
+        for b, val in wd.items():
+            if val > 1e-4:
+                groups[b].add([v.index], val / tot, "REPLACE")
+
+
+assign(body)
+for hp in head_parts:
+    assign(hp, {"piv_tete": 1.0})
+# la tete fait partie du corps (un seul mesh, plusieurs materiaux)
+bpy.ops.object.select_all(action="DESELECT")
+for hp in head_parts:
+    hp.select_set(True)
+body.select_set(True)
+bpy.context.view_layer.objects.active = body
+bpy.ops.object.join()
+body = bpy.context.view_layer.objects.active
+body.name = "chr_corps"
+body.data.name = "chr_corps"
+
+
+# ------------------------------------------------------------------ vetements derives du corps
+def region_of(p):
+    w = weights_for(p)
+    return max(w, key=w.get)
+
+
+def derive(name, mat, offset, keep_face, hems=()):
+    """Copie des faces du corps choisies par keep_face(centre, os dominant), gonflee de 'offset' (memes poids).
+    hems : hauteurs d'ourlet ; les sommets du bord proches d'un ourlet y sont alignes (bord droit, pas en dents de scie)."""
+    ob = body.copy()
+    ob.data = body.data.copy()
+    ob.name = name
+    ob.data.name = name
+    scene.collection.objects.link(ob)
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    deform = bm.verts.layers.deform.active
+    skin_idx = [i for i, m in enumerate(ob.data.materials) if m == SKIN]
+    kill = []
+    for f in bm.faces:
+        c = f.calc_center_median()
+        if f.material_index not in skin_idx or c.z > J["tete"].z + 0.01 or not keep_face(c, region_of(c)):
+            kill.append(f)
+    bmesh.ops.delete(bm, geom=kill, context="FACES")
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * offset
+    # ourlets : tout ce qui descend sous la ligne d'ourlet y est ramene (bord net et horizontal)
+    for v in bm.verts:
+        for hz, xmin in hems:
+            if v.co.z < hz and abs(v.co.x) >= xmin:
+                v.co.z = hz
+    for f in bm.faces:
+        f.material_index = 0
+        f.smooth = True
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.materials.clear()
+    ob.data.materials.append(mat)
+    return ob
+
+
+ARM = ("piv_epaule", "piv_coude", "piv_main")
+LEG = ("piv_hanche", "piv_genou", "piv_cheville")
+torso_top = sh_z + 0.01
+
+
+def is_torso(c, r):
+    return r in ("piv_bassin", "piv_tronc") and c.z > bz - 0.05 * bk and c.z < torso_top + 0.04
+
+
+def tube_rings(bm, rings):
+    """rings : liste de listes de points 3D (meme nombre) -> faces entre anneaux successifs."""
+    rows = [[bm.verts.new(p) for p in r] for r in rings]
+    n = len(rows[0])
+    for r0, r1 in zip(rows, rows[1:]):
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((r0[i], r0[j], r1[j], r1[i]))
+    return rows
+
+
+def ring_around(center, axis, r1, r2, seg, ref=Vector((1, 0, 0))):
+    axis = axis.normalized()
+    u = (ref - axis * ref.dot(axis)).normalized()
+    v = axis.cross(u)
+    return [center + u * (r1 * math.cos(i / seg * math.tau)) + v * (r2 * math.sin(i / seg * math.tau)) for i in range(seg)]
+
+
+def make_top(name, long_sleeves, pad):
+    """Haut (tee-shirt, chemise, haut de boubou) : tube qui suit le torse (formes comprises) et manches qui suivent
+    les bras ; ourlets droits. Poids : torse pour le corps du vetement, bras pour les manches."""
+    seg = 28
+    bm = bmesh.new()
+    torso_rings = []
+    z0, z1 = bz - 0.05 * bk, sh_z - 0.005
+    for i in range(12):
+        z = z0 + (z1 - z0) * i / 11
+        # anneaux de depart a l'interieur du corps : le point de surface le plus proche est alors celui du torse
+        rx = max(interp(TORSO_RX, z), sh_x * 0.8 * ss(sh_z - 0.15 * bk, sh_z, z)) * 0.6
+        ry = interp(TORSO_RY, z) * 0.6
+        torso_rings.append([Vector((rx * math.cos(k / seg * math.tau), ry * math.sin(k / seg * math.tau), z)) for k in range(seg)])
+    # epaules puis encolure (se resserre vers le cou)
+    nrx, nry = (0.046 if F else 0.056) * HK, (0.046 if F else 0.054) * HK
+    for z, rx, ry in ((sh_z + 0.015 * bk, sh_x * 0.75, interp(TORSO_RY, sh_z) * 0.6),
+                      (sh_z + 0.035 * bk, nrx * 1.6, nry * 1.2), (sh_z + 0.055 * bk, nrx * 0.7, nry * 0.7)):
+        torso_rings.append([Vector((rx * math.cos(k / seg * math.tau), ry * math.sin(k / seg * math.tau) - 0.005, z)) for k in range(seg)])
+    rows = tube_rings(bm, torso_rings)
+    torso_verts = set(v for r in rows for v in r)
+    sleeves = {}
+    for side in ("G", "D"):
+        S, E, W = J["epaule_" + side], J["coude_" + side], J["poignet_" + side]
+        ax = (E - S).normalized()
+        out = Vector((1 if side == "D" else -1, 0, 0))
+        ar0 = 0.058 * ab * g ** 0.5 * bk
+        pts = [S - out * 0.015, S + ax * 0.02, S + ax * 0.07 * bk, S + ax * 0.14 * bk]
+        rad = [ar0 * 0.5, ar0 * 0.5, ar0 * 0.5, ar0 * 0.5]
+        if long_sleeves:
+            pts = pts[:3] + [S.lerp(E, 0.7), E, E.lerp(W, 0.5), W - (W - E).normalized() * 0.02]
+            rad = rad[:3] + [0.046 * ab * bk * 0.5, 0.043 * ab * bk * 0.5, 0.04 * ab * bk * 0.5, 0.034 * ab * bk * 0.5]
+        rings = []
+        for k in range(len(pts)):
+            a = (pts[min(k + 1, len(pts) - 1)] - pts[max(k - 1, 0)])
+            rings.append(ring_around(pts[k], a, rad[k], rad[k], 16))
+        sleeves[side] = set(v for r in tube_rings(bm, rings) for v in r)
+    # normales deja tournees vers l'exterieur par construction (ne pas recalculer : un tube ouvert serait retourne)
+    for f in bm.faces:
+        f.smooth = True
+    m = bpy.data.meshes.new(name)
+    bm.to_mesh(m)
+    bm.free()
+    ob = bpy.data.objects.new(name, m)
+    scene.collection.objects.link(ob)
+    m.materials.append(TOP)
+    # le vetement epouse la surface du corps (epaules, aisselles, poitrine, ventre) : rayon lance depuis l'axe du
+    # torse (ou du bras pour les manches) vers l'exterieur, le point se pose sur la premiere surface touchee + pad
+    from mathutils.bvhtree import BVHTree
+    deps = bpy.context.evaluated_depsgraph_get()
+    tree = BVHTree.FromObject(body, deps)
+    n_torso_v = len(torso_verts)
+    for v in m.vertices:
+        p = v.co.copy()
+        if v.index < n_torso_v:
+            origin = Vector((0.0, p.y * 0.2, p.z))
+        else:
+            sd = "G" if p.x < 0 else "D"
+            S2, E2, W2 = J["epaule_" + sd], J["coude_" + sd], J["poignet_" + sd]
+            best = None
+            for a2, b2 in ((S2, E2), (E2, W2)):
+                ab2 = b2 - a2
+                t2 = max(0.0, min(1.0, (p - a2).dot(ab2) / ab2.length_squared))
+                q = a2 + ab2 * t2
+                if best is None or (q - p).length < (best - p).length:
+                    best = q
+            origin = best
+        d = p - origin
+        if d.length < 1e-5:
+            continue
+        d.normalize()
+        hit = tree.ray_cast(origin, d, 1.0)
+        if hit[0] is not None:
+            v.co = hit[0] + d * pad
+    # poids par construction : manches -> bras, reste -> torse (+ epaules qui suivent un peu les bras)
+    groups = {b: ob.vertex_groups.new(name=b) for b in BONES}
+    n_torso = len(torso_verts)
+    for v in m.vertices:
+        p = v.co
+        if v.index < n_torso:
+            t2 = ss(bz + 0.0, bz + 0.18 * bk, p.z)
+            wd = {"piv_bassin": 1 - t2, "piv_tronc": t2}
+            if p.z > sh_z - 0.06 * bk and abs(p.x) > sh_x * 0.55:
+                sd = "G" if p.x < 0 else "D"
+                k3 = ss(sh_x * 0.55, sh_x * 0.95, abs(p.x)) * 0.4
+                wd = {"piv_tronc": 1 - k3, "piv_epaule_" + sd: k3}
+        else:
+            sd = "G" if p.x < 0 else "D"
+            Ez, Wz, Sz = J["coude_" + sd].z, J["poignet_" + sd].z, J["epaule_" + sd].z
+            u = 1.0 - ss(Ez - 0.035, Ez + 0.035, p.z)
+            sh_mix = ss(Sz - 0.06 * bk, Sz + 0.03, p.z)
+            wd = {"piv_epaule_" + sd: (1 - u) * (1 - 0.5 * sh_mix), "piv_coude_" + sd: u, "piv_tronc": (1 - u) * 0.5 * sh_mix}
+        tot = sum(wd.values()) or 1.0
+        for bname, val in wd.items():
+            if val > 1e-4:
+                groups[bname].add([v.index], val / tot, "REPLACE")
+    return ob
+
+
+make_top("chr_haut", False, 0.016)
+make_top("chr_haut_long", True, 0.018)
+derive("chr_pantalon", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
+       (r.startswith(LEG) and c.z > J["cheville_G"].z + 0.035), ((J["cheville_G"].z + 0.035, 0.0),))
+derive("chr_short", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
+       (r.startswith("piv_hanche") and c.z > J["genou_G"].z + 0.09 * bk), ((J["genou_G"].z + 0.09 * bk, 0.0),))
+derive("chr_chaussures", SHOES, 0.012, lambda c, r: r.startswith("piv_cheville") or (r.startswith("piv_genou") and c.z < J["cheville_G"].z + 0.06))
+
+
+# semelles (sandales) et vetements longs (cones lestes : haut sur le bassin, bas suit un peu les cuisses)
+def sole(side):
+    A, T = J["cheville_" + side], J["orteils_" + side]
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
+    L = (T - A).length + 0.09 * bk
     for v in bm.verts:
-        v.co = (v.co.x * size[0], v.co.y * size[1], v.co.z * size[2])
-    if bevel:
-        bmesh.ops.bevel(bm, geom=list(bm.edges), offset=bevel, segments=1, affect="EDGES")
-    bm.to_mesh(me)
+        v.co = Vector((v.co.x * 0.1 * bk, v.co.y * L, v.co.z * 0.016)) + Vector((A.x, (A.y + T.y) / 2.0 - 0.01, 0.008))
+    m = bpy.data.meshes.new("chr_semelle_" + side)
+    bm.to_mesh(m)
     bm.free()
-    ob = bpy.data.objects.new(name, me)
+    ob = bpy.data.objects.new("chr_semelle_" + side, m)
     scene.collection.objects.link(ob)
-    me.materials.append(mat)
-    ob.parent = parent
-    ob.location = loc
+    m.materials.append(SOLE)
+    assign(ob, {"piv_cheville_" + side: 1.0})
     return ob
 
 
-def scaled(rings, k, kz=1.0):
-    return [(r[0] * kz, r[1] * k, r[2] * k) + tuple(x * k for x in r[3:]) for r in rings]
+sole("G")
+sole("D")
 
 
-# ------------------------------------------------------------------ proportions
+def skirt(name, rings, mat):
+    ob = loft(name, rings, mat, seg=24, caps=(False, False), center=Vector((0, 0, bz)))
+    top_z = bz + rings[0][0]
+    hem_z = bz + rings[-1][0]
+    groups = {b: ob.vertex_groups.new(name=b) for b in BONES}
+    for v in ob.data.vertices:
+        p = v.co
+        t = ss(top_z, hem_z, p.z) if hem_z < top_z else 0.0
+        t = 1.0 - ss(hem_z, top_z, p.z)
+        side = "G" if p.x < 0 else "D"
+        lat = min(1.0, abs(p.x) / 0.08)
+        wl = t * 0.55 * lat
+        groups["piv_bassin"].add([v.index], 1.0 - wl, "REPLACE")
+        if wl > 0:
+            groups["piv_hanche_" + side].add([v.index], wl, "REPLACE")
+    return ob
+
+
+hb = 0.195 * V["hip"] * g * bk
+wt = interp(TORSO_RX, bz + 0.1 * bk) + 0.03
+skirt("chr_jupe", [(0.1 * bk, wt, wt * 0.72), (0.0, hb, hb * 0.66, 0, -0.008), (-0.12 * bk, hb * 1.08, hb * 0.78),
+                   (-0.3 * bk, hb * 1.16, hb * 1.0), (-0.43 * bk, hb * 1.2, hb * 1.08)], CLOTH)
+skirt("chr_pagne_long", [(0.1 * bk, wt, wt * 0.72), (0.0, hb, hb * 0.66, 0, -0.008), (-0.12 * bk, hb * 1.08, hb * 0.78),
+                         (-0.3 * bk, hb * 1.16, hb * 1.0), (-0.5 * bk, hb * 1.18, hb * 1.1), (bz * -1 + 0.24 * bk, hb * 1.13, hb * 1.08)], CLOTH)
+if not F:
+    skirt("chr_boubou", [(0.12 * bk, 0.172 * g * bk, 0.115 * g * bk), (0.0, 0.205 * g * bk, 0.14 * g * bk), (-0.18 * bk, 0.25 * g * bk, 0.175 * g * bk),
+                         (-0.42 * bk, 0.28 * g * bk, 0.205 * g * bk), (bz * -1 + 0.28 * bk, 0.295 * g * bk, 0.215 * g * bk)], CLOTH)
+
+# ------------------------------------------------------------------ coiffures et couvre-chefs (os de la tete)
+hair_objs = []
+hair_objs.append(shell("chr_cheveux", sk, HAIR, 0.006 * k, lambda c: c.z > (0.135 + 0.65 * c.y) * k, hc))
+hair_objs.append(shell("chr_afro", sk, HAIR, 0.028 * k, lambda c: c.z > (0.12 + 0.6 * c.y) * k, hc, bumps=0.008 * k))
 if F:
-    P = dict(bassin=0.91, hanche_x=0.088, hanche_z=-0.06, cuisse=0.415, tibia=0.435, tronc=0.06, epaule_x=0.183,
-             epaule_z=0.405, coude=0.27, tete=0.49, bras_k=0.86, jambe_k=0.95, tete_k=0.95, main_k=0.88, pied_k=0.88)
+    hair_objs.append(blob("chr_chignon", (0.055 * k, 0.05 * k, 0.05 * k), hc + Vector((0, -0.085 * k, 0.215 * k)), HAIR))
+    for i in range(9):
+        a = math.radians(-80 + i * 20)
+        x, y = 0.082 * math.sin(a) * k, (-0.08 * math.cos(a) - 0.012) * k
+        hair_objs.append(loft(f"chr_tresse_{i}", [(0.17 * k, 0.011 * k, 0.011 * k, x, y), (0.05, 0.011 * k, 0.011 * k, x * 1.07, y * 1.18),
+                                                  (-0.07, 0.009 * k, 0.009 * k, x * 1.07, y * 1.28)], HAIR, seg=6, center=hc))
+    hair_objs.append(shell("chr_meches", [(-0.07 * k, 0.1 * k, 0.1 * k, 0, -0.03 * k)] + sk[2:], HAIR, 0.012 * k,
+                           lambda c: c.z > (0.15 + 0.5 * c.y) * k or (c.y < 0.02 * k and c.z > -0.07 * k), hc))
+    hair_objs.append(shell("chr_foulard", sk, CLOTH, 0.018 * k, lambda c: c.z > (0.17 + 0.45 * c.y) * k, hc))
+    hair_objs.append(blob("chr_foulard_haut", (0.098 * k, 0.112 * k, 0.07 * k), hc + Vector((0, -0.018 * k, 0.265 * k)), CLOTH, 14, 8))
+    hair_objs.append(blob("chr_foulard_noeud", (0.05 * k, 0.03 * k, 0.035 * k), hc + Vector((0, 0.06 * k, 0.29 * k)), CLOTH, 10, 6))
 else:
-    P = dict(bassin=0.95, hanche_x=0.095, hanche_z=-0.06, cuisse=0.43, tibia=0.46, tronc=0.06, epaule_x=0.212,
-             epaule_z=0.44, coude=0.29, tete=0.525, bras_k=1.0, jambe_k=1.0, tete_k=1.0, main_k=1.0, pied_k=1.0)
+    hair_objs.append(shell("chr_casquette", sk, CAP, 0.012 * k, lambda c: c.z > 0.165 * k + 0.2 * c.y, hc))
+    hair_objs.append(loft("chr_casquette_visiere", [(0.075 * k, 0.072 * k, 0.005, 0, 0.17 * k), (0.15 * k, 0.07 * k, 0.005, 0, 0.162 * k),
+                                                   (0.17 * k, 0.05 * k, 0.004, 0, 0.158 * k)], CAP, axis="Y", seg=8, center=hc))
+for o in hair_objs:
+    assign(o, {"piv_tete": 1.0})
 
-root = pivot("chr_racine", (0, 0, 0))
-hips = pivot("piv_bassin", (0, 0, P["bassin"]), root)
-spine = pivot("piv_tronc", (0, 0, P["tronc"]), hips)
-head = pivot("piv_tete", (0, 0, P["tete"]), spine)
+# ------------------------------------------------------------------ armature
+arm_data = bpy.data.armatures.new("chr_squelette")
+arm = bpy.data.objects.new("chr_squelette", arm_data)
+scene.collection.objects.link(arm)
+bpy.context.view_layer.objects.active = arm
+arm.select_set(True)
+bpy.ops.object.mode_set(mode="EDIT")
+eb = arm_data.edit_bones
 
-# ------------------------------------------------------------------ bassin et torse
-if F:
-    loft("chr_bassin", [(-0.14, 0.185, 0.118, 0, -0.012), (-0.07, 0.19, 0.118, 0, -0.01), (0.0, 0.178, 0.11),
-                         (0.06, 0.155, 0.1), (0.1, 0.138, 0.094)], PANTS, hips)
-    torso = [(-0.04, 0.138, 0.093), (0.06, 0.128, 0.088), (0.15, 0.14, 0.098), (0.22, 0.155, 0.118, 0, 0.012),
-             (0.28, 0.162, 0.128, 0, 0.022), (0.33, 0.165, 0.112, 0, 0.012), (0.38, 0.17, 0.098), (0.42, 0.15, 0.085),
-             (0.455, 0.075, 0.062)]
-else:
-    loft("chr_bassin", [(-0.13, 0.162, 0.104), (-0.06, 0.168, 0.106), (0.02, 0.163, 0.102), (0.1, 0.156, 0.1)], PANTS, hips)
-    torso = [(-0.04, 0.155, 0.1), (0.08, 0.158, 0.104), (0.2, 0.172, 0.112), (0.3, 0.192, 0.122, 0, 0.006),
-             (0.38, 0.203, 0.118), (0.43, 0.19, 0.105), (0.47, 0.15, 0.09), (0.5, 0.08, 0.066)]
-loft("chr_torse", torso, SHIRT, spine)
-neck_r = 0.046 if F else 0.056
-loft("chr_cou", [(torso[-2][0], neck_r * 1.15, neck_r * 1.1), (P["tete"] + 0.02, neck_r, neck_r * 0.95, 0, -0.005),
-                 (P["tete"] + 0.06, neck_r * 0.95, neck_r * 0.9, 0, -0.008)], SKIN, spine)
 
-# ------------------------------------------------------------------ tete
-k = P["tete_k"]
-if F:
-    skull = [(0.0, 0.045, 0.05, 0, -0.005), (0.035, 0.06, 0.072, 0, 0.012), (0.07, 0.074, 0.09, 0, 0.012),
-             (0.12, 0.084, 0.1, 0, 0.006), (0.17, 0.087, 0.102), (0.21, 0.081, 0.095, 0, -0.005),
-             (0.245, 0.062, 0.074, 0, -0.008), (0.266, 0.03, 0.036, 0, -0.01)]
-else:
-    skull = [(0.0, 0.05, 0.055, 0, -0.005), (0.035, 0.072, 0.082, 0, 0.012), (0.07, 0.081, 0.096, 0, 0.012),
-             (0.12, 0.088, 0.103, 0, 0.005), (0.17, 0.09, 0.104), (0.21, 0.083, 0.095, 0, -0.005),
-             (0.245, 0.062, 0.072, 0, -0.008), (0.265, 0.03, 0.035, 0, -0.01)]
-loft("chr_tete", scaled(skull, k, k), SKIN, head, seg=16)
-fy = 0.098 * k  # avant du visage
-loft("chr_nez", [(fy - 0.012, 0.015 * k, 0.026 * k, 0, 0.116 * k), (fy + 0.008 * k, 0.019 * k, 0.019 * k, 0, 0.1 * k),
-                 (fy + 0.018 * k, 0.024 * k, 0.013 * k, 0, 0.093 * k), (fy + 0.024 * k, 0.014 * k, 0.008 * k, 0, 0.092 * k)],
-     SKIN, head, axis="Y", seg=10)
-for side, sx in (("G", -1), ("D", 1)):
-    blob(f"chr_narine_{side}", (0.011 * k, 0.012 * k, 0.009 * k), (sx * 0.016 * k, fy + 0.012 * k, 0.091 * k), SKIN, head, 8, 6)
-    blob(f"chr_oreille_{side}", (0.012 * k, 0.024 * k, 0.034 * k), (sx * 0.086 * k, -0.008 * k, 0.13 * k), SKIN, head, 8, 6)
-    blob(f"chr_oeil_{side}", (0.0145 * k, 0.007 * k, 0.0075 * k), (sx * 0.034 * k, fy - 0.001, 0.147 * k), EYE_W, head, 10, 6)
-    blob(f"chr_iris_{side}", (0.0072 * k, 0.004 * k, 0.0072 * k), (sx * 0.034 * k, fy + 0.0045, 0.147 * k), EYE_I, head, 8, 6)
-    # paupiere superieure : regard calme, pas de "grands yeux ronds"
-    blob(f"chr_paupiere_{side}", (0.016 * k, 0.0075 * k, 0.005 * k), (sx * 0.034 * k, fy + 0.0005, 0.153 * k), SKIN, head, 10, 6)
-    box(f"chr_sourcil_{side}", (0.032 * k, 0.008, 0.0055), (sx * 0.036 * k, fy + 0.002, 0.169 * k), HAIR, head, 0.002)
-lip_k = 1.15 if F else 1.0
-blob("chr_levre_haut", (0.024 * k, 0.008 * k, 0.0065 * k * lip_k), (0, fy + 0.007 * k, 0.068 * k), LIPS, head, 12, 6)
-blob("chr_levre_bas", (0.022 * k, 0.009 * k, 0.0075 * k * lip_k), (0, fy + 0.006 * k, 0.057 * k), LIPS, head, 12, 6)
-# cheveux : coque sur le crane, ligne d'implantation haute sur le front, basse sur la nuque, au-dessus des oreilles
-sk = scaled(skull, k, k)
-shell("chr_cheveux", sk, HAIR, head, 0.006, lambda c: c.z > (0.135 + 0.65 * c.y) * k)
-if F:
-    # chignon, tresses, foulard noue (au choix dans Godot)
-    blob("chr_chignon", (0.055, 0.05, 0.05), (0, -0.085 * k, 0.215 * k), HAIR, head)
-    for i in range(7):
-        a = math.radians(-70 + i * 23)
-        x, y = 0.08 * math.sin(a) * k, (-0.078 * math.cos(a) - 0.012) * k
-        loft(f"chr_tresse_{i}", [(0.17 * k, 0.011, 0.011, x, y), (0.06, 0.011, 0.011, x * 1.06, y * 1.15),
-                                 (-0.05, 0.009, 0.009, x * 1.06, y * 1.25)], HAIR, head, seg=6)
-    shell("chr_foulard", sk, CLOTH, head, 0.018, lambda c: c.z > (0.17 + 0.45 * c.y) * k)
-    blob("chr_foulard_haut", (0.098, 0.112, 0.07), (0, -0.018, 0.265 * k), CLOTH, head, 14, 8)
-    blob("chr_foulard_noeud", (0.05, 0.03, 0.035), (0, 0.06 * k, 0.29 * k), CLOTH, head, 10, 6)
-else:
-    shell("chr_casquette", sk, CAP, head, 0.011, lambda c: c.z > 0.165 + 0.2 * c.y)
-    loft("chr_casquette_visiere", [(0.075, 0.072, 0.005, 0, 0.17), (0.15, 0.07, 0.005, 0, 0.162), (0.17, 0.05, 0.004, 0, 0.158)],
-         CAP, head, axis="Y", seg=8)
+def bone(name, head, tail, parent=None):
+    b = eb.new(name)
+    b.head = head
+    b.tail = tail
+    b.roll = 0.0
+    if parent:
+        b.parent = eb[parent]
+        b.use_connect = False
+    return b
 
-# ------------------------------------------------------------------ bras
-bk = P["bras_k"]
-for side, sx in (("G", -1), ("D", 1)):
-    sh = pivot(f"piv_epaule_{side}", (sx * P["epaule_x"], 0, P["epaule_z"]), spine)
-    up = P["coude"]
-    loft(f"chr_bras_{side}", [(0.02, 0.052 * bk, 0.05 * bk), (-0.1, 0.047 * bk, 0.045 * bk), (-0.2, 0.042 * bk, 0.04 * bk),
-                              (-up, 0.037 * bk, 0.036 * bk)], SKIN, sh)
-    # manche courte : arrondie a l'epaule (se fond dans le torse), legerement evasee en bas
-    loft(f"chr_manche_{side}", [(0.072, 0.02 * bk, 0.02 * bk, -sx * 0.012), (0.06, 0.045 * bk, 0.045 * bk, -sx * 0.008),
-                                (0.03, 0.06 * bk, 0.058 * bk, -sx * 0.003), (-0.04, 0.06 * bk, 0.057 * bk),
-                                (-0.13, 0.058 * bk, 0.055 * bk)], SHIRT, sh)
-    if not F:
-        # manche large du boubou (jusqu'au coude)
-        loft(f"chr_manche_large_{side}", [(0.04, 0.07, 0.07), (-0.12, 0.085, 0.085), (-0.27, 0.105, 0.1)], CLOTH, sh,
-             caps=(True, False))
-    el = pivot(f"piv_coude_{side}", (0, 0, -up), sh)
-    loft(f"chr_avantbras_{side}", [(0.025, 0.039 * bk, 0.037 * bk), (-0.08, 0.04 * bk, 0.036 * bk), (-0.23 * bk, 0.029 * bk, 0.025 * bk)],
-         SKIN, el)
-    mk = P["main_k"]
-    w0 = -0.235 * bk
-    loft(f"chr_main_{side}", [(w0, 0.017 * mk, 0.03 * mk), (w0 - 0.03 * mk, 0.02 * mk, 0.045 * mk), (w0 - 0.085 * mk, 0.016 * mk, 0.043 * mk),
-                              (w0 - 0.15 * mk, 0.012 * mk, 0.036 * mk), (w0 - 0.17 * mk, 0.007 * mk, 0.02 * mk)], SKIN, el, seg=10)
-    loft(f"chr_pouce_{side}", [(w0 - 0.02 * mk, 0.011 * mk, 0.011 * mk, -sx * 0.006, 0.035 * mk),
-                               (w0 - 0.06 * mk, 0.009 * mk, 0.009 * mk, -sx * 0.012, 0.05 * mk),
-                               (w0 - 0.085 * mk, 0.006 * mk, 0.006 * mk, -sx * 0.014, 0.052 * mk)], SKIN, el, seg=8)
 
-# ------------------------------------------------------------------ jambes
-jk = P["jambe_k"]
-for side, sx in (("G", -1), ("D", 1)):
-    hp = pivot(f"piv_hanche_{side}", (sx * P["hanche_x"], 0, P["hanche_z"]), hips)
-    th = P["cuisse"]
-    thigh = [(0.05, 0.09 * jk, 0.09 * jk), (-0.05, 0.088 * jk, 0.088 * jk), (-0.2, 0.075 * jk, 0.076 * jk),
-             (-0.36 * th / 0.43, 0.06 * jk, 0.062 * jk), (-th, 0.055 * jk, 0.058 * jk)]
-    loft(f"chr_cuisse_{side}", thigh, PANTS, hp)
-    kn = pivot(f"piv_genou_{side}", (0, 0, -th), hp)
-    tb = P["tibia"]
-    shin = [(0.025, 0.056 * jk, 0.058 * jk), (-0.1, 0.059 * jk, 0.064 * jk, 0, -0.008), (-0.25, 0.049 * jk, 0.052 * jk),
-            (-(tb - 0.075), 0.039 * jk, 0.041 * jk), (-(tb - 0.055), 0.037 * jk, 0.039 * jk)]
-    loft(f"chr_tibia_{side}", shin, PANTS, kn)
-    # pied nu (visible avec des sandales) + semelle ; chaussure fermee par-dessus pour l'homme
-    pk = P["pied_k"]
-    zc = -(tb - 0.035)
-    foot = [(-0.05 * pk, 0.032 * pk, 0.03, 0, zc + 0.008), (0.0, 0.042 * pk, 0.034, 0, zc + 0.004), (0.07 * pk, 0.045 * pk, 0.024, 0, zc - 0.006),
-            (0.14 * pk, 0.04 * pk, 0.014, 0, zc - 0.014), (0.165 * pk, 0.026 * pk, 0.01, 0, zc - 0.018)]
-    loft(f"chr_pied_{side}", foot, SKIN, kn, axis="Y", seg=10)
-    box(f"chr_semelle_{side}", (0.1 * pk, 0.255 * pk, 0.016), (0, 0.055 * pk, -tb + 0.008), SOLE, kn, 0.005)
-    if not F:
-        loft(f"chr_chaussure_{side}", [(-0.062, 0.042, 0.04, 0, zc + 0.006), (0.0, 0.05, 0.042, 0, zc + 0.002),
-                                       (0.08, 0.052, 0.032, 0, zc - 0.006), (0.15, 0.046, 0.022, 0, zc - 0.012),
-                                       (0.175, 0.03, 0.014, 0, zc - 0.016)], SHOES, kn, axis="Y", seg=12)
-
-# ------------------------------------------------------------------ vetements longs
-if F:
-    loft("chr_jupe", [(0.1, 0.142, 0.098), (0.0, 0.195, 0.125, 0, -0.008), (-0.12, 0.215, 0.15, 0, -0.005),
-                      (-0.3, 0.232, 0.2), (-0.43, 0.24, 0.215)], CLOTH, hips, seg=18)
-    loft("chr_pagne_long", [(0.1, 0.142, 0.098), (0.0, 0.195, 0.125, 0, -0.008), (-0.12, 0.215, 0.15, 0, -0.005),
-                            (-0.3, 0.232, 0.2), (-0.48, 0.235, 0.22), (-0.66, 0.225, 0.215)], CLOTH, hips, seg=18)
-else:
-    loft("chr_boubou", [(0.13, 0.168, 0.112), (0.0, 0.2, 0.135), (-0.18, 0.245, 0.17), (-0.42, 0.275, 0.2),
-                        (-0.62, 0.29, 0.215)], CLOTH, hips, seg=18)
+bone("piv_bassin", J["bassin"], J["bassin"] + Vector((0, 0, 0.1)))
+bone("piv_tronc", J["tronc"], J["cou"], "piv_bassin")
+bone("piv_tete", J["tete"], J["sommet"], "piv_tronc")
+for s in ("G", "D"):
+    bone("piv_epaule_" + s, J["epaule_" + s], J["coude_" + s], "piv_tronc")
+    bone("piv_coude_" + s, J["coude_" + s], J["poignet_" + s], "piv_epaule_" + s)
+    bone("piv_main_" + s, J["poignet_" + s], J["doigts_" + s], "piv_coude_" + s)
+    bone("piv_hanche_" + s, J["hanche_" + s], J["genou_" + s], "piv_bassin")
+    bone("piv_genou_" + s, J["genou_" + s], J["cheville_" + s], "piv_hanche_" + s)
+    bone("piv_cheville_" + s, J["cheville_" + s], J["orteils_" + s], "piv_genou_" + s)
+bpy.ops.object.mode_set(mode="OBJECT")
+for ob in list(scene.collection.objects):
+    if ob.type == "MESH":
+        ob.parent = arm
+        mod = ob.modifiers.new("squelette", "ARMATURE")
+        mod.object = arm
 
 bpy.ops.object.select_all(action="DESELECT")
 bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
-bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_apply=True, export_yup=True)
-print("Personnage", GENRE, ":", len([o for o in bpy.data.objects if o.type == "MESH"]), "pieces,",
-      len([o for o in bpy.data.objects if o.type == "EMPTY"]), "pivots,",
-      sum(len(o.data.polygons) for o in bpy.data.objects if o.type == "MESH"), "faces")
+bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_yup=True, export_skins=True,
+                          export_animations=False, export_apply=False)
+nfaces = sum(len(o.data.polygons) for o in scene.objects if o.type == "MESH")
+print("Personnage", VARIANT, ":", len([o for o in scene.objects if o.type == "MESH"]), "maillages,", len(BONES), "os,", nfaces, "faces")
 
-# ------------------------------------------------------------------ apercu (tenue type)
+# ------------------------------------------------------------------ apercu
 if PREVIEW:
-    hide = ["chr_casquette", "chr_casquette_visiere", "chr_boubou", "chr_manche_large", "chr_chaussure", "chr_jupe",
-            "chr_chignon", "chr_tresse", "chr_cheveux"] if F else ["chr_boubou", "chr_manche_large", "chr_casquette"]
-    for o in bpy.data.objects:
-        if o.type == "MESH" and any(o.name.startswith(h) for h in hide):
-            o.hide_render = True
-        if F and o.type == "MESH" and (o.name.startswith("chr_tibia") or o.name.startswith("chr_cuisse")):
-            o.data.materials[0] = SKIN
-        if o.type == "EMPTY" and o.name.startswith("piv_epaule"):
-            o.rotation_euler[1] = math.radians(8 if o.name.endswith("D") else -8)
+    show = {"chr_corps", "chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"}
+    if F:
+        show = {"chr_corps", "chr_haut", "chr_pagne_long", "chr_semelle_G", "chr_semelle_D", "chr_foulard", "chr_foulard_haut", "chr_foulard_noeud"}
+    for o in scene.objects:
+        if o.type == "MESH":
+            o.hide_render = o.name not in show
     MATS["chr_tissu"].diffuse_color = [to_linear(c) for c in (0.85, 0.25, 0.12)] + [1.0]
     w = bpy.data.worlds.new("w")
     w.color = (0.75, 0.8, 0.85)
@@ -354,10 +760,13 @@ if PREVIEW:
     scene.display.shading.show_shadows = True
     scene.render.resolution_x = 900
     scene.render.resolution_y = 900
-    for name, loc, rot in (("face", (0.0, 3.4, 0.9), (88, 0, 180)), ("trois_quart", (2.4, 2.6, 1.05), (86, 0, 137)),
-                           ("visage", (0.25, 0.85, 1.62), (88, 0, 163))):
+    top = J["sommet"].z
+    for name, loc, rot, lens in (("face", (0.0, 3.6, top * 0.52), (90, 0, 180), 50),
+                                 ("trois_quart", (2.5, 2.8, top * 0.6), (88, 0, 138), 50),
+                                 ("visage", (0.22, 0.9, J["tete"].z + 0.13 * k), (90, 0, 166), 85),
+                                 ("buste", (0.9, 1.6, bz + 0.25), (88, 0, 150), 60)):
         c = bpy.data.cameras.new(name)
-        c.lens = 50 if name != "visage" else 85
+        c.lens = lens
         o = bpy.data.objects.new(name, c)
         scene.collection.objects.link(o)
         o.location = loc

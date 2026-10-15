@@ -45,7 +45,7 @@ func _ready() -> void:
 	_snd_car = AudioSynth.voiture_loop()
 	_horn_moto = AudioSynth.klaxon(415.0, 520.0, 0.35)
 	_horn_car = AudioSynth.klaxon(350.0, 440.0, 0.5)
-	var meshes := _build_meshes()
+	var meshes: Dictionary = await _build_meshes()
 	for i in zem_count:
 		_spawn("zem_passager" if _rng.randf() < 0.35 else "zem", meshes)
 	for i in car_count:
@@ -71,12 +71,18 @@ func _build_meshes() -> Dictionary:
 		driver.position = Vector3(0, -0.05, 0.12)
 		if variant.begins_with("zem_passager"):
 			var genre := "femme" if variant.contains("_f") else "homme"
-			var pas := PnjUtil.make(genre)
+			var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
 			asm.add_child(pas)
 			PnjUtil.dress_random(pas, _rng)
 			pas.scale = Vector3.ONE
 			PnjUtil.pose_seated(pas)
 			pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
+		out[variant] = asm
+	# la pose assise du squelette n'est appliquee au maillage qu'a l'image suivante : on fusionne apres
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for variant in ZEM_VARIANTS:
+		var asm: Node3D = out[variant]
 		out[variant] = PnjUtil.merge(asm)
 		asm.queue_free()
 	for model in CAR_MODELS:

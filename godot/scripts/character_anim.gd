@@ -44,13 +44,38 @@ var _lean_side := 0.0
 var _t := 0.0
 var _g := GAITS[0].duplicate()
 var _p := {}
+const PIVOTS := ["piv_bassin", "piv_tronc", "piv_tete", "piv_epaule_G", "piv_epaule_D", "piv_coude_G", "piv_coude_D",
+	"piv_hanche_G", "piv_hanche_D", "piv_genou_G", "piv_genou_D"]
+
+
+var _skel: Skeleton3D
+var _bones := {}
 
 
 func _ready() -> void:
-	for n in ["piv_bassin", "piv_tronc", "piv_tete", "piv_epaule_G", "piv_epaule_D", "piv_coude_G", "piv_coude_D",
-			"piv_hanche_G", "piv_hanche_D", "piv_genou_G", "piv_genou_D"]:
-		_p[n] = find_child(n, true, false)
+	# corps anime par squelette (personnages actuels) : on calcule les angles sur des pivots "fantomes"
+	# (hors de l'arbre) puis on les recopie sur les os a la fin de chaque image ; sinon pivots d'un modele rigide
+	_skel = Squelette.find(self)
+	if _skel:
+		_bones = Squelette.info(_skel)
+	for n in PIVOTS:
+		_p[n] = Node3D.new() if _skel else find_child(n, true, false)
 	_p["bassin_y"] = _p["piv_bassin"].position.y
+
+
+func _exit_tree() -> void:
+	if _skel:
+		for n in PIVOTS:
+			(_p[n] as Node3D).free()
+		_skel = null
+
+
+func _sync_skeleton() -> void:
+	for n in PIVOTS:
+		var e: Vector3 = (_p[n] as Node3D).rotation
+		if n.begins_with("piv_epaule_"):
+			e = Squelette.arm_rest(e, n.right(1))
+		Squelette.apply(_skel, _bones, n, e, (_p[n] as Node3D).position)
 
 
 func land(fall_speed: float) -> void:
@@ -188,3 +213,5 @@ func _physics_process(delta: float) -> void:
 		_p["piv_coude_D"].rotation.x = lerpf(_p["piv_coude_D"].rotation.x, 0.1, k2)
 		_p["piv_tronc"].rotation.y = lerpf(_p["piv_tronc"].rotation.y, -0.45, k2)
 	rotation.z = _lean_side
+	if _skel:
+		_sync_skeleton()

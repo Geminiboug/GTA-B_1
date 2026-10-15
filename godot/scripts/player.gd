@@ -58,20 +58,19 @@ var genre := "homme"
 func _player_look(g: String) -> Dictionary:
 	if g == "femme":
 		var w := PnjUtil.wax(PnjUtil.WAX_PALETTES[3], 0)
-		return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.95, 0.94, 0.9)), "legs_up": PnjUtil.plain(PnjUtil.SKINS[0]),
-			"legs_low": PnjUtil.plain(PnjUtil.SKINS[0]), "cloth": w, "show": ["chr_cheveux", "chr_pagne_long", "chr_foulard"]}
-	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.1, 0.5, 0.55)), "legs_up": PnjUtil.plain(Color(0.2, 0.3, 0.48)),
-		"legs_low": PnjUtil.plain(Color(0.2, 0.3, 0.48)), "cloth": PnjUtil.plain(Color(0.2, 0.3, 0.48)),
-		"show": ["chr_cheveux", "chr_chaussure"]}
+		return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.95, 0.94, 0.9)), "legs": PnjUtil.plain(PnjUtil.SKINS[0]),
+			"cloth": w, "show": ["chr_haut", "chr_pagne_long", "chr_semelle", "chr_foulard"]}
+	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.1, 0.5, 0.55)), "legs": PnjUtil.plain(Color(0.2, 0.3, 0.48)),
+		"cloth": PnjUtil.plain(Color(0.2, 0.3, 0.48)), "show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"]}
 
 
 func _dress(model: Node, g: String) -> void:
 	if model == null:
 		return
 	model.set_meta("genre", g)
+	model.set_meta("age", "adulte")
 	set_meta("genre", g)
 	PnjUtil.apply(model, _player_look(g))
-	PnjUtil.bake_groups(model as Node3D)
 
 
 func set_genre(g: String) -> void:

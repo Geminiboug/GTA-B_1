@@ -53,9 +53,12 @@ func _spawn_walker() -> void:
 
 
 func _new_walker(genre: String, at := Vector2.INF) -> Dictionary:
-	var ch := PnjUtil.make(genre)
+	# quelques enfants (souvent en uniforme d'ecole), sinon des adultes de morphologies variees
+	var ch := PnjUtil.make(PnjUtil.random_variant(_rng, genre, 0.12 if at == Vector2.INF else 0.0))
+	var metas := {"genre": ch.get_meta("genre"), "age": ch.get_meta("age"), "variante": ch.get_meta("variante")}
 	ch.set_script(ANIM)
-	ch.set_meta("genre", genre)
+	for m in metas:
+		ch.set_meta(m, metas[m])
 	add_child(ch)
 	PnjUtil.dress_random(ch, _rng)
 	var basin: Node3D = null
@@ -64,7 +67,8 @@ func _new_walker(genre: String, at := Vector2.INF) -> Dictionary:
 		basin = _head_basin(ch)
 	PnjUtil.bake_groups(ch)
 	_add_body(ch)
-	var w := {"node": ch, "speed": _rng.randf_range(1.1, 1.6), "pause": 0.0, "cross": false,
+	var kid: bool = ch.get_meta("age") == "enfant"
+	var w := {"node": ch, "speed": _rng.randf_range(1.2, 1.8) if kid else _rng.randf_range(1.1, 1.6), "pause": 0.0, "cross": false,
 		"jitter": _rng.randf_range(-0.3, 0.4), "yaw": 0.0, "state": "walk", "state_t": 0.0,
 		"talk_cd": _rng.randf_range(0.0, 8.0), "prom": at == Vector2.INF and _promenade.size() > 2 and _rng.randf() < promenade_share}
 	if basin:
@@ -392,7 +396,14 @@ func _switch_side_or_turn(w: Dictionary, here: Vector2) -> void:
 
 func _head_basin(ch: Node3D) -> Node3D:
 	## Bassine en plastique portee sur la tete (marchandises : fruits, sachets d'eau, pain...).
-	var head0 := ch.find_child("piv_tete", true, false) as Node3D
+	var head0: Node3D = ch.find_child("piv_tete", true, false) as Node3D
+	var skel := Squelette.find(ch)
+	if skel:
+		# corps a squelette : la bassine suit l'os de la tete
+		var ba := BoneAttachment3D.new()
+		ba.bone_name = "piv_tete"
+		skel.add_child(ba)
+		head0 = ba
 	if head0 == null:
 		return null
 	var head := Node3D.new()
@@ -436,18 +447,24 @@ func _seat_vendors(spots: Array) -> void:
 	# (un groupe etale sur toute la carte disparaissait des qu'on s'eloignait du centre de la carte)
 	var variants := 10
 	var meshes := []
+	var assemblies := []
 	for v in variants:
 		var asm := Node3D.new()
 		add_child(asm)
 		# vendeuses surtout (marches et etals de Cotonou), quelques vendeurs
 		var genre := PnjUtil.random_genre(_rng, 0.75)
-		var ch := PnjUtil.make(genre)
+		var ch := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
 		asm.add_child(ch)
 		PnjUtil.dress_random(ch, _rng)
 		ch.scale = Vector3.ONE
 		PnjUtil.pose_vendor(ch, _rng)
-		# bassin a ~0,45 m : assis sur un tabouret (la femme a le bassin un peu plus bas)
-		ch.position = Vector3(0, -0.5 + (0.04 if genre == "femme" else 0.0), 0)
+		# assis sur un tabouret de ~0,42 m : articulation de la hanche a ~0,5 m du sol, pieds au sol
+		ch.position = Vector3(0, -0.38 + (0.04 if genre == "femme" else 0.0), 0)
+		assemblies.append(asm)
+	# la pose du squelette n'est appliquee au maillage qu'a l'image suivante
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for asm in assemblies:
 		meshes.append(PnjUtil.merge(asm))
 		asm.queue_free()
 	var groups := {}

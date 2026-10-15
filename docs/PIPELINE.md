@@ -280,3 +280,20 @@ Captures : tests/capture_pnj.gd -> docs/images/pnj_*.png, apercus Blender docs/i
 - Repliques : godot/scripts/dialogues.gd (francais du Benin + fon, a completer), bulles godot/scripts/bulle.gd + sous-titres.
 - Circulation : s'arrete et klaxonne apres un choc ou un accident proche, le conducteur engueule le joueur (bulle).
 Tests : tests/test_vehicules.gd (tout fonctionne), tests/test_coherence.gd. Captures : tests/capture_vehicules.gd.
+
+## Personnages version 3 : corps continu anime par squelette (passe 14)
+- blender/tools/build_character.py <homme|homme_fort|femme|femme_ronde|garcon|fille> <.blend> <.glb> [apercu.png]
+  -> godot/assets/models/chr_<variante>.glb. Corps d'un seul tenant (modificateur Skin + subdivision 1 : ~4 000 faces),
+  formes (poitrine, fesses, ventre), tete detaillee, 15 os (piv_*), pose de repos en A (12 degres).
+  Poids : chaque sommet est rattache a la branche du squelette la plus proche (tronc, epaule, bras, hanche, jambe),
+  fondus aux articulations ; un sommet dans le volume du torse reste au torse (bras colle au corps).
+  Vetements : haut (manches courtes / longues) construit comme un vrai vetement (tube autour du torse et manches,
+  plaque sur le corps par lancer de rayons depuis l'axe, ourlets droits) ; pantalon, short, chaussures derives du corps ;
+  jupe, pagne long, boubou lestes sur le bassin et les cuisses ; coiffures (courts, afro, tresses, chignon, meches,
+  foulard, casquette). Enfants : uniforme scolaire kaki (chemise + short ou jupe).
+- godot/scripts/squelette.gd : pilote les os avec des angles dans le repere du personnage (compense la pose en A).
+- character_anim.gd : calcule sur des pivots "fantomes" puis recopie sur les os (memes allures qu'avant).
+- pnj_util.gd : morphologies au hasard (25 % d'hommes forts, 38 % de femmes rondes, 12 % d'enfants chez les pietons),
+  poses fixes via Squelette.pose, fusion des personnages poses (bake_mesh_from_current_skeleton_pose) une fois la pose
+  appliquee (2 images plus tard) ; tests sans fenetre : pose de repos.
+- Mesure : 96 a 112 images/s en 1600x900 (RTX 2050).
