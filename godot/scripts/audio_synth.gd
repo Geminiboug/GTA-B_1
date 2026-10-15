@@ -217,5 +217,21 @@ static func tonnerre() -> AudioStreamWAV:
 	return _wav(out, false)
 
 
+static func ding() -> AudioStreamWAV:
+	## Petit carillon d'arrivee (deux notes claires qui s'eteignent).
+	var n := int(RATE * 0.9)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for i in n:
+		var t := float(i) / RATE
+		var a := sin(TAU * 1046.5 * t) * exp(-t * 5.0) * minf(t / 0.005, 1.0)
+		var b := 0.0
+		if t > 0.16:
+			var u := t - 0.16
+			b = sin(TAU * 1568.0 * u) * exp(-u * 4.0) * minf(u / 0.005, 1.0)
+		out[i] = (a + b) * 0.35
+	return _wav(out, false)
+
+
 static func step_f(x: float, edge: float) -> float:
 	return 1.0 if x < edge else 0.0

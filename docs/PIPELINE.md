@@ -225,3 +225,17 @@ F3 : declencher / arreter l'averse. Captures : tests/capture_meteo.gd -> docs/im
 - props.gd : rien sur la chaussee (verification du rayon complet), voitures garees sur le bas-cote (liste props.parked).
 - Test : tests/test_coherence.gd (batiments, voitures garees, vehicules, pietons sur la chaussee, joueur et zem au sol).
   Captures : tests/capture_coherence.gd (vues du dessus et au sol).
+
+## Mini-carte, grande carte, GPS (passe 11)
+godot/scripts/hud_carte.gd (noeud "HUD", CanvasLayer) + godot/shaders/minicarte.gdshader.
+- Fond de carte dessine une seule fois au lancement dans un SubViewport (2 px/m) depuis le JSON : zones, plage, mer,
+  promenade, pistes, batiments, rues (grands axes jaune pale, rues grises, pistes en terre brunes).
+- Mini-carte ronde en haut a gauche : centree sur le joueur, tourne avec la camera, s'eloigne avec la vitesse ;
+  nord, fleche du joueur, destination collee au bord si loin, marqueurs proches, nom de la rue et distance restante.
+- Grande carte : M (manette Select/Back), jeu en pause. Clic gauche / Entree / A : destination (re-clic : l'enlever),
+  clic droit / P / X : marqueur perso (sauve dans user://marqueurs.json), molette / gachettes : zoom,
+  glisser / ZQSD / stick : deplacer, M / Echap / B : fermer. Noms des rues nommees et des lieux (noms fictifs, LEGAL.md).
+- Itineraire : Carte.route() (A*, sens uniques respectes en vehicule), recalcule toutes les 1,5 s, ligne violette ;
+  colonne de lumiere sur la destination ; arrivee a 12 m : effacee + carillon (AudioSynth.ding).
+- Clavier : les deplacements acceptent maintenant aussi les lettres ZQSD (AZERTY) et les fleches.
+Captures : tests/capture_carte.gd -> docs/images/carte_mini.png, carte_grande.png

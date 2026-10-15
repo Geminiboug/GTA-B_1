@@ -449,6 +449,7 @@ ZONE_RULES = [
     (lambda t: t.get("leisure") == "swimming_pool", "mat_eau", 0.009, "zone_piscine"),
 ]
 zone_batches = {}
+zone_data = []  # pour la carte du jeu (mini-carte)
 for t, poly in areas:
     if "building" in t:
         continue
@@ -457,6 +458,7 @@ for t, poly in areas:
             p = clip_poly(clean(poly))
             if len(p) > 2:
                 zone_batches.setdefault((name, mat, z), Batch()).add(*flat(ccw(p), z))
+                zone_data.append({"kind": name, "pts": [[round(q[0], 2), round(-q[1], 2)] for q in p]})
             break
 for (name, mat, z), bt in zone_batches.items():
     batch_obj(name, bt, mat, "Zones", z)
@@ -844,7 +846,8 @@ if median.faces:
     median.faces = me_faces
     make_obj("terre_plein-col", median.verts, median.faces, "mat_beton", "Routes")
 
-# --- 5) Piste et taxiways de l'aeroport ---
+# --- 5) Piste et taxiways de l aeroport ---
+aero_data = []
 for wid, w in ways.items():
     t = w["tags"]
     aw = t.get("aeroway")
@@ -857,6 +860,7 @@ for wid, w in ways.items():
             if len(piece) < 2:
                 continue
             line_batches.setdefault(key, Batch()).add(*ribbon(piece, width))
+            aero_data.append({"kind": aw, "width": width, "pts": [[round(p[0], 2), round(-p[1], 2)] for p in piece]})
             mz = z + MARK_DZ
             if aw == "taxiway":
                 add_marking("marquage_taxiway", "mat_marquage_jaune", mz, piece, 0.3)
@@ -1244,6 +1248,8 @@ if OUT_JSON:
         "promenade": gz(offset_line(beach_inner, PROMENADE_W / 2)) if beach_inner else [],
         "parking_positions": parking,
         "medians": median_data,
+        "zones": zone_data,
+        "aeroways": aero_data,
     }
     json.dump(data, open(OUT_JSON, "w", encoding="utf-8"))
     print("Donnees Godot :", OUT_JSON, len(road_data), "routes,", len(building_data), "batiments")
