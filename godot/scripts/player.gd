@@ -171,6 +171,37 @@ func _camera_gta(delta: float) -> void:
 		cam.v_offset = sin(t * 43.0 + 1.3) * _shake * 0.3
 
 
+@export var look_plane_range := 600.0   # m : un avion plus proche (et assez bas) attire le regard
+var _air_node: Node = null
+
+
+func _update_look() -> void:
+	## Regard facon GTA V : la tete suit la direction de la camera (dans la limite d'un mouvement de tete),
+	## et se tourne vers un avion qui passe a basse altitude.
+	var yaw := 0.0
+	var pitch := 0.0
+	var rel := angle_difference(_facing, cam_pivot.rotation.y)
+	if absf(rel) < 1.7:
+		yaw = rel
+		pitch = clampf(-cam_pivot.rotation.x - 0.2, -0.3, 0.4)
+	if _air_node == null:
+		_air_node = get_parent().get_node_or_null("TraficAerien")
+	if _air_node:
+		var mv: Dictionary = _air_node.get("mv")
+		var pl: Node3D = mv.get("plane") if mv else null
+		if pl and is_instance_valid(pl):
+			var d := pl.global_position - global_position
+			var flat := Vector2(d.x, d.z).length()
+			if flat < look_plane_range and d.y < 250.0 and d.y > 3.0:
+				var ang := atan2(-d.x, -d.z)
+				var r2 := angle_difference(_facing, ang)
+				if absf(r2) < 1.9:
+					yaw = r2
+					pitch = atan2(d.y, flat)
+	anim.look_yaw = yaw
+	anim.look_pitch = pitch
+
+
 func shake(amount: float) -> void:
 	## Secousse de camera (atterrissage, avion a basse altitude, choc).
 	if camera_effects:
@@ -350,6 +381,7 @@ func _physics_process(delta: float) -> void:
 		anim.turn_rate = angle_difference(_prev_facing, _facing) / delta
 		anim.accel = (new_hspeed - _prev_hspeed) / delta
 		anim.essouffle = clampf((0.6 - stamina) / 0.5, 0.0, 1.0)
+		_update_look()
 		if is_on_floor() and not was_on_floor:
 			anim.land(_fall_speed)
 			if _fall_speed > 5.0:

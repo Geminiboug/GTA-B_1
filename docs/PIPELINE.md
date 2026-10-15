@@ -449,5 +449,7 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   inclinaison du stick = allure. Camera : recentrage derriere le joueur apres 1,5 s sans la toucher, FOV et recul en
   sprint, secousse a l'atterrissage brutal (shake()), vue proche / moyenne / lointaine (V, croix bas), camera_effects
   pour tout desactiver.
-- Test : tests/test_controles.gd.
+- Regard (player.gd _update_look, character_anim.gd look_yaw / look_pitch) : tete (65 %) et buste (30 %) suivent la
+  direction de la camera, ou un avion a moins de 600 m et 250 m de haut (look_plane_range).
+- Test : tests/test_controles.gd ; capture : tests/capture_regard.gd -> docs/images/etape16_regard.png.
 - En attente des clips Quaternius : accroupi, demarrages, arrets, pivots, saut contextuel, IK, ragdoll.

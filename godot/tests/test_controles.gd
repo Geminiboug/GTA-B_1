@@ -86,6 +86,15 @@ func _physics_process(_d: float) -> bool:
 			var before: float = player.spring_arm.spring_length
 			player._unhandled_input(e)
 			_check(player.spring_arm.spring_length != before, "changement de vue (V) : %.1f -> %.1f m" % [before, player.spring_arm.spring_length])
+			t0 = frame
+			step = 4
+	elif step == 4:
+		# regard : camera tournee d'un radian, la tete suit
+		player.cam_pivot.rotation.y = float(player.get("_facing")) + 1.0
+		player.set("_cam_idle", 0.0)
+		if frame - t0 == 60:
+			var lk: Vector2 = player.anim.get("_look")
+			_check(lk.x > 0.8, "la tete suit la camera (%.2f rad)" % lk.x)
 			print("RESULTAT : %s" % ("tout fonctionne" if fails == 0 else "%d echec(s)" % fails))
 			return true
 	return false

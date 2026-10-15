@@ -17,6 +17,9 @@ var seated := false  # assis sur un vehicule
 var femme := false   # demarche feminine : bassin qui balance davantage, bras plus pres du corps
 var gesture := 0.0   # 0..1 : gesticule (colere, dispute) : bras leves, mains qui s'agitent
 var essouffle := 0.0 # 0..1 : essoufflement (endurance du joueur), respiration rapide et ample
+var look_yaw := 0.0   # rad, regard relatif au corps (+ = a gauche)
+var look_pitch := 0.0 # rad, + = vers le haut
+var _look := Vector2.ZERO
 var _gest := 0.0
 var _punch := 0.0
 
@@ -186,8 +189,11 @@ func _physics_process(delta: float) -> void:
 	_p["piv_coude_G"].rotation.x = elbow
 	_p["piv_coude_D"].rotation.x = elbow
 	_p["piv_tronc"].rotation.x = -lean + breath
-	_p["piv_tronc"].rotation.y = s * _g[8] * m * (1.0 - _air)
-	_p["piv_tete"].rotation.x = lean * 0.5
+	# regard : la tete (et un peu le buste) suit la camera ou un evenement (avion, klaxon)
+	_look = _look.lerp(Vector2(clampf(look_yaw, -1.2, 1.2), clampf(look_pitch, -0.4, 0.6)), 1.0 - exp(-5.0 * delta))
+	_p["piv_tronc"].rotation.y = s * _g[8] * m * (1.0 - _air) + _look.x * 0.3
+	_p["piv_tete"].rotation.x = lean * 0.5 - _look.y
+	_p["piv_tete"].rotation.y = _look.x * 0.65
 	_p["piv_bassin"].position.y = _p["bassin_y"] + bob
 	# balancement du bassin a chaque pas (plus marque chez la femme), oppose a la rotation des epaules
 	var walk := m * (1.0 - _air) * (1.0 - _seat)
