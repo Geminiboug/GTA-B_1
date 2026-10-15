@@ -65,7 +65,9 @@ Materiel :
 
 ### Phase 3 : Joueur a pied
 - [x] Personnage 3e personne (marche, course, saut, camera) : godot/scenes/player.tscn, godot/scripts/player.gd (capsule en attendant le modele)
-- [x] Animations (idle, walk, run, jump) : humanoide low poly fait par script + animation procedurale (Mixamo plus tard pour la finition)
+- [x] Animations (idle, walk, run, jump) : humanoide fait par script + animation procedurale (provisoire)
+- [ ] Locomotion facon GTA V (etape 16) : squelette humanoide standard + clips mocap Quaternius (CC0), machine a etats avec root motion, demarrages, arrets, pivots, IK, ragdoll. Diagnostic fait (docs/diagnostic_locomotion.md), en attente du pack
+- [x] Mode debug (F1 : infos, chemins des PNJ ; touches 1 a 8 : teleportation) et checklist docs/validation_phases_3_5.md
 - [x] Collisions propres avec le decor (test auto godot/tests/test_player.gd ; murs OSM obsoletes sur la plage retires, promenade sans collision)
 - [ ] Jalon : balade fluide dans tout le quartier (a valider par Olympe)
 
@@ -77,21 +79,25 @@ Materiel :
 - [ ] Jalon : conduire un zem de l aeroport a la plage (a valider par Olympe)
 
 ### Phase 5 : Ville vivante
-- [x] PNJ pietons (marche sur les bas-cotes, vendeurs assis, porteuses de bassine) : pedestrians.gd
+- [x] PNJ pietons (marche sur les bas-cotes, vendeurs assis, porteuses de bassine, plateau ou glaciere, sacs, telephones) : pedestrians.gd
+- [x] Personnages realistes (etapes 12 a 15) : tailles et mensurations reelles, 10 morphologies (minces, forts, ages, enfants), 7 traits du visage par PNJ, 10 teintes de peau, coiffures (implantation reelle, tresses, vanilles, foulards, bonnet, casque), tenues (wax, boubou, maillots de clubs fictifs, zemidjans casques numerotes, police fictive, agents de l aeroport)
+- [x] Avions de ligne (decollage, atterrissage, roulage, retour au poste), balisage et PAPI
+- [x] Interieurs : maison du joueur, Ararat Hypermarket, terminal
 - [x] Trafic (zems avec conducteur, voitures, sur le reseau reel) : traffic.gd
 - [x] Cycle jour/nuit et eclairage (lampadaires, coupures de courant)
 - [x] Ambiances sonores (ressac, ville, oiseaux, grillons, moteurs, klaxons) synthetisees
 - [ ] Jalon : le quartier "respire"
 
 ### Phase 6 : Modelisation detaillee et textures
-- [ ] Remplacer le blockout par des batiments detailles (facades, portes, toits en tole)
+- [ ] Remplacer le blockout par des batiments detailles (fait en partie : hauteurs reelles mesurees, toits en tole, bandeaux, balcons, auvents, piscines et bassins ; reste : kit modulaire de facades, portails, clotures)
+- [x] Echelle reelle verifiee par test (tests/test_echelle.gd) et noms fictifs partout (docs/correspondance_noms.md)
 - [x] Props locaux (etals, poteaux, lampadaires, enseignes fictives, vehicules, ordures, kpayo, maquis, cabines, avions) : build_props.py + props.gd
 - [ ] Textures reelles issues des photos
-- [ ] Optimisation (instances, LOD, occlusion) [MultiMesh par quartiers + distances d affichage faits ; 120-135 img/s sur RTX 2050]
+- [ ] Optimisation (instances, LOD, occlusion) [MultiMesh par quartiers + distances d affichage faits ; 86-97 img/s dehors, 67-71 en interieur en 1280x720 ; LOD des personnages a l etape 17]
 
 ### Phase 7 : Gameplay de base
 - [ ] Systeme d'argent (FCFA), inventaire, interactions (acheter, parler)
-- [ ] UI : HUD, carte, menu
+- [ ] UI : HUD, carte, menu (fait : mini-carte, grande carte, GPS ; reste : menus, pause, options, sauvegarde)
 - [ ] 3 premieres missions (livraison en zem, course client, achat au marche)
 - [ ] Sauvegarde et chargement
 
@@ -161,6 +167,8 @@ Option plus tard : multijoueur.
 - 15/10/2026 : noms reels renommes (Boulevard de l Envol, Route des Filets, La voix de Gbe Town, immatriculations GB-), mode debug F1 + teleportation 1-8, checklist docs/validation_phases_3_5.md.
 - 15/10/2026 : etape 14, visages : 7 traits par PNJ cuits a la creation (aucun cout en jeu), nez ouest-africain, 10 teintes de peau, ligne d implantation reelle (plus de frange en bol), vanilles, bonnet, couronne poivre et sel. FPS 76-88 dehors, 61-72 interieurs.
 - 15/10/2026 : etape 15, vetements : epaules propres, zemidjans casques avec numero fictif GT, maillots de clubs fictifs, police fictive et agents de l aeroport, visages varies pour le personnel, plateaux, glacieres, sacs et telephones. FPS 86-97 dehors, 67-71 interieurs.
+- 15/10/2026 : etape 16, diagnostic du controleur (docs/diagnostic_locomotion.md : mouvement pilote par la physique, pas de demarrage / arret / pivot, rotation en toupie, cycles sinusoidaux, squelette de 15 os trop simple). Decision d Olympe : squelette humanoide standard + Universal Animation Library de Quaternius (CC0), qu Olympe telecharge.
+- 15/10/2026 : roadmap mise a jour (phases, etat actuel).
 
 ---
 
@@ -186,28 +194,38 @@ CONVENTIONS
 - Tout son est synthetise (godot/scripts/audio_synth.gd) ; tout modele est fait par script Blender (blender/tools/)
 
 ETAT ACTUEL (15/10/2026)
-- Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu.
-- Fait : zone OSM + batiments Overture + littoral Sentinel-2 (blender/tools/osm_import.py -> godot/assets/data/zone_aeroport.json),
-  materiaux proceduraux (realism.gd + shaders/), vegetation, mobilier, enseignes, cycle jour/nuit, meteo, ambiance sonore,
-  coherence du monde, mini-carte + grande carte + GPS, personnages v3 a squelette, voitures conduisibles, reactions des PNJ,
-  lieux a interieur (maison du joueur, Ararat Hypermarket, terminal), avions de ligne detailles (build_avion.py, avion.gd,
-  air_traffic.gd : repoussage, roulage, decollage, approche, arrondi, inverseurs, retour au poste), balisage et PAPI
-  (balisage.gd), horizon a 6 km (horizon.gd), details de facades (bandeaux, balcons, auvents).
-  Tests : godot/tests/test_*.gd tous OK (test_avion OK sur 06 et 24, 4 postes valides) ; captures : tests/capture_*.gd ;
-  performances : tests/perf_fps.gd en 1280x720 : 70 a 85 images/s dehors, ~60 dans les interieurs (min 52, a surveiller).
+- Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu avec le mode debug
+  (F1, teleportation 1 a 8) et la checklist docs/validation_phases_3_5.md. Phase 6 bien avancee.
+- Fait :
+  - Monde : zone OSM + batiments Overture + littoral Sentinel-2 + hauteurs reelles Google Open Buildings 2.5D
+    (blender/tools/osm_import.py, ob25d_*.py -> godot/assets/data/zone_aeroport.json), piscines et bassins, horizon a 6 km,
+    materiaux proceduraux, vegetation, mobilier, enseignes fictives, cycle jour/nuit, meteo, ambiance sonore, coherence.
+  - Jeu : joueur a pied, zem et voitures conduisibles, circulation, pietons et reactions, mini-carte + grande carte + GPS,
+    interieurs (maison, Ararat Hypermarket, terminal), avions de ligne (air_traffic.gd, avion.gd), balisage et PAPI.
+  - Personnages (etapes 12 a 15, blender/tools/build_character.py + godot/scripts/pnj_util.gd) : tailles et mensurations
+    reelles, 10 morphologies, visages (7 traits cuits a la creation), 10 teintes de peau, coiffures, tenues, uniformes,
+    accessoires. Noms reels remplaces (docs/correspondance_noms.md).
+  - Tests : godot/tests/test_*.gd (11 suites : coherence, echelle, vehicules, player, zem, circulation, limites, avion,
+    manette, debug) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
+    tests/perf_fps.gd en 1280x720 : 86 a 97 images/s dehors, 67 a 71 dans les interieurs.
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
-  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md). Envoi git : depuis
-  le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
-- Plan valide par Olympe (etapes, une a la fois) : A avions (fait). B echelle reelle (fait) : 5 reference d'echelle dans
-  PIPELINE.md, 6 test auto des tailles (joueur, PNJ, portes, mobilier, vehicules), 7 corrections. C carte reelle (donnees
-  ouvertes seulement) : 8 mise a jour OSM/Overture, 9 hauteurs Open Buildings 2.5D, 10 relief Copernicus 30 m, 11 noms
-  fictifs partout (les noms de rue reels sont autorises, cf. LEGAL.md) + LEGAL.md ; a revoir aussi : bassins OSM rendus
-  en aplats bleu vif au sol (peu fideles). D personnages Blender :
-  12 corps de base, 13 morphologies, 14 visages/peaux/coiffures, 15 vetements locaux, 16 animations, 17 integration + LOD.
-- C carte reelle (fait) : hauteurs mesurees Open Buildings 2.5D, piscines et bassins fideles, relief Copernicus ecarte
-  (modele de surface : toits et arbres), noms verifies. Reste possible : pente reelle de la plage (~4 m sur ~100 m).
-- Prochaine tache : etape 16 (animations et deplacements style GTA V), en commencant par le diagnostic du controleur. Etapes 12 a 15 faites. Regle d'Olympe : tout ce qui n'est
-  pas fidele a Cotonou est corrige ou supprime.
+  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md) ; Python geo dans WSL
+  (~/.venvs/geo). Envoi git : depuis le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
+- Plan valide par Olympe (une etape a la fois, captures a chaque etape dans docs/images/) :
+  - fait : A avions, B echelle reelle, C carte reelle, etapes 12 a 15 (personnages), noms fictifs, mode debug ;
+  - en cours : etape 16, locomotion facon GTA V (diagnostic fait ; en attente du pack Quaternius dans Telechargements) :
+    squelette humanoide standard, retargeting des clips, AnimationTree en machine a etats avec root motion, controles GTA V
+    (sprint en tapotant, marche lente, endurance, saut contextuel, accroupi), IK des pieds, regard, idles, reactions
+    physiques et ragdoll, camera GTA V, vehicules (entree / sortie animees, passager), PNJ sur le meme systeme ;
+  - ensuite : etape 17 (LOD des personnages et de la simulation), pente reelle de la plage (optionnel), phase 6
+    (audit de fidelite des reperes, details urbains, harmattan, kit modulaire), phase 7 (menus, options, sauvegarde,
+    interactions, dialogues, missions, histoire "Le Dernier Vol" : prologue et acte 1), phase 8 (police fictive,
+    niveau de recherche), phases 9 et 10.
+- Reste a faire, signale : cheveux mouilles sous la pluie, casquette de la policiere, traversees du corps pendant la marche
+  (a verifier avec les animations de l'etape 16).
+- Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; aucun nom reel en jeu (signaler
+  avant de renommer) ; budget 70 images/s dehors et 60 en interieur ; tests au vert a chaque commit ; demander avant
+  tout choix structurant.
 - Attention mesures : arreter les Blender / Godot restes en fond avant perf_fps.gd (sinon 10 images/s dans les interieurs).
 - Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et
   rouvrir le projet (sinon erreurs "global uniform does not exist", fichiers non importes).
