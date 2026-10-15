@@ -551,7 +551,7 @@ def build_maison(info):
         col.box((mx, my, bh + 0.6), (L + 0.3, 0.18, 0.8), M["plaster_ext"], math.atan2(b[1] - a[1], b[0] - a[0]))
     vis.cyl((bx1 - 2.0, by1 - 1.6, bh + 0.2), 0.75, 1.5, M["black"], 16)
     # veranda : auvent en tole sur poteaux
-    for px in (bx0 + 0.3, 0, bx1 - 0.3):
+    for px in (bx0 + 0.3, -1.9, 1.9, bx1 - 0.3):           # jamais de poteau dans l axe de la porte
         col.box((px, by0 - 2.3, 1.45), (0.18, 0.18, 2.9), M["plaster_ext"])
     vis.box((0, by0 - 1.25, 2.95), (bw + 0.4, 2.8, 0.06), M["tin"])
     # porte d'entree (double, bois)
@@ -586,14 +586,15 @@ def build_maison(info):
     deco.box((sx0 + 2.6, by0 + 0.36, z0 + 0.63), (0.05, 0.03, 0.14), M["black"])
     deco.rbox((sx0 + 2.6, by0 + 0.36, z0 + 0.97), (1.12, 0.05, 0.66), M["black"], 0.0, bevel=0.01)
     deco.box((sx0 + 2.6, by0 + 0.385, z0 + 0.97), (1.06, 0.004, 0.6), M["screen"])
-    # buffet vitre avec vaisselle et bibelots
-    fur.rbox((sx0 + 5.3, by0 + 0.33, z0 + 0.55), (1.2, 0.42, 1.1), M["wood_light"], 0.0, bevel=0.012)
-    vis.box((sx0 + 5.3, by0 + 0.545, z0 + 0.8), (1.1, 0.006, 0.5), GLASS)
-    vis.box((sx0 + 5.3, by0 + 0.545, z0 + 0.3), (1.1, 0.006, 0.45), M["wood"])
+    # buffet vitre avec vaisselle et bibelots : contre le mur du fond, a droite du canape (jamais devant la porte d'entree)
+    bfx, bfy = sx0 + 5.3, by1 - 0.33
+    fur.rbox((bfx, bfy, z0 + 0.55), (1.2, 0.42, 1.1), M["wood_light"], 0.0, bevel=0.012)
+    vis.box((bfx, bfy - 0.215, z0 + 0.8), (1.1, 0.006, 0.5), GLASS)
+    vis.box((bfx, bfy - 0.215, z0 + 0.3), (1.1, 0.006, 0.45), M["wood"])
     for k in range(4):
-        deco.cyl((sx0 + 4.92 + k * 0.25, by0 + 0.38, z0 + 0.62), 0.05, 0.05, M["white_plastic"], 10)     # assiettes
+        deco.cyl((bfx - 0.38 + k * 0.25, bfy - 0.05, z0 + 0.62), 0.05, 0.05, M["white_plastic"], 10)     # assiettes
     for k in range(3):
-        deco.cyl((sx0 + 4.9 + k * 0.4, by0 + 0.33, z0 + 1.1), 0.045, 0.22, M["products"][k], 8, 0.03)    # bibelots / bouteilles
+        deco.cyl((bfx - 0.4 + k * 0.4, bfy, z0 + 1.1), 0.045, 0.22, M["products"][k], 8, 0.03)    # bibelots / bouteilles
     # tapis au sol
     deco.box((sx0 + 2.6, by0 + 3.4, z0 + 0.004), (2.6, 1.8, 0.006), mat("mat_tapis_salon", (0.55, 0.22, 0.15), 0.95))
     deco.cyl((sx0 + 2.6, by0 + 3.6, bh - 0.45), 0.08, 0.45, M["white_plastic"], 8)              # ventilateur

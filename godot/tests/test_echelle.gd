@@ -62,6 +62,28 @@ func _initialize() -> void:
 	var leaf: AABB = _aabb(maison.find_child("porte_battante_entree_g_vantail", true, false), Transform3D())
 	_range(leaf.size.y, 2.0, 2.15, "hauteur porte d'entree de maison")
 	_range(leaf.size.x + leaf.size.z - 0.05, 0.6, 0.95, "largeur d'un vantail de porte d'entree")
+	# passage libre : couloir de 1,2 m de large de la veranda (2,8 m devant) au salon (1,3 m derriere la porte), 0,1 a 1,8 m
+	var blocked := 0
+	var bg := maison.find_child("porte_battante_entree_g", true, false) as Node3D
+	var bd := maison.find_child("porte_battante_entree_d", true, false) as Node3D
+	var mid := (bg.position + bd.position) * 0.5
+	for n in maison.find_children("*", "MeshInstance3D", true, false):
+		var nm := String(n.name)
+		if nm.begins_with("porte_") or nm.begins_with("zone_"):
+			continue
+		var mi := n as MeshInstance3D
+		var xf := mi.transform
+		var p := mi.get_parent()
+		while p != bg.get_parent() and p != maison and p is Node3D:
+			xf = (p as Node3D).transform * xf
+			p = p.get_parent()
+		var corridor := AABB(Vector3(-0.6, 0.1, -1.3), Vector3(1.2, 1.7, 4.1))
+		var f := mi.mesh.get_faces()
+		for i in range(0, f.size(), 3):
+			var tri := AABB(xf * f[i] - mid, Vector3.ZERO).expand(xf * f[i + 1] - mid).expand(xf * f[i + 2] - mid)
+			if tri.intersects(corridor):
+				blocked += 1
+	_check(blocked == 0, "passage libre devant et derriere la porte d'entree de la maison (%d triangles genants)" % blocked)
 	for e in [["lieu_ararat", "ararat", 2.2, 2.6, 1.8, 3.0], ["lieu_terminal", "terminal", 2.2, 2.7, 2.0, 3.2]]:
 		var lieu := _model(e[0])
 		var g: AABB = _aabb(lieu.find_child("porte_coulissante_%s_g_vantail" % e[1], true, false), Transform3D())
