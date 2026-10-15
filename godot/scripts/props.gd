@@ -8,7 +8,7 @@ extends Node3D
 @export var props_scene: PackedScene = preload("res://assets/models/props.glb")
 @export var zem_scene: PackedScene = preload("res://assets/models/veh_zem.glb")
 @export var seed_value := 229
-@export var chunk_size := 160.0
+@export var chunk_size := 80.0   # petits quartiers : un objet ne disparait pas trop pres (distance mesuree au centre du groupe)
 
 const SHOP_NAMES := [
 	"BOUTIQUE LA GRACE DE DIEU", "COIFFURE DIEU EST GRAND", "QUINCAILLERIE LE BON BERGER",
@@ -189,7 +189,7 @@ func _occupy(p: Vector2, radius: float) -> void:
 
 
 const AVOID_LAYER := 1 << 9
-const NEVER_ON := ["aeroport_", "zone_piscine", "zone_eau", "plage", "zone_plage", "promenade", "piste_cyclable"]
+const NEVER_ON := ["aeroport_", "zone_piscine", "zone_eau", "zone_parking", "plage", "zone_plage", "promenade", "piste_cyclable"]
 
 
 func _ground(p: Vector2, radius: float, allow_roads := false, allow_front := false) -> float:

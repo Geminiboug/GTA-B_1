@@ -46,12 +46,16 @@ func _ready() -> void:
 
 # ------------------------------------------------------------ marcheurs
 func _spawn_walker() -> void:
-	var ch := load(PnjUtil.CHAR_SCENE).instantiate() as Node3D
+	var genre := PnjUtil.random_genre(_rng)
+	var ch := PnjUtil.make(genre)
 	ch.set_script(ANIM)
+	ch.set_meta("genre", genre)
 	add_child(ch)
-	PnjUtil.random_outfit(ch, _rng)
-	if _rng.randf() < 0.3:
+	PnjUtil.dress_random(ch, _rng)
+	# a Cotonou, ce sont surtout les femmes qui portent la bassine sur la tete
+	if _rng.randf() < (0.4 if genre == "femme" else 0.06):
 		_head_basin(ch)
+	PnjUtil.bake_groups(ch)
 	var w := {"node": ch, "speed": _rng.randf_range(1.1, 1.6), "pause": 0.0, "cross": false,
 		"jitter": _rng.randf_range(-0.3, 0.4), "yaw": 0.0,
 		"prom": _promenade.size() > 2 and _rng.randf() < promenade_share}
@@ -395,31 +399,41 @@ func _seat_vendors(spots: Array) -> void:
 	if spots.is_empty():
 		return
 	# quelques tenues differentes, chacune fusionnee en un mesh fixe, puis repartie en MultiMesh
-	var variants := 6
-	var lists := []
+	# decoupes par quartiers de 64 m : la distance d'affichage se mesure depuis le centre de chaque groupe
+	# (un groupe etale sur toute la carte disparaissait des qu'on s'eloignait du centre de la carte)
+	var variants := 10
+	var meshes := []
 	for v in variants:
-		lists.append([])
-	for t in spots:
-		lists[_rng.randi() % variants].append(t)
-	for v in variants:
-		if lists[v].is_empty():
-			continue
 		var asm := Node3D.new()
 		add_child(asm)
-		var ch := load(PnjUtil.CHAR_SCENE).instantiate() as Node3D
+		# vendeuses surtout (marches et etals de Cotonou), quelques vendeurs
+		var genre := PnjUtil.random_genre(_rng, 0.75)
+		var ch := PnjUtil.make(genre)
 		asm.add_child(ch)
-		PnjUtil.random_outfit(ch, _rng)
+		PnjUtil.dress_random(ch, _rng)
+		ch.scale = Vector3.ONE
 		PnjUtil.pose_vendor(ch, _rng)
-		ch.position = Vector3(0, -0.5, 0)  # bassin a ~0,45 m : assis sur un tabouret
-		var mesh := PnjUtil.merge(asm)
+		# bassin a ~0,45 m : assis sur un tabouret (la femme a le bassin un peu plus bas)
+		ch.position = Vector3(0, -0.5 + (0.04 if genre == "femme" else 0.0), 0)
+		meshes.append(PnjUtil.merge(asm))
 		asm.queue_free()
+	var groups := {}
+	for t in spots:
+		var o: Vector3 = (t as Transform3D).origin
+		var key := "%d|%d|%d" % [_rng.randi() % variants, floori(o.x / 64.0), floori(o.z / 64.0)]
+		if not groups.has(key):
+			groups[key] = []
+		groups[key].append(t)
+	for key in groups:
+		var list: Array = groups[key]
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = mesh
-		mm.instance_count = lists[v].size()
-		for i in lists[v].size():
-			mm.set_instance_transform(i, lists[v][i])
+		mm.mesh = meshes[int(String(key).get_slice("|", 0))]
+		mm.instance_count = list.size()
+		for i in list.size():
+			mm.set_instance_transform(i, list[i])
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
 		mmi.visibility_range_end = 160.0
+		mmi.visibility_range_end_margin = 20.0
 		add_child(mmi)

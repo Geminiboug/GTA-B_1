@@ -239,3 +239,22 @@ godot/scripts/hud_carte.gd (noeud "HUD", CanvasLayer) + godot/shaders/minicarte.
   colonne de lumiere sur la destination ; arrivee a 12 m : effacee + carillon (AudioSynth.ding).
 - Clavier : les deplacements acceptent maintenant aussi les lettres ZQSD (AZERTY) et les fleches.
 Captures : tests/capture_carte.gd -> docs/images/carte_mini.png, carte_grande.png
+
+## Personnages hommes / femmes (passe 12)
+- blender/tools/build_character.py <homme|femme> <.blend> <.glb> [apercu.png] -> godot/assets/models/chr_homme.glb,
+  chr_femme.glb (blender/chr/chr_homme.blend, chr_femme.blend). Pieces lisses (sections elliptiques) : torse, bassin,
+  membres, mains avec pouce, pieds et semelles ; visage : nez et narines, oreilles, yeux avec paupieres, sourcils, levres ;
+  cheveux en coque decoupee selon une vraie ligne d'implantation. Memes pivots piv_* que l'ancien modele.
+  Homme 1,76 m (epaules larges) ; femme 1,66 m (taille marquee, hanches, poitrine, cou fin, mains et pieds plus petits).
+  Pieces de tenue optionnelles : homme (tee-shirt / chemise, pantalon ou short, boubou + manches larges, casquette,
+  chaussures ou sandales) ; femme (haut, pagne court ou long, foulard noue, chignon ou tresses, sandales).
+- godot/shaders/wax.gdshader : tissu wax genere (cercles, losanges, vagues, damier ; 3 couleurs vives, palettes dans pnj_util.gd).
+- godot/scripts/pnj_util.gd : make(genre) (meta "genre"), random_look / dress_random (tenues realistes : zemidjans en
+  chemise jaune, boubous, pagnes et foulards en wax, jeans), bake_groups (pieces de chaque pivot fusionnees : ~12 objets
+  par personnage au lieu de ~45), merge (vendeurs assis).
+- character_anim.gd : demarche feminine (bassin qui balance, bras plus pres du corps).
+- Pietons : moitie femmes, bassine sur la tete surtout chez les femmes ; vendeurs : 3 sur 4 sont des vendeuses ;
+  passagers des zems : hommes et femmes. Vendeurs en MultiMesh decoupes par quartiers de 64 m (avant : un groupe etale sur
+  toute la carte disparaissait loin du centre de la carte). Mobilier : quartiers de 80 m.
+- Joueur : homme (tee-shirt, jean) ; F4 a pied : passer a un personnage femme (pagne et foulard wax) et inversement.
+Captures : tests/capture_pnj.gd -> docs/images/pnj_*.png, apercus Blender docs/images/chr_*.png

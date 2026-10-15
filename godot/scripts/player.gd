@@ -42,6 +42,46 @@ func _ready() -> void:
 	_facing = body.rotation.y
 	_last_safe = global_position
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_dress(anim, genre)
+
+
+# ---------- Apparence : homme ou femme (F4 a pied pour changer) ----------
+const ANIM_SCRIPT := preload("res://scripts/character_anim.gd")
+var genre := "homme"
+
+
+func _player_look(g: String) -> Dictionary:
+	if g == "femme":
+		var w := PnjUtil.wax(PnjUtil.WAX_PALETTES[3], 0)
+		return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.95, 0.94, 0.9)), "legs_up": PnjUtil.plain(PnjUtil.SKINS[0]),
+			"legs_low": PnjUtil.plain(PnjUtil.SKINS[0]), "cloth": w, "show": ["chr_cheveux", "chr_pagne_long", "chr_foulard"]}
+	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.1, 0.5, 0.55)), "legs_up": PnjUtil.plain(Color(0.2, 0.3, 0.48)),
+		"legs_low": PnjUtil.plain(Color(0.2, 0.3, 0.48)), "cloth": PnjUtil.plain(Color(0.2, 0.3, 0.48)),
+		"show": ["chr_cheveux", "chr_chaussure"]}
+
+
+func _dress(model: Node, g: String) -> void:
+	if model == null:
+		return
+	model.set_meta("genre", g)
+	set_meta("genre", g)
+	PnjUtil.apply(model, _player_look(g))
+	PnjUtil.bake_groups(model as Node3D)
+
+
+func set_genre(g: String) -> void:
+	## Change le personnage (le modele est reconstruit : les pieces ont ete regroupees pour l'affichage).
+	genre = g
+	var old := body.get_node_or_null("Model")
+	if old:
+		body.remove_child(old)
+		old.queue_free()
+	var m := PnjUtil.make(g)
+	m.set_script(ANIM_SCRIPT)
+	m.name = "Model"
+	body.add_child(m)
+	anim = m
+	_dress(m, g)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -57,6 +97,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F4 and vehicle == null:
+		set_genre("femme" if genre == "homme" else "homme")
 
 
 @export var stick_look_speed := 2.6  # rad/s au stick droit

@@ -14,6 +14,7 @@ var vertical_speed := 0.0
 var turn_rate := 0.0
 var accel := 0.0
 var seated := false  # assis sur un vehicule
+var femme := false   # demarche feminine : bassin qui balance davantage, bras plus pres du corps
 
 var _seat := 0.0
 
@@ -83,7 +84,7 @@ func _physics_process(delta: float) -> void:
 	var m := _move
 	var hip_amp: float = _g[2] * m
 	var knee_amp: float = _g[3] * m
-	var arm_amp: float = _g[4] * m
+	var arm_amp: float = _g[4] * m * (0.8 if femme else 1.0)
 
 	# jambe gauche : phase, jambe droite : phase + PI
 	var hip_g: float = s * hip_amp
@@ -154,4 +155,11 @@ func _physics_process(delta: float) -> void:
 	_p["piv_tronc"].rotation.y = s * _g[8] * m * (1.0 - _air)
 	_p["piv_tete"].rotation.x = lean * 0.5
 	_p["piv_bassin"].position.y = _p["bassin_y"] + bob
+	# balancement du bassin a chaque pas (plus marque chez la femme), oppose a la rotation des epaules
+	var walk := m * (1.0 - _air) * (1.0 - _seat)
+	_p["piv_bassin"].rotation.z = s * (0.055 if femme else 0.02) * walk
+	_p["piv_bassin"].rotation.y = -s * (0.09 if femme else 0.05) * walk
+	if femme:
+		_p["piv_coude_G"].rotation.x = elbow + 0.12
+		_p["piv_coude_D"].rotation.x = elbow + 0.12
 	rotation.z = _lean_side

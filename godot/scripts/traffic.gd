@@ -18,6 +18,7 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 0.71, 0.72), Color(0.08, 0.08, 0.09),
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
+const ZEM_VARIANTS := ["zem_a", "zem_b", "zem_c", "zem_passager_h", "zem_passager_f", "zem_passager_f2"]
 
 var _rng := RandomNumberGenerator.new()
 var _carte: Carte
@@ -52,24 +53,27 @@ func _ready() -> void:
 # ------------------------------------------------------------ vehicules
 func _build_meshes() -> Dictionary:
 	var out := {}
-	# zem + conducteur (+ passager), poses puis fusionnes en un seul mesh
-	for variant in ["zem", "zem_passager"]:
+	# zem + conducteur en chemise jaune (+ passager ou passagere), poses puis fusionnes en un seul mesh
+	for variant in ZEM_VARIANTS:
 		var asm := Node3D.new()
 		add_child(asm)
 		var z := ZEM_SCENE.instantiate()
 		asm.add_child(z)
 		_lamp_surfaces(z, "veh_phare")
-		var driver := load(PnjUtil.CHAR_SCENE).instantiate() as Node3D
+		var driver := PnjUtil.make("homme")
 		asm.add_child(driver)
+		PnjUtil.dress_random(driver, _rng, "zem")
+		driver.scale = Vector3.ONE
 		PnjUtil.pose_seated(driver)
-		PnjUtil.dress(driver, Color(0.95, 0.78, 0.1), Color(0.15, 0.18, 0.3), Color(0.33, 0.2, 0.13))
 		driver.position = Vector3(0, -0.05, 0.12)
-		if variant == "zem_passager":
-			var pas := load(PnjUtil.CHAR_SCENE).instantiate() as Node3D
+		if variant.begins_with("zem_passager"):
+			var genre := "femme" if variant.contains("_f") else "homme"
+			var pas := PnjUtil.make(genre)
 			asm.add_child(pas)
+			PnjUtil.dress_random(pas, _rng)
+			pas.scale = Vector3.ONE
 			PnjUtil.pose_seated(pas)
-			PnjUtil.dress(pas, Color(0.1, 0.35, 0.75), Color(0.85, 0.15, 0.1), Color(0.4, 0.26, 0.17))
-			pas.position = Vector3(0, -0.02, 0.48)
+			pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
 		out[variant] = PnjUtil.merge(asm)
 		asm.queue_free()
 	var props := PROPS_SCENE.instantiate()
@@ -113,7 +117,8 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 		a["lane"] = 0.27
 		a["length"] = 4.6
 	else:
-		mi.mesh = meshes[kind]
+		var pool := ZEM_VARIANTS.filter(func(v: String) -> bool: return v.begins_with("zem_passager") == (kind == "zem_passager"))
+		mi.mesh = meshes[pool[_rng.randi() % pool.size()]]
 		box.size = Vector3(0.6, 1.5, 2.0)
 		cs.position = Vector3(0, 0.75, 0)
 		a["max_big"] = _rng.randf_range(10.0, 14.0)

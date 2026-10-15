@@ -38,7 +38,7 @@ func _initialize() -> void:
 	pm.size = Vector2(10, 10)
 	ground.mesh = pm
 	world.add_child(ground)
-	model = load("res://assets/models/chr_joueur.glb").instantiate()
+	model = load("res://assets/models/chr_homme.glb").instantiate()
 	model.set_script(load("res://scripts/character_anim.gd"))
 	world.add_child(model)
 	cam = Camera3D.new()
