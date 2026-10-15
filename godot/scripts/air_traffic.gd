@@ -18,8 +18,13 @@ const NOSE_GEAR := 12.6        # du train principal au train avant (m)
 const GROUND_Y := 0.017
 
 @export var first_delay := 45.0
-@export var min_gap := 140.0
-@export var max_gap := 320.0
+@export var min_gap := 40.0          # s reelles mini entre deux mouvements (piste degagee)
+# Frequence reelle de Cotonou-Cadjehoun : ~35 mouvements commerciaux par jour (donnees ASECNA / ACI, ordre de
+# grandeur), concentres de 6 h a 1 h avec une pointe le soir (vols long-courriers d'Europe et d'Afrique de l'Est).
+# Mouvements par heure de jeu, heure par heure (0 h a 23 h) ; une heure de jeu dure minutes_per_game_day / 24.
+@export var movements_per_hour: Array[float] = [0.6, 0.3, 0.0, 0.0, 0.0, 0.3, 1.2, 2.0, 2.0, 1.6, 1.4, 1.4,
+	1.6, 1.6, 1.4, 1.4, 1.6, 2.0, 2.4, 2.6, 2.6, 2.4, 1.8, 1.2]
+@export var runway_24_share := 0.85   # vent de mer du sud-ouest dominant : piste 24 le plus souvent
 @export var initial_parked := 3
 
 var stands: Array = []         # {pos (train principal), dir (nez), t, s, plane}
@@ -229,12 +234,16 @@ func _process(delta: float) -> void:
 
 
 func _schedule() -> void:
+	var hour: float = _day.get("hour") if _day else 12.0
+	if movements_per_hour[int(hour) % 24] <= 0.01:
+		_timer = _next_gap()   # aeroport ferme la nuit (pas de vol commercial entre 2 h et 5 h)
+		return
 	var parked: Array = []
 	for i in stands.size():
 		if stands[i]["plane"] != null:
 			parked.append(i)
 	var free := _free_stand()
-	var runway := "06" if _rng.randf() < 0.5 else "24"
+	var runway := "24" if _rng.randf() < runway_24_share else "06"
 	if free >= 0 and (parked.is_empty() or _rng.randf() < 0.5):
 		start_arrival(runway)
 	elif not parked.is_empty():
@@ -599,7 +608,7 @@ func _finish(p: Node3D, remove: bool) -> void:
 		planes.erase(p)
 		p.queue_free()
 	mv = {}
-	_timer = _rng.randf_range(min_gap, max_gap)
+	_timer = _next_gap()
 
 
 # ------------------------------------------------------------------ suivi de trajectoire au sol
@@ -736,3 +745,14 @@ func _release_tug() -> void:
 	var away := tug.global_transform.translated_local(Vector3(0, 0, -40.0))
 	tw.tween_property(tug, "global_transform", away, 9.0)
 	tw.tween_callback(tug.queue_free)
+
+
+func _next_gap() -> float:
+	## Attente avant le prochain mouvement, d'apres la frequence reelle a l'heure de jeu courante
+	## (loi exponentielle : les vols n'arrivent pas a intervalles reguliers).
+	var hour: float = _day.get("hour") if _day else 12.0
+	var game_hour_s: float = (_day.get("minutes_per_game_day") if _day else 48.0) * 60.0 / 24.0
+	var rate: float = movements_per_hour[int(hour) % 24]
+	if rate <= 0.01:
+		return game_hour_s * 0.5          # nuit sans vol : on revient voir plus tard
+	return maxf(min_gap, -log(maxf(_rng.randf(), 0.05)) * game_hour_s / rate)

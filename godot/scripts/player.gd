@@ -11,9 +11,12 @@ extends CharacterBody3D
 @export var walk_speed := 1.6
 @export var jog_speed := 4.2
 @export var sprint_speed := 7.0
-@export var jump_velocity := 4.4
+@export var jump_velocity := 3.1      # m/s : saut d'environ 0,5 m, 0,63 s en l'air (g = 9,81)
+@export var land_brake := 0.45       # part de la vitesse horizontale gardee a la reception (flexion des jambes)
+@export var land_stun := 0.25        # s de reception sans relance
+@export var step_height := 0.3       # m : marche, bordure ou seuil franchis sans sauter
 @export var ground_accel := 9.0      # m/s2 au demarrage
-@export var ground_decel := 14.0     # m/s2 au freinage
+@export var ground_decel := 18.0     # m/s2 au freinage (arret en 0,4 s depuis le trot)
 @export var air_accel := 1.5         # tres peu de controle en l'air
 @export var turn_speed_slow := 12.0  # rad/s, demi-tour quasi immediat a l'arret
 @export var turn_speed_fast := 4.5   # virages plus larges en sprint
@@ -41,6 +44,7 @@ extends CharacterBody3D
 @onready var body: Node3D = $Body
 @onready var anim: Node = get_node_or_null("Body/Model")
 
+var _land_t := 0.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _cam_offset := Vector3(0, 1.6, 0)
 var _facing := 0.0        # direction du corps (yaw)
@@ -303,10 +307,16 @@ func _physics_process(delta: float) -> void:
 		_punch_cd = 0.6
 		if anim and anim.has_method("punch"):
 			anim.punch()
+		# passants de la rue et clients des interieurs (magasin, aerogare : scripts/pnj_interieur.gd)
+		var targets := get_tree().get_nodes_in_group("pnj_interieur")
 		var peds := get_parent().get_node_or_null("Pietons")
 		if peds:
-			var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
-			get_tree().create_timer(0.18).timeout.connect(func() -> void: peds.player_attack(global_position, fwd))
+			targets.append(peds)
+		var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
+		get_tree().create_timer(0.18).timeout.connect(func() -> void:
+			for tg in targets:
+				if is_instance_valid(tg):
+					tg.player_attack(global_position, fwd))
 	# filet de securite : si on passe sous la carte, retour au dernier endroit sur
 	if global_position.y < -20.0:
 		global_position = _last_safe + Vector3.UP * 1.0
@@ -351,7 +361,10 @@ func _physics_process(delta: float) -> void:
 	var hspeed := hvel.length()
 
 	if is_on_floor():
-		if dir.length() > 0.01:
+		_land_t = maxf(0.0, _land_t - delta)
+		if _land_t > 0.0:
+			hvel = hvel.move_toward(Vector2.ZERO, ground_decel * delta)
+		elif dir.length() > 0.01:
 			# le corps tourne vers la direction voulue, moins vite quand on va vite
 			var want := atan2(-dir.x, -dir.z)
 			var turn: float = lerp(turn_speed_slow, turn_speed_fast, clamp(hspeed / sprint_speed, 0.0, 1.0))
@@ -372,6 +385,7 @@ func _physics_process(delta: float) -> void:
 	velocity.z = hvel.y
 	body.rotation.y = _facing
 	move_and_slide()
+	_step_up(hvel)
 
 	if anim:
 		var new_hspeed := Vector2(velocity.x, velocity.z).length()
@@ -383,6 +397,9 @@ func _physics_process(delta: float) -> void:
 		anim.essouffle = clampf((0.6 - stamina) / 0.5, 0.0, 1.0)
 		_update_look()
 		if is_on_floor() and not was_on_floor:
+			velocity.x *= land_brake
+			velocity.z *= land_brake
+			_land_t = land_stun
 			anim.land(_fall_speed)
 			if _fall_speed > 5.0:
 				shake(shake_land * clampf(_fall_speed / 9.0, 0.3, 1.0))
@@ -390,3 +407,26 @@ func _physics_process(delta: float) -> void:
 	if is_on_floor():
 		_fall_speed = 0.0
 	_prev_facing = _facing
+
+
+func _step_up(hvel: Vector2) -> void:
+	## Monte une marche ou un rebord bas (trottoir, seuil de porte, escalier) au lieu de buter dessus.
+	if not is_on_floor() or not is_on_wall() or hvel.length() < 0.3:
+		return
+	var fwd := Vector3(hvel.x, 0, hvel.y).normalized() * 0.2
+	var xf := global_transform
+	# hauteur la plus basse qui degage le passage (un seuil sous un linteau bas ne demande pas 30 cm)
+	for k in range(1, 4):
+		var up := Vector3.UP * step_height * k / 3.0
+		if test_move(xf, up):
+			return
+		var raised := xf.translated(up)
+		if test_move(raised, fwd):
+			continue
+		# pose sur le dessus de la marche
+		var col := KinematicCollision3D.new()
+		var top := raised.translated(fwd)
+		if test_move(top, -up, col) and col.get_normal().y > 0.7:
+			global_position = top.origin + col.get_travel()
+			apply_floor_snap()
+		return

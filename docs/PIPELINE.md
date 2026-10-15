@@ -488,3 +488,23 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Tests : tests/test_animation.gd (glissement des pieds, etats air / sol / assis). Capture : tests/capture_joueur_anim.gd
   -> docs/images/etape16_joueur_clips.png. Outils de diagnostic : tests/profil_*.gd.
 - Mesures de performance : fenetre au premier plan obligatoire (en arriere-plan, le systeme bride Godot a 30 images/s).
+
+## Vehicules, epave et avions visitables (retours du 15/10/2026)
+- blender/tools/build_vehicles.py (refait) : carrosserie d'un seul tenant (cage de sections lissee par subdivision),
+  passages de roue decoupes (booleen), pare-chocs enveloppants, calandre, optiques, retroviseurs, poignees, joints de
+  portes, essuie-glaces, interieur (sieges avec appui-tete, planche de bord, volant), pneus profiles, jantes a rayons ;
+  4x4 avec elargisseurs et roue de secours, minibus avec galerie chargee. pt_conducteur = bassin du conducteur assis.
+- Circulation (traffic.gd) : conducteurs assis visibles dans les voitures (4 par modele, tenue gardee a l'ejection) ;
+  conduite en modele bicyclette (point vise devant, rayon de braquage 5,3 m voiture / 2,6 m moto, inclinaison de la moto
+  tan = v x lacet / g), reglages en @export. reclaim() : le proprietaire reprend son vehicule (pedestrians.gd _reclaim).
+- blender/tools/build_avion.py : porte avant gauche L1 decoupee (objet porte_avant), cabine avion_cabine (27 rangees 3+3,
+  coffres, office, poste de pilotage) et avion_cabine_parois. avion.gd : au poste, porte cachee, coque en collision
+  exacte, escalier mobile praticable (rampe de seuil).
+- blender/tools/build_epave.py : epave de la plage = avion du jeu vieilli (sans train, sur cales, rouille, porte ouverte,
+  escalier avec rampe invisible). landmarks.py l'importe ; coque, cabine, ailes, cales en -col (collision exacte).
+  Lancement : blender -b --python build_epave.py -- blender/veh/veh_avion_ligne.blend blender/veh/rep_epave_avion.blend
+  godot/assets/models/rep_epave_avion.glb, puis landmarks.py.
+- air_traffic.gd : frequence reelle (movements_per_hour, 24 valeurs, ~35 mouvements par jour), tirage exponentiel,
+  piste 24 a 85 % (vent de mer).
+- Joueur : saut 3,1 m/s (0,48 m), freinage a la reception (land_brake), montee des marches (step_height 0,3 m),
+  capsule de 0,30 m de rayon.

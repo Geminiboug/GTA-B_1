@@ -26,6 +26,8 @@ const LIGNES := {
 	"klaxon": ["Avance !", "Eh, bouge de là !", "Tu attends quoi ?", "Doucement, on va où ?"],
 	"choc_voiture": ["Eh ! Tu es fou ?", "Tu as vu ce que tu as fait ?", "Il faut payer la réparation !", "Tu ne sais pas conduire ?"],
 	"fuite": ["Ahi ! Courez !", "Eh Dieu !", "Au secours !"],
+	"vigile": ["Eh ! On ne se bat pas ici !", "Sortez du magasin !", "Sécurité ! Arrêtez ça !", "Doucement, monsieur !"],
+	"croise": ["Pardon {appel}.", "Excusez-moi.", "Eh, doucement !"],
 }
 
 

@@ -281,6 +281,7 @@ var _ground_kit: Node3D
 
 func set_parked(on: bool) -> void:
 	## Au poste : escalier mobile a la porte avant gauche et cones de securite (bouts d'aile, nez, reacteurs).
+	_cabin_access(on)
 	if not on:
 		if _ground_kit:
 			_ground_kit.queue_free()
@@ -322,7 +323,7 @@ func set_parked(on: bool) -> void:
 	var slope := deg_to_rad(15.0)
 	var stairs := _kit_box(Vector3(5.6, 0.12, 1.4), Vector3(-5.4, 1.93, door_z), grey)
 	stairs.rotation = Vector3(0, 0, slope)
-	_kit_box(Vector3(1.3, 0.1, 1.6), Vector3(-2.55, 2.66, door_z), grey)
+	_kit_box(Vector3(1.3, 0.1, 1.6), Vector3(-2.55, 2.53, door_z), grey)   # sous le haut de la volee : pas de rebord
 	for rz: float in [-0.72, 0.72]:
 		var rail := _kit_box(Vector3(5.8, 0.05, 0.05), Vector3(-5.3, 2.9, door_z + rz), grey)
 		rail.rotation = Vector3(0, 0, slope)
@@ -349,6 +350,14 @@ func _kit_box(size: Vector3, at: Vector3, m: Material) -> MeshInstance3D:
 	mi.mesh = b
 	_ground_kit.add_child(mi)
 	mi.position = at
+	# collision : on monte l'escalier a pied
+	var sb := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = size
+	cs.shape = bs
+	sb.add_child(cs)
+	mi.add_child(sb)
 	return mi
 
 
@@ -371,7 +380,7 @@ func _physics_process(_delta: float) -> void:
 		_body.global_transform = global_transform
 		# en vol (au-dessus de 15 m), plus de collision
 		for c in _body.get_children():
-			(c as CollisionShape3D).disabled = global_position.y > 15.0
+			(c as CollisionShape3D).disabled = global_position.y > 15.0 or (_hull != null and c.get_index() == 0)
 
 
 func _process(delta: float) -> void:
@@ -436,3 +445,37 @@ func _update_lights() -> void:
 	for s in _spots:
 		var want: bool = lights["taxi"] if s.get_parent().name == "phare_roulage" else lights["landing"]
 		s.visible = want and night > 0.2
+
+
+var _hull: StaticBody3D
+
+
+func _cabin_access(on: bool) -> void:
+	## Au poste : porte avant gauche ouverte et coque en collision exacte (le joueur entre dans la cabine par
+	## l'escalier). En mouvement : porte fermee, collision simple en boites.
+	var door := _model.find_child("porte_avant", true, false) as Node3D
+	if door:
+		door.visible = not on
+	var fus_box := _body.get_child(0) as CollisionShape3D
+	fus_box.disabled = on
+	if on and _hull == null:
+		_hull = StaticBody3D.new()
+		add_child(_hull)
+		for n in ["avion_fuselage", "avion_cabine", "avion_cabine_parois"]:
+			var mi := _model.find_child(n, true, false) as MeshInstance3D
+			if mi == null:
+				continue
+			var cs := CollisionShape3D.new()
+			cs.shape = mi.mesh.create_trimesh_shape()
+			_hull.add_child(cs)
+			cs.global_transform = mi.global_transform
+		# seuil de porte : petite rampe du palier de l'escalier (2,58 m) au plancher de la cabine (2,67 m)
+		var sill := CollisionShape3D.new()
+		var sb := BoxShape3D.new()
+		sb.size = Vector3(0.8, 0.04, 0.8)
+		sill.shape = sb
+		_hull.add_child(sill)
+		sill.global_transform = global_transform * Transform3D(Basis(Vector3(0, 0, 1), 0.13), Vector3(-1.85, 2.665, -15.75))
+	elif not on and _hull:
+		_hull.queue_free()
+		_hull = null

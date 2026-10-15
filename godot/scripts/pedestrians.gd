@@ -14,6 +14,8 @@ extends Node3D
 @export var player_path: NodePath = ^"../Player"
 @export var seed_value := 4242
 @export var lod_distance := 140.0
+@export var chase_owner_time := 25.0   # s pendant lesquelles un conducteur vole poursuit le joueur
+@export var owner_punch_push := 4.0    # m/s : coup du proprietaire sur le joueur a pied
 
 const ANIM := preload("res://scripts/character_anim.gd")
 const GROUND_Y := 0.02
@@ -52,15 +54,19 @@ func _spawn_walker() -> void:
 	_new_walker(PnjUtil.random_genre(_rng))
 
 
-func _new_walker(genre: String, at := Vector2.INF) -> Dictionary:
+func _new_walker(genre: String, at := Vector2.INF, variant := "", look := {}) -> Dictionary:
 	# quelques enfants (souvent en uniforme d'ecole), sinon des adultes de morphologies variees
-	var ch := PnjUtil.make(PnjUtil.random_variant(_rng, genre, 0.12 if at == Vector2.INF else 0.0))
+	var ch := PnjUtil.make(variant if variant != "" else PnjUtil.random_variant(_rng, genre, 0.12 if at == Vector2.INF else 0.0))
 	var metas := {"genre": ch.get_meta("genre"), "age": ch.get_meta("age"), "variante": ch.get_meta("variante")}
 	ch.set_script(ANIM)
 	for m in metas:
 		ch.set_meta(m, metas[m])
 	add_child(ch)
-	PnjUtil.dress_random(ch, _rng)
+	if look.is_empty():
+		PnjUtil.dress_random(ch, _rng)
+	else:
+		PnjUtil.apply(ch, look)   # meme tenue que sur le vehicule (zem ejecte)
+		ch.set_meta("look", look)
 	var basin: Node3D = null
 	# a Cotonou, ce sont surtout les femmes qui portent la bassine sur la tete
 	if at == Vector2.INF and _rng.randf() < (0.4 if genre == "femme" else 0.06):
@@ -747,7 +753,42 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 				target = Vector2((pv as Node3D).global_position.x, (pv as Node3D).global_position.z)
 			var d := target - me2
 			face = d
-			if d.length() > 1.3 and t < 8.0 and d.length() < 45.0:
+			var owner: bool = w.get("carjacked", false) and w.get("driver", false)
+			if owner and pv and not w.has("stolen"):
+				w["stolen"] = pv
+			var stolen: Node3D = w.get("stolen") if is_instance_valid(w.get("stolen")) else null
+			if owner and stolen:
+				# le proprietaire ne lache pas : il court au vehicule tant qu'il est a portee
+				target = Vector2(stolen.global_position.x, stolen.global_position.z)
+				d = target - me2
+				face = d
+				var vs := absf(float(stolen.get("speed")))
+				if d.length() < 2.4 and vs < 2.0:
+					_reclaim(w, stolen)
+					return
+				if t < chase_owner_time and d.length() < 70.0:
+					speed = 5.2
+					me2 = _step_towards(me2, d.normalized(), speed * delta)
+				else:
+					_set_state(w, "angry")
+			elif owner and pv == null and p2.distance_to(me2) < 25.0 and t < chase_owner_time:
+				# le joueur est a pied : il vient se battre
+				d = p2 - me2
+				face = d
+				if d.length() > 1.1:
+					speed = 5.0
+					me2 = _step_towards(me2, d.normalized(), speed * delta)
+				else:
+					w["punch_cd"] = w.get("punch_cd", 0.0) - delta
+					if w["punch_cd"] <= 0.0:
+						w["punch_cd"] = _rng.randf_range(0.7, 1.1)
+						ch.set("gesture", 1.0)
+						if _player is CharacterBody3D:
+							(_player as CharacterBody3D).velocity += Vector3(d.normalized().x, 0.0, d.normalized().y) * owner_punch_push
+							if _player.has_method("shake"):
+								_player.shake(0.4)
+						_speak(w, "vole")
+			elif d.length() > 1.3 and t < 8.0 and d.length() < 45.0:
 				speed = 4.6
 				me2 = _step_towards(me2, d.normalized(), speed * delta)
 			else:
@@ -969,10 +1010,11 @@ func player_attack(origin: Vector3, dir: Vector3) -> bool:
 	return true
 
 
-func _on_driver_ejected(pos: Vector3, yaw: float, genre: String, by: Node3D) -> void:
+func _on_driver_ejected(pos: Vector3, yaw: float, genre: String, by: Node3D, rider := []) -> void:
 	## Le conducteur (ou le passager) d'un vehicule pris par le joueur : tombe sur le cote, se releve,
 	## crie au voleur et court apres le vehicule un moment.
-	var w := _new_walker(genre, Vector2(pos.x, pos.z))
+	var w := _new_walker(genre, Vector2(pos.x, pos.z), rider[1] if rider.size() > 2 else "", rider[2] if rider.size() > 2 else {})
+	w["driver"] = rider.size() < 4 or rider[3] == 0   # le conducteur vient reprendre son bien
 	w["yaw"] = yaw + PI / 2.0
 	w["carjacked"] = true
 	_knock_down(w, Vector2(-cos(yaw), sin(yaw)) * 2.5, "chase")
@@ -999,3 +1041,29 @@ func _vendor_calls(ppos: Vector3, pv: Node3D) -> void:
 			tw.tween_interval(3.6)
 			tw.tween_callback(anchor.queue_free)
 			return
+
+
+func _reclaim(w: Dictionary, v: Node3D) -> void:
+	## Le proprietaire rattrape son vehicule arrete : il en sort le joueur, le bouscule et repart avec.
+	if _player and _player.get("vehicle") == v:
+		_player.exit_vehicle()
+		var away: Vector3 = (_player.global_position - v.global_position) * Vector3(1, 0, 1)
+		(_player as CharacterBody3D).velocity = away.normalized() * 5.0 + Vector3.UP * 2.0
+		if _player.has_method("shake"):
+			_player.shake(0.6)
+	_speak(w, "vole", true)
+	var traffic := get_parent().get_node_or_null("Circulation")
+	if traffic and traffic.has_method("reclaim") and traffic.reclaim(v):
+		# il est remonte sur son vehicule : le pieton disparait (il est dans le maillage du vehicule)
+		# (le passager du zem aussi), retires apres la boucle de mise a jour
+		var gone := [w]
+		for o in _walkers:
+			if o.get("carjacked", false) and not o.get("driver", false) and o["pos"].distance_to(w["pos"]) < 10.0:
+				gone.append(o)
+		(func() -> void:
+			for o in gone:
+				_walkers.erase(o)
+				(o["node"] as Node).queue_free()
+				_spawn_walker()).call_deferred()
+	else:
+		_set_state(w, "angry")

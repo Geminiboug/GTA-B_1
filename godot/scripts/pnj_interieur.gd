@@ -24,9 +24,15 @@ var _walkers: Array = []
 var _statics: Array = []
 var _active := false
 var _building := false
+var _guards: Array = []        # vigiles (figes) qui interviennent a la voix
+
+@export var flee_speed := 4.2       # m/s : client qui s'enfuit apres une bagarre
+@export var panic_radius := 14.0    # m : rayon dans lequel les clients prennent peur
+@export var notice_radius := 1.6    # m : un client frole par le joueur s'ecarte et le regarde
 
 
 func setup(root: Node3D, key: String, player: Node3D) -> void:
+	add_to_group("pnj_interieur")
 	_root = root
 	_key = key
 	_player = player
@@ -166,6 +172,8 @@ func _activate() -> void:
 				ch.global_transform = t
 			if p[0] == "file" and _key == "terminal":
 				_suitcase_at(t)
+			if p[0] == "vigile":
+				ch.set_meta("vigile", true)
 			posed.append(ch)
 		i0 += BATCH
 		# la pose n'est appliquee au maillage que deux images plus tard
@@ -184,6 +192,8 @@ func _activate() -> void:
 			add_child(mi)
 			mi.global_transform = ch.global_transform
 			_statics.append(mi)
+			if ch.has_meta("vigile"):
+				_guards.append(mi)
 			ch.queue_free()
 	# personnages qui marchent
 	var count := 14 if _key == "ararat" else 12
@@ -233,6 +243,7 @@ func _deactivate() -> void:
 	for s in _statics:
 		(s as Node).queue_free()
 	_statics.clear()
+	_guards.clear()
 
 
 func _build_graph() -> void:
@@ -252,31 +263,135 @@ func _build_graph() -> void:
 				_adj[j].append(i)
 
 
-# ------------------------------------------------------------------ marche
+# ------------------------------------------------------------------ marche et reactions
 func _walk(w: Dictionary, delta: float) -> void:
 	var ch: Node3D = w["node"]
 	var speed := 0.0
-	if w["pause"] > 0.0:
-		w["pause"] -= delta
-	else:
-		var target: Vector3 = _wp[w["to"]]
-		var d := target - ch.global_position
-		d.y = 0.0
-		if d.length() < 0.25:
-			w["at"] = w["to"]
-			var nb: Array = _adj[w["at"]] if _adj.size() > w["at"] else []
-			if nb.is_empty():
-				w["pause"] = 3.0
+	var tilt := 0.0
+	var st: String = w.get("state", "walk")
+	w["t"] = w.get("t", 0.0) + delta
+	w["talk_cd"] = w.get("talk_cd", 0.0) - delta
+	var pp := _player.global_position
+	var rel := pp - ch.global_position
+	rel.y = 0.0
+	match st:
+		"down":
+			# au sol apres un coup, puis se releve et s'enfuit
+			var t: float = w["t"]
+			if t < 0.4:
+				tilt = smoothstep(0.0, 0.4, t)
+				ch.global_position += w["push"] * delta * (1.0 - t / 0.4)
+			elif t < 1.6:
+				tilt = 1.0
+			elif t < 2.4:
+				tilt = 1.0 - smoothstep(1.6, 2.4, t)
 			else:
-				w["to"] = nb[_rng.randi() % nb.size()]
-				# on s'arrete regarder les rayons, la vitrine, le tableau des departs
-				if _rng.randf() < 0.45:
-					w["pause"] = _rng.randf_range(1.5, 6.0)
-		else:
-			speed = w["speed"]
-			var step := d.normalized() * minf(speed * delta, d.length())
-			ch.global_position += step
-			w["yaw"] = lerp_angle(w["yaw"], atan2(-d.x, -d.z), 1.0 - exp(-6.0 * delta))
-	ch.global_rotation = Vector3(0, w["yaw"], 0)
+				_flee(w)
+		"flee":
+			# court vers le repere voisin le plus eloigne du joueur, par le graphe (pas a travers les rayons)
+			speed = flee_speed
+			if _go(w, speed, delta) and w["t"] < 8.0:
+				_pick_away(w)
+			elif w["t"] >= 8.0:
+				w["state"] = "walk"
+				w["pause"] = _rng.randf_range(2.0, 4.0)
+		"stare":
+			# frole par le joueur : s'arrete, le regarde, une remarque
+			w["yaw"] = lerp_angle(w["yaw"], atan2(-rel.x, -rel.z), 1.0 - exp(-8.0 * delta))
+			if w["t"] > 1.6:
+				w["state"] = "walk"
+		_:
+			if rel.length() < notice_radius and _player.get("vehicle") == null and w["talk_cd"] <= 0.0:
+				w["state"] = "stare"
+				w["t"] = 0.0
+				w["talk_cd"] = 8.0
+				Bulle.say(ch, Dialogues.pick("croise", _rng, String(_player.get("genre"))), 2.0, 2.05)
+			elif w["pause"] > 0.0:
+				w["pause"] -= delta
+			else:
+				speed = w["speed"]
+				if _go(w, speed, delta):
+					var nb: Array = _adj[w["at"]] if _adj.size() > w["at"] else []
+					if nb.is_empty():
+						w["pause"] = 3.0
+					else:
+						w["to"] = nb[_rng.randi() % nb.size()]
+						# on s'arrete regarder les rayons, la vitrine, le tableau des departs
+						if _rng.randf() < 0.45:
+							w["pause"] = _rng.randf_range(1.5, 6.0)
+	var basis := Basis(Vector3.UP, w["yaw"]) * Basis(Vector3.RIGHT, tilt * PI * 0.5)
+	ch.global_transform = Transform3D(basis, Vector3(ch.global_position.x, w.get("floor_y", ch.global_position.y), ch.global_position.z) + Vector3(0, 0.13 * tilt, 0))
 	ch.set("speed", speed)
 	ch.set("on_floor", true)
+
+
+func _go(w: Dictionary, speed: float, delta: float) -> bool:
+	## Avance vers le repere vise ; vrai a l'arrivee.
+	var ch: Node3D = w["node"]
+	if not w.has("floor_y"):
+		w["floor_y"] = ch.global_position.y
+	var d: Vector3 = _wp[w["to"]] - ch.global_position
+	d.y = 0.0
+	if d.length() < 0.25:
+		w["at"] = w["to"]
+		return true
+	ch.global_position += d.normalized() * minf(speed * delta, d.length())
+	w["yaw"] = lerp_angle(w["yaw"], atan2(-d.x, -d.z), 1.0 - exp(-(10.0 if speed > 3.0 else 6.0) * delta))
+	return false
+
+
+func _pick_away(w: Dictionary) -> void:
+	var nb: Array = _adj[w["at"]] if _adj.size() > w["at"] else []
+	var best: int = w["at"]
+	var bd := -1.0
+	for j in nb:
+		var dd: float = _wp[j].distance_to(_player.global_position)
+		if dd > bd:
+			bd = dd
+			best = j
+	w["to"] = best
+
+
+func _flee(w: Dictionary) -> void:
+	w["state"] = "flee"
+	w["t"] = 0.0
+	w["pause"] = 0.0
+	# repart du repere le plus proche
+	var p: Vector3 = (w["node"] as Node3D).global_position
+	var bi: int = w["at"]
+	for i in _wp.size():
+		if _wp[i].distance_to(p) < _wp[bi].distance_to(p):
+			bi = i
+	w["at"] = bi
+	w["to"] = bi
+	_pick_away(w)
+
+
+func player_attack(origin: Vector3, dir: Vector3) -> bool:
+	## Coup du joueur dans le magasin ou l'aerogare : la personne touchee tombe, les clients proches
+	## s'enfuient en criant, le vigile intervient a la voix.
+	if not _active:
+		return false
+	var best: Dictionary = {}
+	var bd := 1.5
+	for w in _walkers:
+		var rel: Vector3 = (w["node"] as Node3D).global_position - origin
+		rel.y = 0.0
+		if rel.length() < bd and rel.normalized().dot(dir) > 0.4 and w.get("state", "walk") != "down":
+			bd = rel.length()
+			best = w
+	if best.is_empty():
+		return false
+	best["state"] = "down"
+	best["t"] = 0.0
+	best["push"] = Vector3(dir.x, 0.0, dir.z) * 2.5
+	Bulle.say(best["node"], Dialogues.pick("frappe", _rng, String(_player.get("genre"))), 2.5, 0.7)
+	for w in _walkers:
+		if w != best and (w["node"] as Node3D).global_position.distance_to(origin) < panic_radius:
+			_flee(w)
+			if _rng.randf() < 0.3:
+				Bulle.say(w["node"], Dialogues.pick("fuite", _rng, String(_player.get("genre"))), 2.0, 2.05)
+	for g in _guards:
+		if (g as Node3D).global_position.distance_to(origin) < 40.0:
+			Bulle.say(g, Dialogues.pick("vigile", _rng, String(_player.get("genre"))), 3.0, 2.1)
+	return true

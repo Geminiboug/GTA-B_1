@@ -6,6 +6,7 @@
 # "approx" = position ou forme estimee, a corriger si besoin.
 import bpy
 import math
+import os
 import sys
 
 args = sys.argv[sys.argv.index("--") + 1:]
@@ -113,17 +114,25 @@ for name, x, y, r in (("rep_rondpoint_djomehountin", 679, 30, 15), ("rep_rondpoi
     cyl(name + "_stele", 0.8, 7, (0, 0, 5.5), "mat_peinture_blanc", rp, verts=8, r2=0.3)
 
 # ---------- L'Epave Volante : avion sur la plage, OSM node 13449221482 (-177, -247) ----------
-# Forme d'avion de ligne generique (pas un modele reel), orientation approx.
+# Vieil avion de ligne generique (aucun modele ni compagnie reels), modele detaille et vieilli par
+# blender/tools/build_epave.py (godot/assets/models/rep_epave_avion.glb) ; orientation approx. Collisions simples ici.
 p = group("rep_epave_volante", -177, -247, rot_z=12)
-cyl("avion_fuselage", 2.0, 32, (0, 0, 3.2), "mat_peinture_blanc", p, rot=(0, math.radians(90), 0), verts=16)
-cyl("avion_nez", 2.0, 4, (18, 0, 3.2), "mat_peinture_blanc", p, rot=(0, math.radians(90), 0), verts=16, r2=0.4)
-cyl("avion_queue", 2.0, 6, (-19, 0, 3.6), "mat_peinture_blanc", p, rot=(0, math.radians(-90), 0), verts=16, r2=0.6)
-box("avion_ailes", (6, 30, 0.5), (1, 0, 2.2), "mat_peinture_ecaillee", p)
-box("avion_derive", (5, 0.4, 6), (-20, 0, 7), "mat_peinture_bleu", p)
-box("avion_stabilisateur", (3.5, 10, 0.3), (-20, 0, 4.2), "mat_peinture_ecaillee", p)
-for side in (-1, 1):
-    cyl(f"avion_reacteur_{side}", 1.0, 3.5, (3, side * 7, 1.3), "mat_metal_peint", p, rot=(0, math.radians(90), 0), verts=12)
-box("avion_socle", (10, 4, 1.2), (0, 0, 0.6), "mat_beton_brut", p)
+EPAVE = os.path.join(os.path.dirname(OUT_GLB), "rep_epave_avion.glb")
+if os.path.exists(EPAVE):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=EPAVE)
+    for ob in set(bpy.data.objects) - before:
+        if ob.parent is None:
+            ob.rotation_euler.z += math.radians(-90)   # nez de l'avion (+Y) vers +X du repere
+            ob.parent = p
+        for c in list(ob.users_collection):
+            c.objects.unlink(ob)
+        col("Reperes").objects.link(ob)
+        # coque, cabine, escalier et cales : collision exacte (on entre dans l'epave par la porte avant)
+        if ob.type == "MESH" and ob.name.startswith(("avion_fuselage", "avion_cabine", "avion_aile", "avion_derive", "avion_nacelle", "escalier_palier", "cale", "sable")):
+            ob.name = ob.name + "-col"
+        elif ob.name.startswith("rampe_escalier"):
+            ob.name = ob.name + "-colonly"
 sign("avion_panneau", "L'EPAVE VOLANTE", (0, -15, 1.2), 0.9, p, mat="mat_peinture_ocre")
 box("avion_panneau_fond", (12, 0.3, 1.6), (0, -14.7, 1.2), "mat_bois", p, collision=False)
 

@@ -11,6 +11,11 @@ extends Node3D
 @export var car_count := 14
 @export var player_path: NodePath = ^"../Player"
 @export var seed_value := 77
+@export var turn_radius_car := 5.3     # m : rayon de braquage mini d'une berline
+@export var turn_radius_moto := 2.6    # m : moto 125 cc
+@export var look_ahead_min := 3.5      # m : point vise devant le vehicule...
+@export var look_ahead_time := 0.45    # ... plus la distance parcourue en ce temps
+@export var steer_gain := 2.2          # reactivite du volant (1/s)
 
 const ZEM_SCENE := preload("res://assets/models/veh_zem.glb")
 const LAMP_MAT := preload("res://shaders/lampe_material.tres")
@@ -18,9 +23,11 @@ const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
 const CAR_MODELS := ["veh_berline", "veh_4x4", "veh_minibus"]
+const DRIVERS_PER_MODEL := 4
 @export var zem_number_pos := Vector3(0, 1.17, 0.29)   # dos du conducteur assis (repere du zem)
 @export var zem_number_tilt := -0.25                  # buste penche en avant
 const ZEM_VARIANTS := ["zem_a", "zem_b", "zem_c", "zem_passager_h", "zem_passager_f", "zem_passager_f2"]
+var _looks := {}   # variante de zem -> [[genre, morphologie, tenue]] du conducteur et du passager
 
 var _rng := RandomNumberGenerator.new()
 var _carte: Carte
@@ -31,7 +38,7 @@ var _obstacles: Array = []    # vehicules gares ou abandonnes, pietons qui trave
 
 signal honked(body: Node3D, at_player: bool)
 ## le conducteur (et le passager) d'un vehicule pris par le joueur sont ejectes : scripts/pedestrians.gd les fait reagir
-signal driver_ejected(pos: Vector3, yaw: float, genre: String, angry_at: Node3D)
+signal driver_ejected(pos: Vector3, yaw: float, genre: String, angry_at: Node3D, rider: Array)
 var _snd_moto: AudioStreamWAV
 var _snd_car: AudioStreamWAV
 var _horn_moto: AudioStreamWAV
@@ -67,7 +74,9 @@ func _build_meshes() -> Dictionary:
 		_lamp_surfaces(z, "veh_phare")
 		var driver := PnjUtil.make("homme")
 		asm.add_child(driver)
-		PnjUtil.dress_random(driver, _rng, "zem")
+		var dl := PnjUtil.random_look(driver, _rng, "zem")
+		PnjUtil.apply(driver, dl)
+		_looks[variant] = [["homme", "homme", dl]]
 		driver.scale = Vector3.ONE
 		PnjUtil.pose_seated(driver)
 		driver.position = Vector3(0, -0.05, 0.12)
@@ -75,11 +84,33 @@ func _build_meshes() -> Dictionary:
 			var genre := "femme" if variant.contains("_f") else "homme"
 			var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
 			asm.add_child(pas)
-			PnjUtil.dress_random(pas, _rng)
+			var pl := PnjUtil.random_look(pas, _rng)
+			PnjUtil.apply(pas, pl)
+			_looks[variant].append([genre, pas.get_meta("variante", genre), pl])
 			pas.scale = Vector3.ONE
 			PnjUtil.pose_passenger(pas)
 			pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
 		out[variant] = asm
+	# conducteurs des voitures (vus a travers les vitres teintees), assis sur le siege du modele (pt_conducteur)
+	for model in CAR_MODELS:
+		var car := (load(Vehicules.MODELS[model]) as PackedScene).instantiate() as Node3D
+		var seat: Node3D = car.find_child("pt_conducteur", true, false)
+		var sp: Vector3 = Vehicules._rel(car, seat).origin if seat else Vector3(-0.4, 0.6, 0.0)
+		car.free()
+		for n in DRIVERS_PER_MODEL:
+			var genre := "femme" if _rng.randf() < 0.2 else "homme"
+			var dr := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
+			var asm2 := Node3D.new()
+			add_child(asm2)
+			asm2.add_child(dr)
+			var look := PnjUtil.random_look(dr, _rng)
+			PnjUtil.apply(dr, look)
+			dr.scale = Vector3.ONE
+			PnjUtil.pose_driving(dr)
+			dr.position = sp - Vector3(0, 0.89 if genre == "homme" else 0.85, 0)
+			var key := "drv_%s_%d" % [model, n]
+			out[key] = asm2
+			_looks[key] = [[genre, dr.get_meta("variante", genre), look]]
 	# la pose assise du squelette n'est appliquee au maillage qu'a l'image suivante : on fusionne apres
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -87,6 +118,11 @@ func _build_meshes() -> Dictionary:
 		var asm: Node3D = out[variant]
 		out[variant] = PnjUtil.merge(asm)
 		asm.queue_free()
+	for key in out.keys():
+		if String(key).begins_with("drv_"):
+			var asm: Node3D = out[key]
+			out[key] = PnjUtil.merge(asm)
+			asm.queue_free()
 	for model in CAR_MODELS:
 		out[model] = Vehicules.merged(model)
 	return out
@@ -112,6 +148,12 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 		var roll := _rng.randf()
 		var model := "veh_berline" if roll < 0.55 else ("veh_4x4" if roll < 0.8 else "veh_minibus")
 		mi.mesh = meshes[model]
+		var dk := "drv_%s_%d" % [model, _rng.randi() % DRIVERS_PER_MODEL]
+		var drv := MeshInstance3D.new()
+		drv.mesh = meshes[dk]
+		drv.visibility_range_end = 60.0
+		mi.add_child(drv)
+		a["riders"] = _looks[dk]
 		var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
 		if model == "veh_minibus":
 			col = [Color(0.93, 0.93, 0.9), Color(0.95, 0.8, 0.2), Color(0.85, 0.85, 0.82)][_rng.randi() % 3]
@@ -149,7 +191,7 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 		mi.add_child(num)
 		mi.mesh = meshes[variant]
 		a["model"] = "zem"
-		a["riders"] = [["homme", ""]] + ([["femme" if variant.contains("_f") else "homme", ""]] if kind == "zem_passager" else [])
+		a["riders"] = _looks.get(variant, [["homme", "homme", {}]])   # memes personnes (et memes habits) a l'ejection
 		box.size = Vector3(0.6, 1.5, 2.0)
 		cs.position = Vector3(0, 0.75, 0)
 		a["max_big"] = _rng.randf_range(10.0, 14.0)
@@ -222,6 +264,7 @@ func _place_random(a: Dictionary) -> void:
 
 
 func _set_edge(a: Dictionary, e: int, from: int) -> void:
+	a.erase("next_edge")
 	a["edge"] = e
 	a["from"] = from
 	a["to"] = _carte.other_end(e, from)
@@ -238,6 +281,35 @@ func _set_edge(a: Dictionary, e: int, from: int) -> void:
 	else:
 		a["lane_off"] = w * 0.2 if a["kind"] != "voiture" else 0.0
 	a["major"] = ed["major"]
+
+
+func _ahead_point(a: Dictionary, dist: float) -> Vector2:
+	## Point de la voie a dist metres devant la position courante sur le troncon (prolonge tout droit au bout).
+	var pts: PackedVector2Array = a["pts"]
+	var i: int = a["i"]
+	var s: float = a["s"] + dist
+	var lane: float = a["lane_off"]
+	while i + 2 < pts.size() and s > pts[i].distance_to(pts[i + 1]):
+		s -= pts[i].distance_to(pts[i + 1])
+		i += 1
+	var last := pts[i].distance_to(pts[i + 1])
+	if i + 2 >= pts.size() and s > last:
+		# au-dela du carrefour : on choisit la rue suivante maintenant et on vise dedans (courbe dans le carrefour)
+		if not a.has("next_edge"):
+			a["next_edge"] = _pick_next(a)
+		var ne: int = a["next_edge"]
+		if ne >= 0:
+			var p2 := _carte.edge_pts_from(ne, a["to"])
+			var d2 := p2[1] - p2[0]
+			var f2 := d2 / maxf(d2.length(), 0.01)
+			var ed: Dictionary = _carte.edges[ne]
+			var lane2: float = lane if not ed["oneway"] else ed["width"] * 0.25 * a["lane_side"] if ed["width"] >= 6.5 else 0.0
+			if not ed["oneway"]:
+				lane2 = ed["width"] * a["lane"]
+			return p2[0] + f2 * minf(s - last, d2.length()) + Vector2(-f2.y, f2.x) * lane2
+	var d := pts[i + 1] - pts[i]
+	var f := d / maxf(d.length(), 0.01)
+	return pts[i] + f * s + Vector2(-f.y, f.x) * lane
 
 
 func _lane_point(a: Dictionary) -> Vector2:
@@ -260,6 +332,24 @@ func _remaining(a: Dictionary) -> float:
 
 func _choose_next(a: Dictionary) -> void:
 	## Au carrefour : une rue autorisee, plutot tout droit ; demi-tour seulement au fond d'une impasse.
+	# rue deja choisie a l'approche (le vehicule a commence a tourner)
+	var pre: int = a.get("next_edge", -1)
+	a.erase("next_edge")
+	if pre >= 0:
+		_set_edge(a, pre, a["to"])
+		return
+	var e := _pick_next(a)
+	if e >= 0:
+		_set_edge(a, e, a["to"])
+	elif not _carte.edges[a["edge"]]["oneway"]:
+		_set_edge(a, a["edge"], a["to"])   # impasse : demi-tour
+	else:
+		_release(a)
+		_place_random(a)              # sens unique sans issue (bord de carte) : reapparait ailleurs
+
+
+func _pick_next(a: Dictionary) -> int:
+	## Rue suivante au carrefour (-1 : aucune). Plutot tout droit et les grands axes.
 	var n: int = a["to"]
 	var pts: PackedVector2Array = a["pts"]
 	var in_dir := (pts[pts.size() - 1] - pts[pts.size() - 2]).normalized()
@@ -279,12 +369,7 @@ func _choose_next(a: Dictionary) -> void:
 		cands.append(e)
 		weights.append(wgt)
 	if cands.is_empty():
-		if not _carte.edges[a["edge"]]["oneway"]:
-			_set_edge(a, a["edge"], n)   # impasse : demi-tour
-		else:
-			_release(a)
-			_place_random(a)              # sens unique sans issue (bord de carte) : reapparait ailleurs
-		return
+		return -1
 	var total := 0.0
 	for w in weights:
 		total += w
@@ -292,9 +377,8 @@ func _choose_next(a: Dictionary) -> void:
 	for k in cands.size():
 		roll -= weights[k]
 		if roll <= 0.0:
-			_set_edge(a, cands[k], n)
-			return
-	_set_edge(a, cands[cands.size() - 1], n)
+			return cands[k]
+	return cands[cands.size() - 1]
 
 
 # ------------------------------------------------------------ simulation
@@ -387,14 +471,31 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 	pts = a["pts"]
 	i = a["i"]
 	fwd2 = (pts[i + 1] - pts[i]).normalized()
-	var target2 := _lane_point(a)
-	var k := 1.0 - exp(-6.0 * delta)
-	a["vis_pos"] = (a["vis_pos"] as Vector3).lerp(Vector3(target2.x, GROUND_Y, target2.y), k)
-	var yaw := atan2(-fwd2.x, -fwd2.y)
-	a["vis_yaw"] = lerp_angle(a["vis_yaw"], yaw, 1.0 - exp(-5.0 * delta))
+	# conduite comme un vrai vehicule (modele bicyclette) : il vise un point de sa voie devant lui, braque au plus
+	# de ce que permet son rayon de braquage et avance toujours dans l'axe de ses roues (pas de glissade de cote)
+	var vp: Vector3 = a["vis_pos"]
+	var look := _ahead_point(a, look_ahead_min + a["speed"] * look_ahead_time)
+	var to := Vector2(look.x - vp.x, look.y - vp.z)
+	var want: float = atan2(-to.x, -to.y) if to.length() > 0.3 else a["vis_yaw"]
+	var r_min: float = turn_radius_car if a["kind"] == "voiture" else turn_radius_moto
+	var max_rate := maxf(a["speed"], 0.8) / r_min
+	var rate := clampf(angle_difference(a["vis_yaw"], want) * steer_gain, -max_rate, max_rate)
+	a["vis_yaw"] = wrapf(a["vis_yaw"] + rate * delta, -PI, PI)
+	var heading := Vector3(-sin(a["vis_yaw"]), 0, -cos(a["vis_yaw"]))
+	vp += heading * a["speed"] * delta
+	# derive lente vers le milieu de la voie (sans glissade visible)
+	var lane2 := _lane_point(a)
+	var off := Vector3(lane2.x - vp.x, 0, lane2.y - vp.z)
+	if off.length() > 6.0:
+		vp = Vector3(lane2.x, GROUND_Y, lane2.y)     # trop loin (replace, demi-tour) : recale d'un coup
+	else:
+		vp += off * minf(1.0, 1.5 * delta)
+	vp.y = GROUND_Y
+	a["vis_pos"] = vp
 	var lean := 0.0
 	if a["kind"] != "voiture":
-		lean = clamp(angle_difference(yaw, a["vis_yaw"]) * a["speed"] * 0.08, -0.4, 0.4)
+		# la moto s'incline dans le virage : tan(angle) = v * vitesse de lacet / g
+		lean = clampf(-atan(a["speed"] * rate / 9.81), -0.5, 0.5)
 	var body: AnimatableBody3D = a["body"]
 	body.global_transform = Transform3D(Basis(Vector3.UP, a["vis_yaw"]) * Basis(Vector3(0, 0, 1), lean), a["vis_pos"])
 	(a["snd"] as AudioStreamPlayer3D).pitch_scale = 0.7 + a["speed"] / 12.0
@@ -470,11 +571,13 @@ func take_over(i: int, by: Node3D) -> Node3D:
 	v.transform = xf  # avant l'entree dans l'arbre : le vehicule part avec le bon cap
 	get_parent().add_child(v)
 	v.set("_yaw", a["vis_yaw"])
+	v.set_meta("agent", i)   # le proprietaire peut venir le reprendre (pedestrians.gd)
 	var left := -xf.basis.x
 	var riders: Array = a.get("riders", [["homme" if _rng.randf() < 0.8 else "femme", ""]])
 	for k in riders.size():
 		var pos: Vector3 = xf.origin + left * (1.3 if a["kind"] == "voiture" else 0.9) - xf.basis.z * (0.6 * k)
-		driver_ejected.emit(pos, a["vis_yaw"], riders[k][0], by)
+		var r: Array = riders[k] if riders[k].size() > 2 else [riders[k][0], "", {}]
+		driver_ejected.emit(pos, a["vis_yaw"], riders[k][0], by, r + [k])
 	a["respawn"] = 25.0
 	return v
 
@@ -517,3 +620,45 @@ func on_vehicle_hit(collider: Object, impact: float) -> void:
 			(a["horn"] as AudioStreamPlayer3D).play()
 			Bulle.say(a["body"], Dialogues.pick("choc_voiture", _rng, _pgenre()), 3.0, 2.0)
 			return
+
+
+func reclaim(v: Node3D) -> bool:
+	## Le proprietaire a repris son vehicule au joueur : il remonte dessus et repart dans la circulation.
+	if not v.has_meta("agent"):
+		return false
+	var a: Dictionary = _agents[int(v.get_meta("agent"))]
+	if a.get("active", true):
+		return false   # deja remplace ailleurs dans la circulation
+	var p := Vector2(v.global_position.x, v.global_position.z)
+	var near: Dictionary = _carte.nearest_on_network(p)
+	if near["edge"] < 0 or near["dist"] > 12.0:
+		return false
+	var ed: Dictionary = _carte.edges[near["edge"]]
+	var yaw: float = v.rotation.y
+	var from: int = ed["a"]
+	var pts := _carte.edge_pts_from(near["edge"], from)
+	# sens de la rue le plus proche du cap du vehicule
+	if not ed["oneway"] and Vector2(-sin(yaw), -cos(yaw)).dot(pts[1] - pts[0]) < 0.0:
+		from = ed["b"]
+	_set_edge(a, near["edge"], from)
+	var best_i := 0
+	var bd := INF
+	for i in a["pts"].size() - 1:
+		var c := Geometry2D.get_closest_point_to_segment(p, a["pts"][i], a["pts"][i + 1])
+		if c.distance_to(p) < bd:
+			bd = c.distance_to(p)
+			best_i = i
+			a["s"] = c.distance_to(a["pts"][i])
+	a["i"] = best_i
+	a["speed"] = 0.0
+	a["vis_pos"] = Vector3(p.x, GROUND_Y, p.y)
+	a["vis_yaw"] = yaw
+	a.erase("respawn")
+	a["active"] = true
+	var body: AnimatableBody3D = a["body"]
+	body.global_position = a["vis_pos"]
+	body.visible = true
+	body.collision_layer = 1
+	(a["snd"] as AudioStreamPlayer3D).play()
+	v.queue_free()
+	return true

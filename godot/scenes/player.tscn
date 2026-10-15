@@ -5,7 +5,7 @@
 [ext_resource type="Script" path="res://scripts/anim_ctrl.gd" id="3_anim"]
 
 [sub_resource type="CapsuleShape3D" id="1_shape"]
-radius = 0.35
+radius = 0.3
 height = 1.75
 
 [node name="Player" type="CharacterBody3D"]

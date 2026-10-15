@@ -430,6 +430,15 @@ static func pose_passenger(character: Node) -> void:
 	Squelette.pose(character, PASSENGER)
 
 
+const DRIVING := {"piv_hanche_G": 1.8, "piv_hanche_D": 1.8, "piv_genou_G": -1.0, "piv_genou_D": -1.0,
+	"piv_epaule_G": 0.75, "piv_epaule_D": 0.75, "piv_coude_G": 0.9, "piv_coude_D": 0.9, "piv_tronc": 0.12, "piv_tete": -0.05}
+
+
+static func pose_driving(character: Node) -> void:
+	## Conducteur de voiture : assis bas, cuisses relevees, jambes vers les pedales, mains vers le volant, dossier incline.
+	Squelette.pose(character, DRIVING)
+
+
 static func pose_seated(character: Node) -> void:
 	## Pose assise (meme pose que character_anim.gd en mode seated) : moto, tabouret, chaise.
 	Squelette.pose(character, SEATED)

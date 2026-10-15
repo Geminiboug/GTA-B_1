@@ -172,6 +172,7 @@ Option plus tard : multijoueur.
 - 15/10/2026 : etape 16, controles et camera facon GTA V (sans attendre les clips) : sprint en tapotant, endurance cachee et essoufflement, marche lente sur Alt, camera qui se recentre, FOV en sprint, secousse a l atterrissage, 3 vues (V), regard qui suit la camera et les avions, postures des PNJ (ages voutes et plus lents, porteuses au buste droit, main sur la tete sous l averse). Nouveau test tests/test_controles.gd.
 - 15/10/2026 : etape 16, squelette standard : personnages reconstruits sur le squelette Quaternius (23 os), retargeting Godot (profil humanoide), 86 clips de capture de mouvement CC0 verifies sur nos morphologies ; ancien code compatible (squelette.gd). Tests au vert, FPS 74-94 dehors, 66-69 interieurs.
 - 15/10/2026 : etape 16, joueur anime par les clips (anim_ctrl.gd : marche, trot, sprint, saut, conduite, regard), lecture calee sur la vitesse reelle des pieds (glissement 0,3 a 0,8 m/s). Nouveau test tests/test_animation.gd.
+- 15/10/2026 : retours d Olympe : saut a la gravite terrestre (0,48 m, 0,6 s en l air, freinage a la reception : plus de glissade de 8 m), montee automatique des marches et seuils (30 cm), capsule du joueur 0,60 m ; PNJ du supermarche et de l aerogare qui reagissent (chute, fuite, vigile qui intervient, remarques quand on les frole) ; conducteur vole qui se bat et reprend son vehicule (il sort le joueur et repart dans la circulation) ; zem ejecte qui garde sa tenue ; conducteurs visibles dans les voitures de la circulation ; virages des PNJ en modele bicyclette (rayon de braquage reel, plus de glissade laterale) ; voitures refaites (carrosserie lissee d un seul tenant, passages de roue, pare-chocs, optiques, interieur, pneus profiles) ; epave de la plage refaite a partir de l avion du jeu (vieillie, rouille, sur cales, escalier) ; avions visitables (porte avant ouverte au poste, cabine de 27 rangees, poste de pilotage, collision exacte) ; frequence des vols reelle de Cotonou (~35 mouvements par jour, pointe le soir, aeroport ferme de 2 h a 5 h, piste 24 dominante). Nouveaux tests : test_saut, test_interieurs, test_carjack, test_cabine.
 
 ---
 
@@ -208,8 +209,9 @@ ETAT ACTUEL (15/10/2026)
   - Personnages (etapes 12 a 15, blender/tools/build_character.py + godot/scripts/pnj_util.gd) : tailles et mensurations
     reelles, 10 morphologies, visages (7 traits cuits a la creation), 10 teintes de peau, coiffures, tenues, uniformes,
     accessoires. Noms reels remplaces (docs/correspondance_noms.md).
-  - Tests : godot/tests/test_*.gd (11 suites : coherence, echelle, vehicules, player, zem, circulation, limites, avion,
-    manette, debug) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
+  - Retours d Olympe du 15/10 (saut, PNJ des interieurs, vol de vehicule, conducteurs, virages, voitures, epave, avions
+    visitables, frequence des vols) : faits, voir le journal.
+  - Tests : godot/tests/test_*.gd (17 suites, dont saut, interieurs, carjack, cabine) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
     tests/perf_fps.gd en 1280x720 : 86 a 97 images/s dehors, 67 a 71 dans les interieurs.
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
   %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md) ; Python geo dans WSL
@@ -224,6 +226,8 @@ ETAT ACTUEL (15/10/2026)
     (audit de fidelite des reperes, details urbains, harmattan, kit modulaire), phase 7 (menus, options, sauvegarde,
     interactions, dialogues, missions, histoire "Le Dernier Vol" : prologue et acte 1), phase 8 (police fictive,
     niveau de recherche), phases 9 et 10.
+- Personnages encore trop schematiques (signale par Olympe) : refonte a decider (corps procedural ameliore ou base
+  CC0 "Universal Base Characters" de Quaternius, meme squelette que les animations).
 - Reste a faire, signale : cheveux mouilles sous la pluie, casquette de la policiere, traversees du corps pendant la marche
   (a verifier avec les animations de l'etape 16).
 - Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; aucun nom reel en jeu (signaler

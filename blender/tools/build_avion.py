@@ -185,12 +185,12 @@ def empty(name, loc, parent=None):
 # ======================================================================= fuselage
 # sections : (y, demi-largeur, demi-hauteur, z du centre)
 SECT = [(20.6, 0.04, 0.04, 3.27), (20.45, 0.42, 0.38, 3.22), (20.2, 0.72, 0.66, 3.22), (19.8, 1.04, 0.98, 3.27),
-        (19.2, 1.38, 1.34, 3.33), (18.5, 1.66, 1.64, 3.38), (17.6, 1.86, 1.86, 3.42), (16.6, 1.96, 1.96, 3.43),
-        (15.6, 1.98, 1.98, 3.43)]
+        (19.2, 1.38, 1.34, 3.33), (18.5, 1.66, 1.64, 3.38), (17.6, 1.86, 1.86, 3.42), (16.6, 1.96, 1.96, 3.43), (16.15, 1.97, 1.97, 3.43),
+        (15.6, 1.98, 1.98, 3.43), (15.35, 1.98, 1.98, 3.43)]
 y = 14.6
 while y > -6.3:
     SECT.append((y, 1.98, 1.98, 3.43))
-    y -= 1.0
+    y -= 0.25   # anneaux serres : la porte avant est decoupee dans la peau (cabine visitable)
 SECT += [(-7.2, 1.95, 1.94, 3.5), (-8.2, 1.88, 1.84, 3.6), (-9.2, 1.77, 1.71, 3.73), (-10.2, 1.62, 1.55, 3.88),
          (-11.2, 1.44, 1.36, 4.04), (-12.2, 1.24, 1.16, 4.2), (-13.2, 1.03, 0.95, 4.36), (-14.2, 0.82, 0.74, 4.5),
          (-15.1, 0.6, 0.53, 4.63), (-16.0, 0.38, 0.33, 4.76), (-16.6, 0.2, 0.18, 4.85), (-17.0, 0.05, 0.05, 4.9)]
@@ -235,8 +235,9 @@ def skin_band(mesh, y0, y1, th0, th1, m, off=0.006, ny=None, nth=4):
 
 for sd in (1, -1):
     skin_band(belly, 17.2, -14.0, sd * 128, sd * 180, M["belly"], 0.004, nth=6)
-    skin_band(liv, 18.2, -15.4, sd * 98, sd * 106, M["liv1"], 0.006)
-    skin_band(liv, 18.0, -15.0, sd * 108, sd * 111, M["liv2"], 0.006, nth=1)
+    for (ya, yb) in (((18.2, 16.25), (15.25, -15.4)) if sd < 0 else ((18.2, -15.4),)):
+        skin_band(liv, ya, yb, sd * 98, sd * 106, M["liv1"], 0.006)
+        skin_band(liv, min(ya, 18.0), max(yb, -15.0), sd * 108, sd * 111, M["liv2"], 0.006, nth=1)
 # hublots passagers (ovales), portes et issues au-dessus des ailes (joints), poste de pilotage
 win = Mesh("avion_hublots")
 seams = Mesh("avion_joints")
@@ -274,7 +275,115 @@ for sd in (1, -1):
             yq = y0 + (y1 - y0) * i / 2
             rows.append([surf(yq, sd * (a0 + (a1 - a0) * j / 3), 0.01) for j in range(4)])
         win.grid(rows, M["glass"], closed=False, smooth=True)
-fus.obj()
+fus_ob = fus.obj()
+# ======================================================================= porte avant gauche et cabine visitable
+# La porte passagers avant gauche (L1) est un panneau a part (porte_avant) decoupe dans la peau : Godot la cache
+# quand l'avion est au poste (porte ouverte, escalier) et le joueur entre dans la cabine.
+DOOR_Y0, DOOR_Y1 = 15.35, 16.15
+FLOOR_Z = 2.62                      # plancher passagers = seuil de porte (palier de l'escalier mobile a 2,66 m)
+bm = bmesh.new()
+bm.from_mesh(fus_ob.data)
+door_faces = []
+for f in bm.faces:
+    c = f.calc_center_median()
+    if c.x < -0.5 and DOOR_Y0 - 0.01 < c.y < DOOR_Y1 + 0.01:
+        th = math.degrees(math.atan2(-c.x / 1.98, (c.z - 3.43) / 1.98))
+        if 58.0 < th < 114.0:
+            door_faces.append(f)
+pb = bmesh.new()
+vmap = {}
+for f in door_faces:
+    vs = []
+    for v in f.verts:
+        if v not in vmap:
+            vmap[v] = pb.verts.new(v.co)
+        vs.append(vmap[v])
+    nf = pb.faces.new(vs)
+    nf.smooth = True
+bmesh.ops.delete(bm, geom=door_faces, context="FACES_ONLY")
+bm.to_mesh(fus_ob.data)
+bm.free()
+pme = bpy.data.meshes.new("porte_avant")
+pb.to_mesh(pme)
+pb.free()
+pme.materials.append(M["paint"])
+pob = bpy.data.objects.new("porte_avant", pme)
+bpy.context.scene.collection.objects.link(pob)
+print("Porte avant :", len(door_faces), "faces decoupees")
+
+M["cab"] = mat("mat_avion_cabine", (0.86, 0.84, 0.78), 0.7)
+M["seat"] = mat("mat_avion_siege", (0.12, 0.2, 0.38), 0.85)
+M["carpet"] = mat("mat_avion_moquette", (0.3, 0.3, 0.33), 0.95)
+M["panel"] = mat("mat_avion_tableau", (0.15, 0.16, 0.17), 0.6)
+cab = Mesh("avion_cabine")
+Y_FWD, Y_AFT = 17.3, -7.9
+# plancher (moquette) sur toute la largeur utile, et revetement interieur (normales vers l'interieur)
+half_w = 1.98 * math.sin(math.acos((FLOOR_Z - 3.43) / 1.98)) - 0.02
+cab.box((0, (Y_FWD + Y_AFT) / 2, FLOOR_Z - 0.05), (half_w * 2, Y_FWD - Y_AFT, 0.1), M["carpet"])
+lin = []
+yq = Y_FWD
+while yq >= Y_AFT - 0.01:
+    rx, rz, zc = sect_at(yq)
+    ring = []
+    for j in range(17):
+        th = 118.0 - j * (236.0 / 16)
+        a = math.radians(th)
+        ring.append((-(rx - 0.09) * math.sin(a), yq, zc + (rz - 0.09) * math.cos(a)))
+    lin.append(ring)
+    yq -= 0.25 if DOOR_Y0 - 0.3 < yq < DOOR_Y1 + 0.3 else 0.8
+lining = Mesh("avion_cabine_parois")
+lining.grid(lin, M["cab"], closed=False, smooth=True)
+lob = lining.obj()
+# trou de porte dans le revetement
+bm = bmesh.new()
+bm.from_mesh(lob.data)
+rm = [f for f in bm.faces if f.calc_center_median().x < -0.5 and DOOR_Y0 - 0.1 < f.calc_center_median().y < DOOR_Y1 + 0.1
+      and FLOOR_Z - 0.1 < f.calc_center_median().z < FLOOR_Z + 2.3]
+bmesh.ops.delete(bm, geom=rm, context="FACES_ONLY")
+for f in bm.faces:
+    f.normal_flip()
+bm.to_mesh(lob.data)
+bm.free()
+# cloisons : poste de pilotage (avec porte ouverte), arriere (offices et toilettes)
+for (yb, door_open) in ((17.3, True), (-7.9, False)):
+    rx, rz, zc = sect_at(yb)
+    if door_open:
+        for sx in (-1, 1):
+            cab.box((sx * (0.45 + (rx - 0.45) / 2), yb, zc - 0.2), (rx - 0.45, 0.06, 2.8), M["cab"])
+        cab.box((0, yb, FLOOR_Z + 2.15), (0.9, 0.06, 0.5), M["cab"])
+    else:
+        cab.box((0, yb, zc - 0.2), (rx * 2 - 0.1, 0.06, 2.8), M["cab"])
+# office avant (galley) a droite de la porte L1, en face de la porte
+cab.box((1.25, 15.75, FLOOR_Z + 0.5), (0.7, 1.4, 1.0), M["cab"])
+cab.box((1.25, 15.75, FLOOR_Z + 1.02), (0.72, 1.42, 0.04), M["seam"])
+# rangees de sieges 3 + 3 (pas de 0,79 m), allee centrale de 0,5 m
+row_y = 14.4
+rows = 0
+while row_y > -7.3:
+    if abs(row_y - 1.15) < 0.45 or abs(row_y - 0.35) < 0.45:   # rangees d'issues au-dessus des ailes : plus d'espace
+        row_y -= 0.25
+    for sx in (-1, 1):
+        for k in range(3):
+            x = sx * (0.42 + k * 0.48)
+            cab.box((x, row_y, FLOOR_Z + 0.45), (0.44, 0.48, 0.12), M["seat"])               # assise
+            cab.box((x, row_y - 0.26, FLOOR_Z + 0.82), (0.44, 0.1, 0.72), M["seat"])          # dossier
+            cab.box((x, row_y + 0.02, FLOOR_Z + 0.2), (0.06, 0.4, 0.4), M["panel"])           # pied
+        cab.box((sx * 0.18, row_y - 0.02, FLOOR_Z + 0.62), (0.05, 0.42, 0.06), M["panel"])   # accoudoir d'allee
+    row_y -= 0.79
+    rows += 1
+print("Cabine :", rows, "rangees de 6")
+# coffres a bagages au-dessus des sieges, rampe de plafonnier
+for sx in (-1, 1):
+    cab.box((sx * 1.3, (14.8 + -7.3) / 2, 3.43 + 1.05), (0.75, 22.1, 0.45), M["cab"])
+cab.box((0, (14.8 + -7.3) / 2, 3.43 + 1.82), (1.2, 22.1, 0.05), M["lip"])
+# poste de pilotage : deux sieges, pylone central, tableau de bord sous le pare-brise
+for sx in (-1, 1):
+    cab.box((sx * 0.55, 18.15, FLOOR_Z + 0.5), (0.5, 0.5, 0.15), M["panel"])
+    cab.box((sx * 0.55, 17.88, FLOOR_Z + 0.95), (0.5, 0.1, 0.8), M["panel"])
+cab.box((0, 18.4, FLOOR_Z + 0.45), (0.35, 0.9, 0.6), M["panel"])
+cab.box((0, 18.95, FLOOR_Z + 1.05), (2.0, 0.35, 0.35), M["panel"])
+cab.box((0, 18.85, FLOOR_Z + 1.25), (1.9, 0.25, 0.04), M["glass"])
+cab.obj()
 belly.obj()
 liv.obj()
 win.obj()
