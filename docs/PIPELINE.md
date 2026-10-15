@@ -476,3 +476,15 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   faire un demi-tour au modele (le jeu suppose -Z). Animation procedurale, poses assises et attaches inchangees.
 - Captures : tests/capture_clips.gd (clips Quaternius sur nos personnages) -> docs/images/etape16_clips_quaternius.png.
 - Prochaine etape : AnimationTree (machine a etats, root motion) pour le joueur puis les PNJ.
+- Joueur anime par les clips : godot/scripts/anim_ctrl.gd (meme interface que character_anim.gd ; les PNJ gardent
+  l'animation procedurale pour l'instant). AnimationTree en mode manuel : melange attente / marche / trot / sprint
+  (cycles synchronises, passages reglables walk_to_jog / jog_to_sprint), echelle de temps, modes sol / air / assis
+  (clip Driving) / accroupi, impulsion, reception et coup en une fois ; par-dessus : regard, respiration, inclinaison.
+- Choix du calage (consigne 16.1) : le controleur garde la main sur la vitesse (sprint en tapotant, endurance,
+  collisions deja regles et testes) et la lecture des clips est calee sur cette vitesse avec la vitesse reelle du pied
+  d'appui de chaque clip (CALIB, mesuree par tests/calibre_clips.gd ; la piste Root de la marche avance plus vite que
+  ses pieds). Glissement mesure : 0,32 m/s a la marche (1,6 m/s), 0,29 au trot (4,2), 0,77 au sprint (6,7), surtout
+  le deroule du pied.
+- Tests : tests/test_animation.gd (glissement des pieds, etats air / sol / assis). Capture : tests/capture_joueur_anim.gd
+  -> docs/images/etape16_joueur_clips.png. Outils de diagnostic : tests/profil_*.gd.
+- Mesures de performance : fenetre au premier plan obligatoire (en arriere-plan, le systeme bride Godot a 30 images/s).

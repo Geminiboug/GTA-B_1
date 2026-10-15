@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="PackedScene" path="res://assets/models/chr_homme.glb" id="2_model"]
-[ext_resource type="Script" path="res://scripts/character_anim.gd" id="3_anim"]
+[ext_resource type="Script" path="res://scripts/anim_ctrl.gd" id="3_anim"]
 
 [sub_resource type="CapsuleShape3D" id="1_shape"]
 radius = 0.35

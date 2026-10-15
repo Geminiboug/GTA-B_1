@@ -65,7 +65,7 @@ func _ready() -> void:
 	_facing = body.rotation.y
 	_last_safe = global_position
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	_dress(anim, genre)
+	set_genre(genre)        # modele construit par PnjUtil.make (squelette standard tourne vers -Z)
 	# on heurte aussi les passants (couche 5), pas seulement le decor
 	collision_mask = 1 | (1 << 4)
 
@@ -74,7 +74,7 @@ var _punch_cd := 0.0
 
 
 # ---------- Apparence : homme ou femme (F4 a pied pour changer) ----------
-const ANIM_SCRIPT := preload("res://scripts/character_anim.gd")
+const ANIM_SCRIPT := preload("res://scripts/anim_ctrl.gd")   # clips captes (Quaternius) ; PNJ : character_anim.gd
 var genre := "homme"
 
 

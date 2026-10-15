@@ -171,6 +171,7 @@ Option plus tard : multijoueur.
 - 15/10/2026 : roadmap mise a jour (phases, etat actuel).
 - 15/10/2026 : etape 16, controles et camera facon GTA V (sans attendre les clips) : sprint en tapotant, endurance cachee et essoufflement, marche lente sur Alt, camera qui se recentre, FOV en sprint, secousse a l atterrissage, 3 vues (V), regard qui suit la camera et les avions, postures des PNJ (ages voutes et plus lents, porteuses au buste droit, main sur la tete sous l averse). Nouveau test tests/test_controles.gd.
 - 15/10/2026 : etape 16, squelette standard : personnages reconstruits sur le squelette Quaternius (23 os), retargeting Godot (profil humanoide), 86 clips de capture de mouvement CC0 verifies sur nos morphologies ; ancien code compatible (squelette.gd). Tests au vert, FPS 74-94 dehors, 66-69 interieurs.
+- 15/10/2026 : etape 16, joueur anime par les clips (anim_ctrl.gd : marche, trot, sprint, saut, conduite, regard), lecture calee sur la vitesse reelle des pieds (glissement 0,3 a 0,8 m/s). Nouveau test tests/test_animation.gd.
 
 ---
 
