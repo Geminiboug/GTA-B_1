@@ -873,6 +873,73 @@ for o in hair_objs:
     assign(o, {"piv_tete": 1.0})
 
 # ------------------------------------------------------------------ armature
+# ------------------------------------------------------------------ squelette standard (noms Quaternius / Unreal)
+# Les poids ont ete calcules sur les regions anciennes (piv_*) : on les renomme vers les os du squelette standard
+# (animations de capture de mouvement Quaternius, redirigees dans Godot par le profil humanoide), la colonne est
+# repartie sur 3 vertebres et les orteils se detachent du pied.
+SIDE = {"G": "l", "D": "r"}
+RENAME = {"piv_bassin": "pelvis", "piv_tete": "Head"}
+for s, t in SIDE.items():
+    RENAME.update({f"piv_epaule_{s}": f"upperarm_{t}", f"piv_coude_{s}": f"lowerarm_{t}", f"piv_main_{s}": f"hand_{t}",
+                   f"piv_hanche_{s}": f"thigh_{t}", f"piv_genou_{s}": f"calf_{t}", f"piv_cheville_{s}": f"foot_{t}"})
+SPINE_Z = [bz + 0.1 * bk, bz + 0.1 * bk + (J["cou"].z - bz - 0.1 * bk) / 3.0, bz + 0.1 * bk + (J["cou"].z - bz - 0.1 * bk) * 2.0 / 3.0, J["cou"].z]
+BALL = {s: J["cheville_" + s].lerp(J["orteils_" + s], 0.6) for s in SIDE}
+
+
+def spine_split(z):
+    """Part de chaque vertebre (spine_01..03) pour un point du tronc a la hauteur z (fondus lineaires)."""
+    c = [(SPINE_Z[i] + SPINE_Z[i + 1]) / 2.0 for i in range(3)]
+    if z <= c[0]:
+        return [1.0, 0.0, 0.0]
+    if z >= c[2]:
+        return [0.0, 0.0, 1.0]
+    if z <= c[1]:
+        t = (z - c[0]) / (c[1] - c[0])
+        return [1.0 - t, t, 0.0]
+    t = (z - c[1]) / (c[2] - c[1])
+    return [0.0, 1.0 - t, t]
+
+
+for ob in [o for o in scene.collection.objects if o.type == "MESH"]:
+    vg = ob.vertex_groups
+    tronc = vg.get("piv_tronc")
+    if tronc:
+        sp = [vg.get(n) or vg.new(name=n) for n in ("spine_01", "spine_02", "spine_03")]
+        for v in ob.data.vertices:
+            for g in v.groups:
+                if g.group == tronc.index and g.weight > 0.0:
+                    for k, part in enumerate(spine_split(v.co.z)):
+                        if part > 0.0:
+                            sp[k].add([v.index], g.weight * part, "ADD")
+        vg.remove(tronc)
+    for old, new in RENAME.items():
+        g = vg.get(old)
+        if g:
+            g.name = new
+    for s, t in SIDE.items():
+        foot = vg.get(f"foot_{t}")
+        if foot is None:
+            continue
+        ball = vg.get(f"ball_{t}") or vg.new(name=f"ball_{t}")
+        y0 = BALL[s].y
+        for v in ob.data.vertices:
+            for g in v.groups:
+                if g.group == foot.index and g.weight > 0.0:
+                    k = ss(y0 - 0.015, y0 + 0.02, v.co.y)
+                    if k > 0.0:
+                        ball.add([v.index], g.weight * k, "REPLACE")
+                        foot.add([v.index], g.weight * (1.0 - k), "REPLACE")
+
+# demi-tour : le personnage regarde -Y Blender (= +Z Godot), comme le standard glTF et le profil humanoide de Godot
+from mathutils import Matrix
+ROT = Matrix.Rotation(math.pi, 4, "Z")
+for ob in [o for o in scene.collection.objects if o.type == "MESH"]:
+    ob.data.transform(ROT, shape_keys=True)
+for key in list(J.keys()):
+    J[key] = (ROT @ J[key].to_4d()).to_3d()
+for s in SIDE:
+    BALL[s] = (ROT @ BALL[s].to_4d()).to_3d()
+
 arm_data = bpy.data.armatures.new("chr_squelette")
 arm = bpy.data.objects.new("chr_squelette", arm_data)
 scene.collection.objects.link(arm)
@@ -893,16 +960,28 @@ def bone(name, head, tail, parent=None):
     return b
 
 
-bone("piv_bassin", J["bassin"], J["bassin"] + Vector((0, 0, 0.1)))
-bone("piv_tronc", J["tronc"], J["cou"], "piv_bassin")
-bone("piv_tete", J["tete"], J["sommet"], "piv_tronc")
-for s in ("G", "D"):
-    bone("piv_epaule_" + s, J["epaule_" + s], J["coude_" + s], "piv_tronc")
-    bone("piv_coude_" + s, J["coude_" + s], J["poignet_" + s], "piv_epaule_" + s)
-    bone("piv_main_" + s, J["poignet_" + s], J["doigts_" + s], "piv_coude_" + s)
-    bone("piv_hanche_" + s, J["hanche_" + s], J["genou_" + s], "piv_bassin")
-    bone("piv_genou_" + s, J["genou_" + s], J["cheville_" + s], "piv_hanche_" + s)
-    bone("piv_cheville_" + s, J["cheville_" + s], J["orteils_" + s], "piv_genou_" + s)
+pel = J["bassin"]
+sp0 = Vector((0, J["cou"].y * 0.3, SPINE_Z[0]))
+bone("root", Vector((0, 0, 0)), Vector((0, -0.1, 0)))
+bone("pelvis", pel, sp0, "root")
+prev = "pelvis"
+for i in range(3):
+    a = Vector((0, J["cou"].y * 0.3 * (1 - i / 3.0), SPINE_Z[i]))
+    b = Vector((0, J["cou"].y * 0.3 * (1 - (i + 1) / 3.0), SPINE_Z[i + 1]))
+    bone(f"spine_0{i + 1}", a, b, prev)
+    prev = f"spine_0{i + 1}"
+bone("neck_01", Vector((0, J["cou"].y, SPINE_Z[3])), J["tete"], "spine_03")
+bone("Head", J["tete"], J["sommet"], "neck_01")
+for s, t in SIDE.items():
+    ep = J["epaule_" + s]
+    bone(f"clavicle_{t}", Vector((ep.x * 0.15, ep.y, ep.z + 0.01)), ep, "spine_03")
+    bone(f"upperarm_{t}", ep, J["coude_" + s], f"clavicle_{t}")
+    bone(f"lowerarm_{t}", J["coude_" + s], J["poignet_" + s], f"upperarm_{t}")
+    bone(f"hand_{t}", J["poignet_" + s], J["doigts_" + s], f"lowerarm_{t}")
+    bone(f"thigh_{t}", J["hanche_" + s], J["genou_" + s], "pelvis")
+    bone(f"calf_{t}", J["genou_" + s], J["cheville_" + s], f"thigh_{t}")
+    bone(f"foot_{t}", J["cheville_" + s], BALL[s], f"calf_{t}")
+    bone(f"ball_{t}", BALL[s], J["orteils_" + s] + (J["orteils_" + s] - BALL[s]) * 0.3, f"foot_{t}")
 bpy.ops.object.mode_set(mode="OBJECT")
 for ob in list(scene.collection.objects):
     if ob.type == "MESH":
@@ -915,7 +994,7 @@ bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_yup=True, export_skins=True,
                           export_animations=False, export_apply=False)
 nfaces = sum(len(o.data.polygons) for o in scene.objects if o.type == "MESH")
-print("Personnage", VARIANT, ":", len([o for o in scene.objects if o.type == "MESH"]), "maillages,", len(BONES), "os,", nfaces, "faces")
+print("Personnage", VARIANT, ":", len([o for o in scene.objects if o.type == "MESH"]), "maillages,", len(arm_data.bones), "os,", nfaces, "faces")
 
 # ------------------------------------------------------------------ apercu
 if PREVIEW:

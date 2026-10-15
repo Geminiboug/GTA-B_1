@@ -419,7 +419,7 @@ func _head_basin(ch: Node3D) -> Node3D:
 	if skel:
 		# corps a squelette : la bassine suit l'os de la tete
 		var ba := BoneAttachment3D.new()
-		ba.bone_name = "piv_tete"
+		ba.bone_name = Squelette.bone_name(skel, "piv_tete")
 		skel.add_child(ba)
 		head0 = ba
 	if head0 == null:
@@ -519,7 +519,7 @@ func _hand_item(ch: Node3D, what: String) -> void:
 	if skel == null:
 		return
 	var ba := BoneAttachment3D.new()
-	ba.bone_name = "piv_main_D"
+	ba.bone_name = Squelette.bone_name(skel, "piv_main_D")
 	skel.add_child(ba)
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()

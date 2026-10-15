@@ -114,7 +114,7 @@ func _carry(ch: Node3D, what: String) -> void:
 	if skel == null:
 		return
 	var ba := BoneAttachment3D.new()
-	ba.bone_name = "piv_main_D"
+	ba.bone_name = Squelette.bone_name(skel, "piv_main_D")
 	skel.add_child(ba)
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()

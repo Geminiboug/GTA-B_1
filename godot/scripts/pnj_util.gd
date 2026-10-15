@@ -60,6 +60,10 @@ static func make(variant: String) -> Node3D:
 	ch.set_meta("genre", VARIANTS[variant])
 	ch.set_meta("age", "enfant" if variant in ["garcon", "fille"] else "adulte")
 	ch.set_meta("variante", variant)
+	# squelette standard : le modele regarde +Z (glTF) ; le jeu suppose -Z (avant du personnage) : demi-tour
+	var arm := ch.get_node_or_null("chr_squelette") as Node3D
+	if arm and Squelette.find(ch) and Squelette.find(ch).find_bone("Hips") >= 0:
+		arm.rotation.y = PI
 	ch.set_meta("vieux", variant in ["homme_age", "femme_agee"])
 	return ch
 

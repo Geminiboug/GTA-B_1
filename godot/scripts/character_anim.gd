@@ -82,7 +82,7 @@ func _sync_skeleton() -> void:
 	for n in PIVOTS:
 		var e: Vector3 = (_p[n] as Node3D).rotation
 		if n.begins_with("piv_epaule_"):
-			e = Squelette.arm_rest(e, n.right(1))
+			e = Squelette.arm_rest(e, n.right(1), _bones.get("_arm", Squelette.A_POSE))
 		Squelette.apply(_skel, _bones, n, e, (_p[n] as Node3D).position)
 
 

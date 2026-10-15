@@ -457,3 +457,22 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   dos voute ; charge sur la tete : buste droit, main droite qui stabilise par moments (avant : le bras leve n'etait
   jamais applique) ; averse : 70 % des pietons pressent le pas (+25 %) et se couvrent la tete. Capture :
   tests/capture_postures.gd -> docs/images/etape16_postures.png.
+
+## Squelette standard et animations Quaternius (etape 16)
+- Animations : Universal Animation Library 1 et 2 (Standard) de Quaternius, CC0, 86 clips captes (attente, marche,
+  trot, sprint, accroupi, saut, roulade, escalade 1 m, glissade, assis, conduite, chocs, chute, relever...).
+  Fichiers : refs/animations/ (archives decompressees), godot/assets/animations/UAL1_RM.glb et UAL2_RM.glb (avec
+  root motion), LICENSE_Quaternius_CC0.txt.
+- build_character.py : squelette aux noms Quaternius / Unreal (root, pelvis, spine_01 a 03, neck_01, Head, clavicle,
+  upperarm, lowerarm, hand, thigh, calf, foot, ball ; 23 os, sans doigts), poids des anciennes regions renommes et
+  repartis (colonne sur 3 vertebres, orteils), personnage tourne vers -Y Blender (= +Z Godot, standard glTF).
+  Journal Blender : blender/tools/run_logged.py (le lanceur du Microsoft Store n'affiche pas la console).
+- Import Godot (.import des chr_*.glb et des UAL*.glb) : retargeting avec godot/assets/animations/bonemap_ual.tres
+  (profil humanoide), axes reecrits, "fix silhouette" (notre pose en A ramenee en T). Squelette renomme
+  %GeneralSkeleton, os aux noms du profil (Hips, Chest, Head, LeftUpperArm...) : les clips s'appliquent a toutes nos
+  morphologies. Apres un changement des reglages d'import, effacer .godot/imported/chr_* pour forcer la reimport.
+- Compatibilite (squelette.gd) : anciens noms piv_* -> os du profil (ALIAS, Squelette.bone_name), angles retournes
+  (modele vers +Z), ecart des bras au repos mesure (pose en T), axe du coude qui suit le bras ; PnjUtil.make fait
+  faire un demi-tour au modele (le jeu suppose -Z). Animation procedurale, poses assises et attaches inchangees.
+- Captures : tests/capture_clips.gd (clips Quaternius sur nos personnages) -> docs/images/etape16_clips_quaternius.png.
+- Prochaine etape : AnimationTree (machine a etats, root motion) pour le joueur puis les PNJ.
