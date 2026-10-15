@@ -77,6 +77,25 @@ var _subtitle: Label
 var _subtitle_t := 0.0
 
 
+var _place_label: Label
+var _place_t := 0.0
+var _hint: Label
+var _hint_t := 0.0
+var _home := Vector2.INF
+
+
+func show_place(text: String) -> void:
+	## Nom du lieu (ou evenement) en haut de l'ecran, comme dans les GTA.
+	_place_label.text = text
+	_place_t = 3.5
+
+
+func show_hint(text: String) -> void:
+	## Indication d'action (a appeler a chaque image tant qu'elle s'applique).
+	_hint.text = text
+	_hint_t = 0.25
+
+
 func show_line(text: String, where: Vector3) -> void:
 	## Sous-titre d'une replique prononcee pres du joueur (moins de 18 m de la camera).
 	var cam := get_viewport().get_camera_3d()
@@ -113,6 +132,12 @@ func _ready() -> void:
 	add_child(_ding)
 	_load_pins()
 	add_to_group("sous_titres")
+	_place_label = _make_label(30, Vector2(-450, 70), Vector2(900, 50), Control.PRESET_CENTER_TOP)
+	_place_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8))
+	_hint = _make_label(20, Vector2(-400, -170), Vector2(800, 36), Control.PRESET_CENTER_BOTTOM)
+	var lx: Dictionary = _carte.data.get("lieux", {})
+	if lx.has("maison"):
+		_home = Vector2(float(lx["maison"]["center"][0]), float(lx["maison"]["center"][1]))
 	_subtitle = Label.new()
 	_subtitle.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_subtitle.position = Vector2(-500, -110)
@@ -155,9 +180,12 @@ func _poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
 	if not Geometry2D.triangulate_polygon(pts).is_empty():
 		n.draw_colored_polygon(pts, col)
 		return
-	for part in Geometry2D.decompose_polygon_in_convex(pts):
-		if part.size() >= 3:
-			n.draw_colored_polygon(part, col)
+	# contour qui se recoupe (rare dans OSM) : triangulation de Delaunay, on garde les triangles interieurs
+	var tri := Geometry2D.triangulate_delaunay(pts)
+	for i in range(0, tri.size(), 3):
+		var t := PackedVector2Array([pts[tri[i]], pts[tri[i + 1]], pts[tri[i + 2]]])
+		if Geometry2D.is_point_in_polygon((t[0] + t[1] + t[2]) / 3.0, pts):
+			n.draw_colored_polygon(t, col)
 
 
 func _road_line(n: CanvasItem, pts: PackedVector2Array, width_px: float, col: Color) -> void:
@@ -366,6 +394,12 @@ func _draw_blips() -> void:
 		if q.length() < R * 0.9:
 			_blips.draw_circle(c + q, 5.0, Color(0, 0, 0, 0.8))
 			_blips.draw_circle(c + q, 3.8, COL_PIN)
+	# maison du joueur (toujours indiquee, collee au bord si loin)
+	if _home != Vector2.INF:
+		var hq := _to_mini(_home, pp, h, R)
+		if hq.length() > R * 0.86:
+			hq = hq.normalized() * R * 0.86
+		_house_icon(_blips, c + hq, 7.0)
 	# destination : collee au bord de la mini-carte si elle est loin
 	if has_waypoint:
 		var q := _to_mini(waypoint, pp, h, R)
@@ -383,6 +417,10 @@ func _draw_blips() -> void:
 func _process(delta: float) -> void:
 	if _player == null:
 		return
+	_place_t = maxf(0.0, _place_t - delta)
+	_place_label.modulate.a = clampf(_place_t / 0.6, 0.0, 1.0)
+	_hint_t = maxf(0.0, _hint_t - delta)
+	_hint.visible = _hint_t > 0.0
 	_subtitle_t = maxf(0.0, _subtitle_t - delta)
 	_subtitle.modulate.a = clampf(_subtitle_t / 0.4, 0.0, 1.0)
 	var pp := _player_pos()
@@ -414,6 +452,29 @@ func _process(delta: float) -> void:
 	if _big_open:
 		_big_controls(delta)
 		_big.queue_redraw()
+
+
+func _make_label(fs: int, pos: Vector2, size: Vector2, preset: int) -> Label:
+	var l := Label.new()
+	l.set_anchors_preset(preset)
+	l.position = pos
+	l.size = size
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", fs)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	l.add_theme_constant_override("outline_size", 7)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(l)
+	return l
+
+
+func _house_icon(ci: CanvasItem, at: Vector2, size: float) -> void:
+	## Pictogramme "maison" (comme la planque des GTA) : vert, contour noir.
+	var pts := PackedVector2Array([at + Vector2(-size, 0), at + Vector2(0, -size * 0.9), at + Vector2(size, 0),
+		at + Vector2(size * 0.75, 0), at + Vector2(size * 0.75, size * 0.8), at + Vector2(-size * 0.75, size * 0.8), at + Vector2(-size * 0.75, 0)])
+	ci.draw_colored_polygon(pts, Color(0.15, 0.75, 0.3))
+	pts.append(pts[0])
+	ci.draw_polyline(pts, Color(0, 0, 0, 0.9), 1.5, true)
 
 
 func _fmt_dist(d: float) -> String:
@@ -635,6 +696,11 @@ func _draw_big() -> void:
 		_big.draw_circle(at, 4.0, Color(0.98, 0.98, 0.95))
 		_big.draw_string_outline(_font, at + Vector2(8, 5), pl[0], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.85))
 		_big.draw_string(_font, at + Vector2(8, 5), pl[0], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.93, 0.7))
+	if _home != Vector2.INF:
+		var ha := _w2s(_home)
+		_house_icon(_big, ha, 10.0)
+		_big.draw_string_outline(_font, ha + Vector2(14, 6), "Chez vous", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.85))
+		_big.draw_string(_font, ha + Vector2(14, 6), "Chez vous", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.6, 1.0, 0.7))
 	for p in pins:
 		var at := _w2s(p)
 		_big.draw_line(at, at + Vector2(0, -16), Color(0, 0, 0, 0.9), 3.0)

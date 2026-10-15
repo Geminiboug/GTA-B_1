@@ -450,6 +450,7 @@ ZONE_RULES = [
 ]
 zone_batches = {}
 zone_data = []  # pour la carte du jeu (mini-carte)
+zone_polys = []  # contours (repere Blender) : la concession du joueur ne doit en recouvrir aucun (piscine, parking...)
 for t, poly in areas:
     if "building" in t:
         continue
@@ -459,6 +460,7 @@ for t, poly in areas:
             if len(p) > 2:
                 zone_batches.setdefault((name, mat, z), Batch()).add(*flat(ccw(p), z))
                 zone_data.append({"kind": name, "pts": [[round(q[0], 2), round(-q[1], 2)] for q in p]})
+                zone_polys.append(p)
             break
 for (name, mat, z), bt in zone_batches.items():
     batch_obj(name, bt, mat, "Zones", z)
@@ -1140,10 +1142,40 @@ def fit_off_road(poly):
     return None
 
 
+# Batiments remplaces par un modele avec interieur (blender/tools/build_interieurs.py) : on ne les extrude pas ici,
+# on garde leur emprise (carte, masques) et on la transmet dans le JSON ("lieux").
+SPECIAL = {"81766299": ("ararat", 12.0), "273487965": ("terminal", 15.0)}
+lieux = {}
+all_polys = []
 bld_batches = {}
 nb_bld = 0
 nb_off = 0
 nb_fit = 0
+
+
+def seg_cross(p1, p2, q1, q2):
+    def o(a, b, c):
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+    return (o(p1, p2, q1) * o(p1, p2, q2) < 0) and (o(q1, q2, p1) * o(q1, q2, p2) < 0)
+
+
+def polys_overlap(a, b):
+    if any(point_in_poly(p, b) for p in a) or any(point_in_poly(p, a) for p in b):
+        return True
+    for i in range(len(a)):
+        for j in range(len(b)):
+            if seg_cross(a[i], a[(i + 1) % len(a)], b[j], b[(j + 1) % len(b)]):
+                return True
+    return False
+
+
+def pbbox(p):
+    return (min(q[0] for q in p), min(q[1] for q in p), max(q[0] for q in p), max(q[1] for q in p))
+
+
+# 1re passe : emprises finales (hors chaussee), puis chevauchements entre batiments (doublons OSM / detections
+# satellite, batiment qui deborde sur un autre) : le plus petit est retreci, sinon retire.
+entries = []
 for wid, t, pts in buildings:
     poly = clean(pts)
     if len(poly) < 3 or abs(area(poly)) < 4.0:
@@ -1160,6 +1192,41 @@ for wid, t, pts in buildings:
         nb_fit += 1
     poly = fitted
     if abs(area(poly)) < 4.0:
+        continue
+    entries.append([wid, t, poly])
+# les lieux a interieur sont prioritaires, puis les plus grands
+entries.sort(key=lambda e: (0 if str(e[0]) in SPECIAL else 1, -abs(area(e[2]))))
+kept = []
+nb_overlap_fit = 0
+nb_overlap_off = 0
+for e in entries:
+    poly = e[2]
+    for k in (1.0, 0.92, 0.84, 0.76):
+        n = len(poly)
+        ccx = sum(p[0] for p in poly) / n
+        ccy = sum(p[1] for p in poly) / n
+        cand = poly if k == 1.0 else [(ccx + (p[0] - ccx) * k, ccy + (p[1] - ccy) * k) for p in poly]
+        bb = pbbox(cand)
+        if not any(bb_near(bb, kb, 0.0) and polys_overlap(cand, kp) for kp, kb in kept):
+            if k < 1.0:
+                nb_overlap_fit += 1
+            e[2] = cand
+            kept.append((cand, bb))
+            break
+    else:
+        nb_overlap_off += 1
+        e[2] = None
+print("Chevauchements entre batiments : %d retrecis, %d retires" % (nb_overlap_fit, nb_overlap_off))
+for wid, t, poly in entries:
+    if poly is None:
+        continue
+    all_polys.append(poly)
+    if str(wid) in SPECIAL:
+        name, hs = SPECIAL[str(wid)]
+        gpts = [[round(p[0], 2), round(-p[1], 2)] for p in ccw(poly)]
+        lieux[name] = {"pts": gpts, "h": hs}
+        building_data.append({"id": str(wid), "h": hs, "roof": "plat", "top": hs, "style": "lieu_" + name, "pts": gpts})
+        nb_bld += 1
         continue
     kind = t.get("building", "yes")
     seed = int("".join(ch for ch in str(wid) if ch.isdigit()) or 0) % 97
@@ -1221,6 +1288,71 @@ DETAIL_MATS = {"parapet": "mat_beton", "poteau_attente": "mat_beton_brut", "fers
 for k, bt in DETAILS.items():
     batch_obj(k + ("-col" if k == "abri_poteaux" else ""), bt, DETAIL_MATS[k], "Toits", 0)
 
+# ---------- Terrain de la maison du joueur ----------
+# Une concession (mur d'enceinte + maison) de 20 m de facade sur 17 m de profondeur, face a une rue de quartier,
+# sur un terrain ou il n'y a ni batiment, ni mur, ni route : on n'ecrase aucune maison existante.
+def find_house_lot(target, W=20.0, D=17.0):
+    walls_l = [w["pts"] for w in ways.values() if w["tags"].get("barrier") in WALL]
+    pbb = [((min(p[0] for p in q), min(p[1] for p in q), max(p[0] for p in q), max(p[1] for p in q)), q) for q in all_polys + zone_polys]
+    cands = []
+    for r in road_pieces:
+        if r["hw"] not in ("residential", "unclassified", "living_street"):
+            continue
+        pts = r["pts"]
+        for k in range(len(pts) - 1):
+            a, c = pts[k], pts[k + 1]
+            L = math.hypot(c[0] - a[0], c[1] - a[1])
+            if L < 1.0:
+                continue
+            u = ((c[0] - a[0]) / L, (c[1] - a[1]) / L)
+            nrm = (-u[1], u[0])
+            t0 = 0.0
+            while t0 < L:
+                p = (a[0] + u[0] * t0, a[1] + u[1] * t0)
+                for sd in (1, -1):
+                    n = (nrm[0] * sd, nrm[1] * sd)
+                    off = r["width"] / 2 + 1.5 + D / 2
+                    cc = (p[0] + n[0] * off, p[1] + n[1] * off)
+                    cands.append((math.hypot(cc[0] - target[0], cc[1] - target[1]), cc, u, n))
+                t0 += 3.0
+    cands.sort(key=lambda e: e[0])
+    for score, cc, u, n in cands[:4000]:
+        ok = True
+        corners = [(cc[0] + u[0] * a2 * W / 2 + n[0] * b2 * D / 2, cc[1] + u[1] * a2 * W / 2 + n[1] * b2 * D / 2)
+                   for a2, b2 in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+        rb = (min(q[0] for q in corners) - 1, min(q[1] for q in corners) - 1, max(q[0] for q in corners) + 1, max(q[1] for q in corners) + 1)
+        if not all(inside_box(q) and not on_waterfront(*q) for q in corners):
+            continue
+        near_b = [q for bb, q in pbb if bb_near(bb, rb, 0.0)]
+        near_r = [(pts, half) for (lbb, pts, half) in LINE_BB if bb_near(lbb, rb, 0.0)]
+        gi = 0
+        while ok and gi <= 14:
+            gj = 0
+            while ok and gj <= 12:
+                fa, fb = gi / 14 - 0.5, gj / 12 - 0.5
+                q = (cc[0] + u[0] * fa * (W + 1) + n[0] * fb * (D + 1), cc[1] + u[1] * fa * (W + 1) + n[1] * fb * (D + 1))
+                if any(point_in_poly(q, pb) for pb in near_b):
+                    ok = False
+                elif any(line_dist(q, pts) < half + 0.6 for pts, half in near_r):
+                    ok = False
+                elif any(len(wl) > 1 and line_dist(q, wl) < 0.6 for wl in walls_l):
+                    ok = False
+                gj += 1
+            gi += 1
+        if ok:
+            front = (cc[0] - n[0] * D / 2, cc[1] - n[1] * D / 2)   # milieu de la facade, cote rue
+            return {"center": [round(cc[0], 2), round(-cc[1], 2)], "front_dir": [round(-n[0], 3), round(n[1], 3)],
+                    "w": W, "d": D, "pts": [[round(q[0], 2), round(-q[1], 2)] for q in ccw(corners)],
+                    "front": [round(front[0], 2), round(-front[1], 2)]}
+    return None
+
+
+maison = find_house_lot((300.0, -120.0))
+if maison:
+    lieux["maison"] = maison
+    building_data.append({"id": "maison_joueur", "h": 3.4, "roof": "plat", "top": 3.4, "style": "lieu_maison", "pts": maison["pts"]})
+print("Lieux :", {k: (v["center"] if "center" in v else len(v["pts"])) for k, v in lieux.items()})
+
 # ---------- Donnees pour Godot (coordonnees Godot : x = est, z = sud) ----------
 if OUT_JSON:
     def gz(line):
@@ -1250,6 +1382,7 @@ if OUT_JSON:
         "medians": median_data,
         "zones": zone_data,
         "aeroways": aero_data,
+        "lieux": lieux,
     }
     json.dump(data, open(OUT_JSON, "w", encoding="utf-8"))
     print("Donnees Godot :", OUT_JSON, len(road_data), "routes,", len(building_data), "batiments")

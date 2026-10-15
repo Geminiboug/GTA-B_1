@@ -149,6 +149,9 @@ Option plus tard : multijoueur.
 - 15/10/2026 : passe 8 : decollages et atterrissages sur la vraie piste. Mesure : 120-135 images/s en 1600x900 sur la RTX 2050 d Olympe.
 - 15/10/2026 : passe 9 : meteo tropicale (averses, orages avec eclairs et tonnerre, sol et murs mouilles, flaques, sechage). Prompt de passation reecrit. Tous les tests passent.
 - 15/10/2026 : passe coherence : couches au sol a plat (joueur et zem poses sur la route, plus dedans), 30 batiments retires de la chaussee (maisons demolies pour la Route des Peches) et 18 retrecis, chaussees separees a la bonne largeur avec terre-plein central ouvert aux carrefours, rues coupees au front de mer, circulation sur le graphe des vrais carrefours (cede-le-passage), pietons sur les trottoirs (traversees aux carrefours, les voitures s arretent), voitures garees sur le bas-cote. Nouveau test tests/test_coherence.gd : tout est coherent.
+- 15/10/2026 : passe 11 : mini-carte en haut a gauche, grande carte (M), destination et itineraire GPS (A*), marqueurs (P).
+- 15/10/2026 : passes 12 a 14 : hommes, femmes et enfants (6 morphologies, corps continu anime par squelette, vetements ajustes, coiffures), toutes les voitures conduisibles (berline, 4x4, minibus : physique, roulis, freinage, frein a main, degats), reactions des PNJ (klaxon, insultes, chute, fuite, attroupement, coups).
+- 15/10/2026 : passe 15 : lieux a interieur. Maison du joueur (concession avec portail, salon, cuisine, chambre, douche, toit-terrasse ; le joueur y commence, lit pour dormir), Ararat Hypermarket (facade vitree face au parking, porte automatique, rayons, primeurs, boulangerie, gros conditionnement, caisses, clients, caissieres, vigile), terminal de l aeroport (comptoirs des compagnies, files, tableau des departs a l heure du jeu, salle d attente, controle de securite, cafe, librairie, voyageurs). Tous les tests passent, 61 images/s minimum.
 
 ---
 
@@ -175,18 +178,21 @@ CONVENTIONS
 
 ETAT ACTUEL (15/10/2026)
 - Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu.
-- Fait : zone OSM + batiments Overture + littoral Sentinel-2 (blender/tools/osm_import.py, donnees godot/assets/data/zone_aeroport.json),
-  toits (tole 2 pans, parapets, fers en attente, citernes, clims), routes (bitume/paves/sable, marquage, bas-cotes, piste),
-  materiaux proceduraux (godot/scripts/realism.gd + godot/shaders/), vegetation (vegetation.gd), mobilier/enseignes/vehicules
-  gares/avions (props.gd), joueur 3e personne + zem conduisible (player.gd, zem.gd), manette, cycle jour/nuit + delestages
-  (day_night.gd), meteo tropicale pluie/orage/sol mouille (weather.gd), circulation 46 vehicules (traffic.gd), 36 pietons +
-  56 vendeurs assis (pedestrians.gd), ambiance sonore synthetisee (ambience.gd, audio_synth.gd), decollages/atterrissages
-  (air_traffic.gd). Tests auto dans godot/tests/ (test_player, test_zem, test_limites, test_manette, test_circulation, test_avion).
+- Fait : zone OSM + batiments Overture + littoral Sentinel-2 (blender/tools/osm_import.py -> godot/assets/data/zone_aeroport.json),
+  materiaux proceduraux (realism.gd + shaders/), vegetation, mobilier, enseignes, cycle jour/nuit, meteo, ambiance sonore,
+  coherence du monde (rien sur la chaussee, joueur et vehicules poses sur le sol, carrefours reels), mini-carte + grande
+  carte + GPS (hud_carte.gd, carte.gd), personnages v3 a squelette (build_character.py, pnj_util.gd, squelette.gd),
+  voitures conduisibles (build_vehicles.py, voiture.gd, vehicules.gd), reactions des PNJ (pedestrians.gd, traffic.gd),
+  lieux a interieur : maison du joueur, Ararat Hypermarket, terminal (build_interieurs.py, lieux.gd, pnj_interieur.gd).
+  Tests : godot/tests/test_*.gd (coherence, vehicules, player, zem, circulation, limites, avion, manette) tous OK ;
+  captures : tests/capture_*.gd ; performances : tests/perf_fps.gd (61 images/s minimum en 1600x900 sur RTX 2050).
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
-  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md).
-- Prochaine tache : integrer les animations Quaternius Universal Animation Library (CC0) des qu Olympe les a mises dans
-  refs/quaternius/ (remplacer Body/Model + character_anim.gd par un AnimationTree, pietons inclus). Faire valider les jalons
-  3, 4, 5 par Olympe. Puis Phase 7 : HUD, argent FCFA, premieres missions (course de zem).
+  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md). Envoi git : depuis
+  le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
+- Prochaine tache : avions tres realistes (modele detaille, roulage, decollage avec rotation et rentree du train,
+  atterrissage avec arrondi, toucher, inversion de poussee, retour au poste ; feux de piste et PAPI la nuit ;
+  air_traffic.gd). Puis passe Blender sur les facades exterieures (balcons, auvents, fenetres en relief, salissures),
+  puis audit final (aucune erreur visible).
 - Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et
   rouvrir le projet (sinon erreurs "global uniform does not exist", fichiers non importes).
 ROADMAP

@@ -256,10 +256,11 @@ static func merge(root: Node3D) -> ArrayMesh:
 		if not mi.is_visible_in_tree():
 			continue
 		var mesh: Mesh = mi.mesh
-		if (mi as MeshInstance3D).skin != null:
+		# sans rendu (tests sans fenetre) le figeage n'est pas possible : pose de repos
+		if (mi as MeshInstance3D).skin != null and DisplayServer.get_name() != "headless":
 			var baked: Mesh = (mi as MeshInstance3D).bake_mesh_from_current_skeleton_pose()
 			if baked:
-				mesh = baked   # sans rendu (tests sans fenetre) le figeage n'est pas possible : pose de repos
+				mesh = baked
 		var xf: Transform3D = root.global_transform.affine_inverse() * mi.global_transform
 		for s in mesh.get_surface_count():
 			var mat: Material = mi.get_surface_override_material(s)

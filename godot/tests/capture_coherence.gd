@@ -11,6 +11,9 @@ var out_dir := "user://"
 # [nom, centre (x, z), hauteur ou null pour la vue joueur, taille ortho / rotation camera]
 var shots := [
 	["dessus_jonction", Vector2(220, 25), 60.0, 24.0],
+	["dessus_ararat", Vector2(617, 102), 200.0, 175.0],
+	["dessus_terminal", Vector2(378, -378), 200.0, 150.0],
+	["dessus_maison", Vector2(315, 112), 80.0, 50.0],
 	["dessus_ville", Vector2(420, 60), 260.0, 230.0],
 	["dessus_aeroport", Vector2(470, -280), 200.0, 170.0],
 	["dessus_terre_plein", Vector2(200, 40), 120.0, 90.0],

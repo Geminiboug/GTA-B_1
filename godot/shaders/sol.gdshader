@@ -141,6 +141,24 @@ void fragment() {
 		col *= 0.85 + 0.25 * tuft;
 		col = mix(col, vec3(0.62, 0.4, 0.27), smoothstep(0.66, 0.82, fbm(p * 0.18 + 5.0)) * 0.6);
 		rough = 1.0;
+	} else if (mode == 10) {
+		// carrelage interieur 60 x 60 cm : joints clairs, legeres variations, brillant
+		vec2 q = p / 0.6;
+		vec2 f = fract(q);
+		float joint = step(f.x, 0.012) + step(f.y, 0.012);
+		col = tint * (0.95 + 0.06 * hash(floor(q)));
+		col = mix(col, col * 0.78, smoothstep(0.55, 0.8, fbm(q * 2.3)) * 0.12);
+		col = mix(col, vec3(0.7, 0.68, 0.64), clamp(joint, 0.0, 1.0));
+		rough = 0.32;
+	} else if (mode == 12) {
+		// terrazzo poli (batiments publics) : eclats de marbre dans le ciment, joints laiton tous les 1,5 m
+		float chip = step(0.82, noise(p * 22.0)) * 0.5 + step(0.9, noise(p * 41.0 + 3.0)) * 0.5;
+		col = tint * (0.95 + 0.05 * noise(p * 3.0));
+		col = mix(col, vec3(0.45, 0.43, 0.4), chip * 0.6);
+		col = mix(col, vec3(0.95, 0.94, 0.9), step(0.93, noise(p * 30.0 + 7.0)) * 0.6);
+		vec2 g = fract(p / 1.5);
+		col = mix(col, vec3(0.62, 0.52, 0.3), clamp(step(g.x, 0.006) + step(g.y, 0.006), 0.0, 1.0));
+		rough = 0.3;
 	} else if (mode == 9) {
 		// eau calme : sombre au fond, reflets du ciel par la specularite
 		col = tint * (0.85 + 0.1 * fbm(p * 0.3 + TIME * 0.05));
@@ -152,9 +170,9 @@ void fragment() {
 		col = mix(col, col * 0.6, clamp(joint, 0.0, 1.0) * fine);
 		col = mix(col, col * 0.7, smoothstep(0.6, 0.8, fbm(p * 0.3)) * 0.5);
 	}
-	float spec = mode == 9 ? 0.5 : 0.15;  // sols mats : pas de reflet bleu du ciel
+	float spec = mode == 9 ? 0.5 : (mode >= 10 ? 0.45 : 0.15);  // sols exterieurs mats ; carrelage et terrazzo brillants
 	// --- pluie : sol plus sombre et plus brillant, flaques dans les creux (pas sur le sable de plage) ---
-	if (gtb_wet > 0.001 && mode != 1 && mode != 9) {
+	if (gtb_wet > 0.001 && mode != 1 && mode != 9 && mode < 10) {
 		col *= mix(1.0, 0.6, gtb_wet);
 		rough = mix(rough, 0.35, gtb_wet * 0.8);
 		spec = mix(spec, 0.5, gtb_wet);

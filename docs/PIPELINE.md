@@ -297,3 +297,29 @@ Tests : tests/test_vehicules.gd (tout fonctionne), tests/test_coherence.gd. Capt
   poses fixes via Squelette.pose, fusion des personnages poses (bake_mesh_from_current_skeleton_pose) une fois la pose
   appliquee (2 images plus tard) ; tests sans fenetre : pose de repos.
 - Mesure : 96 a 112 images/s en 1600x900 (RTX 2050).
+
+## Lieux a interieur : maison du joueur, Ararat Hypermarket, terminal (passe 15)
+- blender/tools/osm_import.py : les emprises reelles de l'Ararat (way 81766299) et du terminal (way 273487965) ne sont
+  plus extrudees ; elles partent dans la cle "lieux" du JSON. Terrain de la maison : premiere concession de 20 x 17 m
+  libre (ni batiment, ni mur, ni route, ni zone au sol) le long d'une rue de quartier pres de (300, 120).
+  Batiments qui se chevauchent : retrecis (0,92 / 0,84 / 0,76) ou retires.
+- blender/tools/build_interieurs.py <zone.json> <dossier_blend> <dossier_glb> [apercus]
+  -> godot/assets/models/lieu_maison.glb, lieu_ararat.glb, lieu_terminal.glb (+ .blend dans blender/lieux/).
+  Murs sur le vrai contour, facade vitree et porte automatique sur l'arete tournee vers le parking (Ararat) ou la ville
+  (terminal). Meubles aux aretes arrondies (Mesh.rbox) : canape et fauteuils a coussins, lit et moustiquaire en tente,
+  cuisine, chaises monobloc ; gondoles a etageres, caisses (tapis, scanner, ecran, terminal de paiement), primeurs en
+  cagettes, boulangerie, palettes (riz, huile, eau, casiers) ; comptoirs d'enregistrement (balance, tapis), banquettes,
+  portiques, kiosques. Pas d'UV (aucune texture image).
+  Reperes lus par godot/scripts/lieux.gd : porte_battante_*, porte_coulissante_*_g/_d, lumiere_*, zone_interieur_*,
+  texte_*, pnj_*, action_lit, spawn_joueur, place_zem ; *-colonly = collision seule (palettes).
+- godot/scripts/lieux.gd : portes animees (detecteur ~4 m pour les coulissantes), plafonniers, sonde de reflets
+  interieure, enseignes et panneaux (recto verso pour les panneaux suspendus), tableau des departs a l'heure du jeu
+  (une colonne par champ), nom du lieu en entrant, lit (E : dormir jusqu'a 7 h). Le joueur commence dans sa cour.
+- godot/shaders/produit.gdshader : un bloc par rangee de produits identiques ; le shader dessine les articles un par un
+  (joints, etiquette, logo) le long de l'axe des gondoles.
+- godot/shaders/sol.gdshader : modes 10 (carrelage 60 cm) et 12 (terrazzo poli, joints laiton).
+- godot/scripts/pnj_interieur.gd : caissieres, vigiles, agents, files, voyageurs assis (figes et fusionnes, 4 par image),
+  clients et voyageurs qui marchent sur un graphe de reperes (panier ou sac). Actifs a moins de 90 m.
+- Tests : tests/test_coherence.gd (lieux charges, rien de gare ni de construit dedans, entrees degagees, porte qui
+  s'ouvre, PNJ, joueur dans sa cour), tests/capture_lieux.gd (captures), tests/perf_fps.gd (vues interieures).
+- Mesure : 75 a 105 images/s selon la vue, minimum 61 (Ararat : 2,8 M de triangles) en 1600x900 (RTX 2050).

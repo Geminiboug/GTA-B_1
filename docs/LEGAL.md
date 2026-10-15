@@ -52,6 +52,9 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | FADOUL | Fadil Market |
 | JNP | JMP |
 | Consulat de l Armenie | non represente |
+| Compagnies aeriennes (comptoirs, tableau des departs) | Air Gbe, Atlantique Express, Sahel Airways, Golfe Aviation, Trans-Ouest, Air Lagune (inventees) |
+| Cafe et librairie du terminal | Cafe du Littoral, Librairie Presse (inventes) |
+| Maison du joueur | terrain vide choisi par le script, aucune maison reelle reproduite |
 | Route des Peches | nom de rue reel, autorise |
 | Avenue Pape Jean-Paul II | nom de rue reel, autorise |
 
