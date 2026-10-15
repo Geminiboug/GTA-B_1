@@ -16,6 +16,7 @@ var accel := 0.0
 var seated := false  # assis sur un vehicule
 var femme := false   # demarche feminine : bassin qui balance davantage, bras plus pres du corps
 var gesture := 0.0   # 0..1 : gesticule (colere, dispute) : bras leves, mains qui s'agitent
+var essouffle := 0.0 # 0..1 : essoufflement (endurance du joueur), respiration rapide et ample
 var _gest := 0.0
 var _punch := 0.0
 
@@ -134,7 +135,7 @@ func _physics_process(delta: float) -> void:
 	_lean_fwd = lerp(_lean_fwd, clamp(accel * 0.03, -0.2, 0.25), k)
 	_lean_side = lerp(_lean_side, clamp(-turn_rate * speed * 0.025, -0.35, 0.35), k)
 	var lean: float = _g[6] * m + _lean_fwd
-	var breath := sin(_t * 1.7) * 0.02 * (1.0 - m)
+	var breath := sin(_t * (1.7 + 2.6 * essouffle)) * (0.02 + 0.035 * essouffle) * (1.0 - m * (1.0 - essouffle))   # halete apres le sprint
 
 	# --- En l'air : pose figee selon la montee / la descente ---
 	if _air > 0.001:

@@ -441,3 +441,13 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Captures : tests/capture_tenues.gd, tests/capture_zem_trafic.gd -> docs/images/etape15_*.png.
 - Reste : casquette de la policiere (pas de casquette sur le modele femme), traversees du corps pendant la marche
   (controle a faire avec les nouvelles animations de l'etape 16).
+
+## Controles et camera facon GTA V (etape 16, partie sans animations)
+- player.gd (@export, groupes "Sprint et endurance" et "Camera") : sprint en tapotant (chaque tapotement rapproche du
+  sprint maximal, maintenir = sprint moyen ~5,9 m/s), endurance cachee (~12 s de sprint maximal, recuperation hors
+  sprint, a vide plus de sprint et respiration haletante : character_anim.gd, essouffle), marche lente sur Alt ou Ctrl,
+  inclinaison du stick = allure. Camera : recentrage derriere le joueur apres 1,5 s sans la toucher, FOV et recul en
+  sprint, secousse a l'atterrissage brutal (shake()), vue proche / moyenne / lointaine (V, croix bas), camera_effects
+  pour tout desactiver.
+- Test : tests/test_controles.gd.
+- En attente des clips Quaternius : accroupi, demarrages, arrets, pivots, saut contextuel, IK, ragdoll.

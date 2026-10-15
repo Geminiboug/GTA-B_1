@@ -22,11 +22,11 @@ Pour chaque ligne : cocher **OK**, ou noter ce qui ne va pas (ce que tu vois, ou
 
 | # | Verification | OK | Remarque |
 |---|---|---|---|
-| 3.1 | Marche (Ctrl / stick peu incline), trot (par defaut), sprint (Maj) : vitesses credibles (panneau : 1,6 / 4,2 / 7 m/s) | [ ] | |
+| 3.1 | Marche (Alt ou Ctrl / stick peu incline), trot (par defaut), sprint (Maj maintenu = sprint moyen ~5,9 m/s ; tapoter Maj = jusqu a 7 m/s ; essoufflement apres ~12 s) | [ ] | |
 | 3.2 | Demarrage et arret : pas de glissade visible des pieds | [ ] | |
 | 3.3 | Demi-tour et virages : le corps ne pivote pas en toupie | [ ] | |
 | 3.4 | Saut et reception (sol, trottoir, sable) | [ ] | |
-| 3.5 | Camera : suit sans a-coups, ne traverse pas les murs, zoom molette | [ ] | |
+| 3.5 | Camera : suit sans a-coups, se recentre derriere toi quand tu avances, s elargit en sprint, V change de vue, ne traverse pas les murs | [ ] | |
 | 3.6 | Manette : sticks, gachettes, boutons (A sprint, X saut, Y interagir) | [ ] | |
 | 3.7 | Collisions : murs, poteaux, voitures garees, mobilier, portes des lieux | [ ] | |
 | 3.8 | Limites du monde : bord de carte, mer (pas de chute sous la carte) | [ ] | |
