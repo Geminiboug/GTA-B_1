@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/air_traffic.gd" id="15_air"]
 [ext_resource type="Script" path="res://scripts/weather.gd" id="16_meteo"]
 [ext_resource type="Script" path="res://scripts/hud_carte.gd" id="17_hud"]
+[ext_resource type="Script" path="res://scripts/debug.gd" id="40_debug"]
 [ext_resource type="Script" path="res://scripts/lieux.gd" id="18_lieux"]
 [ext_resource type="Script" path="res://scripts/horizon.gd" id="19_horizon"]
 [ext_resource type="Script" path="res://scripts/balisage.gd" id="20_balisage"]
@@ -113,3 +114,6 @@ script = ExtResource("16_meteo")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("17_hud")
+
+[node name="Debug" type="CanvasLayer" parent="."]
+script = ExtResource("40_debug")

@@ -396,3 +396,13 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Controles : tests/test_echelle.gd (taille de chaque variante), tests/capture_morphos_zem.gd (planche des 10 morphologies
   en passager), tests/capture_studio.gd.
 - Pas de ragdoll dans le jeu actuel (chutes animees par code) : prevu a l'etape 16.
+
+## Mode debug et validation (phases 3 a 5)
+- godot/scripts/debug.gd (noeud "Debug" de zone_aeroport.tscn, CanvasLayer) : F1 = desactive / infos / infos + chemins.
+  Infos : images/s, appels de rendu, objets, joueur (position, vitesse, allure, au sol, vehicule), animation
+  (procedurale, character_anim.gd), heure, pluie, nombre de PNJ et de vehicules. Chemins : pietons vers leur cible
+  (cyan), troncon de route des vehicules (orange). Teleportation (touches 1 a 8, a pied, posee au sol par rayon) :
+  liste `teleports` en @export (reglable dans l'editeur).
+- Test : tests/test_debug.gd ; capture : tests/capture_debug.gd -- <fichier.png>.
+- Checklist a remplir en jouant : docs/validation_phases_3_5.md.
+- Noms : docs/correspondance_noms.md (lieu reel -> nom fictif, noms reels encore affiches a valider).
