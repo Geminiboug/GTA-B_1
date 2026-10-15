@@ -155,7 +155,7 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 		look["cloth"] = plain(KHAKI.darkened(0.08))
 		show.append_array(["chr_haut", "chr_semelle"])
 		show.append("chr_short" if genre == "homme" else "chr_jupe")
-		show.append("chr_cheveux" if genre == "homme" or rng.randf() < 0.5 else "chr_tresse")
+		show.append_array(["chr_cheveux"] if genre == "homme" or rng.randf() < 0.5 else ["chr_cheveux", "chr_tresse"])   # tresses : nattes collees sur le crane + meches
 		return look
 	if genre == "homme":
 		var r := rng.randf()
@@ -207,7 +207,7 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 		elif h < 0.55:
 			show.append_array(["chr_cheveux", "chr_chignon"])
 		elif h < 0.75:
-			show.append_array(["chr_tresse"])
+			show.append_array(["chr_cheveux", "chr_tresse"])   # nattes collees sur le crane, pas de crane chauve
 		elif h < 0.9:
 			show.append_array(["chr_meches"])
 		else:

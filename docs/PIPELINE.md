@@ -375,3 +375,11 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Relief : Copernicus GLO-30 teste puis ecarte. C'est un modele de surface (toits et arbres compris) : sol a 4-5 m quasi
   plat, bosses de 9 a 15 m = batiments. Seul relief reel manquant : la pente de la plage (~4 m sur ~100 m), tache a part.
 - Noms : tous fictifs ou generiques (verifie le 15/10/2026), noms de rue et villes reels autorises (docs/LEGAL.md).
+
+## Corps de base des personnages (etape 12)
+- build_character.py : rayons du Skin corriges (la subdivision amincit les sections d'environ 25 %) pour des
+  mensurations reelles : homme poitrine ~0,88 / taille ~0,80 / hanches ~0,85 / bras ~0,28 / cuisse ~0,52 m ;
+  femme ~0,83 / ~0,73 / ~0,88 / ~0,24 / ~0,52 m. Pente du trapeze (cou plus haut, epaule plus basse, haut assorti).
+  Tapettes : semelle a la longueur du pied, bride en V (materiau double face). Tresses toujours sur la chevelure.
+- Mesure : tests/mesure_corps.gd [-- chr_homme ...] (tours par intersection exacte des triangles).
+- Apercu : tests/capture_studio.gd -- <dossier> [chr_...] (fond neutre, face / trois quarts / profil, tenue comme en jeu).

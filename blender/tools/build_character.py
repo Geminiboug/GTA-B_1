@@ -76,6 +76,7 @@ TOP = material("chr_chemise", (0.95, 0.75, 0.10))
 PANTS = material("chr_pantalon", (0.18, 0.22, 0.30))
 SHOES = material("chr_chaussures", (0.12, 0.10, 0.09), 0.6)
 SOLE = material("chr_semelle", (0.1, 0.1, 0.11), 0.7)
+SOLE.use_backface_culling = False     # brides des tapettes : faces simples, visibles des deux cotes
 CLOTH = material("chr_tissu", (0.8, 0.3, 0.1))
 CAP = material("chr_casquette", (0.15, 0.2, 0.45))
 
@@ -147,20 +148,24 @@ def chain(ids, label="torse", side=""):
 
 
 g, hk, bk = G, V["hip"], bk_scale
-pel = node(J["bassin"] + Vector((0, -0.01, -0.045 * bk)), 0.155 * hk * g * bk, 0.112 * g * bk)
-waist = node(Vector((0, 0, bz + 0.13 * bk)), (0.122 if F else 0.135) * g * bk, 0.092 * g * bk)
-chest_lo = node(Vector((0, 0.003, bz + 0.27 * bk)), (0.14 if F else 0.152) * g * bk, 0.104 * g * bk)
-chest = node(Vector((0, 0.0, sh_z - 0.1 * bk)), (0.155 if F else 0.175) * V["sh"] * g ** 0.6 * bk, 0.112 * g * bk)
-neck0 = node(Vector((0, -0.006, sh_z + 0.015)), 0.11 * V["sh"] * bk, 0.075 * bk)
+# mensurations reelles (tests/mesure_corps.gd) : homme poitrine ~0,92 / taille ~0,80 / hanches ~0,92 m ;
+# femme poitrine ~0,90 / taille ~0,74 / hanches ~0,98 m (la subdivision amincit les sections du Skin d environ 25 %)
+TX = 1.32 if F else 1.18          # bassin et hanches
+pel = node(J["bassin"] + Vector((0, -0.01, -0.045 * bk)), 0.155 * TX * hk * g * bk, 0.112 * (1.3 if F else 1.2) * g * bk)
+waist = node(Vector((0, 0, bz + 0.13 * bk)), (0.122 * 0.98 if F else 0.135 * 1.08) * g * bk, 0.092 * 1.1 * g * bk)
+chest_lo = node(Vector((0, 0.003, bz + 0.27 * bk)), (0.14 if F else 0.152) * 1.1 * g * bk, 0.104 * 1.14 * g * bk)
+chest = node(Vector((0, 0.0, sh_z - 0.1 * bk)), (0.155 if F else 0.175) * 1.1 * V["sh"] * g ** 0.6 * bk, 0.112 * 1.15 * g * bk)
+# base du cou plus haute et plus etroite, haut de l epaule plus bas : pente du trapeze (plus d epaules carrees)
+neck0 = node(Vector((0, -0.006, sh_z + 0.035 * bk)), 0.088 * V["sh"] * bk, 0.07 * bk)
 neck1 = node(J["tete"] + Vector((0, 0, 0.0)), (0.046 if F else 0.056) * HK, (0.046 if F else 0.054) * HK)
 neck2 = node(J["tete"] + Vector((0, 0.002, 0.05 * HK)), (0.044 if F else 0.052) * HK, (0.045 if F else 0.052) * HK)
 chain([pel, waist, chest_lo, chest, neck0, neck1, neck2])
 TORSO_RX = [(verts[i][2], radii[i][0]) for i in (pel, waist, chest_lo, chest, neck0)]
 TORSO_RY = [(verts[i][2], radii[i][1]) for i in (pel, waist, chest_lo, chest, neck0)]
-ab = 0.88 if F else 1.0
+ab = 1.1 if F else 1.02           # bras (femme : tour ~0,27 m, homme ~0,29 m)
 for s in ("G", "D"):
     S, E, W, D = J["epaule_" + s], J["coude_" + s], J["poignet_" + s], J["doigts_" + s]
-    sho = node(S + Vector((0, 0, 0.01)), 0.058 * ab * g ** 0.5 * bk, 0.056 * ab * g ** 0.5 * bk)
+    sho = node(S + Vector((0, 0, -0.012 * bk)), 0.058 * ab * g ** 0.5 * bk, 0.056 * ab * g ** 0.5 * bk)
     upm = node(S.lerp(E, 0.45), 0.05 * ab * g ** 0.6 * bk, 0.049 * ab * g ** 0.6 * bk)
     elb = node(E, 0.041 * ab * bk, 0.04 * ab * bk)
     ARM_R = [(S.z, 0.058 * ab * g ** 0.5 * bk), (E.z, 0.041 * ab * bk), (W.z, 0.03 * ab * bk)]
@@ -176,8 +181,8 @@ for s in ("G", "D"):
     chain([sho, upm, elb, fom, wri, palm, fing, tip], "bras", s)
     chain([palm, th1, th2], "bras", s)
     H, Kn, A, T = J["hanche_" + s], J["genou_" + s], J["cheville_" + s], J["orteils_" + s]
-    hp = node(H + Vector((0, -0.005, 0.02)), 0.098 * hk * g * bk, 0.105 * g * bk)
-    thm = node(H.lerp(Kn, 0.45), 0.082 * g * (1.05 if F else 1.0) * bk, 0.085 * g * bk)
+    hp = node(H + Vector((0, -0.005, 0.02)), 0.098 * (1.2 if F else 1.08) * hk * g * bk, 0.105 * (1.2 if F else 1.08) * g * bk)
+    thm = node(H.lerp(Kn, 0.45), 0.082 * g * (1.17 if F else 1.06) * bk, 0.085 * (1.12 if F else 1.05) * g * bk)
     kn = node(Kn, 0.055 * g ** 0.6 * bk, 0.058 * g ** 0.6 * bk)
     calf = node(Kn.lerp(A, 0.3) + Vector((0, -0.012, 0)), 0.058 * g ** 0.7 * bk, 0.064 * g ** 0.7 * bk)
     shin = node(Kn.lerp(A, 0.72), 0.042 * g ** 0.5 * bk, 0.044 * g ** 0.5 * bk)
@@ -535,8 +540,9 @@ def make_top(name, long_sleeves, pad):
         torso_rings.append([Vector((rx * math.cos(k / seg * math.tau), ry * math.sin(k / seg * math.tau), z)) for k in range(seg)])
     # epaules puis encolure (se resserre vers le cou)
     nrx, nry = (0.046 if F else 0.056) * HK, (0.046 if F else 0.054) * HK
-    for z, rx, ry in ((sh_z + 0.015 * bk, sh_x * 0.75, interp(TORSO_RY, sh_z) * 0.6),
-                      (sh_z + 0.035 * bk, nrx * 1.6, nry * 1.2), (sh_z + 0.055 * bk, nrx * 0.7, nry * 0.7)):
+    # pente du trapeze (~30 degres de l epaule au col), pas d epaules carrees
+    for z, rx, ry in ((sh_z + 0.0 * bk, sh_x * 0.75, interp(TORSO_RY, sh_z) * 0.6),
+                      (sh_z + 0.045 * bk, nrx * 1.55, nry * 1.2), (sh_z + 0.068 * bk, nrx * 0.7, nry * 0.7)):
         torso_rings.append([Vector((rx * math.cos(k / seg * math.tau), ry * math.sin(k / seg * math.tau) - 0.005, z)) for k in range(seg)])
     rows = tube_rings(bm, torso_rings)
     torso_verts = set(v for r in rows for v in r)
@@ -630,11 +636,34 @@ derive("chr_chaussures", SHOES, 0.012, lambda c, r: r.startswith("piv_cheville")
 # semelles (sandales) et vetements longs (cones lestes : haut sur le bassin, bas suit un peu les cuisses)
 def sole(side):
     A, T = J["cheville_" + side], J["orteils_" + side]
+    # tapette (sandale en plastique) : semelle a la longueur du pied (talon -> bout des orteils), bride en V
     bm = bmesh.new()
-    bmesh.ops.create_cube(bm, size=1.0)
-    L = (T - A).length + 0.09 * bk
-    for v in bm.verts:
-        v.co = Vector((v.co.x * 0.1 * bk, v.co.y * L, v.co.z * 0.016)) + Vector((A.x, (A.y + T.y) / 2.0 - 0.01, 0.008))
+    heel, tip = A.y - 0.07 * bk, T.y + 0.035 * bk
+    L = tip - heel
+    w = 0.092 * bk
+    prof = [(0.0, 0.8), (0.12, 0.95), (0.55, 0.9), (0.78, 1.0), (0.95, 0.85), (1.0, 0.55)]   # largeur le long du pied
+    ring_lo, ring_hi = [], []
+    for t, kw in prof + [(t, -kw) for t, kw in reversed(prof)]:
+        x, y = A.x + kw * w / 2, heel + t * L
+        ring_lo.append(bm.verts.new((x, y, 0.0)))
+        ring_hi.append(bm.verts.new((x, y, 0.016)))
+    n = len(ring_lo)
+    bm.faces.new(ring_hi)
+    bm.faces.new(list(reversed(ring_lo)))
+    for i in range(n):
+        bm.faces.new((ring_lo[i], ring_lo[(i + 1) % n], ring_hi[(i + 1) % n], ring_hi[i]))
+    # bride : deux lanieres du cou-de-pied vers l'entre-doigts
+    toe_post = Vector((A.x, heel + 0.8 * L, 0.016))
+    for sgn in (-1, 1):
+        a0 = Vector((A.x + sgn * w * 0.47, heel + 0.52 * L, 0.016))
+        top = Vector((A.x + sgn * w * 0.3, heel + 0.6 * L, 0.05 * bk))
+        for p, q in ((a0, top), (top, toe_post + Vector((0, 0, 0.012)))):
+            d = (q - p)
+            side_v = d.cross(Vector((0, 0, 1))).normalized() * 0.006 if abs(d.z) < d.length * 0.99 else Vector((0.006, 0, 0))
+            up_v = d.cross(side_v).normalized() * 0.002
+            quad = [bm.verts.new(p - side_v - up_v), bm.verts.new(q - side_v - up_v),
+                    bm.verts.new(q + side_v + up_v), bm.verts.new(p + side_v + up_v)]
+            bm.faces.new(quad)
     m = bpy.data.meshes.new("chr_semelle_" + side)
     bm.to_mesh(m)
     bm.free()
