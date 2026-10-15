@@ -1,5 +1,5 @@
 # GTB : importeur OpenStreetMap maison pour le blockout (remplace Blender-OSM).
-# Donnees OSM : © les contributeurs d'OpenStreetMap, licence ODbL.
+# Donnees OSM : Â© les contributeurs d'OpenStreetMap, licence ODbL.
 #
 # Lancement :
 #   blender -b --python blender/tools/osm_import.py -- <fichier.osm> <lib_materiaux.blend> <sortie.blend> <sortie.glb>
@@ -19,6 +19,7 @@ OSM, MATLIB, OUT_BLEND, OUT_GLB = args[:4]
 OVERTURE = args[4] if len(args) > 4 and args[4] != "-" else None  # optionnel : batiments Overture (GeoJSON)
 LITTORAL = args[5] if len(args) > 5 and args[5] != "-" else None  # optionnel : trait de cote + limite de plage (GeoJSON Sentinel-2)
 OUT_JSON = args[6] if len(args) > 6 else None  # optionnel : donnees de la zone pour Godot (routes, batiments, ...)
+HEIGHTS = args[7] if len(args) > 7 and args[7] != "-" else None  # optionnel : grille Open Buildings 2.5D (ob25d_grille.py)
 
 import json
 import zlib
@@ -464,6 +465,31 @@ for t, poly in areas:
             break
 for (name, mat, z), bt in zone_batches.items():
     batch_obj(name, bt, mat, "Zones", z)
+# margelles des piscines (dalles claires) et bordures beton des bassins de retention : l'eau n'est plus un aplat au sol
+rims = {}
+for t, poly in areas:
+    if "building" in t:
+        continue
+    kind = "piscine" if t.get("leisure") == "swimming_pool" else ("bassin" if t.get("natural") == "water" else None)
+    if kind is None:
+        continue
+    p = ccw(clip_poly(clean(poly)))
+    if len(p) < 3:
+        continue
+    w, hgt = (0.4, 0.12) if kind == "piscine" else (0.8, 0.35)
+    for i in range(len(p)):
+        a, c = p[i], p[(i + 1) % len(p)]
+        L = math.hypot(c[0] - a[0], c[1] - a[1])
+        if L < 0.05:
+            continue
+        nx, ny = (c[1] - a[1]) / L, -(c[0] - a[0]) / L        # normale exterieure (contour anti-horaire)
+        ex, ey = (c[0] - a[0]) / L * w, (c[1] - a[1]) / L * w  # prolonge aux angles
+        quad = [(a[0] - ex, a[1] - ey), (c[0] + ex, c[1] + ey),
+                (c[0] + ex + nx * w, c[1] + ey + ny * w), (a[0] - ex + nx * w, a[1] - ey + ny * w)]
+        rims.setdefault(kind, Batch()).add(*prism(quad, 0.0, hgt))
+for kind, bt in rims.items():
+    batch_obj("margelle_piscine" if kind == "piscine" else "bordure_bassin-col", bt,
+              "mat_peinture_blanc" if kind == "piscine" else "mat_beton", "Zones", 0.0)
 
 # --- Routes, piste, taxiways ---
 def tag_width(t, default):
@@ -1322,6 +1348,42 @@ for e in entries:
         nb_overlap_off += 1
         e[2] = None
 print("Chevauchements entre batiments : %d retrecis, %d retires" % (nb_overlap_fit, nb_overlap_off))
+
+# Hauteurs reelles mesurees (Google Open Buildings 2.5D Temporal 2023, CC BY 4.0) : mediane sous l'emprise
+OB = None
+if HEIGHTS:
+    import numpy as np
+    _z = np.load(HEIGHTS)
+    OB = (_z["height"], _z["presence"], float(_z["x0"]), float(_z["y0"]))
+nb_ob = 0
+
+
+def measured_height(poly):
+    """Hauteur mediane (m) des cellules baties sous l'emprise, ou None si trop peu de mesures."""
+    if OB is None:
+        return None
+    hg, pg, gx0, gy0 = OB
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    c0, c1 = int(min(xs) - gx0), int(max(xs) - gx0) + 1
+    r0, r1 = int(min(ys) - gy0), int(max(ys) - gy0) + 1
+    if c0 < 0 or r0 < 0 or c1 > hg.shape[1] or r1 > hg.shape[0]:
+        return None
+    cx = np.arange(c0, c1) + gx0 + 0.5
+    cy = np.arange(r0, r1) + gy0 + 0.5
+    px, py = np.meshgrid(cx, cy)
+    inside = np.zeros(px.shape, bool)
+    n = len(poly)
+    for i in range(n):                      # point dans polygone (lancer de rayon), vectorise
+        xa, ya = poly[i]
+        xb, yb = poly[(i + 1) % n]
+        cross = (ya > py) != (yb > py)
+        xi = xa + (py - ya) * (xb - xa) / ((yb - ya) if yb != ya else 1e-9)
+        inside ^= cross & (px < xi)
+    sel = inside & (pg[r0:r1, c0:c1] > 0.5)
+    if sel.sum() < max(6, 0.3 * inside.sum()):
+        return None
+    return float(np.median(hg[r0:r1, c0:c1][sel]))
 for wid, t, poly in entries:
     if poly is None:
         continue
@@ -1345,6 +1407,10 @@ for wid, t, poly in entries:
         h = 3.5
     elif t.get("aeroway") == "terminal":
         h = 15.0
+    elif measured_height(poly) is not None:
+        # hauteur mesuree, arrondie a l'etage (3 m) pour que fenetres et dalles tombent juste
+        h = max(1, min(8, round(measured_height(poly) / LEVEL_H))) * LEVEL_H
+        nb_ob += 1
     elif kind == "retail":
         h = 8.0
     else:
@@ -1500,6 +1566,7 @@ for m in MAT.values():
     m.use_fake_user = False
 bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_apply=True, export_yup=True)
+print("Hauteurs mesurees (Open Buildings 2.5D) : %d batiments" % nb_ob)
 print(f"Zone : {XMAX - XMIN:.0f} m x {YMAX - YMIN:.0f} m, batiments : {nb_bld} (retires de la chaussee : {nb_off}, "
       f"retrecis : {nb_fit}), routes : {len(line_batches)} types, chaussees separees : {len(twins)}, "
       f"rues arretees au front de mer : {nb_cut}, rues raccordees : {nb_ext}, cote : {'oui' if coast else 'non'}")

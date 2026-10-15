@@ -359,3 +359,19 @@ Vehicules :
 - avion de ligne (type A320) : 35,8 d'envergure, 37,6 de long, 11,8 de haut.
 Rue : voie 3,0-3,5 m ; poteau electrique 9-11 m ; lampadaire 8-10 m ; cocotier 8-20 m.
 Regle : un modele hors fourchette est corrige a la source (script Blender), jamais par une echelle dans Godot.
+
+## Carte reelle : hauteurs mesurees, piscines et bassins (etapes 8 a 11)
+- Donnees OSM et Overture du 14/10/2026 (deja a jour). Overture n'a presque aucune hauteur (1 batiment sur 2 342).
+- Hauteurs : Google Open Buildings 2.5D Temporal 2023 (CC BY 4.0), sans Earth Engine (environnement WSL ~/.venvs/geo) :
+  1. ~/.venvs/geo/bin/python blender/tools/ob25d_download.py m11.json m13.json refs/open_buildings/hauteurs_2023.tif
+     (manifestes v1/manifests/<11|13>_EPSG_32631_2023_06_30.json ; la zone est a cheval sur deux tuiles, fusionnees)
+  2. ~/.venvs/geo/bin/python blender/tools/ob25d_grille.py refs/osm/zone-aeroport.osm refs/open_buildings/hauteurs_2023.tif
+     refs/open_buildings/hauteurs_locales.npz (grille 1 m dans le repere du jeu)
+  3. osm_import.py, 8e argument : la grille. Priorite : tags OSM height / building:levels, puis la mesure (mediane sous
+     l'emprise, arrondie a l'etage de 3 m, 1 a 8 niveaux), sinon tirage stable (hangars, auvents, terminal a part).
+  Resultat : 169 plain-pied, 232 R+1, 80 R+2, une vingtaine de 12 a 18 m (avant : tirage au hasard).
+- Piscines (leisure=swimming_pool) : margelle claire de 0,4 m ; bassins de retention (natural=water) : bordure beton
+  de 0,8 m (collision). Avant : aplats bleus au sol.
+- Relief : Copernicus GLO-30 teste puis ecarte. C'est un modele de surface (toits et arbres compris) : sol a 4-5 m quasi
+  plat, bosses de 9 a 15 m = batiments. Seul relief reel manquant : la pente de la plage (~4 m sur ~100 m), tache a part.
+- Noms : tous fictifs ou generiques (verifie le 15/10/2026), noms de rue et villes reels autorises (docs/LEGAL.md).

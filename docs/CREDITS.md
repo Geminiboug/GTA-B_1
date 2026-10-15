@@ -10,6 +10,9 @@ Batiments : Overture Maps Foundation (theme Buildings, licence ODbL), incluant d
 Google Open Buildings (CC BY 4.0 / ODbL) et Microsoft Global ML Building Footprints (ODbL).
 https://overturemaps.org/ - https://sites.research.google/open-buildings/ - https://github.com/microsoft/GlobalMLBuildingFootprints
 
+Hauteurs des batiments : Google Open Buildings 2.5D Temporal Dataset (2023), licence CC BY 4.0.
+https://sites.research.google/gr/open-buildings/temporal
+
 Littoral (trait de cote, limite de plage) : contient des donnees Copernicus Sentinel-2 modifiees (2026), image du 24/01/2026.
 https://dataspace.copernicus.eu/ - licence libre Copernicus, usage commercial autorise avec cette mention.
 
