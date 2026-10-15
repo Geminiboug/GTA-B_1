@@ -23,3 +23,6 @@ desktop.ini
 builds/
 *.exe
 *.pck
+
+# Packs telecharges (lourds) : regenerer les modeles a partir du zip dans refs/ (voir docs/PIPELINE.md)
+refs/ubc/

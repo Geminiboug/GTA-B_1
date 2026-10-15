@@ -303,12 +303,13 @@ func set_parked(on: bool) -> void:
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color(0.08, 0.08, 0.09)
 	var door_z := -15.75
-	# escalier mobile : camion perpendiculaire au fuselage, palier au seuil de la porte (2,7 m)
-	_kit_box(Vector3(6.2, 1.1, 2.3), Vector3(-6.9, 1.05, door_z), white)
-	_kit_box(Vector3(1.6, 1.3, 2.2), Vector3(-10.4, 1.5, door_z), white)
-	_kit_box(Vector3(0.05, 0.6, 2.0), Vector3(-11.22, 1.75, door_z), dark)
+	# escalier mobile : la volee part du sol (pente de 28 degres), chassis du camion sous la partie haute
+	var slope := deg_to_rad(28.0)
+	var run := 2.58 / tan(slope)
+	var x0 := -3.2 - run                     # pied de l'escalier, au sol
+	_kit_box(Vector3(2.6, 0.5, 2.3), Vector3(-4.6, 0.55, door_z), white)
 	for wz: float in [-0.85, 0.85]:
-		for wx: float in [-9.4, -5.0]:
+		for wx: float in [-5.6, -3.6]:
 			var w := MeshInstance3D.new()
 			var cyl := CylinderMesh.new()
 			cyl.top_radius = 0.4
@@ -319,16 +320,19 @@ func set_parked(on: bool) -> void:
 			_ground_kit.add_child(w)
 			w.position = Vector3(wx, 0.4, door_z + wz * 1.1)
 			w.rotation = Vector3(PI / 2.0, 0, 0)
-	# volee de marches : du plateau du camion (1,2 m) au palier (2,66 m), pente de 15 degres
-	var slope := deg_to_rad(15.0)
-	var stairs := _kit_box(Vector3(5.6, 0.12, 1.4), Vector3(-5.4, 1.93, door_z), grey)
+	# volee de marches : du sol au palier (2,58 m)
+	var flight := run / cos(slope)
+	var stairs := _kit_box(Vector3(flight, 0.12, 1.4), Vector3(x0 + run / 2.0, 1.29 - 0.06 / cos(slope), door_z), grey)
+	for i in int(flight / 0.28):
+		var sx := x0 + (i + 0.5) * 0.28 * cos(slope)
+		_kit_box(Vector3(0.05, 0.03, 1.4), Vector3(sx, (sx - x0) * tan(slope) + 0.01, door_z), dark, false)   # nez de marche (sans collision)
 	stairs.rotation = Vector3(0, 0, slope)
 	_kit_box(Vector3(1.3, 0.1, 1.6), Vector3(-2.55, 2.53, door_z), grey)   # sous le haut de la volee : pas de rebord
 	for rz: float in [-0.72, 0.72]:
-		var rail := _kit_box(Vector3(5.8, 0.05, 0.05), Vector3(-5.3, 2.9, door_z + rz), grey)
+		var rail := _kit_box(Vector3(flight, 0.05, 0.05), Vector3(x0 + run / 2.0, 1.29 + 0.95, door_z + rz), grey)
 		rail.rotation = Vector3(0, 0, slope)
-		for px: float in [-7.9, -5.3, -2.7]:
-			_kit_box(Vector3(0.05, 0.95, 0.05), Vector3(px, 1.93 + (px + 5.4) * tan(slope) + 0.48, door_z + rz), grey)
+		for px: float in [x0 + 0.3, x0 + run / 2.0, -3.3]:
+			_kit_box(Vector3(0.05, 0.95, 0.05), Vector3(px, (px - x0) * tan(slope) + 0.48, door_z + rz), grey)
 	# cones
 	for c in [Vector3(-17.8, 0, 4.0), Vector3(17.8, 0, 4.0), Vector3(0, 0, -23.0), Vector3(-5.75, 0, -7.2), Vector3(5.75, 0, -7.2), Vector3(0, 0, 19.0)]:
 		var cone := MeshInstance3D.new()
@@ -342,7 +346,7 @@ func set_parked(on: bool) -> void:
 		cone.position = (c as Vector3) + Vector3(0, 0.29, 0)
 
 
-func _kit_box(size: Vector3, at: Vector3, m: Material) -> MeshInstance3D:
+func _kit_box(size: Vector3, at: Vector3, m: Material, col := true) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var b := BoxMesh.new()
 	b.size = size
@@ -350,6 +354,8 @@ func _kit_box(size: Vector3, at: Vector3, m: Material) -> MeshInstance3D:
 	mi.mesh = b
 	_ground_kit.add_child(mi)
 	mi.position = at
+	if not col:
+		return mi
 	# collision : on monte l'escalier a pied
 	var sb := StaticBody3D.new()
 	var cs := CollisionShape3D.new()

@@ -14,6 +14,7 @@
 import bpy
 import bmesh
 import math
+import os
 import sys
 from mathutils import Vector, kdtree
 
@@ -365,6 +366,59 @@ lip_k = 1.15 if F else 1.0
 head_parts.append(blob("h_levre_haut", (0.024 * k, 0.008 * k, 0.0066 * k * lip_k), hc + Vector((0, fy + 0.007 * k, 0.068 * k)), LIPS, 12, 6))
 head_parts.append(blob("h_levre_bas", (0.022 * k, 0.009 * k, 0.0076 * k * lip_k), hc + Vector((0, fy + 0.006 * k, 0.057 * k)), LIPS, 12, 6))
 
+# ------------------------------------------------------------------ corps sculpte Quaternius (si present dans refs/ubc)
+# Le corps et la tete proceduraux servent de gabarit (articulations, mensurations) ; le maillage Quaternius (visage,
+# mains, pieds, oreilles sculptes) est cale dessus os par os (blender/tools/ubc_body.py). Les vetements sont ensuite
+# derives de ce corps, les coiffures reposees sur son crane.
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+import ubc_body
+USE_UBC = os.path.isdir(ubc_body.UBC_DIR)
+if USE_UBC:
+    _sz = [bz + 0.1 * bk, bz + 0.1 * bk + (J["cou"].z - bz - 0.1 * bk) / 3.0, bz + 0.1 * bk + (J["cou"].z - bz - 0.1 * bk) * 2.0 / 3.0, J["cou"].z]
+    _ball = {s: J["cheville_" + s].lerp(J["orteils_" + s], 0.6) for s in ("G", "D")}
+    tg = {"pelvis": (J["bassin"], Vector((0, J["cou"].y * 0.3, _sz[0])))}
+    for i in range(3):
+        tg[f"spine_0{i + 1}"] = (Vector((0, J["cou"].y * 0.3 * (1 - i / 3.0), _sz[i])), Vector((0, J["cou"].y * 0.3 * (1 - (i + 1) / 3.0), _sz[i + 1])))
+    tg["neck_01"] = (Vector((0, J["cou"].y, _sz[3])), J["tete"])
+    tg["Head"] = (J["tete"], J["sommet"])
+    for s, t in (("G", "l"), ("D", "r")):
+        ep = J["epaule_" + s]
+        tg[f"clavicle_{t}"] = (Vector((ep.x * 0.15, ep.y, ep.z + 0.01)), ep)
+        tg[f"upperarm_{t}"] = (ep, J["coude_" + s])
+        tg[f"lowerarm_{t}"] = (J["coude_" + s], J["poignet_" + s])
+        tg[f"hand_{t}"] = (J["poignet_" + s], J["doigts_" + s])
+        tg[f"thigh_{t}"] = (J["hanche_" + s], J["genou_" + s])
+        tg[f"calf_{t}"] = (J["genou_" + s], J["cheville_" + s])
+        tg[f"foot_{t}"] = (J["cheville_" + s], _ball[s])
+        tg[f"ball_{t}"] = (_ball[s], J["orteils_" + s] + (J["orteils_" + s] - _ball[s]) * 0.3)
+    ubc, ubc_extra = ubc_body.build("f" if F else "m", tg, V["h"] / (1.77 if F else 1.81), G, scene)
+    # formes de la variante (ventre, hanches ; la poitrine du modele feminin est deja la)
+    _bust = V["bust"]
+    V["bust"] = max(0.0, _bust - 0.03)
+    for v in ubc.data.vertices:
+        v.co = v.co + shape_offset(v.co)
+    V["bust"] = _bust
+    ubc.data.materials.clear()
+    ubc.data.materials.append(SKIN)
+    for o in ubc_extra:
+        if o.name.startswith("Eyebrows"):
+            o.data.materials.clear()
+            o.data.materials.append(HAIR)
+    # gabarit procedural retire ; le crane procedural reste en memoire (sk) pour reposer les coiffures
+    bpy.data.objects.remove(body, do_unlink=True)
+    for hp in head_parts:
+        bpy.data.objects.remove(hp, do_unlink=True)
+    head_parts = []
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in ubc_extra:
+        o.select_set(True)
+    ubc.select_set(True)
+    bpy.context.view_layer.objects.active = ubc
+    bpy.ops.object.join()
+    body = bpy.context.view_layer.objects.active
+    body.name = "chr_corps"
+    body.data.name = "chr_corps"
+
 # ------------------------------------------------------------------ poids
 BONES = ["piv_bassin", "piv_tronc", "piv_tete"] + [f"piv_{n}_{s}" for s in ("G", "D") for n in
                                                     ("epaule", "coude", "main", "hanche", "genou", "cheville")]
@@ -464,12 +518,13 @@ assign(body)
 for hp in head_parts:
     assign(hp, {"piv_tete": 1.0})
 # la tete fait partie du corps (un seul mesh, plusieurs materiaux)
-bpy.ops.object.select_all(action="DESELECT")
-for hp in head_parts:
-    hp.select_set(True)
-body.select_set(True)
-bpy.context.view_layer.objects.active = body
-bpy.ops.object.join()
+if head_parts:
+    bpy.ops.object.select_all(action="DESELECT")
+    for hp in head_parts:
+        hp.select_set(True)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    bpy.ops.object.join()
 body = bpy.context.view_layer.objects.active
 body.name = "chr_corps"
 body.data.name = "chr_corps"
@@ -478,6 +533,14 @@ body.data.name = "chr_corps"
 # ressemblent pas. Deplacements doux autour des traits (gauss), limites au visage (devant, sous la ligne des cheveux).
 FACE_C = {"nez": Vector((0, 0.108, 0.098)), "levres": Vector((0, 0.104, 0.063)), "pommette": Vector((0.058, 0.078, 0.118)),
           "oeil": Vector((0.034, 0.099, 0.147))}
+if USE_UBC:
+    # traits du visage Quaternius : bout du nez (point le plus en avant sur l'axe), yeux, levres
+    _face = [body.matrix_world @ v.co for v in body.data.vertices if abs(v.co.x) < 0.006 and hc.z + 0.04 * k < v.co.z < hc.z + 0.2 * k]
+    _nose = max(_face, key=lambda p: p.y)
+    FACE_C["nez"] = Vector((0, (_nose.y - hc.y - 0.01 * k) / k, (_nose.z - hc.z) / k))
+    FACE_C["levres"] = Vector((0, FACE_C["nez"].y - 0.006, FACE_C["nez"].z - 0.034))
+    FACE_C["oeil"] = Vector((0.033, FACE_C["nez"].y - 0.015, FACE_C["nez"].z + 0.048))
+    FACE_C["pommette"] = Vector((0.055, FACE_C["nez"].y - 0.03, FACE_C["nez"].z + 0.02))
 
 
 def face_offset(key, L):
@@ -662,6 +725,25 @@ def make_top(name, long_sleeves, pad):
         hit = tree.ray_cast(origin, d, 1.0)
         if hit[0] is not None:
             v.co = hit[0] + d * pad
+    # tombe du tissu : sous la poitrine, le haut ne suit plus le creux de la taille, il descend droit (un peu evase a
+    # l'ourlet) depuis le tour de poitrine ; petits plis verticaux vers la taille
+    chest_z = sh_z - 0.16 * bk
+    n_rings = n_torso_v // seg
+    ring_z = [m.vertices[ri * seg].co.z for ri in range(n_rings)]
+    ci = min(range(n_rings), key=lambda ri: abs(ring_z[ri] - chest_z))
+    for ri in range(ci):
+        drop = (ring_z[ci] - ring_z[ri]) / max(ring_z[ci] - ring_z[0], 1e-3)
+        for kk in range(seg):
+            v = m.vertices[ri * seg + kk]
+            vc = m.vertices[ci * seg + kk].co
+            rc = Vector((vc.x, vc.y - 0.0)).length
+            cur = Vector((v.co.x, v.co.y))
+            want = rc * (0.97 + 0.05 * drop) + pad * 0.5
+            if cur.length < want:
+                cur = cur.normalized() * want
+            fold = 0.004 * drop * math.sin(kk / seg * math.tau * 7.0)
+            cur = cur + cur.normalized() * fold
+            v.co.x, v.co.y = cur.x, cur.y
     # epaules : lissage local (les rayons horizontaux laissent des pointes au sommet du deltoide), puis on ressort
     # le tissu au-dessus de la peau (rayon depuis le centre de l'epaule, jamais dans le corps)
     bm2 = bmesh.new()
@@ -706,13 +788,93 @@ def make_top(name, long_sleeves, pad):
     return ob
 
 
-make_top("chr_haut", False, 0.016)
-make_top("chr_haut_long", True, 0.018)
+make_top("chr_haut", False, 0.022)
+make_top("chr_haut_long", True, 0.024)
+if USE_UBC:
+    # epaulettes tirees de la peau sculptee : bouchent la fente entre le tronc et les manches (deltoide plus haut que
+    # sur l'ancien corps), fusionnees au haut (memes poids)
+    for _n, _pad in (("chr_haut", 0.016), ("chr_haut_long", 0.018)):
+        ep = derive("tmp_epaulette", TOP, _pad, lambda c, r: c.z > sh_z - 0.07 * bk and 0.45 * sh_x < abs(c.x) < 1.3 * sh_x
+                    and (r in ("piv_tronc",) or r.startswith("piv_epaule")))
+        bpy.ops.object.select_all(action="DESELECT")
+        ep.select_set(True)
+        _o = scene.objects[_n]
+        _o.select_set(True)
+        bpy.context.view_layer.objects.active = _o
+        bpy.ops.object.join()
 derive("chr_pantalon", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
        (r.startswith(LEG) and c.z > J["cheville_G"].z + 0.035), ((J["cheville_G"].z + 0.035, 0.0),))
 derive("chr_short", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
        (r.startswith("piv_hanche") and c.z > J["genou_G"].z + 0.09 * bk), ((J["genou_G"].z + 0.09 * bk, 0.0),))
 derive("chr_chaussures", SHOES, 0.012, lambda c, r: r.startswith("piv_cheville") or (r.startswith("piv_genou") and c.z < J["cheville_G"].z + 0.06))
+
+
+def loose_legs(name, r_knee, r_hem, hem_z):
+    """Jambes de pantalon droites : sous la cuisse, le tissu ne colle plus au mollet (rayon minimal autour de l'axe de
+    la jambe, du genou a l'ourlet) ; plis qui s'accumulent au-dessus de la chaussure."""
+    ob = scene.objects.get(name)
+    if ob is None:
+        return
+    nmod = 0
+    for v in ob.data.vertices:
+        p = v.co
+        sd = "G" if p.x < 0 else "D"
+        H, Kn, A = J["hanche_" + sd], J["genou_" + sd], J["cheville_" + sd]
+        if p.z > H.z - 0.04 * bk or abs(p.x) < 0.025:
+            continue
+        seg_a, seg_b = (H, Kn) if p.z > Kn.z else (Kn, A)
+        t = max(0.0, min(1.0, (p - seg_a).dot(seg_b - seg_a) / (seg_b - seg_a).length_squared))
+        axis = seg_a + (seg_b - seg_a) * t
+        d = Vector((p.x - axis.x, p.y - axis.y, 0.0))
+        if d.length < 1e-5:
+            continue
+        w = ss(Kn.z, hem_z, p.z)
+        r_thigh = 0.1 * bk ** 0.5 * g ** 0.6
+        rmin = r_thigh + (r_knee - r_thigh) * ss(H.z - 0.04 * bk, Kn.z, p.z) if p.z > Kn.z else r_knee + (r_hem - r_knee) * w
+        rr = max(d.length, rmin)
+        rr += 0.005 * w * math.sin(p.z * 160.0) * (0.6 + 0.4 * math.sin(math.atan2(d.y, d.x) * 3.0))
+        d = d.normalized() * rr
+        if (axis.x + d.x) * axis.x < 0.012 * abs(axis.x):     # cote interieur : ne franchit pas le milieu (autre jambe)
+            d.x = -axis.x * 0.88
+        v.co.x, v.co.y = axis.x + d.x, axis.y + d.y
+        nmod += 1
+    print("loose_legs", name, nmod, "sommets sur", len(ob.data.vertices))
+
+
+loose_legs("chr_pantalon", 0.082 * bk ** 0.5 * g ** 0.5, 0.076 * bk ** 0.5 * g ** 0.3, J["cheville_G"].z + 0.035)
+
+
+def clear_skin(names, gap):
+    """Le vetement reste au-dessus de la peau : tout sommet a moins de 'gap' de la surface du corps (ou dedans) est
+    repousse le long de la normale de la peau (le corps sculpte a des reliefs que les rayons ne voient pas)."""
+    from mathutils.bvhtree import BVHTree
+    tree = BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get())
+    for nm in names:
+        ob = scene.objects.get(nm)
+        if ob is None:
+            continue
+        for _ in range(2):
+            for v in ob.data.vertices:
+                hit = tree.find_nearest(v.co, 0.1)
+                if hit[0] is None:
+                    continue
+                d = v.co - hit[0]
+                if d.dot(hit[1]) < gap:
+                    v.co = hit[0] + hit[1] * gap
+
+
+if USE_UBC:
+    clear_skin(["chr_haut", "chr_haut_long"], 0.014)
+    clear_skin(["chr_pantalon", "chr_short"], 0.007)
+    # chaussures : coque lissee (on ne voit plus les orteils), puis au-dessus de la peau
+    _sh = scene.objects["chr_chaussures"]
+    _bm = bmesh.new()
+    _bm.from_mesh(_sh.data)
+    for _ in range(4):
+        bmesh.ops.smooth_vert(_bm, verts=_bm.verts, factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    _bm.to_mesh(_sh.data)
+    _bm.free()
+    clear_skin(["chr_chaussures"], 0.012)
 
 
 # semelles (sandales) et vetements longs (cones lestes : haut sur le bassin, bas suit un peu les cuisses)
@@ -869,6 +1031,38 @@ else:
                            edge=lambda c: 0.165 * k + 0.2 * c.y))
     hair_objs.append(loft("chr_casquette_visiere", [(0.075 * k, 0.072 * k, 0.005, 0, 0.17 * k), (0.15 * k, 0.07 * k, 0.005, 0, 0.162 * k),
                                                    (0.17 * k, 0.05 * k, 0.004, 0, 0.158 * k)], CAP, axis="Y", seg=8, center=hc))
+if USE_UBC:
+    # coiffures et couvre-chefs reposes sur le crane sculpte : chaque point garde son ecart au crane procedural,
+    # mesure le long d'un rayon partant du centre de la tete ; sous le crane (tresses, vanilles), deplacement moyen
+    from mathutils.bvhtree import BVHTree
+    _tmp = loft("tmp_crane", sk, SKIN, seg=24, center=hc)
+    _dg = bpy.context.evaluated_depsgraph_get()
+    _old = BVHTree.FromObject(_tmp, _dg)
+    _new = BVHTree.FromObject(body, _dg)
+    _c = hc + Vector((0, -0.01 * k, 0.13 * k))
+    for o in hair_objs:
+        moved, shift = [], Vector((0, 0, 0))
+        for v in o.data.vertices:
+            p = o.matrix_world @ v.co
+            if p.z < hc.z + 0.03 * k:
+                continue
+            d = (p - _c).normalized()
+            ho, hn = _old.ray_cast(_c, d, 1.0), _new.ray_cast(_c, d, 1.0)
+            if ho[0] is None or hn[0] is None:
+                continue
+            q = hn[0] + d * ((p - _c).length - (ho[0] - _c).length)
+            shift += q - p
+            moved.append((v, q))
+        avg = shift / max(len(moved), 1)
+        done = {v.index for v, _ in moved}
+        inv = o.matrix_world.inverted()
+        for v, q in moved:
+            v.co = inv @ q
+        for v in o.data.vertices:
+            if v.index not in done:
+                v.co = inv @ (o.matrix_world @ v.co + avg)
+    bpy.data.objects.remove(_tmp, do_unlink=True)
+
 for o in hair_objs:
     assign(o, {"piv_tete": 1.0})
 
@@ -929,6 +1123,35 @@ for ob in [o for o in scene.collection.objects if o.type == "MESH"]:
                     if k > 0.0:
                         ball.add([v.index], g.weight * k, "REPLACE")
                         foot.add([v.index], g.weight * (1.0 - k), "REPLACE")
+
+if USE_UBC:
+    # allegement pour la foule (budget 70 images/s), une fois les vetements construits sur le corps complet :
+    # corps sous le cou et vetements derives du corps ; le visage garde toute sa definition
+    def _decimate(ob, ratio, below=None):
+        if ob is None or len(ob.data.polygons) < 400:
+            return
+        md = ob.modifiers.new("allege", "DECIMATE")
+        md.ratio = ratio
+        if below is not None:
+            vg = ob.vertex_groups.new(name="_allege")
+            vg.add([v.index for v in ob.data.vertices if v.co.z < below], 1.0, "REPLACE")
+            md.vertex_group = "_allege"
+        bpy.context.view_layer.objects.active = ob
+        bpy.ops.object.modifier_apply(modifier=md.name)
+        if below is not None:
+            ob.vertex_groups.remove(ob.vertex_groups["_allege"])
+    _b = scene.objects.get("chr_corps")
+    _b.shape_key_clear()                     # traits du visage recalcules apres (formule face_offset)
+    _decimate(_b, 0.5, J["cou"].z - 0.02)
+    _b.shape_key_add(name="Base", from_mix=False)
+    for fk in FACE_KEYS:
+        _k = _b.shape_key_add(name=fk, from_mix=False)
+        for i, v in enumerate(_b.data.vertices):
+            _k.data[i].co = v.co + face_offset(fk, v.co - hc)
+    for _n in [o.name for o in scene.objects if o.type == "MESH" and o.data.shape_keys and o.name != "chr_corps"]:
+        scene.objects[_n].shape_key_clear()
+    for _n in ("chr_pantalon", "chr_short", "chr_chaussures"):
+        _decimate(scene.objects.get(_n), 0.4)
 
 # demi-tour : le personnage regarde -Y Blender (= +Z Godot), comme le standard glTF et le profil humanoide de Godot
 from mathutils import Matrix

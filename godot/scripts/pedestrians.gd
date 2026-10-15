@@ -675,6 +675,12 @@ func _knock_down(w: Dictionary, push: Vector2, after: String) -> void:
 	# tombe sur le dos si on le pousse de face, sur le ventre si on le pousse de dos
 	var fwd := Vector2(-sin(w["yaw"]), -cos(w["yaw"]))
 	w["fall_sign"] = 1.0 if push.dot(fwd) < 0.0 else -1.0
+	# chute captee : il se tourne face au coup, tombe en arriere (Death01), reste au sol, se releve (LayToIdle)
+	var ch: Node3D = w["node"]
+	if ch.has_method("play_clips"):
+		w["yaw"] = atan2(push.x, push.y)
+		w["clip_fall"] = true
+		ch.play_clips([["Death01", w["lie"]], ["LayToIdle", 0.0]])
 	if w.get("basin_node"):
 		_drop_basin(w)
 
@@ -714,7 +720,18 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 	match st:
 		"down":
 			var push: Vector2 = w["push"]
-			if t < 0.45:
+			if w.get("clip_fall", false):
+				# le clip fait la chute : le corps glisse un peu sous le choc, puis attend la fin du releve
+				if t < 0.6:
+					me2 += push * delta * (1.0 - t / 0.6) * 0.6
+				if t > 0.5 and not ch.call("playing_clip"):
+					w["clip_fall"] = false
+					w["state_t"] = 99.0
+				else:
+					w["state_t"] = minf(t, 0.44 + w["lie"])
+			if w.get("clip_fall", false):
+				pass
+			elif t < 0.45:
 				tilt = smoothstep(0.0, 0.45, t)
 				me2 += push * delta * (1.0 - t / 0.45)
 			elif t < 0.45 + w["lie"]:
@@ -1001,6 +1018,8 @@ func player_attack(origin: Vector3, dir: Vector3) -> bool:
 		_knock_down(best, push, "chase" if _rng.randf() < 0.4 else "flee")
 	else:
 		_set_state(best, "stagger")
+		if (best["node"] as Node).has_method("play_clips"):
+			best["node"].play_clips([["Hit_Chest", 0.0]])
 		best["push"] = push * 0.6
 		best["after"] = "chase" if _rng.randf() < 0.5 else "angry"
 	best["line_after"] = "frappe"

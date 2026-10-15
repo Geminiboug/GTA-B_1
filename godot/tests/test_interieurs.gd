@@ -26,7 +26,7 @@ func _check(ok: bool, msg: String) -> void:
 
 func _physics_process(_d: float) -> bool:
 	frame += 1
-	var k := frame - key_i * 600
+	var k := frame - key_i * 900
 	if frame == 30:
 		player = scene.get_node("Player")
 	if frame < 30:
@@ -57,7 +57,7 @@ func _physics_process(_d: float) -> bool:
 			if w != target and w.get("state", "walk") == "flee":
 				fled += 1
 		_check(fled > 0 or pnj._walkers.size() < 3, "%s : %d client(s) proches s'enfuient" % [place[1], fled])
-	if k == 400 + 200 - 20 and pnj:
+	if k == 400 + 460 and pnj:
 		_check(target.get("state") == "flee", "%s : le client frappe se releve et s'enfuit" % place[1])
 		key_i += 1
 	return false

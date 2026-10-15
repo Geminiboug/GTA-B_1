@@ -108,6 +108,8 @@ func _gait_at(v: float) -> Array:
 
 func _physics_process(delta: float) -> void:
 	_t += delta
+	if _clip_step(delta):
+		return
 	var k := 1.0 - exp(-8.0 * delta)
 	_move = lerp(_move, clamp(speed / 1.2, 0.0, 1.0), k)
 	_air = lerp(_air, 0.0 if on_floor else 1.0, 1.0 - exp(-14.0 * delta))
@@ -243,3 +245,61 @@ func _physics_process(delta: float) -> void:
 	rotation.z = _lean_side
 	if _skel:
 		_sync_skeleton()
+
+
+# ------------------------------------------------------------------ clips captes (chute, coup encaisse, releve)
+const CLIPS := preload("res://scripts/anim_ctrl.gd")
+var _clip: AnimationPlayer
+var _seq: Array = []          # [[clip, attente apres (s)], ...]
+var _hold := 0.0
+
+
+func play_clips(seq: Array) -> void:
+	## Joue une suite de clips de capture de mouvement (ex. [["Death01", 1.2], ["LayToIdle", 0.0]]) : l'animation
+	## procedurale est suspendue pendant ce temps, puis reprend.
+	if _skel == null:
+		return
+	if _clip == null:
+		CLIPS._load_libs()
+		_clip = AnimationPlayer.new()
+		_clip.name = "ClipsCaptes"
+		add_child(_clip)
+		_clip.root_node = NodePath("..")
+		for key in CLIPS._libs:
+			_clip.add_animation_library(key, CLIPS._libs[key])
+	_seq = seq.duplicate(true)
+	_hold = 0.0
+	_next_clip()
+
+
+func playing_clip() -> bool:
+	return not _seq.is_empty() or (_clip != null and _clip.is_playing()) or _hold > 0.0
+
+
+func _next_clip() -> void:
+	if _seq.is_empty():
+		_clip.stop()
+		_skel.reset_bone_poses()
+		return
+	var e: Array = _seq.pop_front()
+	_clip.play(CLIPS.clip(String(e[0])), 0.12)
+	_hold = -float(e[1])          # negatif : attente a faire une fois le clip termine
+
+
+func _clip_step(delta: float) -> bool:
+	## Vrai tant qu'un clip capte pilote le squelette.
+	if _clip == null or (not _clip.is_playing() and _hold == 0.0 and _seq.is_empty()):
+		return false
+	if _clip.is_playing():
+		_clip.advance(0.0)
+		return true
+	if _hold < 0.0:
+		_hold = -_hold          # le clip vient de finir : on reste dans la derniere pose
+		if _hold == 0.0:
+			_next_clip()
+		return true
+	_hold = maxf(0.0, _hold - delta)
+	if _hold == 0.0:
+		_next_clip()
+		return not _seq.is_empty() or _clip.is_playing()
+	return true

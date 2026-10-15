@@ -69,7 +69,7 @@ func _physics_process(_d: float) -> bool:
 			return true
 		var xf := plane.global_transform
 		rel_xf = xf
-		_walk_in(xf * Vector3(-8.2, 1.2, -15.75), xf * Vector3(-2.55, 2.7, -15.75), 3.0, (xf * Vector3(0, 2.62, 0)).y, "avion au poste")
+		_walk_in(xf * Vector3(-8.6, 0.1, -15.75), xf * Vector3(-2.55, 2.7, -15.75), 3.0, (xf * Vector3(0, 2.62, 0)).y, "avion au poste")
 		step = 2
 	if step > 0 and player:
 		# vise la porte (le but) en continu, comme un joueur qui corrige sa trajectoire

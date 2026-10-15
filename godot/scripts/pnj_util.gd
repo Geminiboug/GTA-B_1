@@ -196,6 +196,9 @@ static func bake_face(mi: MeshInstance3D, face: Dictionary) -> void:
 				n[idx[j]] = (n[idx[j]] + dn[j] * w).normalized()
 		arr[Mesh.ARRAY_VERTEX] = v
 		arr[Mesh.ARRAY_NORMAL] = n
+		# canaux personnalises (attributs en plus du corps sculpte) : inutiles en jeu, leur format n'est pas recopie
+		for ci in [Mesh.ARRAY_CUSTOM0, Mesh.ARRAY_CUSTOM1, Mesh.ARRAY_CUSTOM2, Mesh.ARRAY_CUSTOM3]:
+			arr[ci] = null
 		out.add_surface_from_arrays(src.surface_get_primitive_type(sidx), arr, [], {},
 			src.surface_get_format(sidx) & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
 		out.surface_set_material(sidx, src.surface_get_material(sidx))
@@ -242,11 +245,17 @@ static func salt_pepper(white: float) -> Material:
 	return m
 
 
-static func skin_mat(c: Color) -> Material:
-	var key := "s|" + c.to_html()
+static func skin_mat(c: Color, genre := "homme") -> Material:
+	## Peau : texture de detail Quaternius (traits, levres, ongles, ombres ; neutre a 0,75) teintee par la couleur c.
+	var key := "s|" + c.to_html() + genre
 	if not _mat_cache.has(key):
 		var m := StandardMaterial3D.new()
-		m.albedo_color = c
+		var tex_path := "res://assets/textures/personnages/peau_detail_%s.png" % ("femme" if genre == "femme" else "homme")
+		if ResourceLoader.exists(tex_path):
+			m.albedo_texture = load(tex_path)
+			m.albedo_color = Color(minf(c.r / 0.75, 1.0), minf(c.g / 0.75, 1.0), minf(c.b / 0.75, 1.0))
+		else:
+			m.albedo_color = c
 		m.roughness = 0.6
 		m.metallic_specular = 0.35
 		m.rim_enabled = true          # leger reflet de bord : la peau parait moins "plastique"
@@ -284,7 +293,7 @@ static func apply(ch: Node, look: Dictionary) -> void:
 			for s in (mi as MeshInstance3D).mesh.get_surface_count():
 				var m: Material = (mi as MeshInstance3D).mesh.surface_get_material(s)
 				if m and m.resource_name == "chr_peau":
-					(mi as MeshInstance3D).set_surface_override_material(s, skin_mat(look["skin"]))
+					(mi as MeshInstance3D).set_surface_override_material(s, skin_mat(look["skin"], String(ch.get_meta("genre", "homme"))))
 			continue
 		if _starts(n, OPTIONAL):
 			mi.visible = _starts(n, look["show"])

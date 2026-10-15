@@ -278,7 +278,16 @@ func _walk(w: Dictionary, delta: float) -> void:
 		"down":
 			# au sol apres un coup, puis se releve et s'enfuit
 			var t: float = w["t"]
-			if t < 0.4:
+			if ch.has_method("playing_clip"):
+				# chute captee (Death01 puis LayToIdle) : le corps glisse un peu, puis fuite a la fin du releve
+				if t < 0.5:
+					ch.global_position += w["push"] * delta * (1.0 - t / 0.5) * 0.5
+				if t > 0.5 and not ch.call("playing_clip"):
+					_flee(w)
+				t = -1.0
+			if t < 0.0:
+				pass
+			elif t < 0.4:
 				tilt = smoothstep(0.0, 0.4, t)
 				ch.global_position += w["push"] * delta * (1.0 - t / 0.4)
 			elif t < 1.6:
@@ -385,6 +394,9 @@ func player_attack(origin: Vector3, dir: Vector3) -> bool:
 	best["state"] = "down"
 	best["t"] = 0.0
 	best["push"] = Vector3(dir.x, 0.0, dir.z) * 2.5
+	if (best["node"] as Node).has_method("play_clips"):
+		best["yaw"] = atan2(dir.x, dir.z)
+		best["node"].play_clips([["Death01", 1.4], ["LayToIdle", 0.0]])
 	Bulle.say(best["node"], Dialogues.pick("frappe", _rng, String(_player.get("genre"))), 2.5, 0.7)
 	for w in _walkers:
 		if w != best and (w["node"] as Node3D).global_position.distance_to(origin) < panic_radius:

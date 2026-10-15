@@ -22,3 +22,5 @@ Wikimedia Commons, voir refs/SOURCES.md pour auteurs et licences.
 ## Assets integres au jeu
 | Asset | Auteur | Licence | Source |
 |---|---|---|---|
+| Universal Animation Library 1 et 2 (Standard) : clips d'animation | Quaternius | CC0 1.0 | https://quaternius.itch.io |
+| Universal Base Characters (Standard) : corps, visages, yeux, sourcils, textures de peau (cales et adaptes par blender/tools/ubc_body.py) | Quaternius | CC0 1.0 | https://quaternius.itch.io/universal-base-characters |

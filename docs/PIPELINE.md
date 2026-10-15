@@ -508,3 +508,16 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   piste 24 a 85 % (vent de mer).
 - Joueur : saut 3,1 m/s (0,48 m), freinage a la reception (land_brake), montee des marches (step_height 0,3 m),
   capsule de 0,30 m de rayon.
+
+## Personnages sur base Quaternius (Universal Base Characters, CC0)
+- Pack Standard (corps Superhero homme et femme, meme squelette que les animations) : decompresser
+  "Universal Base Characters[Standard].zip" dans refs/ubc/ (non versionne, 130 Mo).
+- blender/tools/ubc_body.py : importe le corps, le cale os par os sur nos articulations (tailles beninoises, 10
+  morphologies, epaisseur ramenee a un corps ordinaire : SLIM), mains et tete en echelle uniforme. Queue des os =
+  tete de l'os enfant (glTF ne stocke pas les queues).
+- build_character.py : si refs/ubc existe, le corps sculpte remplace le corps procedural (qui sert de gabarit) ;
+  vetements derives de ce corps (tubes du haut + epaulettes, clear_skin repousse le tissu hors de la peau,
+  chaussures lissees), coiffures et couvre-chefs reposes sur le crane sculpte, traits du visage recales.
+- blender/tools/ubc_skin_detail.py -> godot/assets/textures/personnages/peau_detail_homme|femme.png : texture de
+  peau sans sa couleur propre (neutre 0,75) ; PnjUtil.skin_mat la teinte avec nos 10 teintes.
+- Apercus : blender -b chr_x.blend --python apercu_perso.py -- <prefixe> [pieces].
