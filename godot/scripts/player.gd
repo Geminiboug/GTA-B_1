@@ -43,6 +43,11 @@ func _ready() -> void:
 	_last_safe = global_position
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_dress(anim, genre)
+	# on heurte aussi les passants (couche 5), pas seulement le decor
+	collision_mask = 1 | (1 << 4)
+
+
+var _punch_cd := 0.0
 
 
 # ---------- Apparence : homme ou femme (F4 a pied pour changer) ----------
@@ -120,13 +125,31 @@ const HIP_HEIGHT := 0.92  # hauteur du bassin au-dessus des pieds
 
 
 func _nearest_vehicle() -> Node3D:
+	## Comme dans GTA, E prend le vehicule le plus proche de soi :
+	## - un vehicule libre (le zem de depart, une voiture deja prise puis laissee) ;
+	## - un vehicule de la circulation arrete ou au pas : son conducteur est ejecte (scripts/traffic.gd) ;
+	## - une voiture ou un zem gare au bord de la route (scripts/props.gd).
 	var best: Node3D = null
 	var best_d := ENTER_DISTANCE
 	for v in get_tree().get_nodes_in_group("vehicules"):
-		var d: float = global_position.distance_to(v.global_position)
+		if v.get("has_rider"):
+			continue
+		var ep: Vector3 = v.entry_point() if v.has_method("entry_point") else v.global_position
+		var d: float = global_position.distance_to(ep)
 		if d < best_d:
 			best_d = d
 			best = v
+	var scene := get_parent()  # la scene de la zone (current_scene est nul quand on lance un test)
+	var traffic := scene.get_node_or_null("Circulation") if scene else null
+	var props := scene.get_node_or_null("Props") if scene else null
+	var t: Dictionary = traffic.nearest_agent(global_position, ENTER_DISTANCE + 0.6) if traffic else {}
+	var pk: Dictionary = props.nearest_parked(global_position, ENTER_DISTANCE + 0.4) if props else {}
+	var td: float = t.get("dist", INF)
+	var pd: float = pk.get("dist", INF)
+	if td < best_d and td <= pd:
+		return traffic.take_over(t["index"], self)
+	if pd < best_d:
+		return props.take_parked(pk["index"])
 	return best
 
 
@@ -148,9 +171,9 @@ func exit_vehicle() -> void:
 	v.set_rider(false)
 	v.get_node("CamRig").activate(false)
 	$CamPivot/SpringArm3D/Camera3D.current = true
-	# on descend a gauche de la moto, debout, en regardant dans le meme sens
-	var left: Vector3 = -v.global_transform.basis.x
-	global_transform = Transform3D(Basis.IDENTITY, v.global_position + left * 0.9 + Vector3.UP * 0.1)
+	# on descend cote gauche (portiere conducteur / gauche de la moto), debout, dans le meme sens
+	var xf: Transform3D = v.exit_transform()
+	global_transform = Transform3D(Basis.IDENTITY, xf.origin)
 	_facing = v.rotation.y
 	body.rotation = Vector3(0, _facing, 0)
 	cam_pivot.rotation.y = v.get_node("CamRig").rotation.y
@@ -163,7 +186,8 @@ func exit_vehicle() -> void:
 
 func _ride(_delta: float) -> void:
 	var seat: Transform3D = vehicle.seat_transform()
-	global_transform = Transform3D(seat.basis, seat.origin - seat.basis.y * HIP_HEIGHT)
+	var hip := HIP_HEIGHT - (0.04 if genre == "femme" else 0.0)
+	global_transform = Transform3D(seat.basis, seat.origin - seat.basis.y * hip)
 	body.rotation = Vector3.ZERO
 	if anim:
 		anim.speed = 0.0
@@ -183,6 +207,16 @@ func _physics_process(delta: float) -> void:
 	if vehicle:
 		_ride(delta)
 		return
+	# coup de poing / bousculade (F, clic gauche, manette B) : les passants reagissent (scripts/pedestrians.gd)
+	_punch_cd = maxf(0.0, _punch_cd - delta)
+	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_punch_cd = 0.6
+		if anim and anim.has_method("punch"):
+			anim.punch()
+		var peds := get_parent().get_node_or_null("Pietons")
+		if peds:
+			var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
+			get_tree().create_timer(0.18).timeout.connect(func() -> void: peds.player_attack(global_position, fwd))
 	# filet de securite : si on passe sous la carte, retour au dernier endroit sur
 	if global_position.y < -20.0:
 		global_position = _last_safe + Vector3.UP * 1.0

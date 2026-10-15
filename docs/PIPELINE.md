@@ -258,3 +258,25 @@ Captures : tests/capture_carte.gd -> docs/images/carte_mini.png, carte_grande.pn
   toute la carte disparaissait loin du centre de la carte). Mobilier : quartiers de 80 m.
 - Joueur : homme (tee-shirt, jean) ; F4 a pied : passer a un personnage femme (pagne et foulard wax) et inversement.
 Captures : tests/capture_pnj.gd -> docs/images/pnj_*.png, apercus Blender docs/images/chr_*.png
+
+## Vehicules conduisibles et reactions des PNJ (passe 13)
+- blender/tools/build_vehicles.py <dossier_blend> <dossier_glb> [apercus] -> godot/assets/models/veh_berline.glb, veh_4x4.glb,
+  veh_minibus.glb (blender/veh/*.blend). Caisse galbee avec passages de roue, vitres teintees transparentes, interieur
+  (sieges, tableau de bord, volant a gauche), phares, feux, clignotants, pare-chocs, retroviseurs, poignees, plaques,
+  galerie chargee sur le minibus. Pivots : piv_direction_av* (braquage), piv_roue_* (rotation), pt_conducteur, pt_sortie.
+- godot/scripts/voiture.gd : conduite arcade-simulation (boite auto, adherence limitee ~0,9 g, sous-virage, derapage au
+  frein a main, transfert de masse visible, chocs avec degats -> fumee -> moteur HS, feux stop, phares la nuit, son moteur
+  suivant le regime, crissements, filet de securite sous la carte). Mesures : 0-100 km/h 9,1 s, freinage 100-0 38 m.
+- godot/scripts/vehicules.gd (class_name Vehicules) : create(modele, couleur) (voiture ou zem), merged(modele) pour la
+  circulation et les voitures garees (memes modeles detailles partout).
+- E (Y manette) : le vehicule le plus proche : libre, de la circulation a l'arret ou au pas (conducteur et passager
+  ejectes, crient au voleur et courent apres), ou gare au bord de la route (props.parked, zems des stations inclus).
+  Un vehicule pris est remplace dans la circulation 25 s plus tard, loin du joueur. Minibus "tokpa-tokpa" dans la circulation.
+- Reactions (pedestrians.gd) : salutations selon l'heure (bonjour / bonsoir des l'apres-midi) et le genre du joueur,
+  vendeuses qui helent, bousculades (bassine qui tombe et marchandise par terre), coup de poing (F, clic gauche, B) :
+  chute, colere ou fuite, poursuite ; pieton renverse par le vehicule du joueur (chute dans le sens du choc, se releve,
+  engueule le chauffeur), attroupement des passants, vehicules alentour qui s'arretent ; ecart et cri si on les frole.
+  Corps des pietons sur la couche 5 (le joueur les heurte, pas les vehicules).
+- Repliques : godot/scripts/dialogues.gd (francais du Benin + fon, a completer), bulles godot/scripts/bulle.gd + sous-titres.
+- Circulation : s'arrete et klaxonne apres un choc ou un accident proche, le conducteur engueule le joueur (bulle).
+Tests : tests/test_vehicules.gd (tout fonctionne), tests/test_coherence.gd. Captures : tests/capture_vehicules.gd.

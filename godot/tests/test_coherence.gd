@@ -63,7 +63,9 @@ func _physics_process(_delta: float) -> bool:
 		var bad := 0
 		for pk in props.parked:
 			var xf: Transform3D = pk["xf"]
-			for off in [Vector3.ZERO, Vector3(0, 0, 2.2), Vector3(0, 0, -2.2), Vector3(0.9, 0, 0), Vector3(-0.9, 0, 0)]:
+			var hl := 0.9 if pk["model"] == "zem" else 2.2
+			var hw := 0.3 if pk["model"] == "zem" else 0.9
+			for off in [Vector3.ZERO, Vector3(0, 0, hl), Vector3(0, 0, -hl), Vector3(hw, 0, 0), Vector3(-hw, 0, 0)]:
 				var q: Vector3 = xf * off
 				if carte.road_at(Vector2(q.x, q.z)) >= 0:
 					bad += 1
@@ -82,6 +84,8 @@ func _physics_process(_delta: float) -> bool:
 		for w in peds._walkers:
 			var p := Vector2(w["pos"].x, w["pos"].z)
 			ped_samples += 1
+			if w.get("state", "walk") != "walk":
+				continue  # reaction en cours (accident, dispute...) : peut etre sur la chaussee, les vehicules s'arretent
 			if w["cross"]:
 				ped_cross += 1
 			elif carte.road_at(p) >= 0:

@@ -48,13 +48,15 @@ var _roads: Array = []
 var _signs: Node3D
 var counts := {}
 var lamp_positions := PackedVector3Array()
+const CAR_KINDS := ["veh_berline", "veh_4x4", "veh_minibus"]
+var _chunk_nodes := {}
 var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
 var placed := false
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "veh_berline": 300.0,
-	"veh_4x4": 300.0, "veh_avion": 1500.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
+	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_avion": 1500.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
 
 
 func _ready() -> void:
@@ -92,9 +94,9 @@ func _load_meshes() -> void:
 		_meshes[String(mi.name)] = mi.mesh
 	inst.free()
 	# carrosserie et parasols teintes par instance (couleur MultiMesh)
-	for k in ["veh_berline", "veh_4x4"]:
-		if _meshes.has(k):
-			_meshes[k] = _tintable(_meshes[k], "mat_carrosserie")
+	# vehicules gares : memes modeles detailles que les vehicules conduisibles (Vehicules.merged)
+	for k in CAR_KINDS:
+		_meshes[k] = _tintable(Vehicules.merged(k), "mat_carrosserie")
 	if _meshes.has("prop_lampadaire"):
 		_meshes["prop_lampadaire"] = _night_lamp(_meshes["prop_lampadaire"])
 	_meshes["zem_gare"] = _merge_scene(zem_scene)
@@ -230,24 +232,27 @@ func _ground(p: Vector2, radius: float, allow_roads := false, allow_front := fal
 	return hit.position.y
 
 
-func _add(kind: String, xf: Transform3D, color := Color.WHITE) -> void:
+func _add(kind: String, xf: Transform3D, color := Color.WHITE) -> Array:
+	## Ajoute une instance ; renvoie [groupe, index] (pour pouvoir la retirer, ex. voiture prise par le joueur).
 	if not _meshes.has(kind):
-		return
+		return []
 	var key := "%s|%d|%d" % [kind, floori(xf.origin.x / chunk_size), floori(xf.origin.z / chunk_size)]
 	if not _chunks.has(key):
 		_chunks[key] = {"kind": kind, "xf": [], "col": []}
 	_chunks[key]["xf"].append(xf)
 	_chunks[key]["col"].append(color)
 	counts[kind] = counts.get(kind, 0) + 1
+	return [key, _chunks[key]["xf"].size() - 1]
 
 
-func _box_col(xf: Transform3D, size: Vector3, center_y: float) -> void:
+func _box_col(xf: Transform3D, size: Vector3, center_y: float) -> CollisionShape3D:
 	var cs := CollisionShape3D.new()
 	var b := BoxShape3D.new()
 	b.size = size
 	cs.shape = b
 	cs.transform = xf * Transform3D(Basis.IDENTITY, Vector3(0, center_y, 0))
 	_bodies.add_child(cs)
+	return cs
 
 
 func _cyl_col(pos: Vector3, r: float, h: float) -> void:
@@ -413,12 +418,14 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 				continue
 			_occupy(pos, radius)
 			var dir := t if _rng.randf() < 0.5 else -t
-			var model := "veh_4x4" if _rng.randf() < 0.3 else "veh_berline"
+			var r := _rng.randf()
+			var model := "veh_berline" if r < 0.62 else ("veh_4x4" if r < 0.88 else "veh_minibus")
 			var xf := Transform3D(_facing(dir), Vector3(pos.x, y, pos.y))
 			var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
-			_add(model, xf, col)
-			_box_col(xf, Vector3(1.85, 1.5, 4.6), 0.75)
-			parked.append({"model": model, "xf": xf, "color": col})
+			var slot := _add(model, xf, col)
+			var aabb: AABB = _meshes[model].get_aabb()
+			var cs := _box_col(xf, Vector3(aabb.size.x - 0.15, aabb.size.y - 0.04, aabb.size.z - 0.1), aabb.position.y + 0.02 + (aabb.size.y - 0.04) / 2.0)
+			parked.append({"model": model, "xf": xf, "color": col, "slot": slot, "shape": cs})
 			return
 		return
 	var dist := w / 2.0 + _rng.randf_range(2.6, 3.8)
@@ -438,7 +445,8 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		for i in count:
 			var q := pos + t * (i - count / 2.0) * 0.95
 			var b := _facing(-n.rotated(_rng.randf_range(-0.3, 0.3))) * Basis(Vector3(0, 0, 1), 0.1)
-			_add("zem_gare", Transform3D(b, Vector3(q.x, y, q.y)))
+			var zxf := Transform3D(b, Vector3(q.x, y, q.y))
+			parked.append({"model": "zem", "xf": zxf, "color": Color.WHITE, "slot": _add("zem_gare", zxf), "shape": null})
 			_occupy(q, 1.0)
 		return
 	if kind == "prop_etal":
@@ -631,7 +639,7 @@ func _build() -> void:
 		var list: Array = ch["xf"]
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_colors = kind in ["veh_berline", "veh_4x4"]
+		mm.use_colors = kind in CAR_KINDS
 		mm.mesh = _meshes[kind]
 		mm.instance_count = list.size()
 		for i in list.size():
@@ -640,6 +648,7 @@ func _build() -> void:
 				mm.set_instance_color(i, ch["col"][i])
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = key.replace("|", "_")
+		_chunk_nodes[key] = mmi
 		mmi.multimesh = mm
 		mmi.visibility_range_end = VIS.get(kind, 180.0)
 		mmi.visibility_range_end_margin = 20.0
@@ -660,3 +669,44 @@ func _build() -> void:
 		wires.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(wires)
 		counts["cables"] = _wire_pts.size() / 2
+
+
+# ---------------------------------------------------------------- vehicules gares pris par le joueur
+func nearest_parked(p: Vector3, max_dist: float) -> Dictionary:
+	var best := {}
+	var bd := max_dist
+	for i in parked.size():
+		var pk: Dictionary = parked[i]
+		if pk.get("taken", false):
+			continue
+		var xf: Transform3D = pk["xf"]
+		# portiere conducteur (gauche) pour une voiture, flanc gauche pour un zem
+		var door: Vector3 = xf.origin - xf.basis.x * (1.0 if pk["model"] != "zem" else 0.5)
+		var d := p.distance_to(door)
+		if d < bd:
+			bd = d
+			best = {"index": i, "dist": d}
+	return best
+
+
+func take_parked(i: int) -> Node3D:
+	## Retire l'instance garee (MultiMesh + collision) et la remplace par un vehicule conduisible identique.
+	var pk: Dictionary = parked[i]
+	pk["taken"] = true
+	var slot: Array = pk["slot"]
+	if slot.size() == 2 and _chunk_nodes.has(slot[0]):
+		var mm: MultiMesh = (_chunk_nodes[slot[0]] as MultiMeshInstance3D).multimesh
+		mm.set_instance_transform(slot[1], Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO), Vector3(0, -50, 0)))
+	if pk["shape"]:
+		# retirer la collision tout de suite : sinon la voiture apparait imbriquee dedans et le moteur
+		# physique la repousse a travers le sol
+		var shape: Node = pk["shape"]
+		shape.get_parent().remove_child(shape)
+		shape.free()
+		pk["shape"] = null
+	var xf: Transform3D = pk["xf"]
+	var yaw := atan2(-(-xf.basis.z).x, -(-xf.basis.z).z)
+	var v := Vehicules.create(pk["model"], pk["color"])
+	v.transform = Transform3D(Basis(Vector3.UP, yaw), xf.origin + Vector3(0, 0.12, 0))
+	get_parent().add_child(v)
+	return v

@@ -25,6 +25,7 @@ var throttle := 0.0       # 0..1, lu par le son
 var _steer := 0.0
 var _lean := 0.0
 var _yaw := 0.0
+var _last_safe := Vector3.ZERO
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var visual: Node3D = $Visual
@@ -37,6 +38,7 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 func _ready() -> void:
 	_yaw = rotation.y
+	_last_safe = global_position
 
 
 func set_rider(value: bool) -> void:
@@ -97,10 +99,19 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = -0.5
 	move_and_slide()
+	# filet de securite : jamais sous la carte
+	if global_position.y < -0.6:
+		global_position = _last_safe + Vector3.UP * 0.3
+		speed = 0.0
+		velocity = Vector3.ZERO
+	elif is_on_floor() and absf(global_position.y) < 0.2:
+		_last_safe = global_position
 	# un choc contre un mur coupe la vitesse
 	for i in get_slide_collision_count():
 		var n := get_slide_collision(i).get_normal()
 		if abs(n.y) < 0.5 and fwd.dot(n) < -0.5:
+			if absf(speed) > 3.0:
+				get_tree().call_group("circulation", "on_vehicle_hit", get_slide_collision(i).get_collider(), absf(speed))
 			speed *= 0.2
 
 	# --- Visuel : inclinaison, guidon, roues ---
@@ -119,3 +130,23 @@ func _physics_process(delta: float) -> void:
 
 func seat_transform() -> Transform3D:
 	return seat.global_transform if seat else global_transform
+
+
+# interface commune avec voiture.gd (joueur, circulation, mini-carte)
+var kind := "zem"
+var health := 100.0
+
+
+func entry_point() -> Vector3:
+	return global_position - global_transform.basis.x * 0.6
+
+
+func exit_transform() -> Transform3D:
+	# on descend a gauche de la moto, debout, en regardant dans le meme sens
+	var p := global_position - global_transform.basis.x * 0.9
+	return Transform3D(Basis(Vector3.UP, rotation.y), p + Vector3.UP * 0.1)
+
+
+func horn() -> void:
+	if audio:
+		audio.horn()

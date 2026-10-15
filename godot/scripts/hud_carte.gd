@@ -34,9 +34,9 @@ const ZONE_COLORS := {"zone_herbe": Color(0.22, 0.32, 0.2), "zone_humide": Color
 	"aeroport_tarmac": Color(0.36, 0.37, 0.38), "zone_parking": Color(0.33, 0.33, 0.35),
 	"zone_eau": Color(0.18, 0.33, 0.45), "zone_piscine": Color(0.3, 0.6, 0.75), "zone_plage": COL_BEACH}
 const PLACES := [
-	["Aeroport Int. Cardinal Cotodji", Vector2(397, -318)],
+	["Aéroport Int. Cardinal Cotodji", Vector2(397, -318)],
 	["Ararat Hypermarket", Vector2(617, 95)],
-	["L'Epave Volante", Vector2(-177, 247)],
+	["L'Épave Volante", Vector2(-177, 247)],
 	["Sweet Dream Beach", Vector2(622, 292)],
 	["Maquis La Plaja", Vector2(-159, 54)],
 	["Plage", Vector2(150, 330)],
@@ -73,6 +73,17 @@ var _font: Font
 var _press := Vector2.ZERO
 var _dragging := false
 var _ding: AudioStreamPlayer
+var _subtitle: Label
+var _subtitle_t := 0.0
+
+
+func show_line(text: String, where: Vector3) -> void:
+	## Sous-titre d'une replique prononcee pres du joueur (moins de 18 m de la camera).
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or cam.global_position.distance_to(where) > 18.0:
+		return
+	_subtitle.text = text
+	_subtitle_t = 3.2
 
 
 func _ready() -> void:
@@ -101,6 +112,18 @@ func _ready() -> void:
 	_ding.volume_db = -6.0
 	add_child(_ding)
 	_load_pins()
+	add_to_group("sous_titres")
+	_subtitle = Label.new()
+	_subtitle.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_subtitle.position = Vector2(-500, -110)
+	_subtitle.size = Vector2(1000, 60)
+	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_subtitle.add_theme_font_size_override("font_size", 22)
+	_subtitle.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	_subtitle.add_theme_constant_override("outline_size", 7)
+	_subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_subtitle)
 
 
 # ------------------------------------------------------------------ fond de carte
@@ -360,6 +383,8 @@ func _draw_blips() -> void:
 func _process(delta: float) -> void:
 	if _player == null:
 		return
+	_subtitle_t = maxf(0.0, _subtitle_t - delta)
+	_subtitle.modulate.a = clampf(_subtitle_t / 0.4, 0.0, 1.0)
 	var pp := _player_pos()
 	var target_r := lerpf(75.0, 170.0, clampf((_player_speed() - 4.0) / 16.0, 0.0, 1.0))
 	_radius = lerpf(_radius, target_r, 1.0 - exp(-1.5 * delta))
@@ -623,7 +648,7 @@ func _draw_big() -> void:
 	for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
 		_big.draw_line(c + d * 5.0, c + d * 14.0, Color(1, 1, 1, 0.8), 2.0)
 	# legende
-	var legend := "Clic gauche / Entree / A : destination     Clic droit / P / X : marqueur     Molette / gachettes : zoom     Glisser / ZQSD : deplacer     M / Echap : fermer"
+	var legend := "Clic gauche / Entrée / A : destination     Clic droit / P / X : marqueur     Molette / gâchettes : zoom     Glisser / ZQSD : déplacer     M / Échap : fermer"
 	_big.draw_rect(Rect2(0, vs.y - 34, vs.x, 34), Color(0, 0, 0, 0.6))
 	_big.draw_string(_font, Vector2(16, vs.y - 12), legend, HORIZONTAL_ALIGNMENT_LEFT, vs.x - 32, 15, Color(0.95, 0.95, 0.95))
 	if has_waypoint:

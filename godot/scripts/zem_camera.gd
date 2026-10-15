@@ -4,6 +4,7 @@ extends Node3D
 
 @export var follow_height := 1.5
 @export var auto_align_speed := 2.5   # rad/s
+@export var base_distance := 4.5      # m (voitures : plus loin)
 @export var mouse_sensitivity := 0.0025
 
 @onready var zem: Node3D = get_parent()
@@ -51,5 +52,5 @@ func _process(delta: float) -> void:
 	if _mouse_idle > 1.5 and abs(zem.speed) > 2.0:
 		rotation.y = rotate_toward(rotation.y, zem.rotation.y, auto_align_speed * delta)
 	# un peu plus loin et plus large a haute vitesse
-	arm.spring_length = lerp(arm.spring_length, 4.5 + abs(zem.speed) * 0.08, 1.0 - exp(-2.0 * delta))
+	arm.spring_length = lerp(arm.spring_length, base_distance + abs(zem.speed) * 0.08, 1.0 - exp(-2.0 * delta))
 	cam.fov = lerp(cam.fov, 70.0 + abs(zem.speed) * 0.5, 1.0 - exp(-2.0 * delta))

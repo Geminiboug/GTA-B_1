@@ -217,6 +217,64 @@ static func tonnerre() -> AudioStreamWAV:
 	return _wav(out, false)
 
 
+static func crissement_loop() -> AudioStreamWAV:
+	## Crissement de pneus : sifflement aigu instable (frottement caoutchouc / bitume), boucle de 2 s.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	var n := RATE * 2
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var ph := 0.0
+	var bp := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var f := 1150.0 + 180.0 * sin(TAU * 3.1 * t) + 90.0 * sin(TAU * 7.7 * t)
+		ph += f / RATE
+		bp += (rng.randf_range(-1.0, 1.0) - bp) * 0.5
+		out[i] = (sin(TAU * ph) * 0.5 + sin(TAU * ph * 2.02) * 0.2 + bp * 0.25) * 0.35
+	for i in 1500:
+		var k := float(i) / 1500.0
+		out[i] *= k
+		out[n - 1 - i] *= k
+	return _wav(out, true)
+
+
+static func choc() -> AudioStreamWAV:
+	## Choc de carrosserie : impact sourd + tole froissee + debris (0,8 s).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 41
+	var n := int(RATE * 0.8)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var thud := sin(TAU * 70.0 * t) * exp(-t * 18.0) * 0.9
+		lp += (rng.randf_range(-1.0, 1.0) - lp) * 0.35
+		var crunch := lp * exp(-t * 7.0) * 0.8
+		var metal := sin(TAU * (520.0 + 80.0 * rng.randf()) * t) * exp(-t * 12.0) * 0.25
+		out[i] = clampf(thud + crunch + metal, -1.0, 1.0)
+	return _wav(out, false)
+
+
+static func cri(pitch: float, duration: float) -> AudioStreamWAV:
+	## Exclamation (sans paroles) : voix approchee par une fondamentale glissante et des formants (eh ! / ah !).
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var n := int(RATE * duration)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var f := pitch * (1.0 + 0.25 * sin(PI * t / duration)) * (1.0 + 0.01 * rng.randf_range(-1.0, 1.0))
+		ph += f / RATE
+		var env := minf(t / 0.03, 1.0) * minf((duration - t) / 0.08, 1.0)
+		var v := sin(TAU * ph) * 0.6 + sin(TAU * ph * 2.0) * 0.3 + sin(TAU * ph * 3.0) * 0.2 + sin(TAU * ph * 5.0) * 0.08
+		out[i] = v * env * 0.35
+	return _wav(out, false)
+
+
 static func ding() -> AudioStreamWAV:
 	## Petit carillon d'arrivee (deux notes claires qui s'eteignent).
 	var n := int(RATE * 0.9)

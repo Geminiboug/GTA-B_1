@@ -15,6 +15,14 @@ var turn_rate := 0.0
 var accel := 0.0
 var seated := false  # assis sur un vehicule
 var femme := false   # demarche feminine : bassin qui balance davantage, bras plus pres du corps
+var gesture := 0.0   # 0..1 : gesticule (colere, dispute) : bras leves, mains qui s'agitent
+var _gest := 0.0
+var _punch := 0.0
+
+
+func punch() -> void:
+	## Coup de poing / bousculade : le bras droit part vers l'avant puis revient.
+	_punch = 0.45
 
 var _seat := 0.0
 
@@ -162,4 +170,21 @@ func _physics_process(delta: float) -> void:
 	if femme:
 		_p["piv_coude_G"].rotation.x = elbow + 0.12
 		_p["piv_coude_D"].rotation.x = elbow + 0.12
+	# dispute : bras qui montent et s'agitent, buste penche vers l'interlocuteur
+	_gest = lerpf(_gest, gesture, 1.0 - exp(-6.0 * delta))
+	if _gest > 0.01:
+		var wave := sin(_t * 7.0)
+		_p["piv_epaule_D"].rotation.x = lerpf(_p["piv_epaule_D"].rotation.x, 1.4 + 0.35 * wave, _gest)
+		_p["piv_coude_D"].rotation.x = lerpf(_p["piv_coude_D"].rotation.x, 0.9 - 0.4 * wave, _gest)
+		_p["piv_epaule_G"].rotation.x = lerpf(_p["piv_epaule_G"].rotation.x, 0.9 - 0.25 * wave, _gest)
+		_p["piv_coude_G"].rotation.x = lerpf(_p["piv_coude_G"].rotation.x, 1.3, _gest)
+		_p["piv_tronc"].rotation.x = lerpf(_p["piv_tronc"].rotation.x, -0.12, _gest)
+		_p["piv_tete"].rotation.x = lerpf(_p["piv_tete"].rotation.x, 0.08 * sin(_t * 5.0), _gest)
+	# coup : epaule droite vers l'avant, bras tendu, rotation du buste
+	if _punch > 0.0:
+		_punch = maxf(0.0, _punch - delta)
+		var k2 := sin((0.45 - _punch) / 0.45 * PI)
+		_p["piv_epaule_D"].rotation.x = lerpf(_p["piv_epaule_D"].rotation.x, 1.55, k2)
+		_p["piv_coude_D"].rotation.x = lerpf(_p["piv_coude_D"].rotation.x, 0.1, k2)
+		_p["piv_tronc"].rotation.y = lerpf(_p["piv_tronc"].rotation.y, -0.45, k2)
 	rotation.z = _lean_side

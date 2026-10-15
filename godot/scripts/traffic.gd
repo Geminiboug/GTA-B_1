@@ -13,11 +13,11 @@ extends Node3D
 @export var seed_value := 77
 
 const ZEM_SCENE := preload("res://assets/models/veh_zem.glb")
-const PROPS_SCENE := preload("res://assets/models/props.glb")
 const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 0.71, 0.72), Color(0.08, 0.08, 0.09),
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
+const CAR_MODELS := ["veh_berline", "veh_4x4", "veh_minibus"]
 const ZEM_VARIANTS := ["zem_a", "zem_b", "zem_c", "zem_passager_h", "zem_passager_f", "zem_passager_f2"]
 
 var _rng := RandomNumberGenerator.new()
@@ -28,6 +28,8 @@ var _locks := {}              # noeud de carrefour -> id de l'agent engage
 var _obstacles: Array = []    # vehicules gares ou abandonnes, pietons qui traversent
 
 signal honked(body: Node3D, at_player: bool)
+## le conducteur (et le passager) d'un vehicule pris par le joueur sont ejectes : scripts/pedestrians.gd les fait reagir
+signal driver_ejected(pos: Vector3, yaw: float, genre: String, angry_at: Node3D)
 var _snd_moto: AudioStreamWAV
 var _snd_car: AudioStreamWAV
 var _horn_moto: AudioStreamWAV
@@ -36,6 +38,7 @@ var _horn_car: AudioStreamWAV
 
 func _ready() -> void:
 	_rng.seed = seed_value
+	add_to_group("circulation")
 	_player = get_node_or_null(player_path)
 	_carte = Carte.zone()
 	_snd_moto = AudioSynth.moto_loop()
@@ -76,10 +79,8 @@ func _build_meshes() -> Dictionary:
 			pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
 		out[variant] = PnjUtil.merge(asm)
 		asm.queue_free()
-	var props := PROPS_SCENE.instantiate()
-	for mi in props.find_children("veh_*", "MeshInstance3D", true, false):
-		out[String(mi.name)] = mi.mesh
-	props.free()
+	for model in CAR_MODELS:
+		out[model] = Vehicules.merged(model)
 	return out
 
 
@@ -99,9 +100,15 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 	var cs := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	if kind == "voiture":
-		var model := "veh_4x4" if _rng.randf() < 0.3 else "veh_berline"
+		# berlines d'occasion surtout, des 4x4, et les minibus "tokpa-tokpa" qui font le transport en commun
+		var roll := _rng.randf()
+		var model := "veh_berline" if roll < 0.55 else ("veh_4x4" if roll < 0.8 else "veh_minibus")
 		mi.mesh = meshes[model]
 		var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
+		if model == "veh_minibus":
+			col = [Color(0.93, 0.93, 0.9), Color(0.95, 0.8, 0.2), Color(0.85, 0.85, 0.82)][_rng.randi() % 3]
+		a["model"] = model
+		a["color"] = col
 		for s in mi.mesh.get_surface_count():
 			var m: Material = mi.mesh.surface_get_material(s)
 			if m and m.resource_name == "mat_carrosserie":
@@ -110,15 +117,19 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 				mi.set_surface_override_material(s, d)
 			elif m and m.resource_name == "mat_lampe":
 				mi.set_surface_override_material(s, LAMP_MAT)
-		box.size = Vector3(1.85, 1.5, 4.6)
-		cs.position = Vector3(0, 0.8, 0)
-		a["max_big"] = _rng.randf_range(11.0, 15.0)
+		var aabb: AABB = mi.mesh.get_aabb()
+		box.size = Vector3(aabb.size.x - 0.15, aabb.size.y - 0.04, aabb.size.z - 0.1)
+		cs.position = Vector3(0, aabb.position.y + 0.02 + box.size.y / 2.0, aabb.get_center().z)
+		a["max_big"] = _rng.randf_range(11.0, 15.0) * (0.85 if model == "veh_minibus" else 1.0)
 		a["max_small"] = _rng.randf_range(6.0, 8.5)
 		a["lane"] = 0.27
-		a["length"] = 4.6
+		a["length"] = aabb.size.z
 	else:
 		var pool := ZEM_VARIANTS.filter(func(v: String) -> bool: return v.begins_with("zem_passager") == (kind == "zem_passager"))
-		mi.mesh = meshes[pool[_rng.randi() % pool.size()]]
+		var variant: String = pool[_rng.randi() % pool.size()]
+		mi.mesh = meshes[variant]
+		a["model"] = "zem"
+		a["riders"] = [["homme", ""]] + ([["femme" if variant.contains("_f") else "homme", ""]] if kind == "zem_passager" else [])
 		box.size = Vector3(0.6, 1.5, 2.0)
 		cs.position = Vector3(0, 0.75, 0)
 		a["max_big"] = _rng.randf_range(10.0, 14.0)
@@ -301,6 +312,10 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 				a["wait"] = a.get("wait", 0.0) + delta
 				if a["wait"] < 6.0:
 					vmax = minf(vmax, maxf(rem - 6.0, 0.0) * 1.5)
+	# accident ou choc tout pres : le conducteur s'arrete un moment
+	if a.get("stunned", 0.0) > 0.0:
+		a["stunned"] -= delta
+		vmax = 0.0
 	# obstacles devant : autres vehicules, joueur
 	var me: Vector3 = a["vis_pos"]
 	var fwd3 := Vector3(-sin(a["vis_yaw"]), 0, -cos(a["vis_yaw"]))
@@ -340,6 +355,8 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 	if a["stuck"] > (0.7 if blocked_by_player else 6.0) and a["honk_cd"] <= 0.0:
 		(a["horn"] as AudioStreamPlayer3D).play()
 		a["honk_cd"] = _rng.randf_range(2.0, 4.0)
+		if blocked_by_player and _rng.randf() < 0.45:
+			Bulle.say(a["body"], Dialogues.pick("klaxon", _rng, _pgenre()), 2.4, 2.0)
 		honked.emit(a["body"], blocked_by_player)
 	# coince trop longtemps (embouteillage sans fin) : il repart ailleurs, loin du joueur
 	if a["stuck"] > 25.0 and not blocked_by_player:
@@ -397,3 +414,86 @@ func _advance(a: Dictionary, dist: float) -> void:
 			a["last_node"] = a["to"]
 			_choose_next(a)
 			a["s"] = left
+
+
+# ------------------------------------------------------------ vehicules pris par le joueur
+func nearest_agent(p: Vector3, max_dist: float) -> Dictionary:
+	## Vehicule de la circulation le plus proche (portiere conducteur, a gauche), seulement s'il est arrete
+	## ou au pas : on ne monte pas dans une voiture lancee.
+	var best := {}
+	var bd := max_dist
+	for a in _agents:
+		if not a.get("active", true) or a["speed"] > 4.0:
+			continue
+		var body: Node3D = a["body"]
+		var left := -body.global_transform.basis.x
+		var door: Vector3 = body.global_position + left * (1.0 if a["kind"] == "voiture" else 0.5)
+		var d := p.distance_to(door)
+		if d < bd:
+			bd = d
+			best = {"index": a["id"], "dist": d}
+	return best
+
+
+func take_over(i: int, by: Node3D) -> Node3D:
+	## Le joueur prend ce vehicule : il sort de la circulation, un vehicule conduisible identique le remplace sur
+	## place, et le conducteur (et son passager) est ejecte cote portiere. Un autre vehicule reapparaitra ailleurs.
+	var a: Dictionary = _agents[i]
+	var body: AnimatableBody3D = a["body"]
+	var xf := Transform3D(Basis(Vector3.UP, a["vis_yaw"]), body.global_position + Vector3(0, 0.12, 0))
+	a["active"] = false
+	_release(a)
+	body.visible = false
+	body.collision_layer = 0
+	(a["snd"] as AudioStreamPlayer3D).stop()
+	var v := Vehicules.create(a["model"], a.get("color", Color.WHITE))
+	v.transform = xf  # avant l'entree dans l'arbre : le vehicule part avec le bon cap
+	get_parent().add_child(v)
+	v.set("_yaw", a["vis_yaw"])
+	var left := -xf.basis.x
+	var riders: Array = a.get("riders", [["homme" if _rng.randf() < 0.8 else "femme", ""]])
+	for k in riders.size():
+		var pos: Vector3 = xf.origin + left * (1.3 if a["kind"] == "voiture" else 0.9) - xf.basis.z * (0.6 * k)
+		driver_ejected.emit(pos, a["vis_yaw"], riders[k][0], by)
+	a["respawn"] = 25.0
+	return v
+
+
+func _process(delta: float) -> void:
+	# les vehicules pris par le joueur sont remplaces, loin de lui, pour garder une circulation constante
+	for a in _agents:
+		if a.get("active", true) or not a.has("respawn"):
+			continue
+		a["respawn"] -= delta
+		if a["respawn"] <= 0.0:
+			a.erase("respawn")
+			_place_random(a)
+			a["speed"] = 0.0
+			a["active"] = true
+			var body: AnimatableBody3D = a["body"]
+			body.global_position = a["vis_pos"]
+			body.visible = true
+			body.collision_layer = 1
+			(a["snd"] as AudioStreamPlayer3D).play()
+
+
+func _pgenre() -> String:
+	return _player.get("genre") if _player and _player.get("genre") != null else "homme"
+
+
+func alert(pos: Vector3, radius: float) -> void:
+	## Accident a proximite : les vehicules autour s'arretent quelques secondes (et klaxonnent).
+	for a in _agents:
+		if a.get("active", true) and (a["vis_pos"] as Vector3).distance_to(pos) < radius:
+			a["stunned"] = _rng.randf_range(3.0, 7.0)
+
+
+func on_vehicle_hit(collider: Object, impact: float) -> void:
+	## Le joueur a percute un vehicule de la circulation : il pile, klaxonne, le conducteur l'engueule.
+	for a in _agents:
+		if a["body"] == collider and a.get("active", true):
+			a["stunned"] = _rng.randf_range(4.0, 8.0)
+			a["speed"] = 0.0
+			(a["horn"] as AudioStreamPlayer3D).play()
+			Bulle.say(a["body"], Dialogues.pick("choc_voiture", _rng, _pgenre()), 3.0, 2.0)
+			return
