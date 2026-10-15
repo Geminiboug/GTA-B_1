@@ -30,12 +30,12 @@ Tout nom reel trouve est signale a Olympe avant d'etre renomme. Statut : **en je
 
 | Nom reel | Ou il apparait | Proposition | Statut |
 |---|---|---|---|
-| Avenue Pape Jean-Paul II | mini-carte, nom de rue (donnees OSM) | Boulevard de l'Envol | a valider |
-| Route des Peches | mini-carte, nom de rue (donnees OSM) | Route des Filets | a valider |
-| Cotonou | panneau publicitaire "La voix de Cotonou" (props.gd) | "La voix de Gbe Town" | a valider |
-| Lagos, Accra, Lome, Abidjan, Dakar, Douala, Ouagadougou, Casablanca, Paris, Bruxelles | tableau des departs du terminal (lieux.gd) | garder les vraies villes (hors du quartier) ou villes fictives | a valider |
-| Littoral (departement reel, nom generique) | "Pharmacie du Littoral", "Cafe du Littoral", base aerienne | garder (nom commun, aucun commerce reel vise) | a valider |
-| Immatriculations d'avions TY- (prefixe reel du Benin) | livrees des avions (avion.gd) | prefixe invente, par ex. "GB-" | a valider |
+| Avenue Pape Jean-Paul II | mini-carte, nom de rue (donnees OSM) | Boulevard de l'Envol | renomme (osm_import.py, NOM_FICTIF) |
+| Route des Peches | mini-carte, nom de rue (donnees OSM) | Route des Filets | renomme (osm_import.py, NOM_FICTIF) |
+| Cotonou | panneau publicitaire "La voix de Cotonou" (props.gd) | "La voix de Gbe Town" | renomme |
+| Lagos, Accra, Lome, Abidjan, Dakar, Douala, Ouagadougou, Casablanca, Paris, Bruxelles | tableau des departs du terminal (lieux.gd) | vraies villes gardees (hors du quartier), valide par Olympe | valide |
+| Littoral (departement reel, nom generique) | "Pharmacie du Littoral", "Cafe du Littoral", base aerienne | garde (nom commun), valide par Olympe | valide |
+| Immatriculations d'avions TY-, TU-, XT-, 5N-, 6V-, 5V- (prefixes reels) | livrees des avions (avion.gd) | GB- (prefixe invente, aucun pays) | renomme |
 
 Les noms de rue viennent des tags `name` d'OpenStreetMap : le renommage se fera a l'import (osm_import.py, table
 de correspondance), pour que la carte, le GPS et les etiquettes restent coherents.

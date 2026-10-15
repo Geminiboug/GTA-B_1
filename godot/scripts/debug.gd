@@ -9,7 +9,7 @@ extends CanvasLayer
 @export var refresh := 0.2                  # s entre deux mises a jour des chemins
 @export var teleports: Array[Dictionary] = [
 	{"nom": "Carrefour principal (rond-point)", "pos": Vector3(528, 1, -301)},
-	{"nom": "Route des peches (front de mer)", "pos": Vector3(43.7, 1, 10.2)},
+	{"nom": "Route des Filets (front de mer)", "pos": Vector3(43.7, 1, 10.2)},
 	{"nom": "Plage", "pos": Vector3(0, 1, 330)},
 	{"nom": "Terminal (parvis)", "pos": Vector3(385, 1, -280)},
 	{"nom": "Terminal (hall)", "pos": Vector3(399, 1, -344)},

@@ -47,6 +47,8 @@ MEDIAN_H = 0.12
 AEROWAY_WIDTH = {"runway": 45.0, "stopway": 45.0, "taxiway": 23.0}
 WALL = {"wall": (0.2, 2.2), "fence": (0.1, 1.8)}
 LEVEL_H = 3.0
+# noms de rue reels (tags OSM) -> noms fictifs affiches en jeu (docs/correspondance_noms.md)
+NOM_FICTIF = {"Avenue Pape Jean-Paul II": "Boulevard de l'Envol", "Route des Pêches": "Route des Filets"}
 SEA_EXTRA = 400.0
 # Front de mer apres l'amenagement de la Route des Peches (travaux depuis 2023) :
 # plage continue depuis la mer, puis promenade pietonne et piste cyclable.
@@ -776,7 +778,7 @@ for r in road_pieces:
             if end_count.get(_ekey(p), 0) == 1 and _ekey(p) not in joined and not at_border(p, 2.0):
                 bt.add(*flat(disc(p[0], p[1], width / 2 + 0.6), z))
     road_data.append({"kind": hw, "surface": surf, "width": round(width, 2),
-                      "oneway": r["oneway"], "name": t.get("name", ""),
+                      "oneway": r["oneway"], "name": NOM_FICTIF.get(t.get("name", ""), t.get("name", "")),
                       "pts": [[round(p[0], 2), round(-p[1], 2)] for p in piece]})
     if surf == "bitume" and hw in ("primary", "secondary", "tertiary"):
         # bas-cotes sableux ou se garent les zems, plus larges que la chaussee

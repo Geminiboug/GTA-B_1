@@ -9,12 +9,12 @@ class_name Avion
 const MODEL := preload("res://assets/models/veh_avion_ligne.glb")
 const FEU := preload("res://shaders/feu.gdshader")
 const LIVERIES := {
-	"air_gbe": {"c1": Color(0.07, 0.47, 0.24), "c2": Color(0.96, 0.75, 0.1), "titre": "Air Gbé", "logo": "GBÉ", "immat": "TY-AGB"},
-	"atlantique": {"c1": Color(0.05, 0.22, 0.52), "c2": Color(0.1, 0.55, 0.82), "titre": "Atlantique Express", "logo": "AE", "immat": "TU-TAE"},
-	"sahel": {"c1": Color(0.78, 0.42, 0.1), "c2": Color(0.5, 0.18, 0.08), "titre": "Sahel Airways", "logo": "SA", "immat": "XT-SAH"},
-	"golfe": {"c1": Color(0.08, 0.42, 0.48), "c2": Color(0.08, 0.3, 0.36), "titre": "Golfe Aviation", "logo": "GA", "immat": "5N-GLF"},
-	"trans_ouest": {"c1": Color(0.6, 0.08, 0.12), "c2": Color(0.75, 0.1, 0.15), "titre": "Trans-Ouest", "logo": "TO", "immat": "6V-TRO"},
-	"air_lagune": {"c1": Color(0.15, 0.6, 0.65), "c2": Color(0.95, 0.55, 0.15), "titre": "Air Lagune", "logo": "AL", "immat": "5V-LAG"},
+	"air_gbe": {"c1": Color(0.07, 0.47, 0.24), "c2": Color(0.96, 0.75, 0.1), "titre": "Air Gbé", "logo": "GBÉ", "immat": "GB-AGB"},
+	"atlantique": {"c1": Color(0.05, 0.22, 0.52), "c2": Color(0.1, 0.55, 0.82), "titre": "Atlantique Express", "logo": "AE", "immat": "GB-TAE"},
+	"sahel": {"c1": Color(0.78, 0.42, 0.1), "c2": Color(0.5, 0.18, 0.08), "titre": "Sahel Airways", "logo": "SA", "immat": "GB-SAH"},
+	"golfe": {"c1": Color(0.08, 0.42, 0.48), "c2": Color(0.08, 0.3, 0.36), "titre": "Golfe Aviation", "logo": "GA", "immat": "GB-GLF"},
+	"trans_ouest": {"c1": Color(0.6, 0.08, 0.12), "c2": Color(0.75, 0.1, 0.15), "titre": "Trans-Ouest", "logo": "TO", "immat": "GB-TRO"},
+	"air_lagune": {"c1": Color(0.15, 0.6, 0.65), "c2": Color(0.95, 0.55, 0.15), "titre": "Air Lagune", "logo": "AL", "immat": "GB-LAG"},
 }
 const MAIN_R := 0.57
 const NOSE_R := 0.38

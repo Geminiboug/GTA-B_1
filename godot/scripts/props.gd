@@ -27,7 +27,7 @@ const ADS := [
 	["ZEM : PORTEZ VOTRE CASQUE", "Securite routiere - c'est la vie", Color(0.95, 0.75, 0.1), Color(0.05, 0.05, 0.05)],
 	["BANQUE OCEANIQUE", "Votre avenir commence ici", Color(0.05, 0.25, 0.55), Color(1, 1, 1)],
 	["ARARAT HYPERMARKET", "Tout sous un meme toit", Color(0.1, 0.45, 0.2), Color(1, 1, 1)],
-	["RADIO LITTORAL 98.6", "La voix de Cotonou", Color(0.45, 0.1, 0.5), Color(1, 0.9, 0.2)],
+	["RADIO LITTORAL 98.6", "La voix de Gbê Town", Color(0.45, 0.1, 0.5), Color(1, 0.9, 0.2)],
 	["SAVON KOTO", "Propre comme jamais", Color(0.2, 0.55, 0.85), Color(1, 1, 1)],
 	["CIMENT SOLIDE", "Batissez pour vos enfants", Color(0.35, 0.35, 0.38), Color(1, 0.85, 0.1)],
 ]

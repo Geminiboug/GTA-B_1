@@ -6,7 +6,7 @@ vehicules ; 3e : desactive). En mode debug, **touches 1 a 8** : teleportation (a
 | Touche | Zone |
 |---|---|
 | 1 | Carrefour principal (rond-point) |
-| 2 | Route des peches (front de mer) |
+| 2 | Route des Filets (front de mer) |
 | 3 | Plage |
 | 4 | Terminal (parvis) |
 | 5 | Terminal (hall) |
