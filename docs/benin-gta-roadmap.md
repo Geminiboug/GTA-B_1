@@ -152,6 +152,7 @@ Option plus tard : multijoueur.
 - 15/10/2026 : passe 11 : mini-carte en haut a gauche, grande carte (M), destination et itineraire GPS (A*), marqueurs (P).
 - 15/10/2026 : passes 12 a 14 : hommes, femmes et enfants (6 morphologies, corps continu anime par squelette, vetements ajustes, coiffures), toutes les voitures conduisibles (berline, 4x4, minibus : physique, roulis, freinage, frein a main, degats), reactions des PNJ (klaxon, insultes, chute, fuite, attroupement, coups).
 - 15/10/2026 : passe 15 : lieux a interieur. Maison du joueur (concession avec portail, salon, cuisine, chambre, douche, toit-terrasse ; le joueur y commence, lit pour dormir), Ararat Hypermarket (facade vitree face au parking, porte automatique, rayons, primeurs, boulangerie, gros conditionnement, caisses, clients, caissieres, vigile), terminal de l aeroport (comptoirs des compagnies, files, tableau des departs a l heure du jeu, salle d attente, controle de securite, cafe, librairie, voyageurs). Tous les tests passent, 61 images/s minimum.
+- 15/10/2026 : passe 16 : avions de ligne (modele Blender detaille, livrees fictives, repoussage, roulage, decollage, approche a 3 degres, arrondi, inverseurs, retour au poste), balisage et PAPI, horizon a 6 km, bandeaux, balcons et auvents. Postes trop etroits pour l envergure exclus automatiquement. test_avion OK sur les deux pistes.
 
 ---
 
@@ -180,19 +181,21 @@ ETAT ACTUEL (15/10/2026)
 - Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu.
 - Fait : zone OSM + batiments Overture + littoral Sentinel-2 (blender/tools/osm_import.py -> godot/assets/data/zone_aeroport.json),
   materiaux proceduraux (realism.gd + shaders/), vegetation, mobilier, enseignes, cycle jour/nuit, meteo, ambiance sonore,
-  coherence du monde (rien sur la chaussee, joueur et vehicules poses sur le sol, carrefours reels), mini-carte + grande
-  carte + GPS (hud_carte.gd, carte.gd), personnages v3 a squelette (build_character.py, pnj_util.gd, squelette.gd),
-  voitures conduisibles (build_vehicles.py, voiture.gd, vehicules.gd), reactions des PNJ (pedestrians.gd, traffic.gd),
-  lieux a interieur : maison du joueur, Ararat Hypermarket, terminal (build_interieurs.py, lieux.gd, pnj_interieur.gd).
-  Tests : godot/tests/test_*.gd (coherence, vehicules, player, zem, circulation, limites, avion, manette) tous OK ;
-  captures : tests/capture_*.gd ; performances : tests/perf_fps.gd (61 images/s minimum en 1600x900 sur RTX 2050).
+  coherence du monde, mini-carte + grande carte + GPS, personnages v3 a squelette, voitures conduisibles, reactions des PNJ,
+  lieux a interieur (maison du joueur, Ararat Hypermarket, terminal), avions de ligne detailles (build_avion.py, avion.gd,
+  air_traffic.gd : repoussage, roulage, decollage, approche, arrondi, inverseurs, retour au poste), balisage et PAPI
+  (balisage.gd), horizon a 6 km (horizon.gd), details de facades (bandeaux, balcons, auvents).
+  Tests : godot/tests/test_*.gd tous OK (test_avion OK sur 06 et 24, 4 postes valides) ; captures : tests/capture_*.gd ;
+  performances : tests/perf_fps.gd en 1280x720 : 70 a 85 images/s dehors, ~60 dans les interieurs (min 52, a surveiller).
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
   %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md). Envoi git : depuis
   le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
-- Prochaine tache : avions tres realistes (modele detaille, roulage, decollage avec rotation et rentree du train,
-  atterrissage avec arrondi, toucher, inversion de poussee, retour au poste ; feux de piste et PAPI la nuit ;
-  air_traffic.gd). Puis passe Blender sur les facades exterieures (balcons, auvents, fenetres en relief, salissures),
-  puis audit final (aucune erreur visible).
+- Plan valide par Olympe (etapes, une a la fois) : A avions (fait). B echelle reelle : 5 reference d'echelle dans
+  PIPELINE.md, 6 test auto des tailles (joueur, PNJ, portes, mobilier, vehicules), 7 corrections. C carte reelle (donnees
+  ouvertes seulement) : 8 mise a jour OSM/Overture, 9 hauteurs Open Buildings 2.5D, 10 relief Copernicus 30 m, 11 noms
+  fictifs partout (ex. la mini-carte affiche encore "Avenue Pape Jean-Paul II") + LEGAL.md. D personnages Blender :
+  12 corps de base, 13 morphologies, 14 visages/peaux/coiffures, 15 vetements locaux, 16 animations, 17 integration + LOD.
+- Prochaine tache : etape 5 (reference d'echelle).
 - Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et
   rouvrir le projet (sinon erreurs "global uniform does not exist", fichiers non importes).
 ROADMAP

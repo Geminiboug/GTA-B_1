@@ -52,7 +52,7 @@ static func create(model_id: String, color: Color) -> Node3D:
 	rig.add_child(arm)
 	var cam := Camera3D.new()
 	cam.name = "Camera3D"
-	cam.far = 3000.0
+	cam.far = 7000.0
 	arm.add_child(cam)
 	car.add_child(rig)
 	return car

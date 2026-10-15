@@ -888,6 +888,23 @@ for wid, w in ways.items():
                     add_marking("marquage_piste", "mat_marquage_blanc", mz, [a, b], 1.8)
     else:
         continue
+# bande d'herbe de l'aerodrome : 110 m de part et d'autre de l'axe de piste, 25 m autour des taxiways
+# (pas de laterite nue ni d'arbres cote piste ; la vegetation evite aussi cette bande)
+strip_bt = Batch()
+for a_ in aero_data:
+    half = 110.0 if a_["kind"] in ("runway", "stopway") else 25.0
+    pts_b = [(p[0], -p[1]) for p in a_["pts"]]
+    for k in range(len(pts_b) - 1):
+        p0, p1 = pts_b[k], pts_b[k + 1]
+        L = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+        if L < 0.5:
+            continue
+        nx, ny = -(p1[1] - p0[1]) / L * half, (p1[0] - p0[0]) / L * half
+        rect = clip_poly([(p0[0] + nx, p0[1] + ny), (p1[0] + nx, p1[1] + ny), (p1[0] - nx, p1[1] - ny), (p0[0] - nx, p0[1] - ny)])
+        if len(rect) > 2:
+            strip_bt.add(*flat(ccw(rect), 0.007))
+            zone_data.append({"kind": "zone_herbe", "pts": [[round(q[0], 2), round(-q[1], 2)] for q in rect]})
+batch_obj("zone_herbe_aerodrome", strip_bt, "mat_vegetation", "Zones", 0.007)
 for (name, mat, z, collection), bt in line_batches.items():
     batch_obj(name, bt, mat, collection, z)
 for (name, mat, z), bt in marking_batches.items():
@@ -1085,7 +1102,8 @@ def shelter(det, poly, h):
         box_at(det["abri_poteaux"], p[0], p[1], 0.12, 0.12, 0.0, h - 0.12)
 
 
-DETAILS = {k: Batch() for k in ("parapet", "poteau_attente", "fers", "citerne", "clim", "toit_tole", "abri_toit", "abri_poteaux")}
+DETAILS = {k: Batch() for k in ("parapet", "poteau_attente", "fers", "citerne", "clim", "toit_tole", "abri_toit", "abri_poteaux",
+                                 "bandeau", "balcon", "auvent", "auvent_console")}
 gable_batches = {}
 building_data = []
 
@@ -1171,6 +1189,93 @@ def polys_overlap(a, b):
 
 def pbbox(p):
     return (min(q[0] for q in p), min(q[1] for q in p), max(q[0] for q in p), max(q[1] for q in p))
+
+
+def near_street(m, nrm, dist=7.0):
+    """Le point a 'dist' metres devant la facade est-il au bord d'une rue (chaussee a moins de 4 m) ?"""
+    q = (m[0] + nrm[0] * dist, m[1] + nrm[1] * dist)
+    for lbb, pts, half in LINE_BB:
+        if lbb[0] - 6 <= q[0] <= lbb[2] + 6 and lbb[1] - 6 <= q[1] <= lbb[3] + 6 and line_dist(q, pts) < half + 4.0:
+            return True
+    return False
+
+
+def facade_details(det, poly, h, wid, t, others):
+    """Relief des facades (habitat) : bandeaux d'etage, balcons maconnes cote rue sur les immeubles, auvents en tole
+    sur consoles au-dessus des commerces. Rien ne deborde sur une chaussee ni sur un batiment voisin."""
+    pc = ccw(poly)
+    n = len(pc)
+    levels = max(1, int(round(h / LEVEL_H)))
+    # bandeaux : une moulure beton en saillie a chaque plancher (immeubles)
+    for k in range(1, levels):
+        z = k * LEVEL_H
+        for i in range(n):
+            a, b = pc[i], pc[(i + 1) % n]
+            L = math.hypot(b[0] - a[0], b[1] - a[1])
+            if L < 0.5:
+                continue
+            ex, ey = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+            nx, ny = ey, -ex
+            box_at(det["bandeau"], (a[0] + b[0]) / 2 + nx * 0.05, (a[1] + b[1]) / 2 + ny * 0.05, L + 0.1, 0.12, z - 0.09, z + 0.09, math.atan2(ey, ex))
+    # facades sur rue (la plus longue d'abord)
+    street = []
+    for i in range(n):
+        a, b = pc[i], pc[(i + 1) % n]
+        L = math.hypot(b[0] - a[0], b[1] - a[1])
+        if L < 4.5:
+            continue
+        ex, ey = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+        nx, ny = ey, -ex
+        m = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        if near_street(m, (nx, ny)):
+            street.append((L, m, (ex, ey), (nx, ny)))
+    street.sort(key=lambda e: -e[0])
+    if not street:
+        return
+
+    def free(rect):
+        # on teste l'emprise legerement decollee de la facade (elle touche son propre mur)
+        test = [(p[0] + nx * 0.05, p[1] + ny * 0.05) for p in rect]
+        if on_road(test):
+            return False
+        bb = pbbox(test)
+        return not any(bb_near(bb, ob, 0.2) and polys_overlap(test, op) for op, ob in others)
+
+    L, m, (ex, ey), (nx, ny) = street[0]
+    ang = math.atan2(ey, ex)
+    r = stable_hash("facade" + str(wid))
+    # balcons : un par etage, sur la facade principale (60 % des immeubles)
+    if levels >= 2 and r < 60:
+        w = min(L * 0.55, 5.5)
+        dep = 1.15
+        rect = [(m[0] + ex * sx * w / 2 + nx * dd, m[1] + ey * sx * w / 2 + ny * dd) for sx, dd in ((-1, 0.0), (1, 0.0), (1, dep), (-1, dep))]
+        if free(rect):
+            for k in range(1, levels):
+                z = k * LEVEL_H
+                cx, cy = m[0] + nx * dep / 2, m[1] + ny * dep / 2
+                box_at(det["balcon"], cx, cy, w, dep, z - 0.16, z, ang)                                     # dalle
+                ox, oy = m[0] + nx * (dep - 0.06), m[1] + ny * (dep - 0.06)
+                box_at(det["balcon"], ox, oy, w, 0.12, z, z + 1.0, ang)                                      # garde-corps
+                for sx in (-1, 1):
+                    sxx, syy = m[0] + ex * sx * (w / 2 - 0.06) + nx * dep / 2, m[1] + ey * sx * (w / 2 - 0.06) + ny * dep / 2
+                    box_at(det["balcon"], sxx, syy, 0.12, dep, z, z + 1.0, ang)
+                box_at(det["bandeau"], ox, oy, w + 0.1, 0.2, z + 1.0, z + 1.07, ang)                          # main courante
+    # auvent en tole sur consoles au-dessus d'une boutique (commerces OSM, sinon un rez-de-chaussee sur cinq)
+    shop = bool(t.get("shop")) or t.get("amenity") in ("restaurant", "bar", "cafe", "pharmacy", "fast_food", "bank")         or t.get("building") in ("retail", "commercial", "kiosk")
+    if shop or r % 5 == 0:
+        w = min(L * 0.75, 9.0)
+        dep = 1.5
+        rect = [(m[0] + ex * sx * w / 2 + nx * dd, m[1] + ey * sx * w / 2 + ny * dd) for sx, dd in ((-1, 0.0), (1, 0.0), (1, dep), (-1, dep))]
+        if free(rect):
+            z0, z1 = 2.75, 2.42
+            pts = [(rect[0][0], rect[0][1], z0), (rect[1][0], rect[1][1], z0), (rect[2][0], rect[2][1], z1), (rect[3][0], rect[3][1], z1)]
+            add_face(det["auvent"], pts, (nx * 0.2, ny * 0.2, 1.0))
+            add_face(det["auvent"], [(p[0], p[1], p[2] - 0.03) for p in pts], (-nx * 0.2, -ny * 0.2, -1.0))
+            for sx in (-1, 1):
+                px, py = m[0] + ex * sx * (w / 2 - 0.3), m[1] + ey * sx * (w / 2 - 0.3)
+                tri = [(px, py, 2.1), (px, py, z0 - 0.02), (px + nx * (dep - 0.15), py + ny * (dep - 0.15), z1 + 0.02)]
+                add_face(det["auvent_console"], tri, (ex, ey, 0.0))
+                add_face(det["auvent_console"], tri, (-ex, -ey, 0.0))
 
 
 # 1re passe : emprises finales (hors chaussee), puis chevauchements entre batiments (doublons OSM / detections
@@ -1272,6 +1377,8 @@ for wid, t, poly in entries:
         top = gable_roof(DETAILS["toit_tole"], gable_batches.setdefault(mat, Batch()), poly, h)
     else:
         roof_details(DETAILS, poly, h, wid, kind)
+    if kind not in ("hangar",) and t.get("aeroway") != "terminal":
+        facade_details(DETAILS, poly, h, wid, t, [(op, ob) for op, ob in kept if op is not poly])
     # Regroupes par materiau : quelques objets au lieu de milliers (bien plus leger pour Godot)
     style = "terminal" if t.get("aeroway") == "terminal" else ("hangar" if kind == "hangar" else mat[4:])
     bld_batches.setdefault((style, mat), Batch()).add(*prism(poly, 0.0, h))
@@ -1284,6 +1391,7 @@ for mat, bt in gable_batches.items():
     batch_obj("pignon_" + mat[4:], bt, mat, "Toits", 0)
 DETAIL_MATS = {"parapet": "mat_beton", "poteau_attente": "mat_beton_brut", "fers": "mat_rouille", "citerne": "mat_citerne",
                "clim": "mat_blanc_plastique", "toit_tole": "mat_tole_rouillee", "abri_toit": "mat_tole_rouillee",
+               "bandeau": "mat_beton", "balcon": "mat_beton", "auvent": "mat_tole_rouillee", "auvent_console": "mat_metal_peint",
                "abri_poteaux": "mat_metal_peint"}
 for k, bt in DETAILS.items():
     batch_obj(k + ("-col" if k == "abri_poteaux" else ""), bt, DETAIL_MATS[k], "Toits", 0)

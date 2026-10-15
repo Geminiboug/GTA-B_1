@@ -323,3 +323,20 @@ Tests : tests/test_vehicules.gd (tout fonctionne), tests/test_coherence.gd. Capt
 - Tests : tests/test_coherence.gd (lieux charges, rien de gare ni de construit dedans, entrees degagees, porte qui
   s'ouvre, PNJ, joueur dans sa cour), tests/capture_lieux.gd (captures), tests/perf_fps.gd (vues interieures).
 - Mesure : 75 a 105 images/s selon la vue, minimum 61 (Ararat : 2,8 M de triangles) en 1600x900 (RTX 2050).
+
+## Avions de ligne, balisage, horizon, details de facades (passe 16)
+- blender/tools/build_avion.py -> godot/assets/models/veh_avion_ligne.glb (~6 500 faces, biréacteur de 35,8 m
+  d'envergure, profils NACA, pieces mobiles : volets, train, inverseurs, gouvernes ; reperes roue_contact_G/D).
+- godot/scripts/avion.gd : livrees fictives (aucune compagnie reelle), feux (nav, anticollision, strobes, atterrissage,
+  roulage), fumee des pneus au toucher (bouffees rondes, fondu au sol), collision au sol, set_parked (escalier et cones).
+- godot/scripts/air_traffic.gd : coordonnees de piste (t le long de l'axe depuis le seuil 06, s lateral ; T2 a s = 191).
+  Postes OSM filtres : sens, distance au taxiway, et envergure/nez/queue hors des batiments sur la ligne d'entree
+  (_stand_clear). Repoussage avec tracteur, roulage en poursuite pure sur chemins aux angles arrondis (_smooth),
+  entree au poste par l'intersection axe du poste / T2, decollage, approche a 3 degres, arrondi a 9 m, inverseurs,
+  degagement, retour au poste.
+- godot/scripts/balisage.gd + shaders/feu.gdshader, papi.gdshader : bords de piste, seuils, rampes d'approche,
+  taxiways, PAPI (rouge/blanc selon l'angle de vue). Allumes au crepuscule et sous forte pluie.
+- godot/scripts/horizon.gd : sol, sable, ocean et ville lointaine sur 6 km, piste complete de 2 400 m.
+- osm_import.py (facade_details) : bandeaux d'etage, balcons cote rue, auvents en tole sur consoles au-dessus des boutiques.
+- Tests : tests/test_avion.gd [-- 06|24] ; captures : tests/capture_avion.gd -- <dossier> [arrivee],
+  tests/capture_horizon.gd. Laisser au moins 8 images avant une capture d'un objet rapide (sinon image pas a jour).

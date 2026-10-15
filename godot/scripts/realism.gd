@@ -99,7 +99,12 @@ func _apply(mi: MeshInstance3D) -> void:
 	elif n.begins_with("mur_") or n.begins_with("parapet") or n.begins_with("poteau_attente"):
 		# murs d'enceinte, parapets, poteaux : enduit ou parpaings, sans fenetres
 		mat = _facade(Color(0.74, 0.7, 0.64), true, 0)
-	elif n.begins_with("toit_tole") or n.begins_with("abri_toit"):
+	elif n.begins_with("bandeau") or n.begins_with("balcon"):
+		# moulures, dalles et garde-corps de balcon : enduit clair sans ouvertures
+		mat = _facade(Color(0.88, 0.87, 0.84), true, 0)
+	elif n.begins_with("auvent_console"):
+		mat = _facade(Color(0.2, 0.21, 0.23), true, 0)
+	elif n.begins_with("toit_tole") or n.begins_with("abri_toit") or n.begins_with("auvent"):
 		mat = _facade(Color(0.5, 0.48, 0.46), true, 1)
 	elif n.begins_with("sol_terre"):
 		mat = _ground(0)

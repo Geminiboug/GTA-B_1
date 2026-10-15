@@ -74,7 +74,7 @@ func _ready() -> void:
 	# attendre que les collisions de la carte soient enregistrees avant les requetes physiques
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	_place_planes(data.get("parking_positions", []))
+	# avions aux postes : geres par air_traffic.gd (gares, departs, arrivees)
 	_place_billboards()  # en premier : ils ont besoin de place
 	_place_poles_and_lamps()
 	_place_promenade_lamps(data.get("promenade", []))
@@ -603,32 +603,6 @@ func _label(xf: Transform3D, text: String, max_width: float, color: Color, heigh
 	l.transform = xf * Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO)
 	l.visibility_range_end = 120.0
 	_signs.add_child(l)
-
-
-# ---------------------------------------------------------------- avions
-func _place_planes(spots: Array) -> void:
-	var terminal := Vector2(374, -379)
-	var placed: Array[Vector2] = []
-	for s in spots:
-		var pos := Vector2(float(s[0]), float(s[1]))
-		var dup := false
-		for q in placed:
-			if q.distance_to(pos) < 25.0:
-				dup = true  # deux lignes de guidage qui finissent au meme poste
-		if dup:
-			continue
-		placed.append(pos)
-		var dir := (terminal - pos).normalized()
-		if s.size() >= 5:
-			dir = Vector2(float(s[3]), float(s[4])).normalized()  # cap de la ligne de guidage OSM
-			pos -= dir * 18.0  # la ligne s'arrete sous le nez : on recule le centre de l'avion
-		var xf := Transform3D(_facing(dir), Vector3(pos.x, 0.01, pos.y))
-		_add("veh_avion", xf)
-		_box_col(xf, Vector3(4.2, 4.5, 38.0), 3.3)
-		_box_col(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0, 1.2)), Vector3(31.0, 0.6, 4.5), 2.3)
-		for sx in [-1.0, 1.0]:
-			var lt := xf * Transform3D(Basis(Vector3.UP, -sx * PI / 2.0), Vector3(sx * 2.02, 3.2, -6.0))
-			_label(lt, "AIR GBE", 8.0, Color(0.1, 0.4, 0.2), 0.9)
 
 
 # ---------------------------------------------------------------- construction

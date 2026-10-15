@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=23 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -17,6 +17,8 @@
 [ext_resource type="Script" path="res://scripts/weather.gd" id="16_meteo"]
 [ext_resource type="Script" path="res://scripts/hud_carte.gd" id="17_hud"]
 [ext_resource type="Script" path="res://scripts/lieux.gd" id="18_lieux"]
+[ext_resource type="Script" path="res://scripts/horizon.gd" id="19_horizon"]
+[ext_resource type="Script" path="res://scripts/balisage.gd" id="20_balisage"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -76,6 +78,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.3, 248.6)
 [node name="Realisme" type="Node3D" parent="."]
 script = ExtResource("8_realism")
 
+[node name="Horizon" type="Node3D" parent="."]
+script = ExtResource("19_horizon")
+
 [node name="Lieux" type="Node3D" parent="."]
 script = ExtResource("18_lieux")
 
@@ -96,6 +101,9 @@ script = ExtResource("13_peds")
 
 [node name="Ambiance" type="Node3D" parent="."]
 script = ExtResource("14_amb")
+
+[node name="Balisage" type="Node3D" parent="."]
+script = ExtResource("20_balisage")
 
 [node name="TraficAerien" type="Node3D" parent="."]
 script = ExtResource("15_air")

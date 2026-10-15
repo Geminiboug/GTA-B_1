@@ -3,6 +3,7 @@ extends Node3D
 ## - Cocotiers en ligne le long de la plage (cote mer de la promenade), un peu irreguliers.
 ## - Arbres, buissons et quelques cocotiers dans les espaces libres a terre.
 ## Jamais sur un batiment, un mur, une route, la piste, le tarmac ou la plage pour les arbres.
+## Rien sur l'aerodrome : 120 m de part et d'autre de l'axe de piste, 45 m autour des taxiways (bande d'herbe).
 ## Rendu en MultiMesh (des centaines d'arbres pour un cout tres faible) + collision sur les troncs.
 
 @export var zone_path: NodePath = ^"../zone_aeroport"
@@ -23,6 +24,7 @@ var _meshes := {}
 var _xforms := {"veg_cocotier": [], "veg_arbre": [], "veg_buisson": []}
 var _trunks: StaticBody3D
 var _temp_bodies: Array[Node] = []
+var _airside: Array = []      # [a, b, demi-largeur] : axes de piste et de taxiways (Vector2 x, z)
 
 
 func _ready() -> void:
@@ -40,6 +42,11 @@ func _ready() -> void:
 	_trunks = StaticBody3D.new()
 	_trunks.name = "Troncs"
 	add_child(_trunks)
+	for a in Carte.zone().data.get("aeroways", []):
+		var half := 120.0 if a["kind"] in ["runway", "stopway"] else 45.0
+		var pts: Array = a["pts"]
+		for k in pts.size() - 1:
+			_airside.append([Vector2(float(pts[k][0]), float(pts[k][1])), Vector2(float(pts[k + 1][0]), float(pts[k + 1][1])), half])
 	_scatter_beach_palms(zone)
 	_scatter_inland()
 	_build_multimeshes()
@@ -140,6 +147,9 @@ func _scatter_inland() -> void:
 		while z < area.end.y:
 			var p := Vector3(x + _rng.randf_range(-3.5, 3.5), 0, z + _rng.randf_range(-3.5, 3.5))
 			var roll := _rng.randf()
+			if _on_airside(Vector2(p.x, p.z)):
+				z += grid_step
+				continue
 			if roll < tree_chance:
 				var y := _free_spot(p, 2.2)
 				if not is_nan(y):
@@ -154,6 +164,13 @@ func _scatter_inland() -> void:
 					_add("veg_buisson", p, y, Vector2(0.7, 1.4))
 			z += grid_step
 		x += grid_step
+
+
+func _on_airside(p: Vector2) -> bool:
+	for s in _airside:
+		if p.distance_to(Geometry2D.get_closest_point_to_segment(p, s[0], s[1])) < float(s[2]):
+			return true
+	return false
 
 
 func _build_multimeshes() -> void:

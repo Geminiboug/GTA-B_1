@@ -31,4 +31,4 @@ margin = 0.2
 [node name="Camera3D" type="Camera3D" parent="CamPivot/SpringArm3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0)
 current = true
-far = 3000.0
+far = 7000.0
