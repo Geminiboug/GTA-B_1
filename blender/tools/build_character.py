@@ -22,13 +22,16 @@ VARIANT, OUT_BLEND, OUT_GLB = args[:3]
 PREVIEW = args[3] if len(args) > 3 else None
 
 V = {
-    "homme": dict(sex="m", h=1.76, g=1.0, sh=1.0, hip=1.0, bust=0.0, belly=0.0, child=False),
-    "homme_fort": dict(sex="m", h=1.74, g=1.17, sh=1.05, hip=1.08, bust=0.012, belly=0.07, child=False),
-    "femme": dict(sex="f", h=1.65, g=0.95, sh=0.88, hip=1.13, bust=0.038, belly=0.0, child=False),
-    "femme_ronde": dict(sex="f", h=1.63, g=1.16, sh=0.93, hip=1.28, bust=0.055, belly=0.045, child=False),
+    "homme": dict(sex="m", h=1.70, g=1.0, sh=1.0, hip=1.0, bust=0.0, belly=0.0, child=False),
+    "homme_fort": dict(sex="m", h=1.70, g=1.17, sh=1.05, hip=1.08, bust=0.012, belly=0.07, child=False),
+    "femme": dict(sex="f", h=1.59, g=0.95, sh=0.88, hip=1.13, bust=0.038, belly=0.0, child=False),
+    "femme_ronde": dict(sex="f", h=1.58, g=1.16, sh=0.93, hip=1.28, bust=0.055, belly=0.045, child=False),
     "garcon": dict(sex="m", h=1.30, g=0.86, sh=0.9, hip=0.95, bust=0.0, belly=0.01, child=True),
     "fille": dict(sex="f", h=1.27, g=0.84, sh=0.88, hip=0.98, bust=0.0, belly=0.0, child=True),
 }[VARIANT]
+# h = taille reelle du corps (sommet du crane), Benin : hommes ~1,70 m, femmes ~1,59 m (docs/PIPELINE.md).
+# Calibration mesuree : la peau (Skin + subdivision) depasse le sommet du squelette de ~2 % (homme) / ~3,5 % (femme).
+V["h"] *= {"m": 1.76 / 1.80, "f": 1.65 / 1.71}[V["sex"]] if not V["child"] else 1.0
 F = V["sex"] == "f"
 K = V["h"] / 1.76                      # echelle verticale du corps
 HK = (V["h"] / 1.76) ** 0.45 if V["child"] else (0.95 if F else 1.0)   # tete : proportionnellement plus grosse chez l'enfant

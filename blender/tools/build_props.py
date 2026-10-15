@@ -1,4 +1,4 @@
-# GTB : mobilier urbain, vehicules et avion low poly faits par script (aucun asset externe, aucune marque reelle).
+# GTB : mobilier urbain et vehicules low poly faits par script (aucun asset externe, aucune marque reelle).
 # Lancement : blender -b --python blender/tools/build_props.py -- <lib_materiaux.blend> <sortie.blend> <sortie.glb>
 # Chaque objet : origine au sol, avant vers +Y Blender (= -Z Godot). Les materiaux viennent de la bibliotheque
 # (leurs noms servent a Godot : mat_carrosserie teinte par instance, mat_lampe allumee la nuit, mat_tissu_* ...).
@@ -242,25 +242,6 @@ def voiture(name, L, W, H, cab_l, cab_h, ground=0.22, cab_off=-0.1):
 voiture("veh_berline", 4.45, 1.76, 1.45, 2.1, 0.55)
 voiture("veh_4x4", 4.7, 1.88, 1.85, 2.7, 0.72, ground=0.3, cab_off=-0.25)
 
-# ---------------- Avion de ligne generique (stationne) ----------------
-b = Builder("veh_avion")
-b.cyl("mat_peinture_blanc", (0, 16, 3.3), 2.0, 32, segs=16, rot=(math.radians(90), 0, 0))
-b.cyl("mat_peinture_blanc", (0, 16, 3.3), 2.0, 4.2, segs=16, rot=(math.radians(-90), 0, 0), r2=0.35)
-b.cyl("mat_peinture_blanc", (0, -16, 3.3), 2.0, 7.0, segs=16, rot=(math.radians(90), 0, 0), r2=0.45)
-b.box("mat_verre", (0, 18.6, 4.15), (1.9, 1.0, 0.45), rot=(math.radians(-20), 0, 0))       # cockpit
-for sx in (-1, 1):
-    b.box("mat_verre", (sx * 1.98, 1.0, 3.75), (0.05, 26.0, 0.32))                          # hublots
-    b.box("mat_peinture_vert", (sx * 1.99, 1.0, 2.9), (0.04, 30.0, 0.3))                      # bande de livree
-    b.box("mat_peinture_blanc", (sx * 9.2, -1.2, 2.3), (15.5, 4.2, 0.35), rot=(0, math.radians(sx * -4), math.radians(sx * -24)))
-    b.cyl("mat_metal_peint", (sx * 6.2, 4.3, 1.45), 0.95, 3.8, segs=12, rot=(math.radians(90), 0, 0))
-    b.cyl("mat_citerne", (sx * 6.2, 4.32, 1.45), 0.8, 0.05, segs=12, rot=(math.radians(-90), 0, 0))
-    b.box("mat_peinture_blanc", (sx * 3.6, -21.0, 4.2), (6.5, 2.4, 0.22), rot=(0, 0, math.radians(sx * -20)))
-    b.cyl("mat_pneu", (sx * 2.8, -1.5, 0.55), 0.55, 0.4, segs=10, rot=(0, math.radians(90), 0))
-    b.box("mat_metal_peint", (sx * 2.8, -1.5, 1.4), (0.18, 0.18, 1.6))
-b.box("mat_peinture_vert", (0, -20.5, 8.0), (0.4, 5.5, 7.0), rot=(math.radians(-22), 0, 0))  # derive (livree fictive)
-b.cyl("mat_pneu", (-0.2, 14.0, 0.45), 0.45, 0.4, segs=10, rot=(0, math.radians(90), 0))
-b.box("mat_metal_peint", (0, 14.0, 1.2), (0.15, 0.15, 1.5))
-finish(b, 45.0)
 
 bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_apply=True, export_yup=True)

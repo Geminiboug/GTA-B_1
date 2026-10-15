@@ -56,7 +56,7 @@ var placed := false
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "veh_berline": 300.0,
-	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_avion": 1500.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
+	"veh_4x4": 300.0, "veh_minibus": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
 
 
 func _ready() -> void:

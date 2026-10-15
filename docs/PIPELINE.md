@@ -340,3 +340,22 @@ Tests : tests/test_vehicules.gd (tout fonctionne), tests/test_coherence.gd. Capt
 - osm_import.py (facade_details) : bandeaux d'etage, balcons cote rue, auvents en tole sur consoles au-dessus des boutiques.
 - Tests : tests/test_avion.gd [-- 06|24] ; captures : tests/capture_avion.gd -- <dossier> [arrivee],
   tests/capture_horizon.gd. Laisser au moins 8 images avant une capture d'un objet rapide (sinon image pas a jour).
+
+## Reference d'echelle (1 unite = 1 metre) : valeurs reelles, verifiees par tests/test_echelle.gd
+Personnes (Benin, NCD-RisC : hommes ~1,70 m, femmes ~1,59 m en moyenne) :
+- homme 1,70 (PNJ de 1,62 a 1,82), homme fort 1,70, femme 1,59 (PNJ de 1,50 a 1,70), femme ronde 1,58,
+  garcon et fille de 8-10 ans 1,28 a 1,35. Joueur : homme, 1,70 m. Variation par PNJ : +/- 3 %.
+Batiment :
+- etage 3,0 m (sous plafond 2,7), rez-de-chaussee de boutique 3,0 a 3,5 m ; marche 0,17 m ; garde-corps 1,0 m ;
+  porte de maison 0,80-0,90 x 2,05-2,15 ; portail de concession 2,5-3,5 x 2,0-2,4 ; rideau metallique de boutique
+  2,4-3,0 x 2,4-2,8 ; fenetre 1,0-1,2 x 1,1-1,3, allege 0,9-1,0 ; porte automatique 1,8-3,0 x 2,2-2,6 (Ararat 2,8 x 2,5 ; terminal 3,0 x 2,6).
+Mobilier : plan de travail / comptoir 0,90 (caisse 0,80-0,90, comptoir d'enregistrement 1,0-1,1) ; table 0,75 ;
+  assise de chaise 0,45 ; assise de canape 0,40-0,45 ; lit 0,45-0,60 ; rayon de magasin 1,6-2,0 ; refrigerateur 1,7-1,9.
+Vehicules :
+- zem (moto 125 cm3 type Bajaj Boxer / Haojue) : 1,95-2,05 de long, 1,05-1,12 de haut, selle a 0,78-0,80 ;
+- berline (type Corolla) : 4,5-4,7 x 1,75-1,80 x 1,43-1,50 ;
+- 4x4 / SUV : 4,5-4,95 x 1,80-1,95 x 1,68-1,90 ;
+- minibus (type HiAce) : 4,7-5,4 x 1,70-1,90 x 1,95-2,30 ;
+- avion de ligne (type A320) : 35,8 d'envergure, 37,6 de long, 11,8 de haut.
+Rue : voie 3,0-3,5 m ; poteau electrique 9-11 m ; lampadaire 8-10 m ; cocotier 8-20 m.
+Regle : un modele hors fourchette est corrige a la source (script Blender), jamais par une echelle dans Godot.

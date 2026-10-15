@@ -558,7 +558,7 @@ def build_maison(info):
     for side, sgn in (("g", -1), ("d", 1)):
         e = empty(f"porte_battante_entree_{side}", (sgn * 0.7, by0, 0.12), root)
         leaf = Mesh(f"porte_battante_entree_{side}_vantail")
-        leaf.box((-sgn * 0.345, 0, 1.1), (0.69, 0.05, 2.18), M["wood"])
+        leaf.box((-sgn * 0.345, 0, 1.05), (0.69, 0.05, 2.10), M["wood"])
         leaf.box((-sgn * 0.6, -0.04, 1.05), (0.03, 0.04, 0.12), M["steel"])
         leaf.obj(e)
     # --- meubles ---
@@ -699,7 +699,7 @@ def build_maison(info):
 
 
 # ======================================================================= batiment a interieur sur emprise reelle
-def shell(poly_b, h_shell, h_int, entrance_edges, M, wall_m, door_w, glass_front=False, name="lieu"):
+def shell(poly_b, h_shell, h_int, entrance_edges, M, wall_m, door_w, glass_front=False, name="lieu", door_h=2.5):
     """Murs le long du vrai contour (ouvertures sur les aretes d'entree), sol, plafond interieur, toit."""
     col = Mesh(name + "_structure-col")
     vis = Mesh(name + "_details")
@@ -711,7 +711,7 @@ def shell(poly_b, h_shell, h_int, entrance_edges, M, wall_m, door_w, glass_front
         L = math.hypot(b[0] - a[0], b[1] - a[1])
         openings = []
         if i in entrance_edges and L > door_w + 2:
-            openings = [(L / 2, door_w, 3.0)]
+            openings = [(L / 2, door_w, door_h)]
             ux, uy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
             doors.append(((a[0] + ux * L / 2, a[1] + uy * L / 2), (ux, uy)))
         band = (0.45, 4.2) if (glass_front and i in entrance_edges) else None
@@ -773,14 +773,14 @@ def build_ararat(info, road_target):
     if sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly))) < 0:
         poly = poly[::-1]
     entr = pick_entrance(poly, road_target)
-    col, vis, glass, doors = shell(poly, 9.0, 5.5, entr, M, M["plaster_ext"], 6.0, glass_front=True, name="ararat")
+    col, vis, glass, doors = shell(poly, 9.0, 5.5, entr, M, M["plaster_ext"], 2.8, glass_front=True, name="ararat", door_h=2.5)
     fur = Mesh("ararat_mobilier-col")
     goods = Mesh("ararat_produits")
     price_strip = mat("mat_porte_etiquette", (0.95, 0.85, 0.2), 0.5)
     deco = Mesh("ararat_deco")
     (dmid, du) = doors[0]
     dn = inward(poly, dmid, du)
-    sliding_door("ararat", dmid, du, 6.0, 3.0, M)
+    sliding_door("ararat", dmid, du, 2.8, 2.5, M)
     # enseigne au-dessus de l'entree (texte pose par Godot)
     ang = math.atan2(du[1], du[0])
     out = (-dn[0], -dn[1])
@@ -1063,14 +1063,14 @@ def build_terminal(info, landside_target):
     if sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly))) < 0:
         poly = poly[::-1]
     entr = pick_entrance(poly, landside_target)
-    col, vis, glass, doors = shell(poly, 15.0, 9.0, entr, M, mat("mat_facade_terminal", (0.86, 0.87, 0.88), 0.4, 0.2), 8.0, glass_front=True,
-                                   name="terminal")
+    col, vis, glass, doors = shell(poly, 15.0, 9.0, entr, M, mat("mat_facade_terminal", (0.86, 0.87, 0.88), 0.4, 0.2), 3.0, glass_front=True,
+                                   name="terminal", door_h=2.6)
     fur = Mesh("terminal_mobilier-col")
     deco = Mesh("terminal_deco")
     (dmid, du) = doors[0]
     dn = inward(poly, dmid, du)
     ang = math.atan2(du[1], du[0])
-    sliding_door("terminal", dmid, du, 8.0, 3.2, M)
+    sliding_door("terminal", dmid, du, 3.0, 2.6, M)
     out = (-dn[0], -dn[1])
     # enseigne du terminal sur la facade cote ville, au-dessus de l'entree (le grand auvent est celui d'OSM)
     vis.box((dmid[0] + out[0] * 0.3, dmid[1] + out[1] * 0.3, 11.0), (66.0, 0.4, 3.2), M["sign_blue"], ang)

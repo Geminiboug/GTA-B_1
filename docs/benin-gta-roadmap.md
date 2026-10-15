@@ -153,6 +153,7 @@ Option plus tard : multijoueur.
 - 15/10/2026 : passes 12 a 14 : hommes, femmes et enfants (6 morphologies, corps continu anime par squelette, vetements ajustes, coiffures), toutes les voitures conduisibles (berline, 4x4, minibus : physique, roulis, freinage, frein a main, degats), reactions des PNJ (klaxon, insultes, chute, fuite, attroupement, coups).
 - 15/10/2026 : passe 15 : lieux a interieur. Maison du joueur (concession avec portail, salon, cuisine, chambre, douche, toit-terrasse ; le joueur y commence, lit pour dormir), Ararat Hypermarket (facade vitree face au parking, porte automatique, rayons, primeurs, boulangerie, gros conditionnement, caisses, clients, caissieres, vigile), terminal de l aeroport (comptoirs des compagnies, files, tableau des departs a l heure du jeu, salle d attente, controle de securite, cafe, librairie, voyageurs). Tous les tests passent, 61 images/s minimum.
 - 15/10/2026 : passe 16 : avions de ligne (modele Blender detaille, livrees fictives, repoussage, roulage, decollage, approche a 3 degres, arrondi, inverseurs, retour au poste), balisage et PAPI, horizon a 6 km, bandeaux, balcons et auvents. Postes trop etroits pour l envergure exclus automatiquement. test_avion OK sur les deux pistes.
+- 15/10/2026 : echelle reelle : reference dans PIPELINE.md ; personnages aux tailles beninoises (homme 1,71 m, femme 1,61 m, enfants 1,27 a 1,30 m ; avant 1,80 et 1,71), portes automatiques de l Ararat (2,8 x 2,5 au lieu de 6 x 3) et du terminal (3,0 x 2,6 au lieu de 8 x 3,2, plus haute que son ouverture), porte de maison 2,10 m, ancien avion de 44 m retire des props. Nouveau test tests/test_echelle.gd : tout est a l echelle.
 
 ---
 
@@ -190,12 +191,14 @@ ETAT ACTUEL (15/10/2026)
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
   %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md). Envoi git : depuis
   le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
-- Plan valide par Olympe (etapes, une a la fois) : A avions (fait). B echelle reelle : 5 reference d'echelle dans
+- Plan valide par Olympe (etapes, une a la fois) : A avions (fait). B echelle reelle (fait) : 5 reference d'echelle dans
   PIPELINE.md, 6 test auto des tailles (joueur, PNJ, portes, mobilier, vehicules), 7 corrections. C carte reelle (donnees
   ouvertes seulement) : 8 mise a jour OSM/Overture, 9 hauteurs Open Buildings 2.5D, 10 relief Copernicus 30 m, 11 noms
-  fictifs partout (ex. la mini-carte affiche encore "Avenue Pape Jean-Paul II") + LEGAL.md. D personnages Blender :
+  fictifs partout (les noms de rue reels sont autorises, cf. LEGAL.md) + LEGAL.md ; a revoir aussi : bassins OSM rendus
+  en aplats bleu vif au sol (peu fideles). D personnages Blender :
   12 corps de base, 13 morphologies, 14 visages/peaux/coiffures, 15 vetements locaux, 16 animations, 17 integration + LOD.
-- Prochaine tache : etape 5 (reference d'echelle).
+- Prochaine tache : etape 8 (mise a jour OSM et Overture de la zone). Regle d'Olympe : tout ce qui n'est pas fidele a
+  Cotonou est corrige ou supprime.
 - Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et
   rouvrir le projet (sinon erreurs "global uniform does not exist", fichiers non importes).
 ROADMAP
