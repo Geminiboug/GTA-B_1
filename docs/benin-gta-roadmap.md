@@ -160,6 +160,7 @@ Option plus tard : multijoueur.
 - 15/10/2026 : etape 13, morphologies : homme et femme minces, homme et femme ages (dos voute, cheveux poivre et sel, couronne degarnie a la place de la calotte en casque), repartition realiste ; passagers de zem mains sur les cuisses (avant : bras a travers le conducteur), pagnes qui enveloppent les cuisses assis. FPS 74-90 dehors, 67-68 interieurs.
 - 15/10/2026 : noms reels renommes (Boulevard de l Envol, Route des Filets, La voix de Gbe Town, immatriculations GB-), mode debug F1 + teleportation 1-8, checklist docs/validation_phases_3_5.md.
 - 15/10/2026 : etape 14, visages : 7 traits par PNJ cuits a la creation (aucun cout en jeu), nez ouest-africain, 10 teintes de peau, ligne d implantation reelle (plus de frange en bol), vanilles, bonnet, couronne poivre et sel. FPS 76-88 dehors, 61-72 interieurs.
+- 15/10/2026 : etape 15, vetements : epaules propres, zemidjans casques avec numero fictif GT, maillots de clubs fictifs, police fictive et agents de l aeroport, visages varies pour le personnel, plateaux, glacieres, sacs et telephones. FPS 86-97 dehors, 67-71 interieurs.
 
 ---
 
@@ -205,7 +206,7 @@ ETAT ACTUEL (15/10/2026)
   12 corps de base, 13 morphologies, 14 visages/peaux/coiffures, 15 vetements locaux, 16 animations, 17 integration + LOD.
 - C carte reelle (fait) : hauteurs mesurees Open Buildings 2.5D, piscines et bassins fideles, relief Copernicus ecarte
   (modele de surface : toits et arbres), noms verifies. Reste possible : pente reelle de la plage (~4 m sur ~100 m).
-- Prochaine tache : etape 15 (vetements locaux). Etapes 12 a 14 faites ; noms reels renommes ; mode debug pret. Regle d'Olympe : tout ce qui n'est
+- Prochaine tache : etape 16 (animations et deplacements style GTA V), en commencant par le diagnostic du controleur. Etapes 12 a 15 faites. Regle d'Olympe : tout ce qui n'est
   pas fidele a Cotonou est corrige ou supprime.
 - Attention mesures : arreter les Blender / Godot restes en fond avant perf_fps.gd (sinon 10 images/s dans les interieurs).
 - Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et

@@ -18,6 +18,8 @@ const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
 const CAR_MODELS := ["veh_berline", "veh_4x4", "veh_minibus"]
+@export var zem_number_pos := Vector3(0, 1.17, 0.29)   # dos du conducteur assis (repere du zem)
+@export var zem_number_tilt := -0.25                  # buste penche en avant
 const ZEM_VARIANTS := ["zem_a", "zem_b", "zem_c", "zem_passager_h", "zem_passager_f", "zem_passager_f2"]
 
 var _rng := RandomNumberGenerator.new()
@@ -133,6 +135,18 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 	else:
 		var pool := ZEM_VARIANTS.filter(func(v: String) -> bool: return v.begins_with("zem_passager") == (kind == "zem_passager"))
 		var variant: String = pool[_rng.randi() % pool.size()]
+		# numero de zemidjan peint dans le dos de la chemise jaune (fictif : GT = Gbe Town)
+		var num := Label3D.new()
+		num.text = "GT %04d" % _rng.randi_range(1, 9999)
+		num.font_size = 44
+		num.pixel_size = 0.0016
+		num.modulate = Color(0.08, 0.08, 0.1)
+		num.outline_size = 0
+		num.position = zem_number_pos
+		num.rotation.x = zem_number_tilt
+		num.visibility_range_end = 25.0
+		num.double_sided = false            # lisible seulement de dos (pas en miroir de face)
+		mi.add_child(num)
 		mi.mesh = meshes[variant]
 		a["model"] = "zem"
 		a["riders"] = [["homme", ""]] + ([["femme" if variant.contains("_f") else "homme", ""]] if kind == "zem_passager" else [])

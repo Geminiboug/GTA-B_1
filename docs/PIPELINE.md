@@ -422,3 +422,22 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   (tour + noeud), casquette, crane rase.
 - Controle : tests/capture_visages.gd -- <dossier> [variante] (planche de 8 tirages cadres sur la tete).
 - Reste a faire : cheveux mouilles sous la pluie (materiau des cheveux non relie a gtb_wet).
+
+## Vetements locaux et accessoires (etape 15)
+- Hauts : epaules sans pointe ni fente (build_character.py, make_top : lissage local de la crete de l'epaule puis
+  tissu ressorti au-dessus de la peau).
+- Zemidjans (PnjUtil.random_look, kind "zem") : chemise jaune, casque jet (chr_casque + visiere, 70 % des
+  conducteurs, blanc / noir / rouge / bleu) ; numero fictif "GT 0000" dans le dos (traffic.gd, Label3D simple face,
+  zem_number_pos / zem_number_tilt en @export).
+- Maillots de clubs fictifs (shaders/maillot.gdshader, PnjUtil.CLUBS : rayures, bande, epaules ; echelle pour les
+  enfants) : 45 % des hommes en short, 12 % en pantalon.
+- Uniformes (PnjUtil.uniform_look) : police fictive (chemise bleu ciel, pantalon et casquette bleu nuit, pour la
+  phase 8), agent de l'aeroport (gilet jaune fluo, pantalon noir : surete du terminal). Personnel des interieurs
+  (caisse, vigile, comptoir) : visages tires au hasard (avant : tous identiques).
+- Charges sur la tete (pedestrians.gd, _head_basin) : bassine 55 %, plateau en aluminium avec pyramide d'oranges ou
+  de pains 30 %, glaciere 15 %. A la main (_hand_item) : sac (plastique noir, sac a main) ou telephone, 30 % des
+  pietons sans charge.
+- Existant : wax (blouses, robes, pagnes), boubous, chemises en wax, jeans, tapettes, uniforme scolaire kaki.
+- Captures : tests/capture_tenues.gd, tests/capture_zem_trafic.gd -> docs/images/etape15_*.png.
+- Reste : casquette de la policiere (pas de casquette sur le modele femme), traversees du corps pendant la marche
+  (controle a faire avec les nouvelles animations de l'etape 16).

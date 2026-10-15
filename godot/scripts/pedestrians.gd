@@ -65,6 +65,8 @@ func _new_walker(genre: String, at := Vector2.INF) -> Dictionary:
 	# a Cotonou, ce sont surtout les femmes qui portent la bassine sur la tete
 	if at == Vector2.INF and _rng.randf() < (0.4 if genre == "femme" else 0.06):
 		basin = _head_basin(ch)
+	elif at == Vector2.INF and _rng.randf() < 0.3:
+		_hand_item(ch, "sac" if _rng.randf() < 0.7 else "telephone")
 	PnjUtil.bake_groups(ch)
 	_add_body(ch)
 	var kid: bool = ch.get_meta("age") == "enfant"
@@ -409,33 +411,116 @@ func _head_basin(ch: Node3D) -> Node3D:
 	var head := Node3D.new()
 	head.name = "Bassine"
 	head0.add_child(head)
-	var basin := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 0.3
-	cm.bottom_radius = 0.2
-	cm.height = 0.13
-	var m := StandardMaterial3D.new()
-	m.albedo_color = [Color(0.15, 0.35, 0.75), Color(0.75, 0.12, 0.1), Color(0.15, 0.55, 0.25), Color(0.9, 0.9, 0.88)][_rng.randi() % 4]
-	m.roughness = 0.5
-	cm.material = m
-	basin.mesh = cm
-	basin.position = Vector3(0, 0.36, 0)
-	head.add_child(basin)
-	var goods := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.24
-	sm.height = 0.22
-	var gm := StandardMaterial3D.new()
-	gm.albedo_color = [Color(0.95, 0.6, 0.1), Color(0.95, 0.85, 0.3), Color(0.8, 0.85, 0.9), Color(0.85, 0.3, 0.15)][_rng.randi() % 4]
-	sm.material = gm
-	goods.mesh = sm
-	goods.position = Vector3(0, 0.44, 0)
-	head.add_child(goods)
+	# charge : bassine en plastique (55 %), plateau en aluminium avec pyramide (30 %), glaciere (15 %)
+	var roll := _rng.randf()
+	if roll < 0.55:
+		var basin := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.3
+		cm.bottom_radius = 0.2
+		cm.height = 0.13
+		var m := StandardMaterial3D.new()
+		m.albedo_color = [Color(0.15, 0.35, 0.75), Color(0.75, 0.12, 0.1), Color(0.15, 0.55, 0.25), Color(0.9, 0.9, 0.88)][_rng.randi() % 4]
+		m.roughness = 0.5
+		cm.material = m
+		basin.mesh = cm
+		basin.position = Vector3(0, 0.36, 0)
+		head.add_child(basin)
+		var goods := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.24
+		sm.height = 0.22
+		var gm := StandardMaterial3D.new()
+		gm.albedo_color = [Color(0.95, 0.6, 0.1), Color(0.95, 0.85, 0.3), Color(0.8, 0.85, 0.9), Color(0.85, 0.3, 0.15)][_rng.randi() % 4]
+		sm.material = gm
+		goods.mesh = sm
+		goods.position = Vector3(0, 0.44, 0)
+		head.add_child(goods)
+	elif roll < 0.85:
+		# plateau rond en aluminium : oranges pelees ou pains en pyramide
+		var tray := MeshInstance3D.new()
+		var tm := CylinderMesh.new()
+		tm.top_radius = 0.34
+		tm.bottom_radius = 0.32
+		tm.height = 0.03
+		var am := StandardMaterial3D.new()
+		am.albedo_color = Color(0.75, 0.76, 0.78)
+		am.metallic = 0.8
+		am.roughness = 0.35
+		tm.material = am
+		tray.mesh = tm
+		tray.position = Vector3(0, 0.32, 0)
+		head.add_child(tray)
+		var bread := _rng.randf() < 0.4
+		var pm := StandardMaterial3D.new()
+		pm.albedo_color = Color(0.82, 0.6, 0.3) if bread else Color(0.98, 0.72, 0.22)
+		var unit: Mesh
+		if bread:
+			var cap := CapsuleMesh.new()
+			cap.radius = 0.035
+			cap.height = 0.28
+			unit = cap
+		else:
+			var sp := SphereMesh.new()
+			sp.radius = 0.04
+			sp.height = 0.08
+			unit = sp
+		unit.surface_set_material(0, pm)
+		var layer := 0
+		for rr: float in [0.22, 0.13, 0.05]:
+			var n := maxi(1, int(rr * 40.0))
+			for i in n:
+				var it := MeshInstance3D.new()
+				it.mesh = unit
+				var a := TAU * i / n
+				it.position = Vector3(cos(a) * rr, 0.37 + layer * 0.065, sin(a) * rr)
+				if bread:
+					it.rotation = Vector3(PI / 2, a, 0)
+				head.add_child(it)
+			layer += 1
+	else:
+		# glaciere (sachets d'eau, boissons fraiches)
+		var box := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.46, 0.3, 0.32)
+		var cm2 := StandardMaterial3D.new()
+		cm2.albedo_color = [Color(0.92, 0.92, 0.9), Color(0.2, 0.45, 0.8), Color(0.85, 0.2, 0.15)][_rng.randi() % 3]
+		cm2.roughness = 0.4
+		bm.material = cm2
+		box.mesh = bm
+		box.position = Vector3(0, 0.46, 0)
+		head.add_child(box)
 	# un bras leve pour tenir la bassine
 	var arm := ch.find_child("piv_epaule_D", true, false) as Node3D
 	if arm:
 		arm.set_meta("tient_bassine", true)
 	return head
+
+
+func _hand_item(ch: Node3D, what: String) -> void:
+	## Objet tenu a la main droite : sac (plastique noir des courses ou sac a main) ou telephone.
+	var skel := Squelette.find(ch)
+	if skel == null:
+		return
+	var ba := BoneAttachment3D.new()
+	ba.bone_name = "piv_main_D"
+	skel.add_child(ba)
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	var m := StandardMaterial3D.new()
+	if what == "sac":
+		bm.size = Vector3(0.1, 0.28, 0.26)
+		m.albedo_color = [Color(0.06, 0.06, 0.07), Color(0.06, 0.06, 0.07), Color(0.45, 0.25, 0.12), Color(0.75, 0.15, 0.2)][_rng.randi() % 4]
+		m.roughness = 0.35
+		mi.position = Vector3(0, -0.2, 0)
+	else:
+		bm.size = Vector3(0.012, 0.15, 0.075)
+		m.albedo_color = Color(0.05, 0.05, 0.06)
+		m.roughness = 0.2
+		mi.position = Vector3(0, -0.06, 0.02)
+	bm.material = m
+	mi.mesh = bm
+	ba.add_child(mi)
 
 
 # ------------------------------------------------------------ vendeurs assis

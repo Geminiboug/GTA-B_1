@@ -82,6 +82,9 @@ func _look(ch: Node3D, kind: String) -> void:
 			var green := PnjUtil.plain(Color(0.1, 0.5, 0.28) if _key == "ararat" else Color(0.85, 0.2, 0.12))
 			look = {"skin": skin, "top": green, "legs": PnjUtil.plain(Color(0.12, 0.12, 0.14)), "cloth": PnjUtil.plain(Color(0.12, 0.12, 0.14)),
 				"show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux", "chr_chignon"] if genre == "femme" else ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"]}
+		"vigile" when _key == "terminal":
+			PnjUtil.apply(ch, PnjUtil.uniform_look("agent_aeroport", genre, _rng))   # surete de l'aeroport
+			return
 		"vigile":
 			var navy := PnjUtil.plain(Color(0.1, 0.13, 0.22))
 			look = {"skin": skin, "top": navy, "legs": navy, "cloth": navy, "cap": navy,
@@ -93,6 +96,7 @@ func _look(ch: Node3D, kind: String) -> void:
 		_:
 			PnjUtil.dress_random(ch, _rng)
 			return
+	look["face"] = PnjUtil.random_face(_rng)   # le personnel n'a plus tous le meme visage
 	PnjUtil.apply(ch, look)
 
 

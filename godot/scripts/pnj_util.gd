@@ -9,11 +9,21 @@ const VARIANTS := {"homme": "homme", "homme_fort": "homme", "femme": "femme", "f
 	"femme_agee": "femme"}
 const HAIR_PARTS := ["chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches"]
 const WAX := preload("res://shaders/wax.gdshader")
+const MAILLOT := preload("res://shaders/maillot.gdshader")
+# clubs fictifs (aucun club reel) : [couleur 1, couleur 2, motif]
+const CLUBS := [
+	[Color(0.1, 0.5, 0.25), Color(0.98, 0.85, 0.15), 0],    # Etoile de Gbe Town
+	[Color(0.85, 0.1, 0.12), Color(0.96, 0.96, 0.94), 0],    # Racing Lagune
+	[Color(0.1, 0.3, 0.7), Color(0.96, 0.96, 0.94), 1],      # Atlantique FC
+	[Color(0.95, 0.55, 0.08), Color(0.08, 0.08, 0.1), 2],    # Union Sportive du Littoral
+	[Color(0.96, 0.96, 0.94), Color(0.1, 0.45, 0.25), 1],    # Avenir de Cotodji
+	[Color(0.55, 0.1, 0.45), Color(0.98, 0.8, 0.2), 2],      # Dragons de l'Envol
+]
 const KHAKI := Color(0.72, 0.62, 0.42)
 
 # pieces optionnelles : affichees selon la tenue (le corps chr_corps est toujours visible)
 const OPTIONAL := ["chr_haut", "chr_haut_long", "chr_pantalon", "chr_short", "chr_chaussures", "chr_semelle", "chr_jupe",
-	"chr_pagne_long", "chr_boubou", "chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches", "chr_foulard", "chr_bonnet",
+	"chr_pagne_long", "chr_boubou", "chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches", "chr_foulard", "chr_bonnet", "chr_casque",
 	"chr_casquette"]
 
 const SHIRTS := [Color(0.85, 0.15, 0.1), Color(0.1, 0.35, 0.75), Color(0.95, 0.95, 0.92), Color(0.1, 0.55, 0.3),
@@ -66,6 +76,38 @@ static func random_variant(rng: RandomNumberGenerator, genre: String, child_shar
 	if genre == "femme":
 		return "femme_agee" if r < 0.07 else ("femme_ronde" if r < 0.4 else ("femme_mince" if r < 0.62 else "femme"))
 	return "homme_age" if r < 0.07 else ("homme_fort" if r < 0.27 else ("homme_mince" if r < 0.55 else "homme"))
+
+
+static func jersey(club: int, scale := 1.0) -> Material:
+	## scale : taille du porteur / taille d'un adulte (enfant ~0,76) pour placer bande et epaules.
+	var key := "club_%d_%.2f" % [club, scale]
+	if not _mat_cache.has(key):
+		var m := ShaderMaterial.new()
+		m.shader = MAILLOT
+		var cl: Array = CLUBS[club % CLUBS.size()]
+		m.set_shader_parameter("c1", cl[0])
+		m.set_shader_parameter("c2", cl[1])
+		m.set_shader_parameter("motif", cl[2])
+		m.set_shader_parameter("echelle", scale)
+		_mat_cache[key] = m
+	return _mat_cache[key]
+
+
+static func uniform_look(kind: String, genre: String, rng: RandomNumberGenerator) -> Dictionary:
+	## Uniformes : police fictive (chemise bleu ciel, pantalon et casquette bleu nuit), agent de l'aeroport
+	## (gilet jaune fluo, pantalon noir). Visage et peau tires au hasard.
+	var skin: Color = SKINS[rng.randi() % SKINS.size()]
+	var look := {"skin": skin, "face": random_face(rng)}
+	match kind:
+		"police":
+			var navy := plain(Color(0.08, 0.1, 0.2))
+			look.merge({"top": plain(Color(0.55, 0.68, 0.85)), "legs": navy, "cloth": navy, "cap": navy,
+				"show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_casquette"] + (["chr_cheveux", "chr_chignon"] if genre == "femme" else [])})
+		"agent_aeroport":
+			var black := plain(Color(0.07, 0.07, 0.08))
+			look.merge({"top": plain(Color(0.85, 0.95, 0.12)), "legs": black, "cloth": black,
+				"show": ["chr_haut_long", "chr_pantalon", "chr_chaussures", "chr_cheveux"] + (["chr_chignon"] if genre == "femme" else [])})
+	return look
 
 
 static func plain(c: Color) -> Material:
@@ -215,7 +257,7 @@ static func skin_mat(c: Color) -> Material:
 
 
 # familles de pieces (tresse_0..8, foulard + haut + noeud, casquette + visiere, semelles G et D)
-const GROUPS := ["chr_tresse", "chr_vanille", "chr_foulard", "chr_casquette", "chr_bonnet", "chr_semelle"]
+const GROUPS := ["chr_tresse", "chr_vanille", "chr_foulard", "chr_casquette", "chr_casque", "chr_bonnet", "chr_semelle"]
 
 
 static func _starts(n: String, names: Array) -> bool:
@@ -249,6 +291,8 @@ static func apply(ch: Node, look: Dictionary) -> void:
 			mat = look["legs"]
 		elif n.begins_with("chr_boubou") or n.begins_with("chr_jupe") or n.begins_with("chr_pagne") or n.begins_with("chr_foulard"):
 			mat = look["cloth"]
+		elif n == "chr_casque" or n.begins_with("chr_casque_"):
+			mat = look.get("helmet", null)
 		elif n.begins_with("chr_casquette") or n.begins_with("chr_bonnet"):
 			mat = look.get("cap", null)
 		elif look.has("hair") and _starts(n, HAIR_PARTS):
@@ -288,7 +332,15 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 		if kind == "zem":
 			look["top"] = plain(Color(0.95, 0.78, 0.1))
 			show.append_array(["chr_haut", "chr_pantalon", "chr_chaussures"])
-			if rng.randf() < 0.3:
+			if rng.randf() < 0.7:
+				# casque jet (obligatoire, porte par la plupart des zemidjans) : blanc, noir, rouge ou bleu
+				show.append("chr_casque")
+				var hc: Color = [Color(0.92, 0.92, 0.9), Color(0.08, 0.08, 0.09), Color(0.75, 0.1, 0.1), Color(0.1, 0.25, 0.6)][rng.randi() % 4]
+				var hm := StandardMaterial3D.new()
+				hm.albedo_color = hc
+				hm.roughness = 0.25
+				look["helmet"] = hm
+			elif rng.randf() < 0.4:
 				show.append("chr_casquette")
 		elif r < 0.18 and not enfant:
 			# boubou (tunique longue en wax ou en bazin uni), pantalon assorti, manches longues
@@ -302,9 +354,13 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 			show.append_array(["chr_haut_long" if rng.randf() < 0.5 else "chr_haut", "chr_pantalon", "chr_chaussures"])
 		elif r < 0.5:
 			show.append_array(["chr_haut", "chr_short", "chr_semelle"])
+			if rng.randf() < 0.45:
+				look["top"] = jersey(rng.randi() % CLUBS.size(), 0.76 if enfant else 1.0)   # maillot de club (fictif)
 		else:
 			show.append_array(["chr_haut" if rng.randf() < 0.7 else "chr_haut_long", "chr_pantalon",
 				"chr_chaussures" if rng.randf() < 0.65 else "chr_semelle"])
+			if show.has("chr_haut") and rng.randf() < 0.12:
+				look["top"] = jersey(rng.randi() % CLUBS.size(), 0.76 if enfant else 1.0)
 		var h := rng.randf()
 		if ch.get_meta("vieux", false):
 			# homme age : couronne degarnie (golfes, dessus clairseme), crane rase, ou casquette

@@ -662,6 +662,25 @@ def make_top(name, long_sleeves, pad):
         hit = tree.ray_cast(origin, d, 1.0)
         if hit[0] is not None:
             v.co = hit[0] + d * pad
+    # epaules : lissage local (les rayons horizontaux laissent des pointes au sommet du deltoide), puis on ressort
+    # le tissu au-dessus de la peau (rayon depuis le centre de l'epaule, jamais dans le corps)
+    bm2 = bmesh.new()
+    bm2.from_mesh(m)
+    top = [v for v in bm2.verts if v.co.z > sh_z - 0.03 * bk and abs(v.co.x) < sh_x * 0.95]
+    for _ in range(2):
+        bmesh.ops.smooth_vert(bm2, verts=top, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for v in top:
+        sd = "G" if v.co.x < 0 else "D"
+        c0 = Vector((J["epaule_" + sd].x * 0.55, 0.0, sh_z - 0.06 * bk))
+        d = (v.co - c0)
+        if d.length < 1e-5:
+            continue
+        d.normalize()
+        hit = tree.ray_cast(c0, d, 1.0)
+        if hit[0] is not None and (v.co - c0).length < (hit[0] - c0).length + pad * 0.5:
+            v.co = hit[0] + d * pad
+    bm2.to_mesh(m)
+    bm2.free()
     # poids par construction : manches -> bras, reste -> torse (+ epaules qui suivent un peu les bras)
     groups = {b: ob.vertex_groups.new(name=b) for b in BONES}
     n_torso = len(torso_verts)
@@ -834,6 +853,14 @@ else:
         lo, hi = hairline(c), 0.215 * k                    # bord bas (implantation) ou haut de la couronne
         return lo if abs(c.z - lo) < abs(c.z - hi) or c.y < -0.035 * k else hi
     hair_objs.append(shell("chr_cheveux_age", skd, HAIR, 0.005 * k, age_keep, hc, seg=44, edge=age_edge))
+    # casque jet de zemidjan (calotte rigide ouverte sur le visage, petite visiere) : coque epaisse et lisse
+    def jet_keep(c):
+        face = c.y > 0.035 * k and c.z < 0.205 * k
+        return c.z > 0.075 * k + 0.1 * max(c.y, 0.0) and not face
+    hair_objs.append(shell("chr_casque", skd, CAP, 0.024 * k, jet_keep, hc, seg=40,
+                           edge=lambda c: 0.205 * k if c.y > 0.035 * k else 0.075 * k + 0.1 * max(c.y, 0.0)))
+    hair_objs.append(loft("chr_casque_visiere", [(0.09 * k, 0.085 * k, 0.006, 0, 0.215 * k), (0.13 * k, 0.08 * k, 0.006, 0, 0.21 * k)],
+                          CAP, axis="Y", seg=10, center=hc))
     # bonnet en maille (matin frais, harmattan) : couvre le haut des oreilles, revers epais
     hair_objs.append(shell("chr_bonnet", sk, CAP, 0.011 * k, lambda c: c.z > 0.1 * k + 0.25 * max(c.y, 0.0), hc, seg=32))
     hair_objs.append(loft("chr_bonnet_revers", [(0.105 * k, 0.098 * k, 0.11 * k, 0, 0.0), (0.135 * k, 0.1 * k, 0.112 * k, 0, 0.0)],
