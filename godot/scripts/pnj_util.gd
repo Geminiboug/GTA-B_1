@@ -5,13 +5,15 @@ class_name PnjUtil
 ## Chaque personnage porte meta "genre" (homme / femme) et "age" (adulte / enfant), lus par les dialogues et les reactions.
 
 const VARIANTS := {"homme": "homme", "homme_fort": "homme", "femme": "femme", "femme_ronde": "femme",
-	"garcon": "homme", "fille": "femme"}
+	"garcon": "homme", "fille": "femme", "homme_mince": "homme", "femme_mince": "femme", "homme_age": "homme",
+	"femme_agee": "femme"}
+const HAIR_PARTS := ["chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_meches"]
 const WAX := preload("res://shaders/wax.gdshader")
 const KHAKI := Color(0.72, 0.62, 0.42)
 
 # pieces optionnelles : affichees selon la tenue (le corps chr_corps est toujours visible)
 const OPTIONAL := ["chr_haut", "chr_haut_long", "chr_pantalon", "chr_short", "chr_chaussures", "chr_semelle", "chr_jupe",
-	"chr_pagne_long", "chr_boubou", "chr_cheveux", "chr_afro", "chr_chignon", "chr_tresse", "chr_meches", "chr_foulard",
+	"chr_pagne_long", "chr_boubou", "chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_meches", "chr_foulard",
 	"chr_casquette"]
 
 const SHIRTS := [Color(0.85, 0.15, 0.1), Color(0.1, 0.35, 0.75), Color(0.95, 0.95, 0.92), Color(0.1, 0.55, 0.3),
@@ -46,6 +48,7 @@ static func make(variant: String) -> Node3D:
 	ch.set_meta("genre", VARIANTS[variant])
 	ch.set_meta("age", "enfant" if variant in ["garcon", "fille"] else "adulte")
 	ch.set_meta("variante", variant)
+	ch.set_meta("vieux", variant in ["homme_age", "femme_agee"])
 	return ch
 
 
@@ -56,9 +59,11 @@ static func random_genre(rng: RandomNumberGenerator, women_share := 0.5) -> Stri
 static func random_variant(rng: RandomNumberGenerator, genre: String, child_share := 0.0) -> String:
 	if rng.randf() < child_share:
 		return "fille" if genre == "femme" else "garcon"
+	# Cotonou : population jeune (~5 % de plus de 60 ans), beaucoup de silhouettes minces chez les jeunes adultes
+	var r := rng.randf()
 	if genre == "femme":
-		return "femme_ronde" if rng.randf() < 0.38 else "femme"
-	return "homme_fort" if rng.randf() < 0.25 else "homme"
+		return "femme_agee" if r < 0.07 else ("femme_ronde" if r < 0.4 else ("femme_mince" if r < 0.62 else "femme"))
+	return "homme_age" if r < 0.07 else ("homme_fort" if r < 0.27 else ("homme_mince" if r < 0.55 else "homme"))
 
 
 static func plain(c: Color) -> Material:
@@ -82,6 +87,34 @@ static func wax(palette: Array, motif: int) -> Material:
 		m.set_shader_parameter("motif", motif)
 		_mat_cache[key] = m
 	return _mat_cache[key]
+
+
+static func salt_pepper(white: float) -> Material:
+	## Cheveux poivre et sel : melange de meches grises et noires (bruit fin), part de blanc 0..1.
+	var key := "sp_%.2f" % white
+	if _mat_cache.has(key):
+		return _mat_cache[key]
+	var noise := FastNoiseLite.new()
+	noise.frequency = 0.12
+	noise.seed = 3
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(0.07, 0.06, 0.06))
+	ramp.set_color(1, Color(0.78, 0.77, 0.74))
+	ramp.add_point(clampf(1.0 - white, 0.05, 0.95), Color(0.3, 0.29, 0.28))
+	var tex := NoiseTexture2D.new()
+	tex.noise = noise
+	tex.color_ramp = ramp
+	tex.width = 256
+	tex.height = 256
+	tex.seamless = true
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = tex
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3(14, 14, 14)
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	m.roughness = 0.85
+	_mat_cache[key] = m
+	return m
 
 
 static func skin_mat(c: Color) -> Material:
@@ -130,6 +163,8 @@ static func apply(ch: Node, look: Dictionary) -> void:
 			mat = look["cloth"]
 		elif n.begins_with("chr_casquette"):
 			mat = look.get("cap", null)
+		elif look.has("hair") and _starts(n, HAIR_PARTS):
+			mat = look["hair"]
 		if mat:
 			(mi as MeshInstance3D).set_surface_override_material(0, mat)
 	if ch.get("femme") != null:
@@ -148,6 +183,8 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 	var look := {"skin": skin, "top": shirt, "legs": pants, "cloth": cloth, "show": [],
 		"cap": plain(SHIRTS[rng.randi() % SHIRTS.size()].darkened(0.2))}
 	var show: Array = look["show"]
+	if ch.get_meta("vieux", false):
+		look["hair"] = salt_pepper(rng.randf_range(0.35, 0.8))   # poivre et sel, plus ou moins blanchi
 	if enfant and (kind == "ecole" or rng.randf() < 0.55):
 		# uniforme scolaire kaki des ecoles publiques beninoises
 		look["top"] = plain(KHAKI)
@@ -180,7 +217,13 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 			show.append_array(["chr_haut" if rng.randf() < 0.7 else "chr_haut_long", "chr_pantalon",
 				"chr_chaussures" if rng.randf() < 0.65 else "chr_semelle"])
 		var h := rng.randf()
-		if h < 0.6:
+		if ch.get_meta("vieux", false):
+			# homme age : couronne degarnie (golfes, dessus clairseme), crane rase, ou casquette
+			if h < 0.5:
+				show.append("chr_cheveux_age")
+			elif h > 0.8:
+				show.append_array(["chr_cheveux_age", "chr_casquette"])
+		elif h < 0.6:
 			show.append("chr_cheveux")
 		elif h < 0.8:
 			show.append("chr_afro")
@@ -222,6 +265,15 @@ static func dress_random(ch: Node, rng: RandomNumberGenerator, kind := "") -> vo
 
 const SEATED := {"piv_hanche_G": 1.35, "piv_hanche_D": 1.35, "piv_genou_G": -1.45, "piv_genou_D": -1.45,
 	"piv_epaule_G": 0.95, "piv_epaule_D": 0.95, "piv_coude_G": 0.45, "piv_coude_D": 0.45, "piv_tronc": -0.25, "piv_tete": 0.12}
+
+
+const PASSENGER := {"piv_hanche_G": 1.35, "piv_hanche_D": 1.35, "piv_genou_G": -1.45, "piv_genou_D": -1.45,
+	"piv_epaule_G": 0.3, "piv_epaule_D": 0.3, "piv_coude_G": 1.0, "piv_coude_D": 1.0, "piv_tronc": -0.1, "piv_tete": 0.05}
+
+
+static func pose_passenger(character: Node) -> void:
+	## Passager de zem : assis, mains posees sur les cuisses (jamais les bras a travers le conducteur).
+	Squelette.pose(character, PASSENGER)
 
 
 static func pose_seated(character: Node) -> void:

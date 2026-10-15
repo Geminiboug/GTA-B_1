@@ -383,3 +383,16 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   Tapettes : semelle a la longueur du pied, bride en V (materiau double face). Tresses toujours sur la chevelure.
 - Mesure : tests/mesure_corps.gd [-- chr_homme ...] (tours par intersection exacte des triangles).
 - Apercu : tests/capture_studio.gd -- <dossier> [chr_...] (fond neutre, face / trois quarts / profil, tenue comme en jeu).
+
+## Morphologies (etape 13)
+- 10 variantes (build_character.py, V) : homme 1,71 / homme mince 1,73 / homme fort 1,71 / homme age 1,67 ;
+  femme 1,61 / femme mince 1,63 / femme ronde 1,60 / femme agee 1,56 ; garcon 1,30 / fille 1,27 m.
+- Age (old=True) : stature reduite, tete et cou en avant, epaules enroulees, ventre. Godot : meta "vieux",
+  cheveux poivre et sel (PnjUtil.salt_pepper, bruit gris / noir). Homme age : chr_cheveux_age (couronne en fer
+  a cheval, front et golfes nus, coque fine a 5 mm pour eviter le scintillement), crane rase ou casquette.
+- Repartition (PnjUtil.random_variant) : ~7 % d'ages, hommes 20 % forts / 28 % minces, femmes 33 % rondes / 22 % minces.
+- Passagers de zem : pose PnjUtil.pose_passenger (mains sur les cuisses ou a la taille du conducteur). Jupe et pagne :
+  l'avant suit la cuisse a 95 % (assis, le tissu enveloppe les jambes).
+- Controles : tests/test_echelle.gd (taille de chaque variante), tests/capture_morphos_zem.gd (planche des 10 morphologies
+  en passager), tests/capture_studio.gd.
+- Pas de ragdoll dans le jeu actuel (chutes animees par code) : prevu a l'etape 16.

@@ -75,7 +75,7 @@ func _build_meshes() -> Dictionary:
 			asm.add_child(pas)
 			PnjUtil.dress_random(pas, _rng)
 			pas.scale = Vector3.ONE
-			PnjUtil.pose_seated(pas)
+			PnjUtil.pose_passenger(pas)
 			pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
 		out[variant] = asm
 	# la pose assise du squelette n'est appliquee au maillage qu'a l'image suivante : on fusionne apres

@@ -36,7 +36,8 @@ func _range(v: float, lo: float, hi: float, what: String) -> void:
 func _initialize() -> void:
 	# --- personnes : sommet du corps (pieds a 0)
 	for e in [["chr_homme", 1.66, 1.74], ["chr_homme_fort", 1.66, 1.74], ["chr_femme", 1.55, 1.64],
-			["chr_femme_ronde", 1.54, 1.63], ["chr_garcon", 1.25, 1.38], ["chr_fille", 1.22, 1.36]]:
+			["chr_femme_ronde", 1.54, 1.63], ["chr_garcon", 1.25, 1.38], ["chr_fille", 1.22, 1.36],
+			["chr_homme_mince", 1.67, 1.77], ["chr_femme_mince", 1.56, 1.66], ["chr_homme_age", 1.58, 1.70], ["chr_femme_agee", 1.48, 1.60]]:
 		var b: Variant = _aabb(_model(e[0]), Transform3D(), "chr_corps")
 		_range((b as AABB).end.y, e[1], e[2], "taille %s" % e[0])
 	# --- vehicules : longueur (Z), hauteur (Y), largeur de caisse (sans retroviseurs)

@@ -28,6 +28,11 @@ V = {
     "femme_ronde": dict(sex="f", h=1.58, g=1.16, sh=0.93, hip=1.28, bust=0.055, belly=0.045, child=False),
     "garcon": dict(sex="m", h=1.30, g=0.86, sh=0.9, hip=0.95, bust=0.0, belly=0.01, child=True),
     "fille": dict(sex="f", h=1.27, g=0.84, sh=0.88, hip=0.98, bust=0.0, belly=0.0, child=True),
+    # silhouettes minces (jeunes adultes, travailleurs de rue) et personnes agees (tassement, dos voute, ventre)
+    "homme_mince": dict(sex="m", h=1.72, g=0.93, sh=0.97, hip=0.95, bust=0.0, belly=0.0, child=False),
+    "femme_mince": dict(sex="f", h=1.61, g=0.91, sh=0.86, hip=1.03, bust=0.026, belly=0.0, child=False),
+    "homme_age": dict(sex="m", h=1.66, g=0.98, sh=0.97, hip=1.0, bust=0.008, belly=0.045, child=False, old=True),
+    "femme_agee": dict(sex="f", h=1.55, g=1.07, sh=0.9, hip=1.18, bust=0.045, belly=0.05, child=False, old=True),
 }[VARIANT]
 # h = taille reelle du corps (sommet du crane), Benin : hommes ~1,70 m, femmes ~1,59 m (docs/PIPELINE.md).
 # Calibration mesuree : la peau (Skin + subdivision) depasse le sommet du squelette de ~2 % (homme) / ~3,5 % (femme).
@@ -124,6 +129,13 @@ for s, sx in (("G", -1), ("D", 1)):
     jp("genou_" + s, sx * hip_x * 1.02, 0.012, knee_z)
     jp("cheville_" + s, sx * hip_x * 1.02, -0.012, ankle_z)
     jp("orteils_" + s, sx * hip_x * 1.05, 0.16 * K ** 0.8, 0.02)
+# personne agee : tete et cou portes en avant, epaules enroulees (dos voute)
+if V.get("old"):
+    for key, dy, dz in (("cou", 0.03, -0.01), ("tete", 0.045, -0.015), ("sommet", 0.05, -0.015)):
+        J[key] = J[key] + Vector((0, dy * K, dz * K))
+    for s in ("G", "D"):
+        for key in ("epaule_", "coude_", "poignet_", "doigts_"):
+            J[key + s] = J[key + s] + Vector((0, 0.018 * K, -0.008 * K))
 
 # ------------------------------------------------------------------ corps (Skin + subdivision)
 me = bpy.data.meshes.new("chr_corps")
@@ -689,7 +701,8 @@ def skirt(name, rings, mat):
         t = 1.0 - ss(hem_z, top_z, p.z)
         side = "G" if p.x < 0 else "D"
         lat = min(1.0, abs(p.x) / 0.08)
-        wl = t * 0.55 * lat
+        # l avant suit presque entierement la cuisse (assis : le tissu enveloppe les jambes au lieu d etre traverse)
+        wl = t * (0.95 * min(1.0, abs(p.x) / 0.04) if p.y > 0.0 else 0.55 * lat)
         groups["piv_bassin"].add([v.index], 1.0 - wl, "REPLACE")
         if wl > 0:
             groups["piv_hanche_" + side].add([v.index], wl, "REPLACE")
@@ -723,6 +736,15 @@ if F:
     hair_objs.append(blob("chr_foulard_haut", (0.098 * k, 0.112 * k, 0.07 * k), hc + Vector((0, -0.018 * k, 0.265 * k)), CLOTH, 14, 8))
     hair_objs.append(blob("chr_foulard_noeud", (0.05 * k, 0.03 * k, 0.035 * k), hc + Vector((0, 0.06 * k, 0.29 * k)), CLOTH, 10, 6))
 else:
+    # homme age : couronne en fer a cheval (nuque et cotes), golfes et dessus degarnis, bord irregulier, coque tres fine
+    # (pas de calotte en forme de casque) ; couleur poivre et sel donnee dans Godot (pnj_util.gd)
+    def age_keep(c):
+        jit = 0.0
+        above_ears = c.z > (0.105 + 0.55 * c.y) * k + jit
+        back_or_sides = c.y < -0.035 * k + jit or c.z < 0.19 * k + jit
+        forehead = c.y > 0.015 * k and abs(c.x) < 0.075 * k        # front et golfes : peau nue
+        return above_ears and back_or_sides and not forehead
+    hair_objs.append(shell("chr_cheveux_age", sk, HAIR, 0.005 * k, age_keep, hc, seg=44))
     hair_objs.append(shell("chr_casquette", sk, CAP, 0.012 * k, lambda c: c.z > 0.165 * k + 0.2 * c.y, hc))
     hair_objs.append(loft("chr_casquette_visiere", [(0.075 * k, 0.072 * k, 0.005, 0, 0.17 * k), (0.15 * k, 0.07 * k, 0.005, 0, 0.162 * k),
                                                    (0.17 * k, 0.05 * k, 0.004, 0, 0.158 * k)], CAP, axis="Y", seg=8, center=hc))

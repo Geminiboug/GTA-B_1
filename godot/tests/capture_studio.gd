@@ -16,7 +16,7 @@ var shots: Array[Image] = []
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	out_dir = args[0]
-	models = Array(args.slice(1)) if args.size() > 1 else ["chr_homme", "chr_homme_fort", "chr_femme", "chr_femme_ronde", "chr_garcon", "chr_fille"]
+	models = Array(args.slice(1)) if args.size() > 1 else ["chr_homme", "chr_homme_mince", "chr_homme_fort", "chr_homme_age", "chr_femme", "chr_femme_mince", "chr_femme_ronde", "chr_femme_agee", "chr_garcon", "chr_fille"]
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
@@ -68,7 +68,8 @@ func _process(_d: float) -> bool:
 		var sheet := Image.create(w * shots.size(), h, false, shots[0].get_format())
 		for i in shots.size():
 			sheet.blit_rect(shots[i], Rect2i(0, 0, w, h), Vector2i(i * w, 0))
-		sheet.save_png(out_dir.path_join("studio_%s.png" % models[idx]))
+		var fname := "studio_%s.png" % models[idx] if models.count(models[idx]) == 1 else "studio_%s_%d.png" % [models[idx], idx]
+		sheet.save_png(out_dir.path_join(fname))
 		print("capture studio_", models[idx])
 		current.queue_free()
 		current = null
