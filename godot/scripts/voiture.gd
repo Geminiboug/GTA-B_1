@@ -31,6 +31,8 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 var kind := "voiture"
 var model_name := "veh_berline"
 var has_rider := false
+var ai := false                  # conduite automatique (police) tant que le joueur n'est pas au volant
+var ai_input := Vector3.ZERO     # (accelerateur, frein, direction) 0..1, 0..1, -1..1 (+ = gauche)
 var speed := 0.0         # vitesse longitudinale signee (camera, mini-carte, son, PNJ)
 var throttle := 0.0
 var braking := false
@@ -221,6 +223,12 @@ func _physics_process(delta: float) -> void:
 		hand = Input.is_action_pressed("handbrake")
 		if Input.is_action_just_pressed("horn"):
 			horn()
+	elif ai:
+		# pilote automatique (scripts/police.gd) : memes commandes que le joueur
+		acc_in = ai_input.x
+		brake_in = ai_input.y
+		steer_in = ai_input.z
+		hand = false
 	if health <= 0.0:
 		acc_in = 0.0
 	var fwd := Vector2(-sin(_yaw), -cos(_yaw))

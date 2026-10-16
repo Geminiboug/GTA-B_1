@@ -41,6 +41,7 @@ var _current_zone := ""
 var _house_lights: Array[OmniLight3D] = []
 var _fade: ColorRect
 var _sleeping := false
+var shop_spots: Array = []      # caisses de l'Ararat, cafe de l'aerogare (scripts/commerce.gd) : {pos, kind}
 
 
 func _ready() -> void:
@@ -220,6 +221,7 @@ func _text(e: Node3D, n: String) -> void:
 		size = 0.6
 		col = Color(1, 0.92, 0.3)
 	elif n.begins_with("texte_ararat_caisse"):
+		shop_spots.append({"pos": e.global_position, "kind": "caisse"})
 		txt = "Caisse %d" % (int(parts[parts.size() - 1]) + 1)
 		size = 0.18
 	elif n.begins_with("texte_ararat_rayon"):
@@ -240,6 +242,7 @@ func _text(e: Node3D, n: String) -> void:
 		txt = "EMBARQUEMENT\nPassagers munis d'une carte d'embarquement uniquement"
 		size = 0.2
 	elif n.begins_with("texte_terminal_cafe"):
+		shop_spots.append({"pos": e.global_position, "kind": "cafe"})
 		txt = "CAFÉ DU LITTORAL"
 		size = 0.3
 	elif n.begins_with("texte_terminal_librairie"):
@@ -359,7 +362,7 @@ func _physics_process(delta: float) -> void:
 		var dist := _player.global_position.distance_to(bed.global_position)
 		if dist < 1.6:
 			if _hud and _hud.has_method("show_hint"):
-				_hud.show_hint("E : dormir jusqu'au matin")
+				_hud.show_hint("E : dormir jusqu'au matin et sauvegarder")
 			if Input.is_action_just_pressed("interact"):
 				_sleep()
 
@@ -389,7 +392,9 @@ func _sleep() -> void:
 		if _day:
 			_day.set("hour", 7.0)
 		if _hud and _hud.has_method("show_place"):
-			_hud.show_place("Une nouvelle journée commence"))
+			_hud.show_place("Une nouvelle journée commence")
+		Partie.soigner(100.0)
+		Partie.sauver(get_parent()))
 	tw.tween_interval(1.5)
 	tw.tween_property(_fade, "color:a", 0.0, 1.5)
 	tw.tween_callback(func() -> void: _sleeping = false)

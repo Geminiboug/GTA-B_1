@@ -398,6 +398,7 @@ func player_attack(origin: Vector3, dir: Vector3) -> bool:
 		best["yaw"] = atan2(dir.x, dir.z)
 		best["node"].play_clips([["Death01", 1.4], ["LayToIdle", 0.0]])
 	Bulle.say(best["node"], Dialogues.pick("frappe", _rng, String(_player.get("genre"))), 2.5, 0.7)
+	get_tree().call_group("police", "crime", "agression", (best["node"] as Node3D).global_position)
 	for w in _walkers:
 		if w != best and (w["node"] as Node3D).global_position.distance_to(origin) < panic_radius:
 			_flee(w)

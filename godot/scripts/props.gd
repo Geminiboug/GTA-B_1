@@ -52,6 +52,7 @@ const CAR_KINDS := ["veh_berline", "veh_4x4", "veh_minibus"]
 var _chunk_nodes := {}
 var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
+var shops: Array = []                        # commerces ou acheter (scripts/commerce.gd) : {pos, kind}
 var placed := false
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
@@ -462,6 +463,8 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		vendor_spots.append(xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0, -0.85)))
 		if _rng.randf() < 0.5:
 			vendor_spots.append(xf * Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(0.85, 0, 0)))
+	if kind.begins_with("prop_etal") or kind == "prop_maquis" or kind == "prop_kpayo" or kind == "prop_cabine":
+		shops.append({"pos": xf.origin, "kind": kind.trim_prefix("prop_").get_slice("_", 0)})
 	if kind == "prop_cabine":
 		_box_col(xf, Vector3(1.6, 2.3, 1.3), 1.15)
 		_label(xf * Transform3D(Basis.IDENTITY, Vector3(0, 1.85, -0.7)), "TRANSFERT D'ARGENT - CREDIT", 1.4, Color(0.1, 0.1, 0.1))

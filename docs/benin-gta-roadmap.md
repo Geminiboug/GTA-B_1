@@ -96,14 +96,14 @@ Materiel :
 - [ ] Optimisation (instances, LOD, occlusion) [MultiMesh par quartiers + distances d affichage faits ; 86-97 img/s dehors, 67-71 en interieur en 1280x720 ; LOD des personnages a l etape 17]
 
 ### Phase 7 : Gameplay de base
-- [ ] Systeme d'argent (FCFA), inventaire, interactions (acheter, parler)
-- [ ] UI : HUD, carte, menu (fait : mini-carte, grande carte, GPS ; reste : menus, pause, options, sauvegarde)
-- [ ] 3 premieres missions (livraison en zem, course client, achat au marche)
-- [ ] Sauvegarde et chargement
+- [x] Systeme d argent (FCFA), inventaire, interactions (acheter, parler)
+- [x] UI : HUD, carte, menu (mini-carte, grande carte, GPS, HUD de jeu, ecran titre, pause, options)
+- [x] 3 premieres missions (livraison en zem, course client, achat au marche), dans l histoire "Le Dernier Vol"
+- [x] Sauvegarde et chargement
 
 ### Phase 8 : Tension et consequences
-- [ ] Systeme de police / danger
-- [ ] Poursuites, amendes
+- [x] Systeme de police / danger
+- [x] Poursuites, amendes
 - [ ] Equilibrage
 
 ### Phase 9 : Extension

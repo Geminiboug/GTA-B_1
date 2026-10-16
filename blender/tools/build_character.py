@@ -788,24 +788,206 @@ def make_top(name, long_sleeves, pad):
     return ob
 
 
-make_top("chr_haut", False, 0.022)
-make_top("chr_haut_long", True, 0.024)
+def make_top_skin(name, long_sleeves, pad, decimate=1.0):
+    """Haut decoupe dans la peau sculptee (corps Quaternius) : d'un seul tenant, sans fente ni rabat aux epaules.
+    Decoupes nettes par plans (ourlet, bout des manches, encolure plus basse devant), tissu gonfle de 'pad', tombe droit
+    sous la poitrine avec quelques plis, lisse puis repousse hors du corps. Poids de la peau (il suit le corps), sans
+    les cuisses pour le bas du vetement."""
+    from mathutils.bvhtree import BVHTree
+    ob = body.copy()
+    ob.data = body.data.copy()
+    ob.name = name
+    ob.data.name = name
+    scene.collection.objects.link(ob)
+    if ob.data.shape_keys:
+        ob.shape_key_clear()
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    skin_idx = [i for i, mt in enumerate(ob.data.materials) if mt == SKIN]
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index not in skin_idx], context="FACES")
+    # coutures de texture : sommets en double soudes (sinon le tissu gonfle s'ouvre en fente le long des coutures)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=0.0005)
+    global SHIRT_HEM
+    from mathutils.bvhtree import BVHTree as _BVH
+    _crotch = _BVH.FromObject(body, bpy.context.evaluated_depsgraph_get()).ray_cast(Vector((0, 0, bz + 0.15)), Vector((0, 0, -1)), 1.0)[0]
+    # ourlet par-dessus la ceinture du pantalon, mais au-dessus de l'entrejambe (sinon le tissu y epouse le creux)
+    hem_z = bz - 0.1 * bk if _crotch is None else max(bz - 0.1 * bk, _crotch.z + 0.05)
+    SHIRT_HEM = hem_z
+    print("ourlet du haut a %.3f m (entrejambe %s)" % (hem_z, None if _crotch is None else round(_crotch.z, 3)))
+    neck_p = Vector((0, 0, sh_z + 0.055 * bk))
+    neck_n = Vector((0, 0.45, 1)).normalized()       # encolure plus basse devant
+    cuts = [(Vector((0, 0, hem_z)), Vector((0, 0, -1)), lambda c: True),
+            (neck_p, neck_n, lambda c: abs(c.x) < sh_x * 0.75)]
+    for sd in ("G", "D"):
+        S, E, W = J["epaule_" + sd], J["coude_" + sd], J["poignet_" + sd]
+        if long_sleeves:
+            P, n = W - (W - E).normalized() * 0.025, (W - E).normalized()
+        else:
+            P, n = S + (E - S).normalized() * 0.21 * bk, (E - S).normalized()
+        cuts.append((P, n, lambda c, sd=sd: region_of(c) in ("piv_epaule_" + sd, "piv_coude_" + sd, "piv_main_" + sd)))
+    for P, n, where in cuts:
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        bmesh.ops.bisect_plane(bm, geom=geom, plane_co=P, plane_no=n)
+        bm.faces.ensure_lookup_table()
+        kill = [f for f in bm.faces if (f.calc_center_median() - P).dot(n) > 0 and where(f.calc_center_median())]
+        bmesh.ops.delete(bm, geom=kill, context="FACES")
+    # morceaux detaches (tete, mains...) : on ne garde que la piece principale
+    bm.verts.ensure_lookup_table()
+    seen, best = set(), []
+    for v0 in bm.verts:
+        if v0 in seen:
+            continue
+        comp, stack = [], [v0]
+        seen.add(v0)
+        while stack:
+            v = stack.pop()
+            comp.append(v)
+            for e in v.link_edges:
+                o = e.other_vert(v)
+                if o not in seen:
+                    seen.add(o)
+                    stack.append(o)
+        if len(comp) > len(best):
+            best = comp
+    keep = set(best)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v not in keep], context="VERTS")
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * pad
+    # tombe du tissu : sous la poitrine le haut descend droit depuis le tour de poitrine (un peu evase), plis
+    tree = BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get())
+    chest_z = sh_z - 0.16 * bk
+    prof = []
+    for k in range(72):
+        a = k / 72 * math.tau
+        d = Vector((math.cos(a), math.sin(a), 0))
+        hit = tree.ray_cast(Vector((0, 0, chest_z)), d, 1.0)
+        prof.append((hit[0] - Vector((0, 0, chest_z))).length if hit[0] is not None else 0.1)
+    for v in bm.verts:
+        p = v.co
+        if p.z >= chest_z or abs(p.x) > sh_x * 0.95:
+            continue
+        drop = min(1.0, (chest_z - p.z) / max(chest_z - hem_z, 1e-3))
+        a = math.atan2(p.y, p.x) % math.tau
+        f = a / math.tau * 72
+        r0 = prof[int(f) % 72] * (1 - f % 1) + prof[(int(f) + 1) % 72] * (f % 1)
+        want = r0 * (0.98 + 0.05 * drop) + pad * 0.6
+        cur = Vector((p.x, p.y))
+        if cur.length < want:
+            cur = cur.normalized() * want
+        cur = cur + cur.normalized() * (0.004 * drop * math.sin(a * 9.0))
+        p.x, p.y = cur.x, cur.y
+    # lissage (creux des aisselles, reliefs musculaires gonfles) en gardant les bords
+    inner = [v for v in bm.verts if not v.is_boundary]
+    for _ in range(3):
+        bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for f in bm.faces:
+        f.material_index = 0
+        f.smooth = True
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.materials.clear()
+    ob.data.materials.append(TOP)
+    # allegement (foule) avant le report des poids, bords gardes intacts (ourlets nets)
+    if decimate < 1.0:
+        bmd = bmesh.new()
+        bmd.from_mesh(ob.data)
+        border = set()
+        for v in bmd.verts:
+            if v.is_boundary:
+                border.add(v.index)
+                border.update(e.other_vert(v).index for e in v.link_edges)
+        bmd.free()
+        for g in list(ob.vertex_groups):
+            ob.vertex_groups.remove(g)
+        vg = ob.vertex_groups.new(name="_allege")
+        vg.add([v.index for v in ob.data.vertices if v.index not in border], 1.0, "REPLACE")
+        md = ob.modifiers.new("allege", "DECIMATE")
+        md.ratio = decimate
+        md.vertex_group = "_allege"
+        bpy.context.view_layer.objects.active = ob
+        bpy.ops.object.modifier_apply(modifier=md.name)
+    # poids repris sur la peau la plus proche (le tissu a bouge : gonfle, tombe, lisse), sinon le bras ressort en
+    # mouvement pres des aisselles
+    for g in list(ob.vertex_groups):
+        ob.vertex_groups.remove(g)
+    for g in body.vertex_groups:
+        ob.vertex_groups.new(name=g.name)
+    dt = ob.modifiers.new("poids", "DATA_TRANSFER")
+    dt.object = body
+    dt.use_vert_data = True
+    dt.data_types_verts = {"VGROUP_WEIGHTS"}
+    dt.vert_mapping = "POLYINTERP_NEAREST"
+    dt.layers_vgroup_select_src = "ALL"
+    dt.layers_vgroup_select_dst = "NAME"
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.modifier_apply(modifier=dt.name)
+    # bas du vetement : il suit le bassin, pas les cuisses
+    legs = [g.index for g in ob.vertex_groups if g.name.startswith(("piv_hanche", "piv_genou", "piv_cheville"))]
+    pelvis = ob.vertex_groups.get("piv_bassin")
+    for v in ob.data.vertices:
+        moved = 0.0
+        for ge in list(v.groups):
+            if ge.group in legs:
+                moved += ge.weight
+                ob.vertex_groups[ge.group].remove([v.index])
+        if moved > 0 and pelvis:
+            pelvis.add([v.index], moved, "ADD")
+    return ob
+
+
 if USE_UBC:
-    # epaulettes tirees de la peau sculptee : bouchent la fente entre le tronc et les manches (deltoide plus haut que
-    # sur l'ancien corps), fusionnees au haut (memes poids)
-    for _n, _pad in (("chr_haut", 0.016), ("chr_haut_long", 0.018)):
-        ep = derive("tmp_epaulette", TOP, _pad, lambda c, r: c.z > sh_z - 0.07 * bk and 0.45 * sh_x < abs(c.x) < 1.3 * sh_x
-                    and (r in ("piv_tronc",) or r.startswith("piv_epaule")))
-        bpy.ops.object.select_all(action="DESELECT")
-        ep.select_set(True)
-        _o = scene.objects[_n]
-        _o.select_set(True)
-        bpy.context.view_layer.objects.active = _o
-        bpy.ops.object.join()
-derive("chr_pantalon", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
-       (r.startswith(LEG) and c.z > J["cheville_G"].z + 0.035), ((J["cheville_G"].z + 0.035, 0.0),))
-derive("chr_short", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
-       (r.startswith("piv_hanche") and c.z > J["genou_G"].z + 0.09 * bk), ((J["genou_G"].z + 0.09 * bk, 0.0),))
+    make_top_skin("chr_haut", False, 0.014)
+    make_top_skin("chr_haut_long", True, 0.016)
+else:
+    make_top("chr_haut", False, 0.022)
+    make_top("chr_haut_long", True, 0.024)
+def make_pants_skin(name, pad, cuff_z):
+    """Pantalon / short decoupe dans la peau sculptee : ceinture et bas des jambes coupes par des plans (bords nets),
+    coutures de texture soudees, poids de la peau conserves. Ceinture sous l'ourlet du haut."""
+    ob = body.copy()
+    ob.data = body.data.copy()
+    ob.name = name
+    ob.data.name = name
+    scene.collection.objects.link(ob)
+    if ob.data.shape_keys:
+        ob.shape_key_clear()
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    skin_idx = [i for i, mt in enumerate(ob.data.materials) if mt == SKIN]
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index not in skin_idx], context="FACES")
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=0.0005)
+    waist_z = max(bz - 0.02 * bk, SHIRT_HEM + 0.045)
+    legs = ("piv_bassin", "piv_hanche", "piv_genou", "piv_cheville")
+    for P, n in ((Vector((0, 0, waist_z)), Vector((0, 0, 1))), (Vector((0, 0, cuff_z)), Vector((0, 0, -1)))):
+        bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=P, plane_no=n)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if (f.calc_center_median() - P).dot(n) > 0], context="FACES")
+    # mains et avant-bras (bras en A a hauteur des hanches) : hors du pantalon
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if not region_of(f.calc_center_median()).startswith(legs)], context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    bm.normal_update()
+    for v in bm.verts:
+        v.co += v.normal * pad
+    inner = [v for v in bm.verts if not v.is_boundary]
+    bmesh.ops.smooth_vert(bm, verts=inner, factor=0.4, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for f in bm.faces:
+        f.material_index = 0
+        f.smooth = True
+    bm.to_mesh(ob.data)
+    bm.free()
+    ob.data.materials.clear()
+    ob.data.materials.append(PANTS)
+    return ob
+
+
+if USE_UBC:
+    make_pants_skin("chr_pantalon", 0.008, J["cheville_G"].z + 0.035)
+    make_pants_skin("chr_short", 0.008, J["genou_G"].z + 0.09 * bk)
+else:
+    derive("chr_pantalon", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
+           (r.startswith(LEG) and c.z > J["cheville_G"].z + 0.035), ((J["cheville_G"].z + 0.035, 0.0),))
+    derive("chr_short", PANTS, 0.006, lambda c, r: (r == "piv_bassin" and c.z < bz - 0.02 * bk) or
+           (r.startswith("piv_hanche") and c.z > J["genou_G"].z + 0.09 * bk), ((J["genou_G"].z + 0.09 * bk, 0.0),))
 derive("chr_chaussures", SHOES, 0.012, lambda c, r: r.startswith("piv_cheville") or (r.startswith("piv_genou") and c.z < J["cheville_G"].z + 0.06))
 
 
@@ -864,7 +1046,22 @@ def clear_skin(names, gap):
 
 
 if USE_UBC:
+    def flat_hem():
+        # ourlet du bas : bord a plat et sans dents de scie (repousse par clear_skin le long de la peau)
+        for _n in ("chr_haut", "chr_haut_long"):
+            _m = scene.objects[_n].data
+            _bm = bmesh.new()
+            _bm.from_mesh(_m)
+            _hem = [v for v in _bm.verts if v.is_boundary and v.co.z < SHIRT_HEM + 0.03 and abs(v.co.x) < sh_x * 1.4]
+            for v in _hem:
+                v.co.z = SHIRT_HEM
+            for _ in range(3):
+                bmesh.ops.smooth_vert(_bm, verts=_hem, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=False)
+            _bm.to_mesh(_m)
+            _bm.free()
+
     clear_skin(["chr_haut", "chr_haut_long"], 0.014)
+    flat_hem()
     clear_skin(["chr_pantalon", "chr_short"], 0.007)
     # chaussures : coque lissee (on ne voit plus les orteils), puis au-dessus de la peau
     _sh = scene.objects["chr_chaussures"]
@@ -1127,15 +1324,24 @@ for ob in [o for o in scene.collection.objects if o.type == "MESH"]:
 if USE_UBC:
     # allegement pour la foule (budget 70 images/s), une fois les vetements construits sur le corps complet :
     # corps sous le cou et vetements derives du corps ; le visage garde toute sa definition
-    def _decimate(ob, ratio, below=None):
+    def _decimate(ob, ratio, below=None, keep_border=False):
+        ## les bords (ourlets, ceinture, bout des manches) et leur premier anneau ne sont jamais simplifies : bords nets
         if ob is None or len(ob.data.polygons) < 400:
             return
         md = ob.modifiers.new("allege", "DECIMATE")
         md.ratio = ratio
-        if below is not None:
-            vg = ob.vertex_groups.new(name="_allege")
-            vg.add([v.index for v in ob.data.vertices if v.co.z < below], 1.0, "REPLACE")
-            md.vertex_group = "_allege"
+        _bmd = bmesh.new()
+        _bmd.from_mesh(ob.data)
+        border = set()
+        for v in _bmd.verts:
+            if keep_border and v.is_boundary:
+                border.add(v.index)
+                border.update(e.other_vert(v).index for e in v.link_edges)
+        _bmd.free()
+        vg = ob.vertex_groups.new(name="_allege")
+        vg.add([v.index for v in ob.data.vertices if (below is None or v.co.z < below) and v.index not in border], 1.0, "REPLACE")
+        md.vertex_group = "_allege"
+        below = below if below is not None else 1e9
         bpy.context.view_layer.objects.active = ob
         bpy.ops.object.modifier_apply(modifier=md.name)
         if below is not None:
@@ -1151,7 +1357,11 @@ if USE_UBC:
     for _n in [o.name for o in scene.objects if o.type == "MESH" and o.data.shape_keys and o.name != "chr_corps"]:
         scene.objects[_n].shape_key_clear()
     for _n in ("chr_pantalon", "chr_short", "chr_chaussures"):
-        _decimate(scene.objects.get(_n), 0.4)
+        _decimate(scene.objects.get(_n), 0.4, keep_border=True)
+    # apres allegement (corps et vetements), le tissu est repousse au-dessus de la peau simplifiee, ourlet a plat
+    clear_skin(["chr_haut", "chr_haut_long"], 0.014)
+    clear_skin(["chr_pantalon", "chr_short"], 0.007)
+    flat_hem()
 
 # demi-tour : le personnage regarde -Y Blender (= +Z Godot), comme le standard glTF et le profil humanoide de Godot
 from mathutils import Matrix

@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=29 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -20,6 +20,11 @@
 [ext_resource type="Script" path="res://scripts/lieux.gd" id="18_lieux"]
 [ext_resource type="Script" path="res://scripts/horizon.gd" id="19_horizon"]
 [ext_resource type="Script" path="res://scripts/balisage.gd" id="20_balisage"]
+[ext_resource type="Script" path="res://scripts/hud_jeu.gd" id="41_hudjeu"]
+[ext_resource type="Script" path="res://scripts/commerce.gd" id="42_commerce"]
+[ext_resource type="Script" path="res://scripts/histoire.gd" id="43_histoire"]
+[ext_resource type="Script" path="res://scripts/police.gd" id="44_police"]
+[ext_resource type="Script" path="res://scripts/menus.gd" id="45_menus"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -117,3 +122,18 @@ script = ExtResource("17_hud")
 
 [node name="Debug" type="CanvasLayer" parent="."]
 script = ExtResource("40_debug")
+
+[node name="HUDJeu" type="CanvasLayer" parent="."]
+script = ExtResource("41_hudjeu")
+
+[node name="Commerce" type="CanvasLayer" parent="."]
+script = ExtResource("42_commerce")
+
+[node name="Histoire" type="Node" parent="."]
+script = ExtResource("43_histoire")
+
+[node name="Police" type="Node3D" parent="."]
+script = ExtResource("44_police")
+
+[node name="Menus" type="CanvasLayer" parent="."]
+script = ExtResource("45_menus")

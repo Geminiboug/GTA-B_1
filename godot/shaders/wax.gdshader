@@ -2,6 +2,7 @@
 // l'objet (aucune texture, aucun motif copie : cercles, losanges, vagues, damier generes).
 // Couleurs ecrites en sRGB, converties en lineaire a la fin. Choisies par scripts/pnj_util.gd.
 shader_type spatial;
+render_mode cull_disabled;   // tissu vu des deux cotes (interieur des manches, aisselles)
 
 uniform vec3 col_a = vec3(0.85, 0.25, 0.1);   // fond
 uniform vec3 col_b = vec3(0.95, 0.75, 0.1);   // motif principal

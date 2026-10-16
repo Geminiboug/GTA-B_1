@@ -36,6 +36,8 @@ Tout nom reel trouve est signale a Olympe avant d'etre renomme. Statut : **en je
 | Lagos, Accra, Lome, Abidjan, Dakar, Douala, Ouagadougou, Casablanca, Paris, Bruxelles | tableau des departs du terminal (lieux.gd) | vraies villes gardees (hors du quartier), valide par Olympe | valide |
 | Littoral (departement reel, nom generique) | "Pharmacie du Littoral", "Cafe du Littoral", base aerienne | garde (nom commun), valide par Olympe | valide |
 | Immatriculations d'avions TY-, TU-, XT-, 5N-, 6V-, 5V- (prefixes reels) | livrees des avions (avion.gd) | GB- (prefixe invente, aucun pays) | renomme |
+| Police Republicaine du Benin (corps reel) | patrouilles, agents (police.gd) | "Police de Gbê Town", inscription POLICE seule | renomme |
+| Personnages de l histoire | docs/histoire.md, histoire.gd | Senan Dossou, tante Mireille, Vieux Codjo, Cdt Hounkpe : inventes (aucune personne reelle) | invente |
 
 Les noms de rue viennent des tags `name` d'OpenStreetMap : le renommage se fera a l'import (osm_import.py, table
 de correspondance), pour que la carte, le GPS et les etiquettes restent coherents.

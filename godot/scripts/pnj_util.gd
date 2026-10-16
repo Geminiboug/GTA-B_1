@@ -120,6 +120,7 @@ static func plain(c: Color) -> Material:
 		var m := StandardMaterial3D.new()
 		m.albedo_color = c
 		m.roughness = 0.85
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED   # tissu vu des deux cotes (interieur des manches, aisselles)
 		_mat_cache[key] = m
 	return _mat_cache[key]
 

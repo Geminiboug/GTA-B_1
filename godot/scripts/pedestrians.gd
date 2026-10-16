@@ -920,6 +920,7 @@ func _triggers(w: Dictionary, delta: float, ppos: Vector3, pv: Node3D) -> void:
 			_knock_down(w, Vector2(fwd.x, fwd.z) * minf(vs * 0.6, 9.0) + Vector2(rel.x, rel.z).normalized() * 1.5,
 				"angry" if vs < 9.0 else "angry")
 			w["line_after"] = "renverse"
+			get_tree().call_group("police", "crime", "renverse", me)
 			_vehicle_hit(pv, vs)
 			_incident(me2, "temoin_accident", 30.0)
 		elif st == "walk" and vs > 8.0 and lx < hw + 2.0 and lz < hl + 2.0 and w["talk_cd"] <= 0.0:
@@ -1023,6 +1024,7 @@ func player_attack(origin: Vector3, dir: Vector3) -> bool:
 		best["push"] = push * 0.6
 		best["after"] = "chase" if _rng.randf() < 0.5 else "angry"
 	best["line_after"] = "frappe"
+	get_tree().call_group("police", "crime", "agression", best["pos"])
 	_speak(best, "frappe", true)
 	var me: Vector3 = best["pos"]
 	_incident(Vector2(me.x, me.z), "temoin_bagarre", 22.0)
@@ -1041,6 +1043,8 @@ func _on_driver_ejected(pos: Vector3, yaw: float, genre: String, by: Node3D, rid
 	w["line_after"] = "vole"
 	_speak(w, "vole", true)
 	_incident(Vector2(pos.x, pos.z), "temoin_accident", 18.0)
+	if w["driver"]:
+		get_tree().call_group("police", "crime", "vol", pos)
 
 
 func _vendor_calls(ppos: Vector3, pv: Node3D) -> void:
@@ -1068,6 +1072,7 @@ func _reclaim(w: Dictionary, v: Node3D) -> void:
 		_player.exit_vehicle()
 		var away: Vector3 = (_player.global_position - v.global_position) * Vector3(1, 0, 1)
 		(_player as CharacterBody3D).velocity = away.normalized() * 5.0 + Vector3.UP * 2.0
+		Partie.blesser(10.0)
 		if _player.has_method("shake"):
 			_player.shake(0.6)
 	_speak(w, "vole", true)

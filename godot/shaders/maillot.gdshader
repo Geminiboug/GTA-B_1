@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode cull_disabled;   // tissu vu des deux cotes (interieur des manches, aisselles)
 // Maillot de foot de club fictif : rayures verticales ou bande horizontale sur la poitrine, col et manches unis.
 // Coordonnees du modele (le maillot suit le corps anime : les motifs bougent avec lui).
 uniform vec3 c1 : source_color = vec3(0.1, 0.5, 0.25);

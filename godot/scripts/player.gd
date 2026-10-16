@@ -15,6 +15,8 @@ extends CharacterBody3D
 @export var land_brake := 0.45       # part de la vitesse horizontale gardee a la reception (flexion des jambes)
 @export var land_stun := 0.25        # s de reception sans relance
 @export var step_height := 0.3       # m : marche, bordure ou seuil franchis sans sauter
+@export var fall_hurt_speed := 8.0   # m/s a l'impact (chute de ~3,3 m) : au-dela, la chute blesse
+@export var fall_hurt_per_ms := 12.0 # points de sante par m/s au-dela
 @export var ground_accel := 9.0      # m/s2 au demarrage
 @export var ground_decel := 18.0     # m/s2 au freinage (arret en 0,4 s depuis le trot)
 @export var air_accel := 1.5         # tres peu de controle en l'air
@@ -442,6 +444,8 @@ func _physics_process(delta: float) -> void:
 			velocity.z *= land_brake
 			_land_t = land_stun
 			anim.land(_fall_speed)
+			if _fall_speed > fall_hurt_speed:
+				Partie.blesser((_fall_speed - fall_hurt_speed) * fall_hurt_per_ms)
 			if _fall_speed > 5.0:
 				shake(shake_land * clampf(_fall_speed / 9.0, 0.3, 1.0))
 		_prev_hspeed = new_hspeed

@@ -540,3 +540,48 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - blender/tools/ubc_skin_detail.py -> godot/assets/textures/personnages/peau_detail_homme|femme.png : texture de
   peau sans sa couleur propre (neutre 0,75) ; PnjUtil.skin_mat la teinte avec nos 10 teintes.
 - Apercus : blender -b chr_x.blend --python apercu_perso.py -- <prefixe> [pieces].
+
+## Vetements decoupes dans la peau (16/10/2026, retour d'Olympe)
+- build_character.py, make_top_skin / make_pants_skin (corps Quaternius) : le haut et le pantalon sont decoupes dans
+  la peau sculptee par des plans (bisect) : ourlet, bout des manches, encolure plus basse devant, ceinture, bas des
+  jambes. Bords nets, d'un seul tenant (plus de tube + epaulettes qui faisaient un rabat dans le dos).
+- Coutures de texture soudees (remove_doubles) avant de gonfler le tissu (sinon fente le long des coutures).
+- Haut : tombe droit sous la poitrine (profil releve par rayons), lisse, poids repris sur la peau la plus proche
+  (Data Transfer) ; bas du vetement sur le bassin (pas les cuisses). Ourlet au-dessus de l'entrejambe (mesure par
+  rayon), mis a plat apres clear_skin. Pantalon : ceinture 4,5 cm au-dessus de l'ourlet du haut.
+- Decimation des pantalons et chaussures : bords proteges (keep_border). Pas de protection sur le corps (ses
+  coutures de texture comptent comme des bords : le corps ressortait a travers le haut en mouvement). Haut non decime.
+- Tissu vu des deux cotes (cull_disabled : plain(), wax.gdshader, maillot.gdshader) : l'interieur des manches et le
+  creux de l'aisselle montrent du tissu, pas le vide.
+- Captures : tests/capture_haut.gd (dos, trois quarts, profil, gros plans) -> docs/images/vetements_*.png.
+
+## Jeu : argent, achats, menus, sauvegarde, histoire (phase 7)
+- Autoload Partie (scripts/partie.gd) : argent (FCFA, 3 000 F au depart), inventaire, sante (0 : malaise), chapitre et
+  drapeaux de l'histoire, statistiques, options. Sauvegarde JSON user://sauvegarde.json (position, genre, heure,
+  argent, inventaire, histoire) ; options user://options.cfg. Les tests ecrivent dans user://test_sauvegarde.json.
+- HUD de jeu (scripts/hud_jeu.gd) : argent sous l'horloge (gain / depense), etoiles de recherche (clignotent quand la
+  police voit le joueur), notifications, objectif en bas, grandes annonces, barre de sante sous la mini-carte.
+- Achats (scripts/commerce.gd) : T (manette : croix droite) pres d'un etal, maquis, kpayo, cabine (props.gd : shops),
+  caisse de l'Ararat ou cafe de l'aerogare (lieux.gd : shop_spots). Prix de Cotonou. La nourriture rend de la sante,
+  sauf si une mission demande de la rapporter (Partie.drapeaux["garder"]).
+- Menus (scripts/menus.gd) : ecran titre (seulement au vrai lancement : current_scene), pause (Echap / Start),
+  options (volume, sensibilite, effets de camera, qualite Bas / Moyen / Haut : scripts/qualite.gd, plein ecran),
+  commandes, sauvegarde (impossible si recherche), chargement. Dormir dans le lit de la maison sauvegarde aussi.
+- Histoire (scripts/histoire.gd, scenario docs/histoire.md) : prologue et acte 1 de « Le Dernier Vol » (8 missions),
+  donnees par etapes (parler, acheter, aller, monter, client, deposer, photos, nuit, fuir, fin). Marqueur jaune au
+  donneur et a chaque objectif, GPS (hud_carte.set_waypoint), chrono, mission ratee recommencee. Apres l'acte 1 :
+  petits boulots de zem (T sur le zem : client, course payee 300 F + 450 F/km).
+- Degats : chute de plus de 3,3 m (player.gd fall_hurt_*), bousculade par le proprietaire d'un vehicule vole.
+
+## Police et consequences (phase 8)
+- scripts/police.gd (« Police de Gbê Town », fictive) : delits signales au groupe "police" (vol de vehicule,
+  agression, pieton renverse, choc contre une patrouille, vol d'une patrouille). 1 etoile par delit, 5 au plus.
+- Patrouilles : berlines blanches (Vehicules.create + voiture.gd en pilote automatique : ai, ai_input), inscription
+  POLICE et gyrophare. Apparaissent sur une rue reliee au joueur, a 140-260 m le long d'un itineraire ; itineraire
+  recalcule depuis le joueur puis retourne ; freinage avant les carrefours ; coincees hors champ : replacees sur la
+  rue ; a l'arret pres du joueur (ou coincees a moins de 80 m), un agent descend et court.
+- Arrestation : agent a moins de 1,4 m pendant 1,5 s (joueur a pied ou a l'arret) : amende de 5 000 F par etoile,
+  sortie au commissariat. Hors de vue de tout agent pendant 14 s + 4 s par etoile : police semee.
+- Sans recherche : patrouille stationnee de temps en temps ; exces de vitesse (> 70 km/h) devant elle : contravention
+  de 2 000 F. Malaise (sante a zero) : reveil a la maison, 4 000 F de soins.
+- Test : tests/test_jeu.gd (achat, sauvegarde, premiere mission, police, malaise). Capture : tests/capture_jeu.gd -> docs/images/phase7_8_jeu.png.
