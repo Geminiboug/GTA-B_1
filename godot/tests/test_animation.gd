@@ -1,6 +1,6 @@
 extends SceneTree
 ## Test de l'animation du joueur (anim_ctrl.gd) sur la plage : patinage des pieds a la marche, au trot et au sprint
-## (pendant l'appui, le pied pose ne doit presque pas glisser), etats (sol, air, assis), reception apres un saut.
+## (pendant l'appui, le pied pose ne doit presque pas glisser), etats (sol, assis ; pas de pose de chute pour un saut ordinaire), reception apres un saut.
 ## Lancement : godot --headless --path godot --script res://tests/test_animation.gd
 
 var frame := 0
@@ -99,7 +99,8 @@ func _physics_process(delta: float) -> bool:
 			Input.action_press("jump")
 		if k == 8:
 			Input.action_release("jump")
-			_check(player.anim._tree.get("parameters/mode/current_state") == "air", "saut : etat 'air'")
+			# saut ordinaire : pas de pose de chute (reservee aux chutes de plus de 0,75 s), les jambes gardent l'allure
+			_check(not player.is_on_floor() and player.anim._tree.get("parameters/mode/current_state") != "air", "saut : en l'air sans pose de chute")
 		if k == 120:
 			_check(player.is_on_floor() and player.anim._tree.get("parameters/mode/current_state") == "sol", "reception : retour a l'etat 'sol'")
 			player.anim.seated = true

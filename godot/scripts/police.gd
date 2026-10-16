@@ -2,6 +2,9 @@ extends Node3D
 ## Police fictive ("Police de Gbê Town") et consequences (phase 8) :
 ## - delits (groupe "police", crime()) : vol de vehicule, agression, pieton renverse, choc contre une patrouille ;
 ##   chacun monte le niveau de recherche (Partie.recherche, 0 a 5 etoiles) ;
+## - appel : un delit sans policier temoin est signale par telephone ; les patrouilles partent du commissariat apres
+##   delai_appel s (au Benin la police n'arrive jamais aussitot ; decision d'Olympe : 1 min) et roulent jusqu'au
+##   joueur, visibles sur la mini-carte et la carte (scripts/hud_carte.gd). Un policier temoin reagit tout de suite ;
 ## - patrouilles : berlines blanches a gyrophare (voiture.gd en pilote automatique) qui suivent les rues (itineraire
 ##   de scripts/carte.gd) jusqu'au joueur, une par niveau (4 au plus) ; a l'arret pres de lui, un agent descend et
 ##   court l'arreter ;
@@ -19,6 +22,9 @@ extends Node3D
 @export var limite_vitesse := 19.5       # m/s (70 km/h) : au-dela, contravention si une patrouille voit
 @export var contravention := 2000        # FCFA
 @export var agent_vitesse := 5.2         # m/s a la course
+@export var delai_appel := 60.0          # s entre l'appel et le depart des patrouilles (sans policier temoin)
+@export var commissariat := Vector3(330, 0, -250)   # d'ou partent les patrouilles (et ou l'on sort apres arrestation)
+@export var rattrapage := false          # patrouille avancee hors champ quand elle traine (desactive : on la voit venir)
 
 const DELITS := {"vol": 1, "agression": 1, "renverse": 1, "choc_police": 1, "evasion": 1}
 
@@ -33,6 +39,9 @@ var _ticket_cd := 0.0
 var _busy := false                        # fondu en cours (arrestation, malaise)
 var _fade: ColorRect
 var _patrol: Dictionary = {}              # patrouille de routine (recherche 0)
+var appel_t := 0.0                        # s avant le depart des patrouilles (> 0 : appel en cours)
+var _arrivee := false                     # une patrouille est arrivee pres du joueur (on peut alors la semer)
+var _spawn_cd := 0.0
 
 
 func _ready() -> void:
@@ -49,11 +58,34 @@ func crime(kind: String, _where: Vector3) -> void:
 	if _busy:
 		return
 	var add: int = DELITS.get(kind, 1)
-	# deja recherche : un nouveau delit sous les yeux de la police fait monter plus vite
+	var avant := Partie.recherche
+	var temoin := _witness()
+	# deja recherche : un nouveau delit fait monter le niveau
 	Partie.set_recherche(maxi(Partie.recherche, 0) + add)
 	_hors_vue = 0.0
-	if Partie.recherche == 1 and kind != "evasion":
-		Partie.notifier("La police a été prévenue")
+	if temoin:
+		appel_t = 0.0
+	elif avant == 0:
+		appel_t = delai_appel
+		_arrivee = false
+		Partie.notifier("Quelqu'un a appelé la police. Elle arrive dans environ %d min." % maxi(1, roundi(delai_appel / 60.0)))
+
+
+func _witness() -> bool:
+	## Un policier (patrouille, agent a pied, patrouille de routine) voit le joueur.
+	if _player == null:
+		return false
+	var pv: Node3D = _player.get("vehicle")
+	var ppos: Vector3 = pv.global_position if pv else _player.global_position
+	for u in units:
+		if is_instance_valid(u["car"]) and _sees(u, ppos):
+			return true
+		var o: Node3D = u.get("officer")
+		if o and is_instance_valid(o) and o.global_position.distance_to(ppos) < vue_distance * 0.6:
+			return true
+	if not _patrol.is_empty() and is_instance_valid(_patrol.get("car")):
+		return _sees({"car": _patrol["car"]}, ppos)
+	return false
 
 
 func on_vehicle_hit(collider: Object, impact: float) -> void:
@@ -66,6 +98,7 @@ func on_vehicle_hit(collider: Object, impact: float) -> void:
 
 func _on_level(n: int) -> void:
 	if n == 0:
+		appel_t = 0.0
 		for u in units:
 			_release(u)
 		units.clear()
@@ -82,9 +115,16 @@ func _physics_process(delta: float) -> void:
 	if Partie.recherche == 0:
 		_routine(delta, pv, ppos)
 		return
-	# nombre de patrouilles selon le niveau
+	# appel en cours : les patrouilles ne sont pas encore parties
+	if appel_t > 0.0:
+		appel_t -= delta
+		Partie.police_voit = false
+		return
+	# nombre de patrouilles selon le niveau (une toutes les 4 s, depuis le commissariat)
 	var want := mini(Partie.recherche, 4)
-	if units.size() < want:
+	_spawn_cd = maxf(0.0, _spawn_cd - delta)
+	if units.size() < want and _spawn_cd <= 0.0:
+		_spawn_cd = 4.0
 		_spawn_unit(ppos)
 	_route_t -= delta
 	var seen := false
@@ -100,8 +140,11 @@ func _physics_process(delta: float) -> void:
 	if _route_t <= 0.0:
 		_route_t = 1.5
 	Partie.police_voit = seen
-	if seen:
-		_hors_vue = 0.0
+	for u in units:
+		if is_instance_valid(u["car"]) and (u["car"] as Node3D).global_position.distance_to(ppos) < vue_distance:
+			_arrivee = true
+	if seen or not _arrivee:
+		_hors_vue = 0.0          # tant qu'aucune patrouille n'est arrivee, on ne peut pas la semer
 	else:
 		_hors_vue += delta
 		if _hors_vue > perte_vue + 4.0 * Partie.recherche:
@@ -178,9 +221,19 @@ func _make_car(at: Vector3, yaw: float) -> Node3D:
 
 
 func _spawn_unit(ppos: Vector3) -> void:
-	## Sur une rue reliee au joueur : on suit un itineraire depuis le joueur vers un point au hasard et la patrouille
-	## apparait a 140-260 m le long de ce chemin, tournee vers lui.
+	## Depart du commissariat (sur la rue la plus proche), tournee vers le joueur ; si le joueur est tout pres du
+	## commissariat, a 140-260 m le long d'une rue reliee au joueur.
 	var pp := Vector2(ppos.x, ppos.z)
+	var cs := Vector2(commissariat.x, commissariat.z)
+	if pp.distance_to(cs) > apparition.x:
+		var near := _carte.nearest_on_network(cs)
+		var path := _carte.route(pp, near.get("point", cs), false)
+		if path.size() >= 2:
+			var q: Vector2 = path[-1]
+			var back := (path[-2] - path[-1]).normalized()
+			var car0 := _make_car(Vector3(q.x, 0.0, q.y), atan2(-back.x, -back.y))
+			units.append({"car": car0, "route": PackedVector2Array(), "officer": null, "state": "chase", "stuck": 0.0})
+			return
 	for attempt in 8:
 		var a := _rng.randf() * TAU
 		var far := pp + Vector2(cos(a), sin(a)) * apparition.y * 1.5
@@ -226,7 +279,7 @@ func _drive(u: Dictionary, ppos: Vector3, pv: Node3D, delta: float) -> bool:
 		route.remove_at(0)
 	# rattrapage (comme dans GTA) : loin et hors du champ de la camera depuis 6 s, la patrouille est avancee sur son
 	# itineraire jusqu'a ~60 m du joueur
-	u["far_t"] = float(u.get("far_t", 0.0)) + delta if d > 75.0 and not _on_screen(car.global_position) else 0.0
+	u["far_t"] = float(u.get("far_t", 0.0)) + delta if rattrapage and d > 75.0 and not _on_screen(car.global_position) else 0.0
 	if float(u["far_t"]) > 6.0 and route.size() > 1:
 		u["far_t"] = 0.0
 		var acc := 0.0
@@ -392,7 +445,7 @@ func _arrest() -> void:
 		Partie.prelever(Partie.amende_par_niveau * lvl, "Amende")
 		Partie.stats["amendes"] = int(Partie.stats.get("amendes", 0)) + 1
 		Partie.set_recherche(0)
-		_teleport(Vector3(330, 0, -250), "Commissariat de Gbê Town"))
+		_teleport(commissariat, "Commissariat de Gbê Town"))
 
 
 func _malaise() -> void:

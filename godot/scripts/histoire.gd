@@ -31,6 +31,10 @@ var _client_walker: Node3D
 var _rng := RandomNumberGenerator.new()
 var _fade: ColorRect
 var _boulot := {}                # course de zem en cours (petits boulots)
+@export var etal_decalage := 4.0        # m, vendeuse de pain a cote du portail de la maison
+var _marker_pos := Vector3.INF
+var _obj_text := ""
+var _dist_t := 0.0
 
 
 func _ready() -> void:
@@ -74,6 +78,11 @@ func _nearest_shop(kind: String, from: Vector3, min_d := 0.0) -> Vector3:
 func _setup() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
+	var com := get_node_or_null("../Commerce")
+	for _i in 600:
+		if com == null or com.spots.any(func(s: Dictionary) -> bool: return s["kind"] == "etal"):
+			break
+		await get_tree().physics_frame      # etals et maquis connus du commerce (scripts/commerce.gd)
 	var lieux := get_node_or_null("../Lieux")
 	var home: Vector3 = lieux.home_position() if lieux else _player.global_position
 	points["maison"] = home
@@ -83,6 +92,7 @@ func _setup() -> void:
 		var yaw := sp.global_rotation.y + PI
 		fwd = Vector3(-sin(yaw), 0, -cos(yaw))
 	points["tante"] = home + fwd * 2.2 + fwd.cross(Vector3.UP) * 1.2
+	_vendeuse_de_pain(lieux)
 	points["etal"] = _nearest_shop("etal", home)
 	points["caisse"] = _nearest_shop("caisse", home)
 	points["codjo"] = _nearest_shop("maquis", home) + Vector3(1.6, 0, 1.0)
@@ -101,15 +111,50 @@ func _setup() -> void:
 	_build_missions()
 
 
+func _vendeuse_de_pain(lieux: Node) -> void:
+	## Vendeuse de pain installee devant le portail de la maison (prologue : le pain a quelques pas, comme au coin
+	## de chaque rue de Cotonou). Etal de scripts/props.gd, vendeuse assise, point d'achat du commerce.
+	var exits: Array = lieux.sortie(lieux.home_position()) if lieux and lieux.has_method("sortie") else []
+	var props := get_node_or_null("../Props")
+	var com := get_node_or_null("../Commerce")
+	if exits.size() < 2 or props == null or com == null:
+		return
+	var out: Vector3 = (exits[1] - exits[0]).normalized()
+	var side := out.cross(Vector3.UP)
+	var pos: Vector3 = _ground(exits[1].x + side.x * etal_decalage + out.x * 0.5, exits[1].z + side.z * etal_decalage + out.z * 0.5)
+	var xf := Transform3D(Basis.looking_at(out, Vector3.UP), pos)   # avant (-Z) vers la rue, vendeuse derriere
+	var mesh: Mesh = (props.get("_meshes") as Dictionary).get("prop_etal_jaune")
+	if mesh:
+		var mi := MeshInstance3D.new()
+		mi.mesh = mesh
+		add_child(mi)
+		mi.global_transform = xf
+	var body := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(1.2, 0.8, 0.8)
+	cs.shape = box
+	cs.position.y = 0.4
+	body.add_child(cs)
+	add_child(body)
+	body.global_transform = xf
+	var v := PnjUtil.make("femme")
+	add_child(v)
+	PnjUtil.dress_random(v, _rng)
+	PnjUtil.pose_vendor(v, _rng)
+	v.global_transform = xf * Transform3D(Basis.IDENTITY, Vector3(0.3, 0, 0.45))
+	com.spots.append({"pos": pos, "kind": "etal"})
+
+
 # ------------------------------------------------------------------ missions
 func _build_missions() -> void:
 	missions = [
 		{"titre": "Bonne arrivée", "donneur": "tante", "rec": 0, "etapes": [
 			{"t": "parler", "qui": "tante", "obj": "Parle à tante Mireille", "lignes": [
 				["tante", "Ah, %s ! Bonne arrivée à la maison !" % _g("mon fils", "ma fille")],
-				["tante", "Va m'acheter du pain à l'étal, là-bas. Tiens, prends de quoi payer."],
+				["tante", "Va m'acheter du pain chez la vendeuse, au bout de la rue. Tiens, prends de quoi payer."],
 				["joueur", "J'y vais, tantie."]]},
-			{"t": "acheter", "article": "Pain", "ou": "etal", "obj": "Achète du pain à l'étal (T pour acheter)"},
+			{"t": "acheter", "article": "Pain", "ou": "etal", "obj": "Suis la flèche jaune jusqu'à l'étal, puis T pour acheter du pain"},
 			{"t": "aller", "ou": "tante", "r": 2.5, "obj": "Rapporte le pain à tante Mireille", "avec": "Pain"},
 			{"t": "parler", "qui": "tante", "obj": "Donne le pain (T)", "retirer": ["Pain"], "lignes": [
 				["tante", "Merci ! Ton père aurait été fier de te voir revenu."],
@@ -212,7 +257,7 @@ func _wait(i: int) -> void:
 	_spawn_npc(m["donneur"])
 	_set_marker(points[m["donneur"]])
 	_waypoint(points[m["donneur"]])
-	_objective("Nouvelle mission : « %s » (marqueur jaune)" % m["titre"])
+	_objective("Nouvelle mission : « %s » (va dans le cercle jaune)" % m["titre"])
 
 
 func _start_mission() -> void:
@@ -504,6 +549,10 @@ func _dialog_step(delta: float) -> void:
 		var who := _speaker(l[0])
 		if is_instance_valid(who):
 			Bulle.say(who, l[1], duree_replique, 2.1, Color(1, 0.95, 0.75))
+			# celui qui parle fait les gestes de la conversation (clip Idle_Talking)
+			var an: Node = who.get("anim") if who == _player else who
+			if an and an.has_method("play_clips") and (who != _player or _player.get("vehicle") == null):
+				an.play_clips([["Idle_Talking", 0.0]], true)
 		_dialog_t = duree_replique
 
 
@@ -547,7 +596,21 @@ func _set_marker(p: Vector3) -> void:
 		_marker.material_override = mat
 		_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(_marker)
+		# fleche qui flotte au-dessus de l'objectif (la colonne de lumiere est celle du GPS, scripts/hud_carte.gd)
+		var arrow := MeshInstance3D.new()
+		var pm := PrismMesh.new()
+		pm.size = Vector3(0.7, 0.7, 0.15)
+		arrow.mesh = pm
+		var amat := StandardMaterial3D.new()
+		amat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		amat.albedo_color = Color(1, 0.8, 0.1)
+		arrow.material_override = amat
+		arrow.rotation.z = PI          # pointe vers le bas
+		arrow.position.y = 1.9
+		arrow.name = "Fleche"
+		_marker.add_child(arrow)
 	_marker.visible = p != Vector3.INF
+	_marker_pos = p
 	if p != Vector3.INF:
 		_marker.global_position = p + Vector3(0, 1.2, 0)
 
@@ -563,8 +626,26 @@ func _clear_waypoint() -> void:
 
 
 func _objective(t: String) -> void:
+	_obj_text = t
 	if _hj():
 		_hj().objectif(t)
+
+
+func _process(delta: float) -> void:
+	## Fleche qui tourne et flotte, distance a l'objectif ajoutee au texte (hors chrono, qui reecrit le texte).
+	if _marker == null or not _marker.visible:
+		return
+	var f := _marker.get_node("Fleche") as Node3D
+	f.rotation.y += delta * 2.0
+	f.position.y = 1.9 + sin(Time.get_ticks_msec() * 0.004) * 0.15
+	_dist_t -= delta
+	if _dist_t > 0.0 or _chrono > 0.0 or _obj_text == "" or _player == null or not _hj():
+		return
+	_dist_t = 0.25
+	var pv: Node3D = _player.get("vehicle")
+	var pp: Vector3 = pv.global_position if pv else _player.global_position
+	var d := Vector2(pp.x - _marker_pos.x, pp.z - _marker_pos.z).length()
+	_hj().objectif("%s   (%d m)" % [_obj_text, int(d)] if d > 4.0 else _obj_text)
 
 
 func _night() -> void:

@@ -800,6 +800,8 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 				d = target - me2
 				face = d
 				var vs := absf(float(stolen.get("speed")))
+				if w.get("reclaiming", false):
+					return              # geste en cours (scripts : _reclaim)
 				if d.length() < 2.4 and vs < 2.0:
 					_reclaim(w, stolen)
 					return
@@ -1088,26 +1090,36 @@ func _vendor_calls(ppos: Vector3, pv: Node3D) -> void:
 
 func _reclaim(w: Dictionary, v: Node3D) -> void:
 	## Le proprietaire rattrape son vehicule arrete : il en sort le joueur, le bouscule et repart avec.
+	# geste visible : il tire le joueur hors du vehicule (clip Push), le joueur est projete (Hit_Knockback)
+	if (w["node"] as Node).has_method("play_clips"):
+		w["node"].play_clips([["Push", 0.0]])
 	if _player and _player.get("vehicle") == v:
-		_player.exit_vehicle()
-		var away: Vector3 = (_player.global_position - v.global_position) * Vector3(1, 0, 1)
-		(_player as CharacterBody3D).velocity = away.normalized() * 5.0 + Vector3.UP * 2.0
+		if _player.has_method("knocked_out_of_vehicle"):
+			_player.knocked_out_of_vehicle(w["pos"])
+		else:
+			_player.exit_vehicle()
 		Partie.blesser(10.0)
 		if _player.has_method("shake"):
 			_player.shake(0.6)
 	_speak(w, "vole", true)
 	var traffic := get_parent().get_node_or_null("Circulation")
-	if traffic and traffic.has_method("reclaim") and traffic.reclaim(v):
-		# il est remonte sur son vehicule : le pieton disparait (il est dans le maillage du vehicule)
-		# (le passager du zem aussi), retires apres la boucle de mise a jour
+	if traffic == null or not traffic.has_method("reclaim"):
+		_set_state(w, "angry")
+		return
+	# on le voit finir son geste (0,8 s), puis il remonte sur son vehicule : le pieton disparait (il est dans le
+	# maillage du vehicule), le passager du zem aussi
+	w["reclaiming"] = true
+	get_tree().create_timer(0.8).timeout.connect(func() -> void:
+		w["reclaiming"] = false
+		if not _walkers.has(w) or not is_instance_valid(v) or not traffic.reclaim(v):
+			if _walkers.has(w):
+				_set_state(w, "angry")
+			return
 		var gone := [w]
 		for o in _walkers:
 			if o.get("carjacked", false) and not o.get("driver", false) and o["pos"].distance_to(w["pos"]) < 10.0:
 				gone.append(o)
-		(func() -> void:
-			for o in gone:
-				_walkers.erase(o)
-				(o["node"] as Node).queue_free()
-				_spawn_walker()).call_deferred()
-	else:
-		_set_state(w, "angry")
+		for o in gone:
+			_walkers.erase(o)
+			(o["node"] as Node).queue_free()
+			_spawn_walker())

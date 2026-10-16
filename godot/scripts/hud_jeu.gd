@@ -17,6 +17,16 @@ var _delta_t := 0.0
 var _annonce_t := 0.0
 var _clign := 0.0
 var _sante: ProgressBar
+# aide aux commandes (a gauche, sous la mini-carte) : selon la situation (a pied, zem, voiture) et l'appareil
+# (clavier ou manette) ; affichee pendant les premieres minutes de jeu, F2 (manette : croix haut) l'affiche ou la cache
+@export var aide_duree := 600.0          # s de jeu pendant lesquelles l'aide reste affichee
+@export var aide_touche := KEY_F2
+var _aide: Label
+var _aide_on := true
+var _aide_t := 0.0
+var _manette := false
+var _ctx := ""
+var _player: Node
 
 
 func _ready() -> void:
@@ -91,6 +101,68 @@ func _ready() -> void:
 	Partie.recherche_change.connect(_on_recherche)
 	_on_argent(Partie.argent, 0)
 	_on_recherche(Partie.recherche)
+	_aide = _label(17, Color(1, 1, 1))
+	_aide.offset_left = 18
+	_aide.offset_top = 290
+	_aide.offset_right = 420
+	var ab := StyleBoxFlat.new()
+	ab.bg_color = Color(0, 0, 0, 0.45)
+	ab.set_content_margin_all(8)
+	ab.set_corner_radius_all(4)
+	_aide.add_theme_stylebox_override("normal", ab)
+	_aide.add_theme_constant_override("outline_size", 4)
+	_manette = Input.get_connected_joypads().size() > 0
+	_player = get_node_or_null("../Player")
+
+
+func _input(event: InputEvent) -> void:
+	# appareil utilise en dernier : clavier / souris ou manette (sans consommer l'evenement)
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.4):
+		_manette = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		_manette = false
+	var bascule: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == aide_touche) \
+		or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_DPAD_UP)
+	if bascule:
+		_aide_on = not _aide_on
+		_aide_t = 0.0 if _aide_on else _aide_t
+
+
+func contexte() -> String:
+	## "pied", "zem" ou "voiture" selon le vehicule du joueur.
+	var v: Node = _player.get("vehicle") if _player else null
+	if v == null:
+		return "pied"
+	return "zem" if v.get("kind") == "zem" else "voiture"
+
+
+func texte_aide(ctx: String, manette: bool) -> String:
+	var l: PackedStringArray
+	if manette:
+		match ctx:
+			"pied":
+				l = ["Stick gauche : marcher", "Stick droit : caméra", "A (tapoter) : courir", "X : sauter / escalader",
+					"R3 : s'accroupir", "Y : monter dans un véhicule", "Croix droite : parler / acheter", "Select : carte   Croix bas : vue"]
+			"zem":
+				l = ["RT : accélérer   LT : freiner", "Stick gauche : tourner", "RB : frein arrière", "L3 : klaxon",
+					"Y : descendre", "Croix droite : chercher un client"]
+			_:
+				l = ["RT : accélérer   LT : freiner / reculer", "Stick gauche : tourner", "RB : frein à main",
+					"Y : descendre"]
+	else:
+		match ctx:
+			"pied":
+				l = ["Z Q S D : marcher", "Souris : caméra", "Maj (tapoter) : courir   Alt : marche lente",
+					"Espace : sauter / escalader", "C : s'accroupir", "E : monter dans un véhicule", "T : parler / acheter",
+					"M : carte   V : vue"]
+			"zem":
+				l = ["Z : accélérer   S : freiner", "Q D : tourner", "Espace : frein arrière", "H : klaxon",
+					"E : descendre", "T : chercher un client (à l'arrêt)"]
+			_:
+				l = ["Z : accélérer   S : freiner / reculer", "Q D : tourner", "Espace : frein à main", "H : klaxon",
+					"E : descendre"]
+	l.append(("Croix haut" if manette else "F2") + " : cacher l'aide")
+	return "\n".join(l)
 
 
 func _label(size: int, col: Color) -> Label:
@@ -144,6 +216,16 @@ func annonce(titre: String, sous := "", duree := 3.5) -> void:
 func _process(delta: float) -> void:
 	_delta_t = maxf(0.0, _delta_t - delta)
 	_delta.visible = _delta_t > 0.0
+	if _aide_on:
+		_aide_t += delta
+		if _aide_t > aide_duree:
+			_aide_on = false
+	_aide.visible = _aide_on and Partie.get("en_jeu") != false
+	if _aide.visible:
+		var ctx := contexte() + ("_m" if _manette else "")
+		if ctx != _ctx:
+			_ctx = ctx
+			_aide.text = texte_aide(contexte(), _manette)
 	_annonce_t = maxf(0.0, _annonce_t - delta)
 	_annonce.visible = _annonce_t > 0.0
 	_sous.visible = _annonce_t > 0.0

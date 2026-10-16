@@ -1,4 +1,4 @@
-﻿# GTB : importeur OpenStreetMap maison pour le blockout (remplace Blender-OSM).
+# GTB : importeur OpenStreetMap maison pour le blockout (remplace Blender-OSM).
 # Donnees OSM : Â© les contributeurs d'OpenStreetMap, licence ODbL.
 #
 # Lancement :
@@ -959,13 +959,46 @@ for (name, mat, z), bt in marking_batches.items():
     batch_obj(name, bt, mat, "Marquage", z)
 
 # --- Murs et clotures ---
-wall_batches = {}
+# Un mur OSM ne traverse jamais une chaussee (trace ancien, mur demoli pour la route) : on coupe les morceaux qui
+# tombent a moins de WALL_ROAD_GAP m du bord de la bande de roulement (retour d'Olympe du 16/10/2026).
+WALL_ROAD_GAP = 0.3
+
+
+def cut_off_road(piece):
+    pts = resample(piece, 0.5)
+    bb = (min(p[0] for p in pts) - 30, min(p[1] for p in pts) - 30, max(p[0] for p in pts) + 30, max(p[1] for p in pts) + 30)
+    near = [(lp, half) for lp, half in car_lines
+            if min(q[0] for q in lp) - half < bb[2] and max(q[0] for q in lp) + half > bb[0]
+            and min(q[1] for q in lp) - half < bb[3] and max(q[1] for q in lp) + half > bb[1]]
+    out, cur = [], []
+    for q in pts:
+        if any(line_dist(q, lp) < half + WALL_ROAD_GAP for lp, half in near):
+            if len(cur) >= 2:
+                out.append(cur)
+            cur = []
+        else:
+            cur.append(q)
+    if len(cur) >= 2:
+        out.append(cur)
+    return [c for c in out if math.hypot(c[-1][0] - c[0][0], c[-1][1] - c[0][1]) >= 1.0]
+
+
+wall_pieces = []      # murs gardes (aussi exportes dans le JSON : carte de marche des pietons)
+nb_wall_cut = 0
 for w in ways.values():
-    kind = w["tags"].get("barrier")
-    if kind not in WALL:
+    if w["tags"].get("barrier") not in WALL:
         continue
-    thick, height = WALL[kind]
     for piece in clip_line(w["pts"]):
+        cut = cut_off_road(piece)
+        if len(cut) != 1 or len(cut[0]) != len(resample(piece, 0.5)):
+            nb_wall_cut += 1
+        for c in cut:
+            wall_pieces.append((w["tags"]["barrier"], c))
+print("Murs coupes au bord des chaussees : %d" % nb_wall_cut)
+wall_batches = {}
+for kind, piece0 in wall_pieces:
+    thick, height = WALL[kind]
+    for piece in [piece0]:
         piece = clean(piece) if len(piece) > 2 else piece
         if len(piece) < 2 or any(on_waterfront(*p) for p in piece):  # murs OSM obsoletes sur la plage actuelle
             continue
@@ -1171,17 +1204,21 @@ LINE_BB = [((min(p[0] for p in pts) - half, min(p[1] for p in pts) - half,
              max(p[0] for p in pts) + half, max(p[1] for p in pts) + half), pts, half) for pts, half in car_lines]
 
 
+BLD_ROAD_GAP = 0.7     # m : facade a au moins 70 cm de la chaussee (aire de retournement des impasses : +0,6 m)
+
+
 def on_road(poly):
     """Le batiment empiete-t-il sur une chaussee ? (sommets, milieux des cotes et centre dans la bande de roulement,
     ou axe de la route qui traverse le batiment)"""
     bb = (min(p[0] for p in poly), min(p[1] for p in poly), max(p[0] for p in poly), max(p[1] for p in poly))
     n = len(poly)
-    probes = list(poly) + [((poly[k][0] + poly[(k + 1) % n][0]) / 2, (poly[k][1] + poly[(k + 1) % n][1]) / 2) for k in range(n)]
+    # tout le contour (un point tous les 0,5 m), pas seulement les coins : un long cote peut couper la route
+    probes = resample(list(poly) + [poly[0]], 0.5)
     probes.append((sum(p[0] for p in poly) / n, sum(p[1] for p in poly) / n))
     for lbb, pts, half in LINE_BB:
-        if not bb_near(bb, lbb, 0.0):
+        if not bb_near(bb, lbb, BLD_ROAD_GAP):
             continue
-        if any(line_dist(p, pts) < half - 0.3 for p in probes):
+        if any(line_dist(p, pts) < half + BLD_ROAD_GAP for p in probes):
             return True
         for a, c in zip(pts, pts[1:]):
             sbb = (min(a[0], c[0]), min(a[1], c[1]), max(a[0], c[0]), max(a[1], c[1]))
@@ -1201,7 +1238,7 @@ def fit_off_road(poly):
     n = len(poly)
     cx = sum(p[0] for p in poly) / n
     cy = sum(p[1] for p in poly) / n
-    for k in (0.88, 0.76):
+    for k in (0.94, 0.88, 0.82, 0.76):
         cand = [(cx + (p[0] - cx) * k, cy + (p[1] - cy) * k) for p in poly]
         if not on_road(cand):
             return cand
@@ -1455,11 +1492,12 @@ for wid, t, poly in entries:
         building_data.append({"id": str(wid), "h": h, "roof": "abri", "pts": [[round(p[0], 2), round(-p[1], 2)] for p in poly]})
         nb_bld += 1
         continue
-    # filet de securite : centre sur une bande de roulement (cas rare au bord de la zone) -> retire
-    _c = (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
-    if any(line_dist(_c, pts) < half for _lbb, pts, half in LINE_BB):
-        nb_off += 1
-        continue
+    # filet de securite : emprise finale (apres les chevauchements) encore sur une chaussee -> retrecie, sinon retiree
+    if on_road(poly):
+        poly = fit_off_road(poly)
+        if poly is None:
+            nb_off += 1
+            continue
     _, _, _, hu, hv = min_rect(poly)
     rect_fill = abs(area(poly)) / max(4 * hu * hv, 0.01)
     if kind == "hangar" and rect_fill > 0.7:
@@ -1576,7 +1614,7 @@ if OUT_JSON:
     data = {
         "bounds": [round(XMIN, 2), round(-YMAX, 2), round(XMAX, 2), round(-YMIN, 2)],
         "roads": road_data, "runways": runway_data, "buildings": building_data,
-        "walls": [gz(w["pts"]) for w in ways.values() if w["tags"].get("barrier") in WALL],
+        "walls": [gz(pc) for _k, pc in wall_pieces],
         "coast": gz(coast), "beach_inner": gz(beach_inner),
         "promenade": gz(offset_line(beach_inner, PROMENADE_W / 2)) if beach_inner else [],
         "parking_positions": parking,

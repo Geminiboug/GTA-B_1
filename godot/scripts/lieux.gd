@@ -42,6 +42,7 @@ var _house_lights: Array[OmniLight3D] = []
 var _fade: ColorRect
 var _sleeping := false
 @export var interior_shadow := 60.0   # m : portee des ombres du soleil quand on est dans un lieu
+var sorties: Array = []         # cours fermees : {aabb, porte, dehors} (sortie())
 var shop_spots: Array = []      # caisses de l'Ararat, cafe de l'aerogare (scripts/commerce.gd) : {pos, kind}
 
 
@@ -89,6 +90,27 @@ func _setup(root: Node3D, key: String) -> void:
 			_text(e as Node3D, n)
 		elif n == "action_lit":
 			bed = e as Node3D
+	# sortie par le portail (GPS a pied depuis la cour : scripts/hud_carte.gd)
+	var pg := root.find_child("porte_battante_portail_g", true, false) as Node3D
+	var pd := root.find_child("porte_battante_portail_d", true, false) as Node3D
+	if pg and pd:
+		var box := AABB()
+		var first := true
+		for mi in root.find_children("*", "MeshInstance3D", true, false):
+			var bb := (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).mesh.get_aabb()
+			box = bb if first else box.merge(bb)
+			first = false
+		# milieu de l'ouverture : centre des deux battants (les gonds sont aux extremites)
+		var gate := Vector3.ZERO
+		for e in [pg, pd]:
+			var leaf := (e as Node3D).find_child("*vantail*", true, false) as MeshInstance3D
+			gate += leaf.global_transform * leaf.mesh.get_aabb().get_center() if leaf else (e as Node3D).global_position
+		gate *= 0.5
+		gate.y = 0.0
+		var out := gate - box.get_center()
+		out.y = 0.0
+		out = out.normalized()
+		sorties.append({"aabb": box, "porte": gate - out * 1.5, "dehors": gate + out * 3.0})
 	var pnj := Node3D.new()
 	pnj.set_script(PNJ)
 	pnj.name = "PNJ_" + key
@@ -383,6 +405,9 @@ func _zone_at(p: Vector3) -> String:
 func _sleep() -> void:
 	## Fondu au noir, nuit qui passe, reveil a 7 h.
 	_sleeping = true
+	var an: Node = _player.get("anim") if _player else null
+	if an and an.has_method("play_clips"):
+		an.play_clips([["Sitting_Enter", 2.0]], true)      # on s'assoit sur le lit avant le fondu
 	if _fade == null:
 		var layer := CanvasLayer.new()
 		layer.layer = 20
@@ -425,6 +450,15 @@ func _spawn_home() -> void:
 		zem.global_transform = Transform3D(Basis(Vector3.UP, zp.global_rotation.y), zp.global_position + Vector3(0, 0.15, 0))
 		zem.set("_yaw", zp.global_rotation.y)
 		zem.reset_physics_interpolation()
+
+
+func sortie(p: Vector3) -> Array:
+	## Points a suivre pour sortir d'une cour fermee (devant le portail puis dans la rue), ou [] si p est dehors.
+	for s in sorties:
+		var b: AABB = s["aabb"]
+		if p.x > b.position.x and p.x < b.end.x and p.z > b.position.z and p.z < b.end.z:
+			return [s["porte"], s["dehors"]]
+	return []
 
 
 func home_position() -> Vector3:

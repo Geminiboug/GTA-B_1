@@ -633,3 +633,24 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Missions secondaires (histoire.gd, docs/histoire.md) : Maman Fifi a Haie Verte, « Ravitaillement » et « Le grand tour ».
 - Mesures (perf_fps.gd, vue « haie vive (nord) » ajoutee) : 63-84 img/s dehors, 52-61 en interieur selon les passages,
   mesures perturbees (editeur Godot, navigateur et CapCut ouverts) : a refaire editeur ferme.
+
+## Phase 11 : retours de la premiere partie d'Olympe (16/10/2026)
+- Prologue : commerce.gd attend Props.placement_done (les etals etaient poses apres la liste des commerces) ;
+  histoire.gd pose une vendeuse de pain a cote du portail (etal_decalage), fleche flottante au-dessus de l'objectif,
+  distance dans le texte. lieux.gd : sortie() (portail de la cour), suivie par le GPS a pied (hud_carte.gd).
+  props.gd : _reachable() (rien entre la chaussee et un etal, un maquis, une cabine). tests/test_prologue.gd.
+- Aide aux commandes : hud_jeu.gd (texte_aide, contexte, F2 / croix haut, aide_duree).
+- Saut et marche : anim_ctrl.gd (saut_course_min, foulee_air, reception_lourde, reception_courte, impulsion_duree,
+  pose_chute_apres ; _upright : buste_marche / trot / sprint, cou_cible, jambe_appui, bassin_max) ; player.gd
+  land_heavy. Captures image par image : tests/capture_saut_seq.gd -- <dossier> marche|trot|sprint|arret [cycle].
+- Carte : osm_import.py cut_off_road (WALL_ROAD_GAP), on_road sur tout le contour (BLD_ROAD_GAP 0,7 m, aire de
+  retournement des impasses comprise), filet de securite final. tests/test_voirie.gd. Batiments : 1 730 -> 1 676.
+- Police : police.gd delai_appel (60 s), commissariat, rattrapage (desactive), _witness ; points sur la mini-carte
+  et la carte (hud_carte.gd, groupe police_car). test_jeu.gd : depart de loin apres le delai.
+- Avions : build_avion.py AISLE_HALF (0,39 m), plancher du poste. build_epave.py : gros-porteur facon TriStar
+  (x1,5 / x1,44 / envergure x1,32), moteurs retires, entree d'air de queue vide, blanchi, cabine 2-4-3 (sieges
+  rouges / bleus, fond vide, plancher en dalles de 2 m), plancher au ras de la porte, escalier en bois, tables et
+  chaises. Sources : airlinereporter.com (2020-2021), liveandletsfly.com (2021). tests/test_cabine.gd (parcours).
+- Gestes : player.gd _start_pre / _pre_step (Interact, Push ; geste_portiere, geste_vol), knocked_out_of_vehicle
+  (Hit_Knockback) ; pedestrians.gd _reclaim (Push, reprise apres 0,8 s) ; commerce.gd (Interact, Consume) ;
+  histoire.gd (Idle_Talking) ; lieux.gd (Sitting_Enter) ; anim_ctrl.gd stop_clips (le geste s'arrete si on bouge).

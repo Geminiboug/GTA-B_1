@@ -353,10 +353,17 @@ for (yb, door_open) in ((17.3, True), (-7.9, False)):
         cab.box((0, yb, FLOOR_Z + 2.15), (0.9, 0.06, 0.5), M["cab"])
     else:
         cab.box((0, yb, zc - 0.2), (rx * 2 - 0.1, 0.06, 2.8), M["cab"])
+# plancher du poste de pilotage (sans lui, on passait a travers jusqu'au fond de la coque)
+_rx, _rz, _zc = sect_at(19.0)
+_hw = _rx * math.sqrt(max(0.0, 1.0 - ((FLOOR_Z - _zc) / _rz) ** 2)) - 0.05
+cab.box((0, (17.3 + 19.0) / 2, FLOOR_Z - 0.05), (_hw * 2, 1.7, 0.1), M["carpet"])
+print("Plancher du poste : demi-largeur %.2f m" % _hw)
 # office avant (galley) a droite de la porte L1, en face de la porte
 cab.box((1.25, 15.75, FLOOR_Z + 0.5), (0.7, 1.4, 1.0), M["cab"])
 cab.box((1.25, 15.75, FLOOR_Z + 1.02), (0.72, 1.42, 0.04), M["seam"])
-# rangees de sieges 3 + 3 (pas de 0,79 m), allee centrale de 0,5 m
+# rangees de sieges 3 + 3 (pas de 0,79 m). Allee elargie pour le jeu : 0,73 m entre accoudoirs (vrai A320 : ~0,48 m,
+# on s'y tourne de cote ; le joueur a une capsule de 0,60 m), sieges de 0,46 m resserres vers les hublots
+AISLE_HALF = 0.39
 row_y = 14.4
 rows = 0
 while row_y > -7.3:
@@ -364,11 +371,11 @@ while row_y > -7.3:
         row_y -= 0.25
     for sx in (-1, 1):
         for k in range(3):
-            x = sx * (0.42 + k * 0.48)
+            x = sx * (AISLE_HALF + 0.24 + k * 0.46)
             cab.box((x, row_y, FLOOR_Z + 0.45), (0.44, 0.48, 0.12), M["seat"])               # assise
             cab.box((x, row_y - 0.26, FLOOR_Z + 0.82), (0.44, 0.1, 0.72), M["seat"])          # dossier
             cab.box((x, row_y + 0.02, FLOOR_Z + 0.2), (0.06, 0.4, 0.4), M["panel"])           # pied
-        cab.box((sx * 0.18, row_y - 0.02, FLOOR_Z + 0.62), (0.05, 0.42, 0.06), M["panel"])   # accoudoir d'allee
+        cab.box((sx * (AISLE_HALF + 0.02), row_y - 0.02, FLOOR_Z + 0.62), (0.05, 0.42, 0.06), M["panel"])   # accoudoir d'allee
     row_y -= 0.79
     rows += 1
 print("Cabine :", rows, "rangees de 6")

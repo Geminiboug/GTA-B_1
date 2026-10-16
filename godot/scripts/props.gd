@@ -394,6 +394,17 @@ func _place_roadside() -> void:
 		)
 
 
+func _reachable(edge: Vector2, pos: Vector2) -> bool:
+	## Rien (mur, cloture, batiment) entre le bord de la chaussee et l'objet : on y accede depuis la rue.
+	var a := Vector3(edge.x, 0, edge.y)
+	var b := Vector3(pos.x, 0, pos.y)
+	a.y = 0.9
+	b.y = a.y
+	var q := PhysicsRayQueryParameters3D.create(a, b + (b - a).normalized() * 0.8)
+	q.collision_mask = 1
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
 func _footprint_ok(pos: Vector2, dir: Vector2, half_w: float, half_l: float) -> bool:
 	## Les 4 coins et le centre d'un objet allonge (voiture) sont hors chaussee et hors batiment.
 	var side := Vector2(-dir.y, dir.x)
@@ -432,11 +443,11 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 	var dist := w / 2.0 + _rng.randf_range(2.6, 3.8)
 	var pos := p + n * dist
 	var y := _ground(pos, radius * 0.6)
-	if is_nan(y) or not _is_free(pos, radius):
+	if is_nan(y) or not _is_free(pos, radius) or not _reachable(p + n * (w / 2.0), pos):
 		n = -n
 		pos = p + n * dist
 		y = _ground(pos, radius * 0.6)
-		if is_nan(y) or not _is_free(pos, radius):
+		if is_nan(y) or not _is_free(pos, radius) or not _reachable(p + n * (w / 2.0), pos):
 			return
 	_occupy(pos, radius)
 	var basis := _facing(-n)  # face a la route

@@ -24,6 +24,18 @@ const CALIB := {"Walk": 0.914, "Jog_Fwd": 5.79, "Sprint": 9.5, "Crouch_Fwd": 0.9
 @export var lean_per_turn := 0.05                # inclinaison (rad) par (rad/s x m/s) dans les virages
 @export var stance_width := 0.26                 # m entre les chevilles au repos
 @export var stance_stagger := 0.08               # m d'un pied devant l'autre au repos
+@export var saut_course_min := 1.0             # m/s : au-dela, saut en mouvement (foulee gardee en l'air)
+@export var foulee_air := 0.2                    # vitesse de lecture de la foulee en l'air (jambes presque figees)
+@export var reception_lourde := 6.0              # m/s de chute : au-dela, reception complete (Jump_Land)
+@export var reception_courte := 0.15             # s de reception apres un petit saut sur place
+@export var buste_marche := 0.04                 # rad : inclinaison du buste (bassin -> cou) en marchant
+@export var buste_trot := 0.12                   # rad en trottinant
+@export var buste_sprint := 0.24                 # rad en sprint
+@export var cou_cible := 0.08                    # rad : tete presque droite (regard vers l'horizon)
+@export var jambe_appui := 0.985                 # part de la longueur de jambe : jambe d'appui presque tendue
+@export var bassin_max := 0.07                   # m : remontee maximale du bassin
+@export var impulsion_duree := 0.22             # s de clip Jump_Start (poussee) avant de l'effacer
+@export var pose_chute_apres := 0.75             # s en l'air avant la pose de chute (un saut dure ~0,63 s)
 @export var anim_lod := true                    # PNJ eloignes animes moins souvent (le joueur : false)
 @export var lod_steps: Array[float] = [8.0, 20.0, 45.0]   # m : au-dela, une image sur 2, 3, puis 4
 
@@ -190,9 +202,22 @@ func _natural_speed(g: float) -> float:
 	return lerpf(j, s, g - 2.0)
 
 
+var _air_moving := false        # saut en mouvement : foulee de course gardee en l'air, pas de clip de saut
+var _land_cut := -1.0
+var _imp_cut := -1.0
+var _air_t := 0.0            # s avant d'effacer la reception (petit saut sur place)
+
+
 func land(fall_speed: float) -> void:
-	if _tree and fall_speed > 1.5:
+	## Reception : rien apres un saut en mouvement (on enchaine la course), courte flexion apres un petit saut
+	## sur place, reception complete seulement apres une vraie chute.
+	if _tree == null or fall_speed < 1.5:
+		return
+	if fall_speed >= reception_lourde:
 		_tree.set("parameters/reception/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	elif not _air_moving and speed < saut_course_min:
+		_tree.set("parameters/reception/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		_land_cut = reception_courte
 
 
 func punch() -> void:
@@ -252,20 +277,36 @@ func _physics_process(delta: float) -> void:
 	if _clip_step(delta):
 		return
 	var mode := "sol"
+	if on_floor:
+		_air_moving = false
+		_air_t = 0.0
+	else:
+		_air_t += delta
+		if _was_floor and not seated:
+			_air_moving = speed >= saut_course_min
+	if _imp_cut > 0.0:
+		_imp_cut -= delta
+		if _imp_cut <= 0.0:
+			_tree.set("parameters/impulsion/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+	if _land_cut > 0.0:
+		_land_cut -= delta
+		if _land_cut <= 0.0:
+			_tree.set("parameters/reception/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 	if seated:
 		mode = "assis"
-	elif not on_floor:
-		mode = "air"
+	elif not on_floor and not _air_moving and _air_t > pose_chute_apres:
+		mode = "air"          # vraie chute (plus longue qu'un saut) : pose en l'air
 	elif crouch:
 		mode = "accroupi"
 	if _tree.get("parameters/mode/current_state") != mode:
 		_tree.set("parameters/mode/transition_request", mode)
-	if _was_floor and not on_floor and vertical_speed > 1.0 and not seated:
+	if _was_floor and not on_floor and vertical_speed > 1.0 and not seated and not _air_moving:
 		_tree.set("parameters/impulsion/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		_imp_cut = impulsion_duree     # seulement la poussee des jambes, pas la suite acrobatique du clip
 	_was_floor = on_floor
 	var g := _gait(speed)
 	_tree.set("parameters/loco/blend_position", g)
-	_tree.set("parameters/echelle/scale", clampf(speed / _natural_speed(g), 0.5, 2.0) if g >= 1.0 else 1.0)
+	_tree.set("parameters/echelle/scale", foulee_air if not on_floor and _air_moving else (clampf(speed / _natural_speed(g), 0.5, 2.0) if g >= 1.0 else 1.0))
 	var cn: float = _natural.get("Crouch_Fwd", 0.8) * (_skel.motion_scale if _skel else 1.0)
 	_tree.set("parameters/accroupi/blend_position", clampf(speed / 0.5, 0.0, 1.0))
 	_tree.set("parameters/echelle_accroupi/scale", clampf(speed / cn, 0.6, 1.8) if speed > 0.2 else 1.0)
@@ -275,6 +316,9 @@ func _physics_process(delta: float) -> void:
 
 func _overlay(delta: float) -> void:
 	## Ajouts par-dessus l'animation : regard (tete 65 %, buste 30 %), respiration haletante, inclinaison en virage.
+	var moving := clampf((speed - 0.3) / 0.6, 0.0, 1.0) if on_floor and not seated and not crouch and _clip_free() else 0.0
+	if moving > 0.01 and (not anim_lod or _lod_every() <= 1):
+		_upright(moving)
 	_look = _look.lerp(Vector2(clampf(look_yaw, -1.2, 1.2), clampf(look_pitch, -0.4, 0.6)), 1.0 - exp(-5.0 * delta))
 	var breath := sin(_t * (1.7 + 2.6 * essouffle)) * 0.035 * essouffle
 	_turn_bone("Head", Vector3(-_look.y * 0.8, _look.x * 0.65, 0.0))
@@ -341,6 +385,46 @@ func _overlay(delta: float) -> void:
 				_two_bone_ik(side + "UpperLeg", side + "LowerLeg", end, ik_targets[end])
 
 
+func _clip_free() -> bool:
+	return _seq.is_empty() and (_clip == null or not _clip.is_playing())
+
+
+func _upright(w: float) -> void:
+	## Les clips de marche et de course (Quaternius) avancent buste penche, tete basse et genoux toujours plies.
+	## On ramene le buste a l'inclinaison d'une vraie personne selon l'allure, la tete a l'horizontale, et on
+	## remonte le bassin pour que la jambe d'appui se tende (pieds gardes a leur place par IK).
+	var g := _gait(speed)
+	var target := lerpf(buste_marche, buste_trot, clampf(g - 1.0, 0.0, 1.0)) if g < 2.0 \
+		else lerpf(buste_trot, buste_sprint, clampf(g - 2.0, 0.0, 1.0))
+	var hips := _gpose(_bone["Hips"], {}).origin
+	var neck := _gpose(_bone["Neck"], {}).origin
+	var lean := atan2(neck.z - hips.z, neck.y - hips.y)        # squelette : +Z devant, +Y en haut
+	var corr := (target - lean) * w
+	_turn_bone("UpperChest", Vector3(corr, 0.0, 0.0))   # os reecrit par les clips a chaque image (pas d'accumulation)
+	var hy := _gpose(_bone["Head"], {}).basis.orthonormalized() * Vector3.UP   # axe du crane (os : +Y vers le haut)
+	var tilt := atan2(hy.z, hy.y)                               # > 0 : tete penchee en avant, regard vers le sol
+	_turn_bone("Head", Vector3((tilt - cou_cible) * w, 0.0, 0.0))
+	# bassin : jambe d'appui (pied le plus bas) presque tendue
+	var feet := {}
+	for s in ["Left", "Right"]:
+		feet[s] = _skel.global_transform * _gpose(_bone[s + "Foot"], {}).origin
+	var st: String = "Left" if (feet["Left"] as Vector3).y < (feet["Right"] as Vector3).y else "Right"
+	var hip := _skel.global_transform * _gpose(_bone[st + "UpperLeg"], {}).origin
+	var knee := _skel.global_transform * _gpose(_bone[st + "LowerLeg"], {}).origin
+	var leg := (knee - hip).length() + ((feet[st] as Vector3) - knee).length()
+	var d: Vector3 = hip - feet[st]
+	var flat := Vector2(d.x, d.z).length()
+	var raise := clampf((sqrt(maxf(pow(leg * jambe_appui, 2.0) - flat * flat, 0.0)) - d.y), 0.0, bassin_max) * w
+	if raise > 0.002:
+		var ih: int = _bone["Hips"]
+		var root_b := _gpose(_skel.get_bone_parent(ih), {}).basis if _skel.get_bone_parent(ih) >= 0 else Basis.IDENTITY
+		var up_local := root_b.inverse() * (_skel.global_transform.basis.inverse() * (Vector3.UP * raise))
+		_skel.set_bone_pose_position(ih, _skel.get_bone_pose_position(ih) + up_local)
+		var ahead := _skel.global_transform.basis.orthonormalized() * Vector3(0, 0, 1)
+		_two_bone_ik("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", feet["Left"], ahead)
+		_two_bone_ik("RightUpperLeg", "RightLowerLeg", "RightFoot", feet["Right"], ahead)
+
+
 func _arm_to(side: String, goal: Vector3, w: float, pole := Vector3.ZERO) -> void:
 	## Amene la main vers `goal` (monde) avec un poids w (0 : pose du clip, 1 : sur la cible) ; pole : ou pointe le coude.
 	var hand := _skel.global_transform * _gpose(_bone[side + "Hand"], {}).origin
@@ -387,6 +471,14 @@ func play_clips(seq: Array, in_place := false) -> void:
 	_seq = seq.duplicate(true)
 	_hold = 0.0
 	_next_clip()
+
+
+func stop_clips() -> void:
+	## Interrompt un geste (le joueur repart) : l'arbre d'animation reprend la main.
+	_seq.clear()
+	_hold = 0.0
+	if _clip:
+		_clip.stop()
 
 
 func playing_clip() -> bool:

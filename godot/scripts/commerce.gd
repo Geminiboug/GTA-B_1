@@ -57,6 +57,8 @@ func _ready() -> void:
 func _collect() -> void:
 	## Etals, maquis, kpayos et cabines (scripts/props.gd), caisses et cafe (scripts/lieux.gd).
 	var props := get_node_or_null("../Props")
+	if props and not props.get("placed"):
+		await props.placement_done      # les etals sont poses apres deux images de physique
 	if props and "shops" in props:
 		spots.append_array(props.shops)
 	var lieux := get_node_or_null("../Lieux")
@@ -120,10 +122,15 @@ func buy(kind: String, i: int) -> bool:
 	if not Partie.payer(int(it[1]), it[0]):
 		return false
 	# nourriture : mangee sur place (sante), sauf si une mission demande de la rapporter (Partie.drapeaux["garder"])
-	if int(it[2]) > 0 and not (Partie.drapeaux.get("garder", []) as Array).has(String(it[0])):
+	var mange := int(it[2]) > 0 and not (Partie.drapeaux.get("garder", []) as Array).has(String(it[0]))
+	if mange:
 		Partie.soigner(int(it[2]))
 	else:
 		Partie.ajouter(String(it[0]))
+	# geste : on tend la main pour payer et prendre, puis on mange sur place
+	var an: Node = _player.get("anim") if _player else null
+	if an and an.has_method("play_clips"):
+		an.play_clips([["Interact", 0.0]] + ([["Consume", 0.0]] if mange else []), true)
 	if _player:
 		Bulle.say(_player, "Merci !" if randf() < 0.5 else "Akpé !", 1.4, 2.0, Color(0.8, 1, 0.8))
 	return true

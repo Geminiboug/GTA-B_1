@@ -14,6 +14,7 @@ extends CharacterBody3D
 @export var jump_velocity := 3.1      # m/s : saut d'environ 0,5 m, 0,63 s en l'air (g = 9,81)
 @export var land_brake := 0.45       # part de la vitesse horizontale gardee a la reception (flexion des jambes)
 @export var land_stun := 0.25        # s de reception sans relance
+@export var land_heavy := 6.0        # m/s de chute (~1,8 m) : en dessous, reception sans freinage
 @export var step_height := 0.3       # m : marche, bordure ou seuil franchis sans sauter
 @export var fall_hurt_speed := 8.0   # m/s a l'impact (chute de ~3,3 m) : au-dela, la chute blesse
 @export var fall_hurt_per_ms := 12.0 # points de sante par m/s au-dela
@@ -272,6 +273,7 @@ func _nearest_vehicle() -> Node3D:
 	var td: float = t.get("dist", INF)
 	var pd: float = pk.get("dist", INF)
 	if td < best_d and td <= pd:
+		_carjack = true
 		return traffic.take_over(t["index"], self)
 	if pd < best_d:
 		return props.take_parked(pk["index"])
@@ -279,8 +281,53 @@ func _nearest_vehicle() -> Node3D:
 
 
 var _enter_from := Transform3D()
+var _carjack := false                 # le vehicule vient d'etre pris a son conducteur (geste pour l'en sortir)
+var _pre := {}                        # geste avant de monter : {v, t, len} (portiere ouverte, conducteur tire dehors)
+@export var geste_portiere := 0.55    # s : ouvrir la portiere (clip Interact) avant de s'asseoir
+@export var geste_vol := 0.9          # s : tirer le conducteur dehors (clip Push)
 var _enter_t := 1.0
 @export var enter_time := 0.5      # s : du sol au siege (le corps glisse pendant que l'animation passe assise)
+
+
+func _start_pre(v: Node3D) -> void:
+	## Geste visible avant de monter : tirer le conducteur dehors (vol) ou ouvrir la portiere (voiture) ; le zem
+	## s'enjambe directement (arc du corps dans _ride).
+	var car: bool = v.get("kind") != "zem"
+	if not _carjack and not car:
+		enter_vehicle(v)
+		return
+	var ep: Vector3 = v.entry_point() if v.has_method("entry_point") else v.global_position
+	var to := (v.global_position - ep) * Vector3(1, 0, 1)
+	if to.length() > 0.05:
+		_facing = atan2(-to.x, -to.z)
+		body.rotation.y = _facing
+	velocity = Vector3.ZERO
+	var clip_name := "Push" if _carjack else "Interact"
+	var dur := geste_vol if _carjack else geste_portiere
+	if anim and anim.has_method("play_clips"):
+		anim.play_clips([[clip_name, 0.0]], true)
+	_pre = {"v": v, "t": 0.0, "len": dur}
+
+
+func _pre_step(delta: float) -> void:
+	_pre["t"] = float(_pre["t"]) + delta
+	velocity = Vector3(0, velocity.y - gravity * delta, 0) if not is_on_floor() else Vector3.ZERO
+	move_and_slide()
+	if float(_pre["t"]) >= float(_pre["len"]):
+		var v: Node3D = _pre["v"]
+		_pre = {}
+		if is_instance_valid(v) and not v.get("has_rider"):
+			enter_vehicle(v)
+
+
+func knocked_out_of_vehicle(from: Vector3) -> void:
+	## Le proprietaire reprend son vehicule (scripts/pedestrians.gd) : le joueur est tire dehors et projete.
+	if vehicle:
+		exit_vehicle()
+	var away: Vector3 = (global_position - from) * Vector3(1, 0, 1)
+	velocity = away.normalized() * 5.0 + Vector3.UP * 2.0
+	if anim and anim.has_method("play_clips"):
+		anim.play_clips([["Hit_Knockback", 0.0]])
 
 
 func enter_vehicle(v: Node3D) -> void:
@@ -332,7 +379,8 @@ func _ride(_delta: float) -> void:
 		_enter_t = minf(1.0, _enter_t + _delta / enter_time)
 		var k := smoothstep(0.0, 1.0, _enter_t)
 		# on enjambe la moto / on se glisse dans la voiture : petit arc vers le haut a mi-chemin
-		target = _enter_from.interpolate_with(target, k).translated(Vector3.UP * sin(k * PI) * 0.12)
+		# zem : la jambe passe par-dessus la selle (arc plus haut) ; voiture : on se baisse sous le toit
+		target = _enter_from.interpolate_with(target, k).translated(Vector3.UP * sin(k * PI) * (0.28 if vehicle.get("kind") == "zem" else 0.12))
 	global_transform = target
 	_ride_ik()
 	body.rotation = Vector3.ZERO
@@ -344,19 +392,27 @@ func _ride(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if not _pre.is_empty():
+		_pre_step(delta)
+		return
 	if Input.is_action_just_pressed("interact"):
 		if vehicle:
 			exit_vehicle()
 			return
+		_carjack = false
 		var v := _nearest_vehicle()
 		if v:
-			enter_vehicle(v)
+			_start_pre(v)
+			return
 	if vehicle:
 		_ride(delta)
 		return
 	if not _climb.is_empty():
 		_climb_step(delta)
 		return
+	# un geste (achat, conversation...) s'arrete des qu'on repart
+	if anim and anim.has_method("stop_clips") and anim.playing_clip() and Input.get_vector("move_left", "move_right", "move_forward", "move_back").length() > 0.2:
+		anim.stop_clips()
 	if Input.is_action_just_pressed("crouch") and is_on_floor():
 		_set_crouch(not crouched)
 	_cam_offset.y = move_toward(_cam_offset.y, 1.15 if crouched else 1.6, 2.0 * delta)
@@ -466,10 +522,12 @@ func _physics_process(delta: float) -> void:
 		anim.essouffle = clampf((0.6 - stamina) / 0.5, 0.0, 1.0)
 		anim.crouch = crouched
 		_update_look()
-		if is_on_floor() and not was_on_floor:
+		if is_on_floor() and not was_on_floor and _fall_speed >= land_heavy:
+			# vraie chute : flexion des jambes, on perd l'elan ; un saut ordinaire garde l'elan (pas de glissade)
 			velocity.x *= land_brake
 			velocity.z *= land_brake
 			_land_t = land_stun
+		if is_on_floor() and not was_on_floor:
 			anim.land(_fall_speed)
 			if _fall_speed > fall_hurt_speed:
 				Partie.blesser((_fall_speed - fall_hurt_speed) * fall_hurt_per_ms)

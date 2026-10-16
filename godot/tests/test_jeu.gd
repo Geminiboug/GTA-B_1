@@ -15,6 +15,7 @@ var t0 := 0
 var money0 := 0
 var police_spawned := false
 var arrive_d := INF
+const FIN := 10800           # images (60 par s) : delai d'appel (1 min) + trajet depuis le commissariat + arrestation
 
 
 func _initialize() -> void:
@@ -86,20 +87,25 @@ func _physics_process(_d: float) -> bool:
 		histoire.active = false
 		police.crime("vol", player.global_position)
 		_check(partie.recherche == 1, "vol de vehicule : 1 etoile")
+		_check(absf(police.appel_t - police.delai_appel) < 0.1, "sans policier temoin : police appelee, depart dans %.0f s" % police.appel_t)
 		t0 = frame
-	if t0 > 0 and frame > t0 and frame < t0 + 3600 and partie.recherche > 0:
+	if t0 > 0 and frame == t0 + int(police.delai_appel * 60.0) - 120:
+		_check(police.units.is_empty(), "aucune patrouille avant la fin du delai d'appel")
+	if t0 > 0 and frame > t0 and frame < t0 + FIN and partie.recherche > 0:
 		if police.units.size() > 0:
-			police_spawned = true
 			var car: Node3D = police.units[0]["car"]
+			if not police_spawned:
+				_check(car.global_position.distance_to(player.global_position) > 120.0, "patrouille partie de loin (%.0f m), pas sur place" % car.global_position.distance_to(player.global_position))
+			police_spawned = true
 			arrive_d = minf(arrive_d, car.global_position.distance_to(player.global_position))
-	if t0 > 0 and frame == t0 + 3600:
+	if t0 > 0 and frame == t0 + FIN:
 		_check(police_spawned, "patrouille envoyee")
 		_check(arrive_d < 25.0, "la patrouille arrive pres du joueur (%.0f m)" % arrive_d)
 		_check(partie.recherche == 0 and int(partie.stats["amendes"]) >= 1, "arrete et mis a l'amende (%s restant)" % partie.fcfa(partie.argent))
 		partie.blesser(200.0)
-	if t0 > 0 and frame == t0 + 3900:
+	if t0 > 0 and frame == t0 + FIN + 300:
 		var home: Vector3 = scene.get_node("Lieux").home_position()
 		_check(partie.sante == 100.0 and player.global_position.distance_to(home) < 5.0, "malaise : reveil a la maison, soigne")
 		print("RESULTAT : %s" % ("tout fonctionne" if fails == 0 else "%d echec(s)" % fails))
 		return true
-	return frame > 6000
+	return frame > 15000

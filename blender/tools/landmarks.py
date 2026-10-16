@@ -133,8 +133,8 @@ if os.path.exists(EPAVE):
             ob.name = ob.name + "-col"
         elif ob.name.startswith("rampe_escalier"):
             ob.name = ob.name + "-colonly"
-sign("avion_panneau", "L'EPAVE VOLANTE", (0, -15, 1.2), 0.9, p, mat="mat_peinture_ocre")
-box("avion_panneau_fond", (12, 0.3, 1.6), (0, -14.7, 1.2), "mat_bois", p, collision=False)
+sign("avion_panneau", "L'EPAVE VOLANTE", (0, -30, 1.2), 0.9, p, mat="mat_peinture_ocre")
+box("avion_panneau_fond", (12, 0.3, 1.6), (0, -29.7, 1.2), "mat_bois", p, collision=False)
 
 # ---------- Sweet Dream Beach : OSM node 6392032785 (622, -292) ----------
 b = group("rep_sweet_dream_beach", 622, -292)

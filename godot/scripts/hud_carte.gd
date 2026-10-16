@@ -408,6 +408,15 @@ func _draw_blips() -> void:
 		if q.length() > R * 0.86:
 			q = q.normalized() * R * 0.86
 		_diamond(_blips, c + q, 7.0, COL_WAYPOINT)
+	# patrouilles de police (scripts/police.gd) : point rouge / bleu qui clignote, colle au bord si loin
+	var blink := int(Time.get_ticks_msec() / 300) % 2 == 0
+	for car in get_tree().get_nodes_in_group("police_car"):
+		var p3 := (car as Node3D).global_position
+		var pq := _to_mini(Vector2(p3.x, p3.z), pp, h, R)
+		if pq.length() > R * 0.86:
+			pq = pq.normalized() * R * 0.86
+		_blips.draw_circle(c + pq, 6.0, Color(0, 0, 0, 0.85))
+		_blips.draw_circle(c + pq, 4.6, Color(0.95, 0.15, 0.15) if blink else Color(0.2, 0.4, 1.0))
 	# nord
 	var nq := _to_mini(pp + Vector2(0, -1000.0), pp, h, R).normalized() * (R - 13.0)
 	_blips.draw_circle(c + nq, 9.0, Color(0.05, 0.05, 0.06, 0.95))
@@ -514,9 +523,25 @@ func clear_waypoint() -> void:
 func _update_route() -> void:
 	var pp := _player_pos()
 	var on_foot: bool = _player.get("vehicle") == null if _player else true
-	route = _carte.route(pp, waypoint, not on_foot)
+	# dans une cour fermee (maison du joueur) : d'abord le portail, puis la rue (scripts/lieux.gd)
+	var lieux := get_node_or_null("../Lieux")
+	var pp3: Vector3 = _player.global_position if _player else Vector3(pp.x, 0, pp.y)
+	var exit: Array = lieux.sortie(pp3) if lieux and lieux.has_method("sortie") else []
+	var head := PackedVector2Array()
+	for q: Vector3 in exit:
+		head.append(Vector2(q.x, q.z))
+	# destination dans une cour fermee : on y entre par le portail
+	var tail := PackedVector2Array()
+	var entry: Array = lieux.sortie(Vector3(waypoint.x, 0, waypoint.y)) if lieux and lieux.has_method("sortie") and on_foot else []
+	if exit.is_empty():
+		for i in range(entry.size() - 1, -1, -1):
+			tail.append(Vector2(entry[i].x, entry[i].z))
+	route = _carte.route(head[-1] if head.size() > 0 else pp, tail[0] if tail.size() > 0 else waypoint, not on_foot)
 	if route.size() > 0:
+		route.append_array(tail)
 		route.append(waypoint)
+		head.append_array(route)
+		route = head
 	route_length = 0.0
 	for i in route.size() - 1:
 		route_length += route[i].distance_to(route[i + 1])
@@ -703,6 +728,11 @@ func _draw_big() -> void:
 		_house_icon(_big, ha, 10.0)
 		_big.draw_string_outline(_font, ha + Vector2(14, 6), "Chez vous", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.85))
 		_big.draw_string(_font, ha + Vector2(14, 6), "Chez vous", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.6, 1.0, 0.7))
+	for car in get_tree().get_nodes_in_group("police_car"):
+		var p3 := (car as Node3D).global_position
+		var pa := _w2s(Vector2(p3.x, p3.z))
+		_big.draw_circle(pa, 7.0, Color(0, 0, 0, 0.85))
+		_big.draw_circle(pa, 5.5, Color(0.95, 0.15, 0.15) if int(Time.get_ticks_msec() / 300) % 2 == 0 else Color(0.2, 0.4, 1.0))
 	for p in pins:
 		var at := _w2s(p)
 		_big.draw_line(at, at + Vector2(0, -16), Color(0, 0, 0, 0.9), 3.0)
