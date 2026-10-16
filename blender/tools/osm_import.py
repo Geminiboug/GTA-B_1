@@ -1,4 +1,4 @@
-# GTB : importeur OpenStreetMap maison pour le blockout (remplace Blender-OSM).
+﻿# GTB : importeur OpenStreetMap maison pour le blockout (remplace Blender-OSM).
 # Donnees OSM : Â© les contributeurs d'OpenStreetMap, licence ODbL.
 #
 # Lancement :
@@ -275,11 +275,29 @@ def prism(poly, z0, z1):
     return verts, faces
 
 
+TILE = 500.0   # m : maillages decoupes en tuiles (Godot ignore celles hors champ et simplifie les lointaines)
+
+
 def batch_obj(name, batch, mat, collection, z):
     if not batch.faces:
         return None
     verts = [(v[0], v[1], z) if len(v) == 2 else v for v in batch.verts]
-    return make_obj(name, verts, batch.faces, mat, collection)
+    # une tuile par carre de 500 m (selon le centre de chaque face) ; le suffixe -col reste a la fin du nom
+    tiles = {}
+    for f in batch.faces:
+        cx = sum(verts[i][0] for i in f) / len(f)
+        cy = sum(verts[i][1] for i in f) / len(f)
+        tiles.setdefault((int(math.floor(cx / TILE)), int(math.floor(cy / TILE))), []).append(f)
+    if len(tiles) == 1:
+        return make_obj(name, verts, batch.faces, mat, collection)
+    base, suffix = (name[:-4], "-col") if name.endswith("-col") else ((name[:-8], "-colonly") if name.endswith("-colonly") else (name, ""))
+    last = None
+    for (tx, ty), faces in sorted(tiles.items()):
+        used = sorted({i for f in faces for i in f})
+        remap = {old: k for k, old in enumerate(used)}
+        last = make_obj("%s_t%d_%d%s" % (base, tx, ty, suffix), [verts[i] for i in used],
+                        [[remap[i] for i in f] for f in faces], mat, collection)
+    return last
 
 
 # --- Multipolygones (plage, zone humide...) : on recoud les anneaux exterieurs ---
@@ -1436,6 +1454,11 @@ for wid, t, poly in entries:
         shelter(DETAILS, ccw(poly), h)
         building_data.append({"id": str(wid), "h": h, "roof": "abri", "pts": [[round(p[0], 2), round(-p[1], 2)] for p in poly]})
         nb_bld += 1
+        continue
+    # filet de securite : centre sur une bande de roulement (cas rare au bord de la zone) -> retire
+    _c = (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
+    if any(line_dist(_c, pts) < half for _lbb, pts, half in LINE_BB):
+        nb_off += 1
         continue
     _, _, _, hu, hv = min_rect(poly)
     rect_fill = abs(area(poly)) / max(4 * hu * hv, 0.01)

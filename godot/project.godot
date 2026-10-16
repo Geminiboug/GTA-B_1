@@ -1,4 +1,4 @@
-; Engine configuration file.
+﻿; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
 ; since the parameters that go here are not all obvious.
 ;
@@ -193,3 +193,7 @@ gtb_wet={
 "type": "float",
 "value": 0.0
 }
+
+[rendering]
+
+occlusion_culling/use_occlusion_culling=true

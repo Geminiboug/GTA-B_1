@@ -85,13 +85,38 @@ func to_rw(p: Vector2) -> Vector2:
 	return Vector2(d.dot(_u), d.dot(_n))
 
 
+const CLIP_Z := -386.06       # limite nord de la premiere zone : les trajets de roulage ont ete regles sur ces troncons
+
+
+func _taxi_pts(aw: Dictionary) -> Array:
+	## Taxiway coupe a l'ancienne limite nord (la zone agrandie en phase 9 contient les taxiways entiers ; T1, T3 et T4
+	## sont reconnus par leurs extremites telles qu'elles etaient au bord de la carte).
+	var out: Array = []
+	var prev := Vector2.INF
+	for q in aw["pts"]:
+		var p := Vector2(float(q[0]), float(q[1]))
+		var inside := p.y >= CLIP_Z
+		if prev != Vector2.INF and (prev.y >= CLIP_Z) != inside:
+			var k := (CLIP_Z - prev.y) / (p.y - prev.y)
+			var x := prev.lerp(p, k)
+			if inside:
+				out.append(x)
+			else:
+				out.append(x)
+				break
+		if inside:
+			out.append(p)
+		prev = p
+	return out
+
+
 func _find_taxiways(data: Dictionary) -> void:
 	for aw in data.get("aeroways", []):
 		if aw["kind"] != "taxiway":
 			continue
-		var pts: Array = []
-		for q in aw["pts"]:
-			pts.append(Vector2(float(q[0]), float(q[1])))
+		var pts: Array = _taxi_pts(aw)
+		if pts.size() < 2:
+			continue
 		var r0 := to_rw(pts[0])
 		var r1 := to_rw(pts[pts.size() - 1])
 		# T1 : relie T2 (s ~ 191) au bord nord de la carte en direction de la piste (s ~ 117)
@@ -116,9 +141,9 @@ func _split_t1(data: Dictionary) -> void:
 	for aw in data.get("aeroways", []):
 		if aw["kind"] != "taxiway":
 			continue
-		var pts: Array = []
-		for q in aw["pts"]:
-			pts.append(Vector2(float(q[0]), float(q[1])))
+		var pts: Array = _taxi_pts(aw)
+		if pts.size() < 2:
+			continue
 		for flip in [false, true]:
 			var cand: Array = pts.duplicate()
 			if flip:
@@ -165,6 +190,8 @@ func _find_stands(data: Dictionary) -> void:
 		if sp.size() < 5:
 			continue
 		var p := Vector2(float(sp[0]), float(sp[1]))
+		if p.y < CLIP_Z:
+			continue      # au-dela de la premiere zone : pas de trajet de roulage regle jusque-la
 		var d := Vector2(float(sp[3]), float(sp[4])).normalized()
 		var r := to_rw(p)
 		if d.dot(_n) < 0.5 or r.y < 230.0:

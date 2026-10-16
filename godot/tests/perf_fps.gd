@@ -7,7 +7,8 @@ var scene: Node
 var player: CharacterBody3D
 var views := [["quartier", Vector3(300, 1, 120), 2.4], ["route des peches", Vector3(60, 1, 8), 1.45],
 	["vue d'ensemble", Vector3(150, 1, 200), 0.3], ["aeroport", Vector3(260, 1, -330), -0.6],
-	["ararat (interieur)", Vector3(621, 1, 73), PI], ["terminal (hall)", Vector3(399, 1, -344), 0.0]]
+	["ararat (interieur)", Vector3(621, 1, 73), PI], ["terminal (hall)", Vector3(399, 1, -344), 0.0],
+	["haie vive (nord)", Vector3(150, 1, -900), 0.8]]
 var idx := 0
 var samples: Array[float] = []
 

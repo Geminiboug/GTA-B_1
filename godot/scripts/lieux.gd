@@ -41,6 +41,7 @@ var _current_zone := ""
 var _house_lights: Array[OmniLight3D] = []
 var _fade: ColorRect
 var _sleeping := false
+@export var interior_shadow := 60.0   # m : portee des ombres du soleil quand on est dans un lieu
 var shop_spots: Array = []      # caisses de l'Ararat, cafe de l'aerogare (scripts/commerce.gd) : {pos, kind}
 
 
@@ -348,6 +349,11 @@ func _physics_process(delta: float) -> void:
 	# nom du lieu en entrant
 	if inside != _current_zone:
 		_current_zone = inside
+		# a l'interieur, les ombres du soleil ne servent qu'a ce qu'on voit par les vitres : portee reduite (budget 60 img/s)
+		var sun := get_node_or_null("../Sun") as DirectionalLight3D
+		if sun:
+			var q := int(Partie.options.get("qualite", 2))
+			sun.directional_shadow_max_distance = interior_shadow if inside != "" else float(Qualite.PRESETS[clampi(q, 0, 2)][0])
 		if inside != "" and _hud and _hud.has_method("show_place"):
 			_hud.show_place(NAMES[inside])
 	# tableau des departs : mis a jour chaque minute de jeu

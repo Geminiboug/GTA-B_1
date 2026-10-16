@@ -608,3 +608,28 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 ## Export (phase 10)
 - export_presets.cfg (versionne) : Windows (builds/windows/GTB.exe) et Web (builds/web/index.html). Modeles d'export
   Godot 4.7.2 installes dans %APPDATA%/Godot/export_templates/4.7.2.stable (paquet officiel godotengine).
+
+## Phase 9 : quartier nord (Haie Verte, Cadjehoue), deplacement rapide, pick-up, missions
+- Zone agrandie au nord : bbox 6.34638-6.3610 / 2.375259-2.3875 (1 354 x 1 616 m). Donnees du 16/10/2026 :
+  refs/osm/zone-gtb.osm (API OpenStreetMap ; ancien extrait garde : zone-aeroport-2026-10-14.osm), Overture
+  (refs/overture/building.geojson, 6 369 batiments ; ancien : building-2026-10-14.geojson), Open Buildings 2.5D
+  (ob25d_download.py, BBOX etendue ; ancien : hauteurs_2023-zone1.tif), grille ob25d_grille.py.
+  Script de telechargement : ~/fetch_phase9.sh (WSL). Import : osm_import.py -- refs/osm/zone-gtb.osm ... (meme ordre
+  d'arguments qu'avant). Resultat : 164 routes, 1 730 batiments (1 128 hauteurs mesurees).
+- Origine figee (osm_import.py, ob25d_grille.py : lat0, lon0 = 6.3498725, 2.3813795, centre de la premiere zone) :
+  tout ce qui existait garde ses coordonnees (lieux, missions, tests, teleportations).
+- Maillages de la zone decoupes en tuiles de 500 m (osm_import.py batch_obj, TILE) : Godot ignore celles hors champ et
+  simplifie les lointaines (primitives divisees par ~2). Occultation : scripts/occultation.gd (une boite par
+  batiment plein, hors lieux visitables) + rendering/occlusion_culling. Ombres reduites a 60 m dans les interieurs.
+- Adaptations : world_bounds.gd lit les limites dans le json ; carte.gd ne raccorde plus les rues coupees au bord de
+  la zone ; air_traffic.gd recoupe les taxiways a l'ancienne limite nord (z = -386, trajets de roulage regles dessus)
+  et ignore les postes au-dela ; osm_import.py retire un batiment dont le centre tombe sur une chaussee ; props.gd
+  verifie chaque moto d'une station de zems ; debug.gd ne teleporte pas sur le toit d'un vehicule.
+- Noms fictifs : Haie Vive -> Haie Verte, Cadjehoun -> Cadjehoue (docs/LEGAL.md), affiches sur la carte.
+- Deplacement rapide (scripts/taxi.gd) : pres d'une station de zems, T : 7 destinations, 200 F + 300 F/km, fondu,
+  2 min de jeu par km ; refuse si la police recherche le joueur.
+- Pick-up simple cabine (build_vehicles.py PICKUP, veh_pickup.glb) : conduisible, dans la circulation et gare.
+  Capture : docs/images/phase9_pickup.png.
+- Missions secondaires (histoire.gd, docs/histoire.md) : Maman Fifi a Haie Verte, « Ravitaillement » et « Le grand tour ».
+- Mesures (perf_fps.gd, vue « haie vive (nord) » ajoutee) : 63-84 img/s dehors, 52-61 en interieur selon les passages,
+  mesures perturbees (editeur Godot, navigateur et CapCut ouverts) : a refaire editeur ferme.

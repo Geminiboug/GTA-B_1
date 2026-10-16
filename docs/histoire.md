@@ -50,3 +50,13 @@ Sènan n'y a jamais cru.
 - Une mission ratée (chrono écoulé, colis perdu) se recommence depuis son début.
 - On ne peut pas sauvegarder pendant une poursuite. La sauvegarde garde l'étape de l'histoire en cours.
 - Pas d'arme à feu dans l'acte 1 : on frappe, on fuit, on se cache.
+
+## Missions secondaires du quartier nord (phase 9)
+
+Après l'acte 1, **Maman Fifi** (personnage inventé), patronne d'un maquis de Haie Verte, donne du travail :
+
+9. **Ravitaillement** : acheter de l'huile et de l'eau minérale à l'Ararat et les rapporter au maquis. 3 000 F.
+10. **Le grand tour** : deux clients arrivés par l'avion du soir, à conduire de l'aérogare à Haie Verte, puis au
+    maquis, chacun en moins de 5 minutes. 4 000 F.
+
+Ensuite, petits boulots de zem à volonté, et déplacement rapide depuis les stations de zems (T).

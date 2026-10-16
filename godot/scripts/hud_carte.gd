@@ -38,6 +38,8 @@ const PLACES := [
 	["Ararat Hypermarket", Vector2(617, 95)],
 	["L'Épave Volante", Vector2(-177, 247)],
 	["Sweet Dream Beach", Vector2(622, 292)],
+	["Haie Verte", Vector2(-150, -840)],
+	["Cadjéhoué", Vector2(550, -1080)],
 	["Maquis La Plaja", Vector2(-159, 54)],
 	["Plage", Vector2(150, 330)],
 ]

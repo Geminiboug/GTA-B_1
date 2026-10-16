@@ -48,7 +48,7 @@ var _roads: Array = []
 var _signs: Node3D
 var counts := {}
 var lamp_positions := PackedVector3Array()
-const CAR_KINDS := ["veh_berline", "veh_4x4", "veh_minibus"]
+const CAR_KINDS := ["veh_berline", "veh_4x4", "veh_minibus", "veh_pickup"]
 var _chunk_nodes := {}
 var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
@@ -57,7 +57,7 @@ var placed := false
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "veh_berline": 300.0,
-	"veh_4x4": 300.0, "veh_minibus": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
+	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
 
 
 func _ready() -> void:
@@ -420,7 +420,7 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 			_occupy(pos, radius)
 			var dir := t if _rng.randf() < 0.5 else -t
 			var r := _rng.randf()
-			var model := "veh_berline" if r < 0.62 else ("veh_4x4" if r < 0.88 else "veh_minibus")
+			var model := "veh_berline" if r < 0.55 else ("veh_4x4" if r < 0.78 else ("veh_pickup" if r < 0.9 else "veh_minibus"))
 			var xf := Transform3D(_facing(dir), Vector3(pos.x, y, pos.y))
 			var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
 			var slot := _add(model, xf, col)
@@ -445,6 +445,8 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		var count := _rng.randi_range(2, 4)
 		for i in count:
 			var q := pos + t * (i - count / 2.0) * 0.95
+			if _carte.on_carriageway(q, 0.6):
+				continue      # moto qui deborderait sur une autre rue
 			var b := _facing(-n.rotated(_rng.randf_range(-0.3, 0.3))) * Basis(Vector3(0, 0, 1), 0.1)
 			var zxf := Transform3D(b, Vector3(q.x, y, q.y))
 			parked.append({"model": "zem", "xf": zxf, "color": Color.WHITE, "slot": _add("zem_gare", zxf), "shape": null})

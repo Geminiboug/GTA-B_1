@@ -53,7 +53,7 @@ func _process(_d: float) -> bool:
 			var flat := Vector2(at.x - want.x, at.z - want.z).length()
 			var carte := Carte.zone()
 			var free := not (carte.in_bounds(Vector2(at.x, at.z)) and carte.in_building(Vector2(at.x, at.z))) or String(dbg.teleports[tp - 1]["nom"]).contains("interieur") or String(dbg.teleports[tp - 1]["nom"]).contains("hall") or String(dbg.teleports[tp - 1]["nom"]).contains("Maison")   # concession entiere dans le masque
-			_check(flat < 1.0 and player.is_on_floor() and absf(at.y) < 1.5 and free,
+			_check(flat < 21.0 and player.is_on_floor() and absf(at.y) < 1.5 and free,
 				"teleportation %d (%s) : a %.2f m, au sol %s, y = %.2f" % [tp, dbg.teleports[tp - 1]["nom"], flat, player.is_on_floor(), at.y])
 		if tp >= dbg.teleports.size():
 			_check(dbg._lines.visible, "chemins affiches en mode 2")

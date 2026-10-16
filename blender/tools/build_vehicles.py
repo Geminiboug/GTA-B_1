@@ -540,5 +540,23 @@ MINIBUS = dict(L=4.85, W=1.88, wb=2.57, r=0.33, track=1.62, tire_w=0.21, spokes=
     mirror_y=1.9, wiper_y=2.05, doors=[1.55, 0.35], door_lines=[2.05, 1.2, -0.3], strip_z=0.6,
     seat_rows=[1.45, 0.45, -0.45, -1.4], seat_z=0.6, dash_y=2.05)
 
-for nm, sp in (("veh_berline", SEDAN), ("veh_4x4", SUV), ("veh_minibus", MINIBUS)):
+# Pick-up simple cabine (5,30 x 1,85 x 1,80 m, empattement 3,08 m) : cabine courte, long plateau bache (le dessus du
+# plateau est ferme a hauteur de ceinture), tres courant a Cotonou pour les livraisons (phase 9).
+PICKUP = dict(L=5.3, W=1.85, wb=3.08, r=0.36, track=1.54, tire_w=0.24, spokes=6, bumper_mat="black", stations=[
+    S(-2.62, 0.45, 1.0, 1.03, 0.88, 0.78),
+    S(-2.55, 0.42, 1.02, 1.06, 0.9, 0.82),
+    S(-0.85, 0.42, 1.02, 1.06, 0.9, 0.82),
+    S(-0.78, 0.42, 1.08, 1.78, 0.92, 0.8, win=True),             # arriere de la cabine (lunette)
+    S(-0.15, 0.42, 1.08, 1.8, 0.92, 0.8),                        # montant B
+    S(-0.05, 0.42, 1.08, 1.8, 0.92, 0.8, win=True),
+    S(0.7, 0.42, 1.07, 1.78, 0.92, 0.8, win=True, top="glass"),  # haut du pare-brise
+    S(1.4, 0.43, 1.05, 1.1, 0.92, 0.82),                         # bas du pare-brise
+    S(2.15, 0.45, 1.0, 1.04, 0.9, 0.8),
+    S(2.45, 0.5, 0.93, 0.95, 0.84, 0.72),
+    S(2.6, 0.56, 0.86, 0.87, 0.78, 0.66),
+], bumper_z=0.55, bumper_h=0.22, lamp_z=0.88, lamp_h=0.13, grille_h=0.18, tail_z=0.9, tail_h=0.24, rear_plate_z=0.72,
+    mirror_y=1.3, wiper_y=1.36, doors=[0.35], door_lines=[1.3, -0.72], strip_z=0.7,
+    seat_rows=[0.1], seat_z=0.64, dash_y=1.05)
+
+for nm, sp in (("veh_berline", SEDAN), ("veh_4x4", SUV), ("veh_minibus", MINIBUS), ("veh_pickup", PICKUP)):
     vehicle(nm, sp)

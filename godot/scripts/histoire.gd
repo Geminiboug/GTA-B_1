@@ -91,6 +91,8 @@ func _setup() -> void:
 	points["plage"] = _ground(622, 292)
 	points["epave"] = _ground(-177, 247)
 	points["commandant"] = _nearest_shop("maquis", points["epave"]) + Vector3(1.4, 0, 1.2)
+	points["haie_verte"] = _ground(-150, -840)
+	points["patronne"] = _nearest_shop("maquis", points["haie_verte"]) + Vector3(1.4, 0, 1.0)
 	var air := get_node_or_null("../TraficAerien")
 	var stands: Array = air.get("stands") if air else []
 	for i in 3:
@@ -160,6 +162,25 @@ func _build_missions() -> void:
 			{"t": "fin", "lignes": [["joueur", "Des photos de caisses... et le logo d'une société inconnue."]], "recherche": 2},
 			{"t": "fuir", "obj": "L'alerte est donnée ! Échappe à la police"},
 			{"t": "fin", "annonce": ["FIN DE L'ACTE 1", "Quelqu'un, à l'aéroport, savait. À suivre."], "chapitre": "fin_acte1"}]},
+		# missions secondaires du quartier nord (phase 9)
+		{"titre": "Ravitaillement", "donneur": "patronne", "rec": 3000, "etapes": [
+			{"t": "parler", "qui": "patronne", "obj": "Parle à Maman Fifi, la patronne du maquis", "lignes": [
+				["patronne", "C'est toi le petit de Codjo ? Le maquis ouvre ce soir et je n'ai plus d'huile ni d'eau !"],
+				["patronne", "File à l'Ararat et reviens vite, je te paierai bien."]]},
+			{"t": "acheter", "article": "Huile (1 litre)", "ou": "caisse", "obj": "Achète de l'huile à l'Ararat"},
+			{"t": "acheter", "article": "Eau minérale (1,5 l)", "ou": "caisse", "obj": "Achète de l'eau minérale"},
+			{"t": "aller", "ou": "patronne", "r": 3.0, "obj": "Rapporte les courses au maquis de Haie Verte", "avec": "Huile (1 litre)"},
+			{"t": "parler", "qui": "patronne", "obj": "Donne les courses (T)", "retirer": ["Huile (1 litre)", "Eau minérale (1,5 l)"], "lignes": [
+				["patronne", "Ah, tu es rapide ! Reviens quand tu veux, il y a toujours du travail ici."]]}]},
+		{"titre": "Le grand tour", "donneur": "patronne", "rec": 4000, "etapes": [
+			{"t": "parler", "qui": "patronne", "obj": "Parle à Maman Fifi", "lignes": [
+				["patronne", "Deux clients arrivent par l'avion du soir. Va les chercher à l'aérogare, l'un après l'autre."]]},
+			{"t": "client", "ou": "aerogare", "obj": "Premier client : devant l'aérogare (en zem)"},
+			{"t": "deposer", "ou": "haie_verte", "r": 10.0, "obj": "Dépose-le à Haie Verte", "chrono": 300.0},
+			{"t": "fin", "lignes": [["client", "Merci ! Bonne soirée."]]},
+			{"t": "client", "ou": "aerogare", "obj": "Second client : retourne à l'aérogare"},
+			{"t": "deposer", "ou": "patronne", "r": 10.0, "obj": "Dépose-le au maquis de Maman Fifi", "chrono": 300.0},
+			{"t": "fin", "lignes": [["client", "On m'a dit que c'était le meilleur maquis du quartier !"]]}]},
 	]
 
 
@@ -453,7 +474,7 @@ func _make_npc(variant: String, kind: String, pos: Vector3, yaw: float) -> Node3
 func _spawn_npc(key: String) -> void:
 	if _npcs.has(key) and is_instance_valid(_npcs[key]):
 		return
-	var spec := {"tante": ["femme_ronde", ""], "codjo": ["homme_age", "zem"], "commandant": ["homme_age", ""]}
+	var spec := {"tante": ["femme_ronde", ""], "codjo": ["homme_age", "zem"], "commandant": ["homme_age", ""], "patronne": ["femme_ronde", ""]}
 	if not spec.has(key):
 		return
 	var p: Vector3 = points[key]

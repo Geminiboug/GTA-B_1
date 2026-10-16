@@ -82,11 +82,18 @@ func teleport(i: int) -> bool:
 		return false
 	var at: Vector3 = teleports[i]["pos"]
 	# pose sur le sol (rayon vertical) : sol, chaussee, plage ou plancher d'un interieur
-	var q := PhysicsRayQueryParameters3D.create(Vector3(at.x, at.y + 3.0, at.z), Vector3(at.x, at.y - 20.0, at.z))
-	q.exclude = [p.get_rid()]
-	var hit := p.get_world_3d().direct_space_state.intersect_ray(q)
-	if hit:
-		at.y = (hit["position"] as Vector3).y
+	# (pas sur le toit d'un vehicule de passage : on s'ecarte de quelques metres)
+	for k in 6:
+		var o := at + Vector3(4.0 * k, 0, 0)
+		var q := PhysicsRayQueryParameters3D.create(Vector3(o.x, at.y + 3.0, o.z), Vector3(o.x, at.y - 20.0, o.z))
+		q.exclude = [p.get_rid()]
+		var hit := p.get_world_3d().direct_space_state.intersect_ray(q)
+		if hit and (hit["collider"] is AnimatableBody3D or hit["collider"] is CharacterBody3D):
+			continue
+		at = o
+		if hit:
+			at.y = (hit["position"] as Vector3).y
+		break
 	p.global_position = at + Vector3(0, 0.02, 0)
 	p.velocity = Vector3.ZERO
 	p.reset_physics_interpolation()

@@ -99,7 +99,11 @@ func _physics_process(delta: float) -> bool:
 		t0 = frame
 	elif step == 5 and frame - t0 == 120:
 		# choc : on lance la voiture contre un batiment
-		var bld: Array = Carte.zone().data["buildings"][40]["pts"]
+		# batiment fixe (way OSM 418164975) : l'ordre de la liste change quand la zone est reimportee
+		var bld: Array = Carte.zone().data["buildings"][0]["pts"]
+		for bb in Carte.zone().data["buildings"]:
+			if String(bb.get("id", "")) == "418164975":
+				bld = bb["pts"]
 		var c := Vector2.ZERO
 		for q in bld:
 			c += Vector2(float(q[0]), float(q[1]))

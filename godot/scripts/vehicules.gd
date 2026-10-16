@@ -3,7 +3,7 @@ class_name Vehicules
 ## en un seul mesh (circulation, voitures garees en MultiMesh). Modeles : blender/tools/build_vehicles.py.
 
 const MODELS := {"veh_berline": "res://assets/models/veh_berline.glb", "veh_4x4": "res://assets/models/veh_4x4.glb",
-	"veh_minibus": "res://assets/models/veh_minibus.glb"}
+	"veh_minibus": "res://assets/models/veh_minibus.glb", "veh_pickup": "res://assets/models/veh_pickup.glb"}
 const ZEM_SCENE := "res://scenes/zem.tscn"
 const CAR_SCRIPT := preload("res://scripts/voiture.gd")
 const CAM_SCRIPT := preload("res://scripts/zem_camera.gd")
@@ -12,6 +12,7 @@ const TUNING := {
 	"veh_berline": {"max_speed": 46.0, "engine_accel": 4.3, "grip": 0.95, "roll_factor": 0.011},
 	"veh_4x4": {"max_speed": 42.0, "engine_accel": 4.2, "grip": 0.85, "roll_factor": 0.016},
 	"veh_minibus": {"max_speed": 33.0, "engine_accel": 3.0, "grip": 0.78, "roll_factor": 0.02},
+	"veh_pickup": {"max_speed": 40.0, "engine_accel": 3.8, "grip": 0.82, "roll_factor": 0.015},
 }
 
 static var _merged := {}

@@ -22,7 +22,7 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 0.71, 0.72), Color(0.08, 0.08, 0.09),
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
-const CAR_MODELS := ["veh_berline", "veh_4x4", "veh_minibus"]
+const CAR_MODELS := ["veh_berline", "veh_4x4", "veh_minibus", "veh_pickup"]
 const DRIVERS_PER_MODEL := 4
 @export var zem_number_pos := Vector3(0, 1.17, 0.29)   # dos du conducteur assis (repere du zem)
 @export var zem_number_tilt := -0.25                  # buste penche en avant
@@ -146,7 +146,7 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 	if kind == "voiture":
 		# berlines d'occasion surtout, des 4x4, et les minibus "tokpa-tokpa" qui font le transport en commun
 		var roll := _rng.randf()
-		var model := "veh_berline" if roll < 0.55 else ("veh_4x4" if roll < 0.8 else "veh_minibus")
+		var model := "veh_berline" if roll < 0.5 else ("veh_4x4" if roll < 0.7 else ("veh_pickup" if roll < 0.82 else "veh_minibus"))
 		mi.mesh = meshes[model]
 		var dk := "drv_%s_%d" % [model, _rng.randi() % DRIVERS_PER_MODEL]
 		var drv := MeshInstance3D.new()

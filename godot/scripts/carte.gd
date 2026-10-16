@@ -80,6 +80,10 @@ func _snap_dead_ends() -> void:
 			var p := pts[ei]
 			if count.get(_key(p), 0) != 1:
 				continue
+			# rue coupee au bord de la zone : ce n'est pas un trace imprecis, on ne la raccorde pas
+			var bd: Array = data["bounds"]
+			if p.x < float(bd[0]) + 1.0 or p.x > float(bd[2]) - 1.0 or p.y < float(bd[1]) + 1.0 or p.y > float(bd[3]) - 1.0:
+				continue
 			var best_d := 5.0
 			var best := []
 			for rj in roads.size():
