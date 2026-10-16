@@ -452,7 +452,7 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Regard (player.gd _update_look, character_anim.gd look_yaw / look_pitch) : tete (65 %) et buste (30 %) suivent la
   direction de la camera, ou un avion a moins de 600 m et 250 m de haut (look_plane_range).
 - Test : tests/test_controles.gd ; capture : tests/capture_regard.gd -> docs/images/etape16_regard.png.
-- En attente des clips Quaternius : accroupi, demarrages, arrets, pivots, saut contextuel, IK, ragdoll.
+- Fait depuis avec les clips Quaternius : accroupi, saut contextuel (escalade), IK (voir plus bas). Reste : ragdoll.
 - Postures (character_anim.gd : posture, carry_head, rain_cover ; pedestrians.gd) : personnes agees 25 % plus lentes et
   dos voute ; charge sur la tete : buste droit, main droite qui stabilise par moments (avant : le bras leve n'etait
   jamais applique) ; averse : 70 % des pietons pressent le pas (+25 %) et se couvrent la tete. Capture :
@@ -488,6 +488,25 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Tests : tests/test_animation.gd (glissement des pieds, etats air / sol / assis). Capture : tests/capture_joueur_anim.gd
   -> docs/images/etape16_joueur_clips.png. Outils de diagnostic : tests/profil_*.gd.
 - Mesures de performance : fenetre au premier plan obligatoire (en arriere-plan, le systeme bride Godot a 30 images/s).
+
+## Accroupi, escalade, PNJ sur les clips (fin de l'etape 16, 16/10/2026)
+- Accroupi (player.gd, groupe "Accroupi et escalade") : C ou R3 en bascule, 1,1 m/s, capsule de 1,2 m ; on ne se releve
+  pas sous un plafond (_fits : capsule debout testee) ; sprinter ou sauter releve le joueur.
+- Saut contextuel facon GTA V : devant un rebord de 0,5 a 1,6 m (mur a moins de 0,7 m, dessus plat, place pour se tenir
+  debout en haut), Espace escalade au lieu de sauter. Clip ClimbUp_1m joue sur place (play_clips(..., true) : racine
+  retiree) ; le corps suit la courbe de la racine du clip (root_offset) mise a l'echelle de la hauteur du rebord, donc
+  les mains arrivent sur le bord. Au-dela de 1,6 m : simple saut.
+- PNJ (pedestrians.gd, pnj_interieur.gd) sur anim_ctrl.gd comme le joueur : marche, attente, chutes en clips. anim_ctrl
+  reprend les postures de character_anim.gd : dos voute (UpperChest et Head), charge sur la tete, main sur le crane sous
+  l'averse, dispute (IK des bras avec direction du coude). Attention : ne tourner que des os que les clips reecrivent a
+  chaque image (Spine, Chest et Neck ne le sont pas : la rotation s'accumulait et le PNJ se pliait en deux).
+- Posture de repos : le clip Idle se tient en garde (chevilles a 0,52 m, un pied 0,38 m devant l'autre, bassin bas).
+  Au repos, IK des jambes : chevilles a 0,26 m (stance_width), 0,08 m de decalage (stance_stagger), bassin remonte pour
+  des jambes tendues a 98 %, genoux vers l'avant. Vaut aussi pour le joueur.
+- Niveau de detail de l'animation (anim_lod, lod_steps 8 / 20 / 45 m) : un PNJ eloigne est recalcule une image sur 2, 3
+  ou 4 ; melanges non synchronises pour les PNJ (seuls les clips actifs sont calcules). Le joueur n'est pas concerne.
+  Mesure a conditions egales : meme cout que l'ancienne animation procedurale.
+- Test : tests/test_accroupi.gd. Capture : tests/capture_escalade.gd -> docs/images/etape16c_*.png.
 
 ## Vehicules, epave et avions visitables (retours du 15/10/2026)
 - blender/tools/build_vehicles.py (refait) : carrosserie d'un seul tenant (cage de sections lissee par subdivision),

@@ -1,4 +1,4 @@
-extends Node3D
+﻿extends Node3D
 ## PNJ des lieux a interieur (scripts/lieux.gd) :
 ## - Ararat Hypermarket : clients qui vont de rayon en rayon panier a la main et s'arretent devant les etageres,
 ##   caissieres en tenue du magasin, clients en file aux caisses, vigile a l'entree, vendeuse a la boulangerie ;
@@ -8,7 +8,7 @@ extends Node3D
 ## (pas d'a-coup). Les personnages immobiles sont figes dans leur pose et fusionnes en un seul maillage chacun ;
 ## ceux qui marchent sont animes.
 
-const ANIM := preload("res://scripts/character_anim.gd")
+const ANIM := preload("res://scripts/anim_ctrl.gd")   # clips captes, comme le joueur
 const ACTIVE_RANGE := 90.0
 const BATCH := 4               # personnages crees par image
 

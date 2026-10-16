@@ -1,7 +1,7 @@
 extends CanvasLayer
 ## Mode debug (validation des phases 3 a 5). F1 : desactive -> infos -> infos + chemins.
 ## Infos : images/s, appels de rendu, joueur (position, vitesse, allure, au sol, vehicule), etat d'animation
-## (character_anim.gd : animation procedurale, pas d'AnimationTree pour l'instant), heure, meteo, PNJ et vehicules.
+## (anim_ctrl.gd : clips captes dans un AnimationTree), heure, meteo, PNJ et vehicules.
 ## Chemins : piétons -> leur cible (cyan), vehicules -> troncon de route en cours (orange), position des PNJ.
 ## Teleportation (en mode debug, a pied) : touches 1 a 8 (liste TELEPORTS, reglable dans l'editeur).
 
@@ -113,7 +113,7 @@ func info_text() -> String:
 			veh.name if veh else "aucun"])
 		var anim: Node = p.get("anim")
 		if anim:
-			lines.append("Animation  procedurale (character_anim.gd)   vitesse %.1f   assis %s   en l'air %s" % [float(anim.get("speed")),
+			lines.append("Animation  clips captes (anim_ctrl.gd)   vitesse %.1f   assis %s   en l'air %s" % [float(anim.get("speed")),
 				anim.get("seated"), not bool(anim.get("on_floor"))])
 	var day := _scene.get_node_or_null("JourNuit")
 	var meteo := _scene.get_node_or_null("Meteo")

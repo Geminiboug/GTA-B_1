@@ -1,6 +1,6 @@
-extends Node3D
+﻿extends Node3D
 ## Pietons et vendeurs :
-## - pietons animes (character_anim.gd) sur les trottoirs / bas-cotes des rues (graphe des carrefours, voir
+## - pietons animes (anim_ctrl.gd) sur les trottoirs / bas-cotes des rues (graphe des carrefours, voir
 ##   scripts/carte.gd), jamais au milieu de la chaussee : chaque pas est verifie sur le masque des chaussees ;
 ##   ils ne traversent qu'aux carrefours (ou pour changer de trottoir), droit et d'un pas plus vif, et les
 ##   vehicules s'arretent pour eux ; d'autres flanent sur la promenade du front de mer ;
@@ -17,7 +17,7 @@ extends Node3D
 @export var chase_owner_time := 25.0   # s pendant lesquelles un conducteur vole poursuit le joueur
 @export var owner_punch_push := 4.0    # m/s : coup du proprietaire sur le joueur a pied
 
-const ANIM := preload("res://scripts/character_anim.gd")
+const ANIM := preload("res://scripts/anim_ctrl.gd")   # clips captes, comme le joueur
 const GROUND_Y := 0.02
 const CURB := 1.1          # distance du bord de chaussee au milieu du trottoir
 

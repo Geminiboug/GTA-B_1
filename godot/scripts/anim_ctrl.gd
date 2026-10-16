@@ -1,4 +1,4 @@
-extends Node3D
+﻿extends Node3D
 ## Pilote d'animation a base de clips captes (Quaternius, CC0), redirigees sur le squelette standard des personnages.
 ## Remplace l'animation procedurale (character_anim.gd) avec la meme interface : speed, on_floor, vertical_speed,
 ## turn_rate, accel, seated, crouch, land(), punch(), essouffle, look_yaw, look_pitch, femme, gesture...
@@ -22,6 +22,10 @@ const CALIB := {"Walk": 0.914, "Jog_Fwd": 5.79, "Sprint": 9.5, "Crouch_Fwd": 0.9
 @export var walk_to_jog := Vector2(1.9, 3.0)     # m/s : passage progressif marche -> trot
 @export var jog_to_sprint := Vector2(5.6, 6.6)   # m/s : passage trot -> sprint
 @export var lean_per_turn := 0.05                # inclinaison (rad) par (rad/s x m/s) dans les virages
+@export var stance_width := 0.26                 # m entre les chevilles au repos
+@export var stance_stagger := 0.08               # m d'un pied devant l'autre au repos
+@export var anim_lod := true                    # PNJ eloignes animes moins souvent (le joueur : false)
+@export var lod_steps: Array[float] = [8.0, 20.0, 45.0]   # m : au-dela, une image sur 2, 3, puis 4
 
 var speed := 0.0
 var on_floor := true
@@ -118,7 +122,7 @@ func _anim(name: String) -> AnimationNodeAnimation:
 func _build_tree() -> AnimationNodeBlendTree:
 	var bt := AnimationNodeBlendTree.new()
 	var loco := AnimationNodeBlendSpace1D.new()
-	loco.sync = true
+	loco.sync = not anim_lod      # joueur : cycles synchronises ; PNJ : seuls les clips actifs sont calcules
 	loco.min_space = 0.0
 	loco.max_space = 3.0
 	for e in LOCO:
@@ -127,7 +131,7 @@ func _build_tree() -> AnimationNodeBlendTree:
 	bt.add_node("echelle", AnimationNodeTimeScale.new(), Vector2(200, 0))
 	bt.connect_node("echelle", 0, "loco")
 	var crouch_bs := AnimationNodeBlendSpace1D.new()
-	crouch_bs.sync = true
+	crouch_bs.sync = not anim_lod
 	crouch_bs.add_blend_point(_anim("Crouch_Idle"), 0.0, -1, "Crouch_Idle")
 	crouch_bs.add_blend_point(_anim("Crouch_Fwd"), 1.0, -1, "Crouch_Fwd")
 	bt.add_node("accroupi", crouch_bs, Vector2(0, 300))
@@ -196,10 +200,37 @@ func punch() -> void:
 		_tree.set("parameters/coup/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
+var _lod_acc := 0.0
+var _lod_frame := 0
+
+
+func _lod_every() -> int:
+	if not anim_lod:
+		return 1
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return 1
+	var d := cam.global_position.distance_to(global_position)
+	var n := 1
+	for s in lod_steps:
+		if d > s:
+			n += 1
+	return n
+
+
 func _physics_process(delta: float) -> void:
 	if _tree == null:
 		return
+	# niveau de detail : un PNJ eloigne n'est recalcule qu'une image sur n (decalage propre a chacun)
+	_lod_acc += delta
+	_lod_frame += 1
+	if (_lod_frame + get_instance_id()) % _lod_every() != 0:
+		return
+	delta = _lod_acc
+	_lod_acc = 0.0
 	_t += delta
+	if _clip_step(delta):
+		return
 	var mode := "sol"
 	if seated:
 		mode = "assis"
@@ -231,6 +262,56 @@ func _overlay(delta: float) -> void:
 	var target := clampf(-turn_rate * speed * lean_per_turn, -0.35, 0.35) if on_floor and not seated else 0.0
 	_lean = lerpf(_lean, target, 1.0 - exp(-4.0 * delta))
 	rotation.z = _lean
+	# dos voute (personne agee) : buste penche, tete relevee pour regarder devant
+	# (seulement des os que les clips reecrivent a chaque image, sinon la rotation s'accumulerait)
+	if posture != 0.0:
+		_turn_bone("UpperChest", Vector3(posture, 0.0, 0.0))
+		_turn_bone("Head", Vector3(-posture * 0.6, 0.0, 0.0))
+	_gest = lerpf(_gest, gesture, 1.0 - exp(-6.0 * delta))
+	_rain = lerpf(_rain, rain_cover, 1.0 - exp(-3.0 * delta))
+	var hold := smoothstep(0.1, 0.6, sin(_t * 0.35 + get_instance_id() % 7)) if carry_head else 0.0
+	if _gest > 0.01 or _rain > 0.01 or hold > 0.01:
+		var head := _skel.global_transform * _gpose(_bone["Head"], {}).origin
+		var b := _skel.global_transform.basis.orthonormalized()
+		var fwd := b * Vector3(0, 0, 1)      # le squelette regarde +Z
+		var right := b * Vector3(-1, 0, 0)
+		var wave := sin(_t * 7.0)
+		# coude ouvert sur le cote quand la main monte sur la tete, vers le bas devant le buste
+		if hold > 0.01:            # charge sur la tete : la main droite vient la stabiliser
+			_arm_to("Right", head + Vector3.UP * 0.26 + right * 0.08, hold, right + Vector3.UP * 0.3)
+		elif _rain > 0.01:         # averse : main a plat sur le haut du crane
+			_arm_to("Right", head + Vector3.UP * 0.12 + fwd * 0.06 + right * 0.03, _rain, right + fwd * 0.4)
+		if _gest > 0.01:           # dispute : mains qui s'agitent devant le buste
+			_arm_to("Right", head - Vector3.UP * (0.2 - 0.1 * wave) + fwd * 0.38 + right * 0.18, _gest, right - Vector3.UP)
+			_arm_to("Left", head - Vector3.UP * (0.38 + 0.06 * wave) + fwd * 0.3 - right * 0.14, _gest, -right - Vector3.UP)
+	# au repos, pieds a largeur de bassin et presque alignes (le clip Idle se tient en garde : 0,26 m d'ecart lateral
+	# trop large et un pied 0,38 m devant l'autre)
+	var still := (1.0 - clampf(speed / 0.4, 0.0, 1.0)) if on_floor and not seated and not crouch else 0.0
+	if still > 0.01 and ik_targets["LeftFoot"] == Vector3.INF:
+		var lf := _skel.global_transform * _gpose(_bone["LeftFoot"], {}).origin
+		var rf := _skel.global_transform * _gpose(_bone["RightFoot"], {}).origin
+		var bb := _skel.global_transform.basis.orthonormalized()
+		var side := bb * Vector3(1, 0, 0)
+		var ahead := bb * Vector3(0, 0, 1)
+		var half := (lf - rf).dot(side) * 0.5
+		var half_f := (lf - rf).dot(ahead) * 0.5
+		var shift := (side * (signf(half) * stance_width * 0.5 - half) + ahead * (signf(half_f) * stance_stagger * 0.5 - half_f)) * still
+		# bassin remonte pour que les jambes soient presque tendues (le clip garde le bassin bas, jambes en garde)
+		var raise := 0.0
+		for e in [["Left", lf + shift], ["Right", rf - shift]]:
+			var hip := _skel.global_transform * _gpose(_bone[e[0] + "UpperLeg"], {}).origin
+			var knee := _skel.global_transform * _gpose(_bone[e[0] + "LowerLeg"], {}).origin
+			var leg := (knee - hip).length() + ((e[1] as Vector3) - knee).length()
+			var d: Vector3 = hip - e[1]
+			var flat := Vector2(d.x, d.z).length()
+			raise += (sqrt(maxf(pow(leg * 0.975, 2.0) - flat * flat, 0.0)) - d.y) * 0.5
+		raise = clampf(raise, 0.0, 0.1) * still
+		var ih: int = _bone["Hips"]
+		var root_b := _gpose(_skel.get_bone_parent(ih), {}).basis if _skel.get_bone_parent(ih) >= 0 else Basis.IDENTITY
+		var up_local := root_b.inverse() * (_skel.global_transform.basis.inverse() * (Vector3.UP * raise))
+		_skel.set_bone_pose_position(ih, _skel.get_bone_pose_position(ih) + up_local)
+		_two_bone_ik("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", lf + shift, ahead)
+		_two_bone_ik("RightUpperLeg", "RightLowerLeg", "RightFoot", rf - shift, ahead)
 	for end in ik_targets:
 		if ik_targets[end] != Vector3.INF:
 			var side: String = "Left" if end.begins_with("Left") else "Right"
@@ -238,6 +319,86 @@ func _overlay(delta: float) -> void:
 				_two_bone_ik(side + "UpperArm", side + "LowerArm", end, ik_targets[end])
 			else:
 				_two_bone_ik(side + "UpperLeg", side + "LowerLeg", end, ik_targets[end])
+
+
+func _arm_to(side: String, goal: Vector3, w: float, pole := Vector3.ZERO) -> void:
+	## Amene la main vers `goal` (monde) avec un poids w (0 : pose du clip, 1 : sur la cible) ; pole : ou pointe le coude.
+	var hand := _skel.global_transform * _gpose(_bone[side + "Hand"], {}).origin
+	_two_bone_ik(side + "UpperArm", side + "LowerArm", side + "Hand", hand.lerp(goal, clampf(w, 0.0, 1.0)), pole)
+
+
+# ------------------------------------------------------------------ clips ponctuels (chute, coup encaisse, releve)
+var _gest := 0.0
+var _rain := 0.0
+var _clip: AnimationPlayer
+var _seq: Array = []          # [[clip, attente apres (s)], ...]
+var _hold := 0.0
+
+
+func clip_length(name: String) -> float:
+	var c := clip(name)
+	return (_libs[c.get_slice("/", 0)] as AnimationLibrary).get_animation(name).length if c != "" else 0.0
+
+
+func root_offset(name: String, t: float) -> Vector3:
+	## Deplacement de la racine du clip entre 0 et t (m, repere du squelette : +Z devant), a l'echelle du personnage.
+	var a: Animation = (_libs[clip(name).get_slice("/", 0)] as AnimationLibrary).get_animation(name)
+	var tr := a.find_track(NodePath(ROOT_TRACK), Animation.TYPE_POSITION_3D)
+	if tr < 0:
+		return Vector3.ZERO
+	var k := _skel.motion_scale if _skel else 1.0
+	return (a.position_track_interpolate(tr, clampf(t, 0.0, a.length)) - a.position_track_interpolate(tr, 0.0)) * k
+
+
+func play_clips(seq: Array, in_place := false) -> void:
+	## Joue une suite de clips (ex. [["Death01", 1.2], ["LayToIdle", 0.0]]) a la place de l'arbre, puis reprend.
+	## in_place : le deplacement de la racine est retire (le controleur deplace lui-meme le corps, ex. escalade).
+	if _skel == null:
+		return
+	if _clip == null:
+		_clip = AnimationPlayer.new()
+		_clip.name = "ClipsCaptes"
+		add_child(_clip)
+		_clip.root_node = NodePath("..")
+		_clip.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+		for key in _libs:
+			_clip.add_animation_library(key, _libs[key])
+	_clip.root_motion_track = NodePath(ROOT_TRACK) if in_place else NodePath()
+	_seq = seq.duplicate(true)
+	_hold = 0.0
+	_next_clip()
+
+
+func playing_clip() -> bool:
+	return not _seq.is_empty() or (_clip != null and _clip.is_playing()) or _hold > 0.0
+
+
+func _next_clip() -> void:
+	if _seq.is_empty():
+		_clip.stop()
+		return
+	var e: Array = _seq.pop_front()
+	_clip.play(clip(String(e[0])), 0.12)
+	_hold = -float(e[1])          # negatif : attente a faire une fois le clip termine
+
+
+func _clip_step(delta: float) -> bool:
+	## Vrai tant qu'un clip ponctuel pilote le squelette.
+	if _clip == null or (not _clip.is_playing() and _hold == 0.0 and _seq.is_empty()):
+		return false
+	if _clip.is_playing():
+		_clip.advance(delta)
+		return true
+	if _hold < 0.0:
+		_hold = -_hold
+		if _hold == 0.0:
+			_next_clip()
+		return true
+	_hold = maxf(0.0, _hold - delta)
+	if _hold == 0.0:
+		_next_clip()
+		return not _seq.is_empty() or _clip.is_playing()
+	return true
 
 
 func _turn_bone(name: String, euler: Vector3) -> void:
@@ -267,8 +428,9 @@ func _gpose(i: int, local: Dictionary) -> Transform3D:
 	return xf
 
 
-func _two_bone_ik(upper: String, lower: String, end: String, target_world: Vector3) -> void:
-	## IK analytique a deux os (epaule-coude-main ou hanche-genou-pied) : le coude / genou garde son plan de flexion.
+func _two_bone_ik(upper: String, lower: String, end: String, target_world: Vector3, pole_world := Vector3.ZERO) -> void:
+	## IK analytique a deux os (epaule-coude-main ou hanche-genou-pied) : le coude / genou garde son plan de flexion,
+	## ou pointe vers pole_world (direction monde) si elle est donnee.
 	var iu: int = _bone.get(upper, -1)
 	var il: int = _bone.get(lower, -1)
 	var ie: int = _bone.get(end, -1)
@@ -288,6 +450,9 @@ func _two_bone_ik(upper: String, lower: String, end: String, target_world: Vecto
 	var dir := to_t.normalized()
 	# plan de flexion : direction actuelle du coude / genou, retiree de l'axe epaule -> cible
 	var pole := (b - a) - dir * (b - a).dot(dir)
+	if pole_world != Vector3.ZERO:
+		var pw := _skel.global_transform.basis.inverse() * pole_world
+		pole = pw - dir * pw.dot(dir)
 	if pole.length() < 1e-4:
 		pole = Vector3.UP.cross(dir) if absf(dir.y) < 0.9 else Vector3.RIGHT
 	pole = pole.normalized()

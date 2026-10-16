@@ -174,6 +174,7 @@ Option plus tard : multijoueur.
 - 15/10/2026 : etape 16, joueur anime par les clips (anim_ctrl.gd : marche, trot, sprint, saut, conduite, regard), lecture calee sur la vitesse reelle des pieds (glissement 0,3 a 0,8 m/s). Nouveau test tests/test_animation.gd.
 - 15/10/2026 : retours d Olympe : saut a la gravite terrestre (0,48 m, 0,6 s en l air, freinage a la reception : plus de glissade de 8 m), montee automatique des marches et seuils (30 cm), capsule du joueur 0,60 m ; PNJ du supermarche et de l aerogare qui reagissent (chute, fuite, vigile qui intervient, remarques quand on les frole) ; conducteur vole qui se bat et reprend son vehicule (il sort le joueur et repart dans la circulation) ; zem ejecte qui garde sa tenue ; conducteurs visibles dans les voitures de la circulation ; virages des PNJ en modele bicyclette (rayon de braquage reel, plus de glissade laterale) ; voitures refaites (carrosserie lissee d un seul tenant, passages de roue, pare-chocs, optiques, interieur, pneus profiles) ; epave de la plage refaite a partir de l avion du jeu (vieillie, rouille, sur cales, escalier) ; avions visitables (porte avant ouverte au poste, cabine de 27 rangees, poste de pilotage, collision exacte) ; frequence des vols reelle de Cotonou (~35 mouvements par jour, pointe le soir, aeroport ferme de 2 h a 5 h, piste 24 dominante). Nouveaux tests : test_saut, test_interieurs, test_carjack, test_cabine.
 - 16/10/2026 : joueur bien assis (bassin sur le siege, IK des mains au guidon / volant, pieds aux repose-pieds / pedales). Personnages refaits sur la base Quaternius Universal Base Characters (CC0) : corps et visage sculptes cales sur nos articulations et nos 10 morphologies, musculature ramenee a un corps ordinaire, texture de peau teintee par nos 10 teintes, coiffures reposees sur le crane. Vetements amples (le haut tombe droit depuis la poitrine, pantalon droit avec plis au bas). Chutes des PNJ en clips captes (Death01 puis LayToIdle, Hit_Chest), rue et interieurs. Escaliers des avions au poste depuis le sol (28 degres).
+- 16/10/2026 : fin de l etape 16 : accroupi (C / R3, capsule basse, impossible de se relever sous un plafond), saut contextuel qui escalade les rebords de 0,5 a 1,6 m (clip ClimbUp_1m, corps cale sur la racine du clip), PNJ de la rue et des interieurs sur les clips captes comme le joueur (postures reprises : dos voute, charge sur la tete, main sur le crane sous la pluie, dispute avec IK des bras), posture de repos corrigee (pieds a 0,26 m au lieu d une garde a 0,52 m, jambes tendues), niveau de detail de l animation des PNJ eloignes. Nouveau test tests/test_accroupi.gd. FPS 76-94 dehors, 65-73 interieurs. Reste de l etape : ragdoll, entree / sortie animees des vehicules.
 
 ---
 
@@ -212,14 +213,14 @@ ETAT ACTUEL (16/10/2026)
     accessoires. Noms reels remplaces (docs/correspondance_noms.md).
   - Retours d Olympe des 15 et 16/10 (saut, PNJ des interieurs, vol de vehicule, conducteurs, virages, voitures, epave, avions
     visitables, frequence des vols, joueur assis, corps Quaternius, vetements amples, chutes captees, escaliers d avion) : faits, voir le journal.
-  - Tests : godot/tests/test_*.gd (17 suites, dont saut, interieurs, carjack, cabine) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
-    tests/perf_fps.gd en 1280x720 : 78 a 88 images/s dehors, 63 a 66 dans les interieurs.
+  - Tests : godot/tests/test_*.gd (18 suites, dont saut, interieurs, carjack, cabine, accroupi) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
+    tests/perf_fps.gd en 1280x720 : 76 a 94 images/s dehors, 65 a 73 dans les interieurs.
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
   %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md) ; Python geo dans WSL
   (~/.venvs/geo). Envoi git : depuis le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
 - Plan valide par Olympe (une etape a la fois, captures a chaque etape dans docs/images/) :
   - fait : A avions, B echelle reelle, C carte reelle, etapes 12 a 15 (personnages), noms fictifs, mode debug ;
-  - en cours : fin de l etape 16 (fait : squelette, clips, controles, camera, saut, conduite assise, chutes ; reste : accroupi, escalade, PNJ sur anim_ctrl, ragdoll) :
+  - en cours : fin de l etape 16 (fait : squelette, clips, controles, camera, saut, escalade, accroupi, conduite assise, chutes, PNJ sur les clips ; reste : ragdoll, entree / sortie animees des vehicules) :
     squelette humanoide standard, retargeting des clips, AnimationTree en machine a etats avec root motion, controles GTA V
     (sprint en tapotant, marche lente, endurance, saut contextuel, accroupi), IK des pieds, regard, idles, reactions
     physiques et ragdoll, camera GTA V, vehicules (entree / sortie animees, passager), PNJ sur le meme systeme ;

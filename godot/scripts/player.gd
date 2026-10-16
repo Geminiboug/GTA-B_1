@@ -1,9 +1,9 @@
 extends CharacterBody3D
 ## Joueur a pied, vue 3e personne.
 ## Clavier : ZQSD bouger (trot), Shift sprint (tapoter pour aller plus vite, maintenir = sprint moyen), Alt ou Ctrl
-## marcher, Espace sauter, E monter/descendre, V changer de vue.
+## marcher, C s'accroupir, Espace sauter (ou escalader un rebord de 0,5 a 1,6 m), E monter/descendre, V changer de vue.
 ## Manette : stick gauche bouger (l'inclinaison regle l'allure), stick droit camera, A (Croix) sprint (tapoter), X (Carre)
-## sauter, L3 marcher, Y (Triangle) monter/descendre, croix bas changer de vue.
+## sauter, L3 marcher, R3 s'accroupir, Y (Triangle) monter/descendre, croix bas changer de vue.
 ## Endurance cachee : a vide, plus de sprint (essoufflement) le temps de recuperer.
 ## Souris : tourner la camera. Molette : zoom. Echap : liberer / reprendre la souris.
 ## Vitesses reelles : marche ~1,6 m/s, trot ~4,2 m/s, sprint ~7 m/s.
@@ -23,6 +23,12 @@ extends CharacterBody3D
 @export var mouse_sensitivity := 0.0025
 @export var zoom_min := 2.0
 @export var zoom_max := 12.0
+@export_group("Accroupi et escalade (facon GTA V)")
+@export var crouch_speed := 1.1      # m/s accroupi (C, manette R3 : bascule)
+@export var crouch_height := 1.2     # m : hauteur de la capsule accroupi (debout 1,75)
+@export var climb_min := 0.5         # m : en dessous, on saute ou on monte la marche
+@export var climb_max := 1.6         # m : rebord le plus haut qu'on agrippe (bras tendus)
+@export var climb_reach := 0.7       # m : distance maximale du mur devant soi
 @export_group("Sprint et endurance (facon GTA V)")
 @export var sprint_hold_level := 0.55     # maintenir le bouton : sprint moyen (0 = trot, 1 = sprint maximal)
 @export var sprint_tap_boost := 0.22      # chaque tapotement rapproche du sprint maximal
@@ -57,6 +63,10 @@ var stamina := 1.0          # 0..1, cachee
 var _cam_idle := 0.0
 var _view := 1
 var _shake := 0.0
+var crouched := false
+var _stand_height := 1.75
+var _climb := {}            # escalade en cours : depart, hauteur, avance, temps
+const CLIMB_CLIP := "ClimbUp_1m"
 
 
 func _ready() -> void:
@@ -68,6 +78,8 @@ func _ready() -> void:
 	cam_pivot.global_position = global_position + _cam_offset
 	_facing = body.rotation.y
 	_last_safe = global_position
+	$Collision.shape = $Collision.shape.duplicate()    # la capsule change de hauteur accroupi
+	_stand_height = ($Collision.shape as CapsuleShape3D).height
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	set_genre(genre)        # modele construit par PnjUtil.make (squelette standard tourne vers -Z)
 	# on heurte aussi les passants (couche 5), pas seulement le decor
@@ -78,7 +90,7 @@ var _punch_cd := 0.0
 
 
 # ---------- Apparence : homme ou femme (F4 a pied pour changer) ----------
-const ANIM_SCRIPT := preload("res://scripts/anim_ctrl.gd")   # clips captes (Quaternius) ; PNJ : character_anim.gd
+const ANIM_SCRIPT := preload("res://scripts/anim_ctrl.gd")   # clips captes (Quaternius), comme les PNJ
 var genre := "homme"
 
 
@@ -109,6 +121,7 @@ func set_genre(g: String) -> void:
 		old.queue_free()
 	var m := PnjUtil.make(g)
 	m.set_script(ANIM_SCRIPT)
+	m.set("anim_lod", false)
 	m.name = "Model"
 	body.add_child(m)
 	anim = m
@@ -252,6 +265,10 @@ func _nearest_vehicle() -> Node3D:
 
 
 func enter_vehicle(v: Node3D) -> void:
+	if crouched:
+		crouched = false
+		($Collision.shape as CapsuleShape3D).height = _stand_height
+		$Collision.position.y = _stand_height * 0.5
 	vehicle = v
 	$Collision.disabled = true
 	velocity = Vector3.ZERO
@@ -308,6 +325,12 @@ func _physics_process(delta: float) -> void:
 	if vehicle:
 		_ride(delta)
 		return
+	if not _climb.is_empty():
+		_climb_step(delta)
+		return
+	if Input.is_action_just_pressed("crouch") and is_on_floor():
+		_set_crouch(not crouched)
+	_cam_offset.y = move_toward(_cam_offset.y, 1.15 if crouched else 1.6, 2.0 * delta)
 	# coup de poing / bousculade (F, clic gauche, manette B) : les passants reagissent (scripts/pedestrians.gd)
 	_punch_cd = maxf(0.0, _punch_cd - delta)
 	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -336,11 +359,19 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 		_fall_speed = max(_fall_speed, -velocity.y)
 	elif Input.is_action_just_pressed("jump"):
-		velocity.y = jump_velocity
+		# saut contextuel facon GTA V : accroupi on se releve, devant un rebord on l'escalade, sinon on saute
+		if crouched:
+			_set_crouch(false)
+		elif _try_climb():
+			return
+		else:
+			velocity.y = jump_velocity
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var dir := (Basis(Vector3.UP, cam_pivot.rotation.y) * Vector3(input.x, 0, input.y))
 	# sprint facon GTA V : tapoter rapproche du sprint maximal, maintenir donne un sprint moyen ; endurance cachee
+	if Input.is_action_just_pressed("sprint") and crouched:
+		_set_crouch(false)            # sprinter releve le joueur
 	if Input.is_action_just_pressed("sprint"):
 		sprint_level = minf(1.0, maxf(sprint_level, sprint_hold_level) + sprint_tap_boost)
 	elif Input.is_action_pressed("sprint"):
@@ -358,6 +389,8 @@ func _physics_process(delta: float) -> void:
 		target_speed = lerpf(jog_speed, sprint_speed, clampf(sprint_level / maxf(sprint_hold_level, 0.01) * 0.6, 0.0, 1.0) if sprint_level <= sprint_hold_level else lerpf(0.6, 1.0, (sprint_level - sprint_hold_level) / maxf(1.0 - sprint_hold_level, 0.01)))
 	elif Input.is_action_pressed("walk"):
 		target_speed = walk_speed
+	if crouched:
+		target_speed = crouch_speed
 	# stick : l'inclinaison regle l'allure (marche lente -> marche -> trot)
 	var tilt := minf(dir.length(), 1.0)
 	if tilt < 0.98 and sprint_level <= 0.0:
@@ -402,6 +435,7 @@ func _physics_process(delta: float) -> void:
 		anim.turn_rate = angle_difference(_prev_facing, _facing) / delta
 		anim.accel = (new_hspeed - _prev_hspeed) / delta
 		anim.essouffle = clampf((0.6 - stamina) / 0.5, 0.0, 1.0)
+		anim.crouch = crouched
 		_update_look()
 		if is_on_floor() and not was_on_floor:
 			velocity.x *= land_brake
@@ -437,6 +471,88 @@ func _step_up(hvel: Vector2) -> void:
 			global_position = top.origin + col.get_travel()
 			apply_floor_snap()
 		return
+
+
+func _fits(height: float, at: Vector3) -> bool:
+	## Vrai si une capsule de cette hauteur (pieds en `at`) tient sans toucher le decor.
+	var cap := CapsuleShape3D.new()
+	cap.radius = ($Collision.shape as CapsuleShape3D).radius - 0.02
+	cap.height = height
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = cap
+	q.transform = Transform3D(Basis.IDENTITY, at + Vector3.UP * (height * 0.5 + 0.04))
+	q.collision_mask = 1
+	q.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
+
+
+func _set_crouch(on: bool) -> void:
+	## Accroupi : capsule basse ; on ne se releve pas sous un plafond ou une table.
+	if on == crouched or (not on and not _fits(_stand_height, global_position)):
+		return
+	crouched = on
+	var cap := $Collision.shape as CapsuleShape3D
+	cap.height = crouch_height if on else _stand_height
+	$Collision.position.y = cap.height * 0.5
+	if on:
+		sprint_level = 0.0
+
+
+func _ray(from: Vector3, to: Vector3) -> Dictionary:
+	var q := PhysicsRayQueryParameters3D.create(from, to, 1, [get_rid()])
+	return get_world_3d().direct_space_state.intersect_ray(q)
+
+
+func _try_climb() -> bool:
+	## Rebord devant soi entre climb_min et climb_max (muret, cloture basse, conteneur, toit d'abri) : on l'agrippe
+	## et on se hisse dessus (clip ClimbUp_1m), si l'on tient debout en haut.
+	if anim == null or not anim.has_method("play_clips"):
+		return false
+	var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
+	var p := global_position
+	var wall := _ray(p + Vector3.UP * 0.4, p + Vector3.UP * 0.4 + fwd * climb_reach)
+	if wall.is_empty() or (wall["normal"] as Vector3).dot(fwd) > -0.5:
+		return false
+	var probe: Vector3 = wall["position"] + fwd * 0.3
+	var top := _ray(Vector3(probe.x, p.y + climb_max + 0.3, probe.z), Vector3(probe.x, p.y + 0.3, probe.z))
+	if top.is_empty() or (top["normal"] as Vector3).y < 0.7:
+		return false
+	var h: float = (top["position"] as Vector3).y - p.y
+	if h < climb_min or h > climb_max:
+		return false
+	var dest: Vector3 = top["position"]
+	if not _fits(_stand_height, dest) or not _fits(_stand_height, Vector3(p.x, dest.y, p.z)):
+		return false        # pas la place en haut, ou plafond au-dessus du rebord
+	var end: Vector3 = anim.root_offset(CLIMB_CLIP, 99.0)
+	_climb = {"t": 0.0, "from": p, "dest": dest, "rise": maxf(end.y, 0.3), "adv": maxf(Vector2(end.x, end.z).length(), 0.1),
+		"len": anim.clip_length(CLIMB_CLIP),
+		"rate": clampf(1.0 / sqrt(h), 0.75, 1.3)}      # rebord haut : on se hisse plus lentement
+	$Collision.disabled = true
+	velocity = Vector3.ZERO
+	sprint_level = 0.0
+	anim.play_clips([[CLIMB_CLIP, 0.0]], true)
+	return true
+
+
+func _climb_step(delta: float) -> void:
+	## Le corps suit la courbe de la racine du clip, mise a l'echelle de la hauteur et de la profondeur du rebord.
+	var c := _climb
+	c["t"] += delta * float(c["rate"])
+	var o: Vector3 = anim.root_offset(CLIMB_CLIP, c["t"])
+	var from: Vector3 = c["from"]
+	var dest: Vector3 = c["dest"]
+	var ky: float = (dest.y - from.y) / float(c["rise"])
+	var flat := Vector2(dest.x - from.x, dest.z - from.z)
+	var kf: float = Vector2(o.x, o.z).length() / float(c["adv"])
+	global_position = Vector3(from.x + flat.x * kf, from.y + o.y * ky, from.z + flat.y * kf)
+	anim.speed = 0.0
+	anim.on_floor = true
+	if c["t"] >= float(c["len"]):
+		global_position = dest + Vector3.UP * 0.02
+		_climb = {}
+		$Collision.disabled = false
+		apply_floor_snap()
+		reset_physics_interpolation()
 
 
 func _ride_ik() -> void:
