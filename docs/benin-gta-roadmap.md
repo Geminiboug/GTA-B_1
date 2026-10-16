@@ -1,7 +1,7 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
-Derniere mise a jour : 15/10/2026
-Phase en cours : validation des jalons 3, 4 et 5 par Olympe, animations Quaternius a integrer, puis Phase 7 (gameplay)
+Derniere mise a jour : 16/10/2026
+Phase en cours : playtest et validation par Olympe (phases 0 a 10 faites techniquement)
 
 ---
 
@@ -66,7 +66,7 @@ Materiel :
 ### Phase 3 : Joueur a pied
 - [x] Personnage 3e personne (marche, course, saut, camera) : godot/scenes/player.tscn, godot/scripts/player.gd (capsule en attendant le modele)
 - [x] Animations (idle, walk, run, jump) : humanoide fait par script + animation procedurale (provisoire)
-- [ ] Locomotion facon GTA V (etape 16) : squelette humanoide standard + clips mocap Quaternius (CC0), machine a etats avec root motion, demarrages, arrets, pivots, IK, ragdoll. Diagnostic fait (docs/diagnostic_locomotion.md), en attente du pack
+- [x] Locomotion facon GTA V (etape 16) : squelette standard, clips Quaternius (CC0), AnimationTree, sprint, saut, escalade, accroupi, IK, chutes captees, ragdoll, entree / sortie de vehicule animees ; etape 17 (LOD) faite
 - [x] Mode debug (F1 : infos, chemins des PNJ ; touches 1 a 8 : teleportation) et checklist docs/validation_phases_3_5.md
 - [x] Collisions propres avec le decor (test auto godot/tests/test_player.gd ; murs OSM obsoletes sur la plage retires, promenade sans collision)
 - [ ] Jalon : balade fluide dans tout le quartier (a valider par Olympe)
@@ -89,11 +89,11 @@ Materiel :
 - [ ] Jalon : le quartier "respire"
 
 ### Phase 6 : Modelisation detaillee et textures
-- [ ] Remplacer le blockout par des batiments detailles (fait en partie : hauteurs reelles mesurees, toits en tole, bandeaux, balcons, auvents, piscines et bassins ; reste : kit modulaire de facades, portails, clotures)
+- [x] Remplacer le blockout par des batiments detailles (hauteurs reelles, toits en tole, bandeaux, balcons, auvents, piscines, concessions avec murs et portails ; kit modulaire de facades non fait)
 - [x] Echelle reelle verifiee par test (tests/test_echelle.gd) et noms fictifs partout (docs/correspondance_noms.md)
 - [x] Props locaux (etals, poteaux, lampadaires, enseignes fictives, vehicules, ordures, kpayo, maquis, cabines, avions) : build_props.py + props.gd
-- [ ] Textures reelles issues des photos
-- [ ] Optimisation (instances, LOD, occlusion) [MultiMesh par quartiers + distances d affichage faits ; 86-97 img/s dehors, 67-71 en interieur en 1280x720 ; LOD des personnages a l etape 17]
+- [ ] Textures reelles issues des photos (en attente des releves terrain d Olympe ; harmattan ajoute)
+- [x] Optimisation (instances, LOD, occlusion) : MultiMesh, zone en tuiles de 500 m, occultation, LOD et ombres des PNJ, ombres reduites en interieur
 
 ### Phase 7 : Gameplay de base
 - [x] Systeme d argent (FCFA), inventaire, interactions (acheter, parler)
@@ -104,18 +104,18 @@ Materiel :
 ### Phase 8 : Tension et consequences
 - [x] Systeme de police / danger
 - [x] Poursuites, amendes
-- [ ] Equilibrage
+- [ ] Equilibrage (prix, amendes, chronos, vitesse de la police : valeurs en @export, a ajuster apres le playtest)
 
 ### Phase 9 : Extension
-- [ ] Deuxieme quartier, raccord par route
-- [ ] Carte globale, deplacement rapide
-- [ ] Plus de vehicules et de missions
+- [x] Deuxieme quartier, raccord par route (Haie Verte et Cadjehoue au nord, zone agrandie a 1,35 x 1,6 km)
+- [x] Carte globale, deplacement rapide (grande carte de toute la zone, zems depuis les stations)
+- [x] Plus de vehicules et de missions (pick-up, missions de Maman Fifi, petits boulots de zem)
 
 ### Phase 10 : Finition et sortie
-- [ ] Optimisation finale, tests sur PC modestes
-- [ ] Export (Windows, web si possible)
-- [ ] Page de presentation, trailer (contenu TikTok/YouTube pendant le dev)
-- [ ] Playtest avec des amis
+- [x] Optimisation finale, tests sur PC modestes (prereglage Bas : 83-104 img/s dehors, 66-70 en interieur ; Haut a remesurer editeur ferme)
+- [x] Export (Windows verifie ; web exporte, a verifier dans un vrai navigateur)
+- [x] Page de presentation (docs/presentation.html) ; trailer a faire (capture video par Olympe)
+- [ ] Playtest avec des amis (fiche prete : docs/playtest.md)
 
 Option plus tard : multijoueur.
 
@@ -176,6 +176,7 @@ Option plus tard : multijoueur.
 - 16/10/2026 : joueur bien assis (bassin sur le siege, IK des mains au guidon / volant, pieds aux repose-pieds / pedales). Personnages refaits sur la base Quaternius Universal Base Characters (CC0) : corps et visage sculptes cales sur nos articulations et nos 10 morphologies, musculature ramenee a un corps ordinaire, texture de peau teintee par nos 10 teintes, coiffures reposees sur le crane. Vetements amples (le haut tombe droit depuis la poitrine, pantalon droit avec plis au bas). Chutes des PNJ en clips captes (Death01 puis LayToIdle, Hit_Chest), rue et interieurs. Escaliers des avions au poste depuis le sol (28 degres).
 - 16/10/2026 : fin de l etape 16 : accroupi (C / R3, capsule basse, impossible de se relever sous un plafond), saut contextuel qui escalade les rebords de 0,5 a 1,6 m (clip ClimbUp_1m, corps cale sur la racine du clip), PNJ de la rue et des interieurs sur les clips captes comme le joueur (postures reprises : dos voute, charge sur la tete, main sur le crane sous la pluie, dispute avec IK des bras), posture de repos corrigee (pieds a 0,26 m au lieu d une garde a 0,52 m, jambes tendues), niveau de detail de l animation des PNJ eloignes. Nouveau test tests/test_accroupi.gd. FPS 76-94 dehors, 65-73 interieurs. Reste de l etape : ragdoll, entree / sortie animees des vehicules.
 - 16/10/2026 : vetements refaits (retour d Olympe : rabat dans le dos) : haut et pantalon decoupes dans la peau par plans (bords nets, d un seul tenant, poids de la peau, ourlet au-dessus de l entrejambe, tissu visible des deux cotes). Phase 7 : argent en FCFA, inventaire, sante, achats (etals, maquis, kpayo, cabines, caisses de l Ararat, cafe de l aerogare), HUD de jeu, ecran titre, pause, options (qualite Bas / Moyen / Haut), sauvegarde et chargement (lit ou menu), histoire "Le Dernier Vol" (docs/histoire.md : prologue et acte 1, 8 missions, GPS, chrono) puis petits boulots de zem. Phase 8 : police fictive (etoiles, patrouilles en pilote automatique sur les rues, agent a pied, arrestation et amende, police semee hors de vue, contraventions pour exces de vitesse), degats de chute, malaise. Nouveau test tests/test_jeu.gd (19 suites au vert).
+- 16/10/2026 : fin de l etape 16 (ragdoll des pietons percutes, entree / sortie de vehicule animees), etape 17 (LOD : animation et ombres des PNJ), phase 6 (concessions avec murs et portails, harmattan), phase 9 (zone agrandie au nord : Haie Verte et Cadjehoue, origine figee, zone en tuiles, occultation ; deplacement rapide en zem ; pick-up ; missions de Maman Fifi), phase 10 (prereglages graphiques mesures, export Windows verifie, export web, page de presentation, fiche de playtest). 19 suites au vert. Mesures perturbees par l editeur et d autres logiciels ouverts : Bas 83-104 / 66-70 img/s, Haut 62-75 / 52-60 img/s, a remesurer.
 
 ---
 
@@ -188,7 +189,7 @@ STACK
 - Modelisation : Blender 5.2 (Microsoft Store), export glTF 2.0 (.glb), tout par script (blender/tools/)
 - Moteur : Godot 4.7.2 (Forward+), physique interpolee, RTX 2050 chez Olympe
 - Echelle : 1 unite = 1 metre
-- Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage. Bbox N 6.353365, S 6.346380, O 2.375259, E 2.387500 (environ 1,35 km x 0,78 km), OSM dans refs/osm/zone-aeroport.osm
+- Zone : aeroport de Cotonou, Erevan, la plage, Haie Verte et Cadjehoue. Bbox N 6.3610, S 6.346380, O 2.375259, E 2.387500 (1,35 x 1,6 km), OSM dans refs/osm/zone-gtb.osm ; origine figee au centre de la premiere zone (6.3498725, 2.3813795)
 - Cible : PC d'abord, web ensuite
 
 CONVENTIONS
@@ -200,35 +201,35 @@ CONVENTIONS
 - Objets : jamais de nom en *_col / *-col pour un objet decoratif (Godot cree une collision)
 - Tout son est synthetise (godot/scripts/audio_synth.gd) ; tout modele est fait par script Blender (blender/tools/)
 
-ETAT ACTUEL (16/10/2026)
-- Phases 0, 1, 2 terminees. Phases 3, 4, 5 techniquement faites, jalons a valider par Olympe en jeu avec le mode debug
-  (F1, teleportation 1 a 8) et la checklist docs/validation_phases_3_5.md. Phase 6 bien avancee.
+ETAT ACTUEL (16/10/2026, fin de session)
+- Phases 0 a 10 faites techniquement (voir les cases de la roadmap). Restent : jalons des phases 3, 4, 5 a valider par
+  Olympe en jeu, textures issues de photos (releves terrain), equilibrage et playtest (docs/playtest.md), trailer.
 - Fait :
-  - Monde : zone OSM + batiments Overture + littoral Sentinel-2 + hauteurs reelles Google Open Buildings 2.5D
-    (blender/tools/osm_import.py, ob25d_*.py -> godot/assets/data/zone_aeroport.json), piscines et bassins, horizon a 6 km,
-    materiaux proceduraux, vegetation, mobilier, enseignes fictives, cycle jour/nuit, meteo, ambiance sonore, coherence.
-  - Jeu : joueur a pied, zem et voitures conduisibles, circulation, pietons et reactions, mini-carte + grande carte + GPS,
-    interieurs (maison, Ararat Hypermarket, terminal), avions de ligne (air_traffic.gd, avion.gd), balisage et PAPI.
-  - Personnages (etapes 12 a 15, blender/tools/build_character.py + godot/scripts/pnj_util.gd) : tailles et mensurations
-    reelles, 10 morphologies, visages (7 traits cuits a la creation), 10 teintes de peau, coiffures, tenues, uniformes,
-    accessoires. Noms reels remplaces (docs/correspondance_noms.md).
-  - Retours d Olympe des 15 et 16/10 (saut, PNJ des interieurs, vol de vehicule, conducteurs, virages, voitures, epave, avions
-    visitables, frequence des vols, joueur assis, corps Quaternius, vetements amples, chutes captees, escaliers d avion) : faits, voir le journal.
-  - Tests : godot/tests/test_*.gd (18 suites, dont saut, interieurs, carjack, cabine, accroupi) tous OK ; captures : tests/capture_*.gd (planches studio, visages, tenues) ; performances :
-    tests/perf_fps.gd en 1280x720 : 76 a 94 images/s dehors, 65 a 73 dans les interieurs.
-- Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande) ; Blender 5.2 lance via
+  - Monde : zone agrandie au nord en phase 9 (1,35 x 1,6 km : aeroport, Erevan, plage, Haie Verte, Cadjehoue ; origine
+    figee), OSM + Overture + Open Buildings 2.5D + littoral Sentinel-2 (osm_import.py -> zone_aeroport.glb/.json), zone en
+    tuiles de 500 m, occultation, concessions avec portails, harmattan, horizon a 6 km, meteo, jour / nuit, sons.
+  - Jeu : joueur (sprint, saut, escalade, accroupi, ragdoll des PNJ, entree / sortie de vehicule animees), zem, berline,
+    4x4, minibus, pick-up, circulation, pietons, interieurs, avions, argent FCFA, achats, sante, HUD, ecran titre, pause,
+    options (qualite Bas / Moyen / Haut), sauvegarde, histoire "Le Dernier Vol" (docs/histoire.md : prologue, acte 1,
+    missions de Maman Fifi, petits boulots de zem), deplacement rapide en zem, police fictive (etoiles, patrouilles,
+    arrestation, amendes, contraventions).
+  - Personnages : corps Quaternius cales sur 10 morphologies, vetements decoupes dans la peau (bords nets), clips captes
+    pour le joueur et les PNJ (LOD d'animation et d'ombre).
+  - Tests : godot/tests/test_*.gd (19 suites, dont test_jeu) tous OK. Performances (tests/perf_fps.gd [-- qualite]) :
+    Bas 83-104 img/s dehors, 66-70 en interieur ; Haut 62-75 dehors, 52-60 en interieur, mesures faites avec l'editeur
+    Godot, un navigateur et CapCut ouverts : a remesurer machine degagee avant de conclure sur le budget en Haut.
+  - Export : builds/windows/GTB.exe verifie (ecran titre) ; builds/web exporte, non verifie dans un vrai navigateur.
+    Page de presentation : docs/presentation.html (publiee aussi en artefact prive).
+- Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande ; modeles d'export dans
+  %APPDATA%/Godot/export_templates/4.7.2.stable) ; Blender 5.2 lance via
   %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md) ; Python geo dans WSL
-  (~/.venvs/geo). Envoi git : depuis le git Windows (le git de WSL n'a pas les identifiants), jamais de ligne Co-Authored-By.
+  (~/.venvs/geo, overturemaps installe). Envoi git : depuis le git Windows (le git de WSL n'a pas les identifiants),
+  jamais de ligne Co-Authored-By.
 - Plan valide par Olympe (une etape a la fois, captures a chaque etape dans docs/images/) :
   - fait : A avions, B echelle reelle, C carte reelle, etapes 12 a 15 (personnages), noms fictifs, mode debug ;
-  - en cours : fin de l etape 16 (fait : squelette, clips, controles, camera, saut, escalade, accroupi, conduite assise, chutes, PNJ sur les clips ; reste : ragdoll, entree / sortie animees des vehicules) :
-    squelette humanoide standard, retargeting des clips, AnimationTree en machine a etats avec root motion, controles GTA V
-    (sprint en tapotant, marche lente, endurance, saut contextuel, accroupi), IK des pieds, regard, idles, reactions
-    physiques et ragdoll, camera GTA V, vehicules (entree / sortie animees, passager), PNJ sur le meme systeme ;
-  - ensuite : etape 17 (LOD des personnages et de la simulation), pente reelle de la plage (optionnel), phase 6
-    (audit de fidelite des reperes, details urbains, harmattan, kit modulaire), phase 7 (menus, options, sauvegarde,
-    interactions, dialogues, missions, histoire "Le Dernier Vol" : prologue et acte 1), phase 8 (police fictive,
-    niveau de recherche), phases 9 et 10.
+  - fait aussi : etapes 16 et 17, phases 6 a 10 (sauf textures photo, equilibrage, playtest, trailer) ;
+  - ensuite : validation des jalons 3 a 5 par Olympe, playtest avec des amis (docs/playtest.md), equilibrage d'apres
+    leurs retours, releves photo pour les textures, acte 2 de l'histoire, kit modulaire de facades, pente reelle de la plage.
 - Personnages : base Quaternius Universal Base Characters (refs/ubc, non versionne) calee par blender/tools/ubc_body.py.
 - Reste a faire, signale : bout de pagne visible sous les voitures avec certaines conductrices, cheveux mouilles sous la pluie, casquette de la policiere, traversees du corps pendant la marche
   (a verifier avec les animations de l'etape 16).

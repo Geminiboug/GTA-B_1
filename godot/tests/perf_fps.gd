@@ -1,6 +1,6 @@
 extends SceneTree
 ## Mesure des images par seconde en rendu reel (fenetre, synchro verticale coupee) depuis plusieurs points de vue.
-## Lancement : godot --path godot --resolution 1600x900 --script res://tests/perf_fps.gd
+## Lancement : godot --path godot --resolution 1600x900 --script res://tests/perf_fps.gd [-- <qualite 0 a 2>]
 
 var frame := 0
 var scene: Node
@@ -19,6 +19,11 @@ func _initialize() -> void:
 	scene = load("res://scenes/zone_aeroport.tscn").instantiate()
 	root.add_child(scene)
 	player = scene.get_node("Player")
+	# -- <qualite 0 a 2> : mesure d'un prereglage graphique (scripts/qualite.gd ; Bas = PC modeste)
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 0:
+		Qualite.appliquer(scene, int(args[0]))
+		print("Qualite : ", Qualite.NOMS[int(args[0])])
 
 
 func _process(_delta: float) -> bool:
