@@ -14,6 +14,7 @@
 @export var player_path: NodePath = ^"../Player"
 @export var seed_value := 4242
 @export var lod_distance := 140.0
+@export var ragdoll_push := 5.5          # m/s : au-dela (vehicule), chute physique au lieu de la chute captee
 @export var chase_owner_time := 25.0   # s pendant lesquelles un conducteur vole poursuit le joueur
 @export var owner_punch_push := 4.0    # m/s : coup du proprietaire sur le joueur a pied
 
@@ -677,6 +678,14 @@ func _knock_down(w: Dictionary, push: Vector2, after: String) -> void:
 	w["fall_sign"] = 1.0 if push.dot(fwd) < 0.0 else -1.0
 	# chute captee : il se tourne face au coup, tombe en arriere (Death01), reste au sol, se releve (LayToIdle)
 	var ch: Node3D = w["node"]
+	# choc violent (vehicule) : chute physique (ragdoll), puis il se releve
+	if push.length() > ragdoll_push and Ragdoll.disponible():
+		var sim := Ragdoll.start(ch, Vector3(push.x, 1.8, push.y))
+		if sim:
+			w["ragdoll"] = sim
+			if w.get("basin_node"):
+				_drop_basin(w)
+			return
 	if ch.has_method("play_clips"):
 		w["yaw"] = atan2(push.x, push.y)
 		w["clip_fall"] = true
@@ -720,7 +729,18 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 	match st:
 		"down":
 			var push: Vector2 = w["push"]
-			if w.get("clip_fall", false):
+			if w.get("ragdoll"):
+				# le corps est simule : on suit le bassin, puis il se releve (LayToIdle) a la fin
+				var hp := Ragdoll.hips_position(w["ragdoll"])
+				if hp != Vector3.INF:
+					me2 = Vector2(hp.x, hp.z)
+				if t > 0.9 + w["lie"]:
+					Ragdoll.stop(ch, w["ragdoll"])
+					w.erase("ragdoll")
+					w["clip_fall"] = true
+					w["state_t"] = 0.6
+					ch.call("play_clips", [["LayToIdle", 0.0]])
+			elif w.get("clip_fall", false):
 				# le clip fait la chute : le corps glisse un peu sous le choc, puis attend la fin du releve
 				if t < 0.6:
 					me2 += push * delta * (1.0 - t / 0.6) * 0.6
@@ -729,7 +749,7 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 					w["state_t"] = 99.0
 				else:
 					w["state_t"] = minf(t, 0.44 + w["lie"])
-			if w.get("clip_fall", false):
+			if w.get("clip_fall", false) or w.has("ragdoll"):
 				pass
 			elif t < 0.45:
 				tilt = smoothstep(0.0, 0.45, t)

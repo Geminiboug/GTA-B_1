@@ -4,6 +4,8 @@ extends Node3D
 ## - sol et murs mouilles (variable globale des shaders gtb_wet) : plus sombres, brillants, flaques ; sechage lent ;
 ## - orage : eclairs (flash) puis tonnerre avec un delai (la lumiere va plus vite que le son) ;
 ## - le ciel se couvre et s'assombrit, la lumiere baisse, la brume monte.
+## - harmattan (vent sec et poussiereux du Sahara, decembre a fevrier) : brume seche ocre, visibilite reduite a
+##   1-2 km, soleil voile, jamais de pluie pendant l'episode. Touche F6 : declencher / arreter (test).
 ## Doit etre APRES le noeud JourNuit dans la scene (il module ce que JourNuit vient de regler).
 ## Touche F3 : declencher / arreter l'averse (test).
 
@@ -12,10 +14,13 @@ extends Node3D
 @export var rain_chance := 0.25          # probabilite qu'un nouvel episode soit pluvieux
 @export var min_episode := 240.0          # secondes reelles
 @export var max_episode := 720.0
+@export var harmattan_chance := 0.12     # probabilite qu'un episode soit de l'harmattan
 
 var storm := 0.0      # 0 ciel normal, 1 ciel d'orage (lu par le ciel et la lumiere)
 var rain := 0.0       # intensite de pluie
 var wet := 0.0        # humidite du sol
+var harmattan := 0.0  # 0..1 : brume seche de poussiere
+var _target_harmattan := 0.0
 var _target_storm := 0.0
 var _target_rain := 0.0
 var _thunder := false
@@ -86,10 +91,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_episode("degage")
 		else:
 			_set_episode("orage")
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
+		_set_episode("degage" if _target_harmattan > 0.0 else "harmattan")
 
 
 func _set_episode(kind: String) -> void:
+	_target_harmattan = 0.0
 	match kind:
+		"harmattan":
+			_target_storm = 0.0
+			_target_rain = 0.0
+			_thunder = false
+			_target_harmattan = _rng.randf_range(0.6, 1.0)
 		"degage":
 			_target_storm = _rng.randf_range(0.0, 0.15)
 			_target_rain = 0.0
@@ -114,7 +127,9 @@ func _process(delta: float) -> void:
 	_episode -= delta
 	if _episode <= 0.0:
 		var r := _rng.randf()
-		if r < rain_chance * 0.4:
+		if _rng.randf() < harmattan_chance:
+			_set_episode("harmattan")
+		elif r < rain_chance * 0.4:
 			_set_episode("orage")
 		elif r < rain_chance:
 			_set_episode("averse")
@@ -147,6 +162,19 @@ func _process(delta: float) -> void:
 	_env.ambient_light_energy *= 1.0 - 0.35 * storm
 	_env.fog_density = 0.0003 + 0.0022 * rain + 0.0003 * storm
 	_env.fog_light_color = _env.fog_light_color.lerp(Color(0.45, 0.48, 0.52) * _env.ambient_light_energy * 1.6, storm * 0.7)
+	# harmattan : poussiere en suspension, soleil voile et orange, lointain noye dans une brume ocre
+	harmattan = move_toward(harmattan, _target_harmattan, delta / 60.0)
+	if harmattan > 0.001:
+		var h := harmattan
+		_sun.light_energy *= 1.0 - 0.4 * h
+		_sun.light_color = _sun.light_color.lerp(Color(1.0, 0.8, 0.6), 0.5 * h)
+		_sun.shadow_opacity *= 1.0 - 0.45 * h
+		_env.fog_density += 0.0035 * h
+		_env.fog_light_color = _env.fog_light_color.lerp(Color(0.78, 0.66, 0.5) * maxf(_env.ambient_light_energy, 0.3) * 1.4, 0.85 * h)
+		_env.fog_sky_affect = 0.6 * h
+		_env.ambient_light_color = _env.ambient_light_color.lerp(Color(0.7, 0.6, 0.48), 0.5 * h)
+	else:
+		_env.fog_sky_affect = 0.0
 	if _sky_mat:
 		_sky_mat.set_shader_parameter("storm", storm)
 

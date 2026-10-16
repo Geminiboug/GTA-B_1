@@ -1,6 +1,6 @@
 extends StaticBody3D
 ## Limites du monde : murs invisibles autour de la zone + fond marin praticable.
-## Coordonnees Godot : X = est, Z = sud (Z = -Y Blender). Zone OSM : x [-677, 677], z [-386, 386],
+## Coordonnees Godot : X = est, Z = sud (Z = -Y Blender). Zone OSM : x [-677, 677], z [-1230, 386] (bounds du json),
 ## la mer est prolongee de 400 m au sud (osm_import.py SEA_EXTRA) : z jusqu'a 786.
 
 @export var x_min := -677.0
@@ -12,6 +12,13 @@ extends StaticBody3D
 
 
 func _ready() -> void:
+	# limites lues dans les donnees de la zone (agrandie au nord en phase 9 : Cadjehoun - Haie Vive)
+	var bd: Array = Carte.zone().data.get("bounds", [])
+	if bd.size() == 4:
+		x_min = float(bd[0])
+		z_min = float(bd[1])
+		x_max = float(bd[2])
+		z_max = float(bd[3]) + 400.0
 	var cx := (x_min + x_max) / 2.0
 	var cz := (z_min + z_max) / 2.0
 	var w := x_max - x_min

@@ -8,7 +8,7 @@ import pyproj
 import rasterio
 from rasterio.merge import merge
 
-BBOX = (2.370, 6.343, 2.392, 6.356)       # lon/lat de la zone (identique a l'export Overture)
+BBOX = (2.370, 6.343, 2.392, 6.364)       # lon/lat de la zone (identique a l'export Overture) ; nord etendu (phase 9)
 *MANIFESTS, OUT = sys.argv[1:]
 tr = pyproj.Transformer.from_crs(4326, 32631, always_xy=True)
 x0, y0 = tr.transform(BBOX[0], BBOX[1])

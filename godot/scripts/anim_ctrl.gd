@@ -218,13 +218,33 @@ func _lod_every() -> int:
 	return n
 
 
+var ragdoll := false        # corps simule par la physique (scripts/ragdoll.gd) : l'animation s'efface
+var _shadow_on := true
+var _meshes: Array = []
+
+
+func _shadows(on: bool) -> void:
+	## Etape 17 : au-dela du 2e palier (20 m), un PNJ ne projette plus d'ombre (passe d'ombre des maillages animes).
+	if on == _shadow_on:
+		return
+	_shadow_on = on
+	if _meshes.is_empty():
+		_meshes = find_children("*", "MeshInstance3D", true, false)
+	for m in _meshes:
+		if is_instance_valid(m):
+			(m as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if on else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
 func _physics_process(delta: float) -> void:
-	if _tree == null:
+	if _tree == null or ragdoll:
 		return
 	# niveau de detail : un PNJ eloigne n'est recalcule qu'une image sur n (decalage propre a chacun)
 	_lod_acc += delta
 	_lod_frame += 1
-	if (_lod_frame + get_instance_id()) % _lod_every() != 0:
+	var every := _lod_every()
+	if anim_lod and _lod_frame % 15 == 0:
+		_shadows(every <= 2)
+	if (_lod_frame + get_instance_id()) % every != 0:
 		return
 	delta = _lod_acc
 	_lod_acc = 0.0

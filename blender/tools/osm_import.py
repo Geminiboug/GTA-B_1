@@ -62,7 +62,9 @@ root = ET.parse(OSM).getroot()
 b = root.find("bounds")
 minlat, minlon = float(b.get("minlat")), float(b.get("minlon"))
 maxlat, maxlon = float(b.get("maxlat")), float(b.get("maxlon"))
-lat0, lon0 = (minlat + maxlat) / 2, (minlon + maxlon) / 2
+# origine figee au centre de la premiere zone (aeroport, bounds 6.34638-6.353365 / 2.375259-2.3875) : agrandir la
+# zone (phase 9, Cadjehoun - Haie Vive au nord) ne deplace rien de ce qui existe deja dans le jeu
+lat0, lon0 = 6.3498725, 2.3813795
 KX = 111320.0 * math.cos(math.radians(lat0))
 KY = 110540.0
 

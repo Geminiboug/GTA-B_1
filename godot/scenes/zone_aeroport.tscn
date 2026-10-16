@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -25,6 +25,7 @@
 [ext_resource type="Script" path="res://scripts/histoire.gd" id="43_histoire"]
 [ext_resource type="Script" path="res://scripts/police.gd" id="44_police"]
 [ext_resource type="Script" path="res://scripts/menus.gd" id="45_menus"]
+[ext_resource type="Script" path="res://scripts/concessions.gd" id="46_concessions"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -74,6 +75,9 @@ script = ExtResource("7_bounds")
 [node name="zone_aeroport" parent="." instance=ExtResource("2_zone")]
 
 [node name="zone_aeroport_reperes" parent="." instance=ExtResource("3_reperes")]
+
+[node name="Concessions" type="Node3D" parent="."]
+script = ExtResource("46_concessions")
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 250)

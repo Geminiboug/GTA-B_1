@@ -155,8 +155,20 @@ func _unhandled_input(event: InputEvent) -> void:
 @export var stick_look_speed := 2.6  # rad/s au stick droit
 
 
+var _exit_from := Transform3D()
+var _exit_t := 1.0
+@export var exit_time := 0.35       # s : du siege au sol en descendant
+
+
 func _process(delta: float) -> void:
 	cam_pivot.global_position = get_global_transform_interpolated().origin + _cam_offset
+	if _exit_t < 1.0:
+		_exit_t = minf(1.0, _exit_t + delta / exit_time)
+		var k := smoothstep(0.0, 1.0, _exit_t)
+		var to := global_transform * Transform3D(Basis(Vector3.UP, _facing), Vector3.ZERO)
+		body.global_transform = _exit_from.interpolate_with(to, k).translated(Vector3.UP * sin(k * PI) * 0.1)
+		if _exit_t >= 1.0:
+			body.transform = Transform3D(Basis(Vector3.UP, _facing), Vector3.ZERO)
 	# stick droit de la manette (quand on est a pied)
 	if vehicle == null:
 		var look := Input.get_vector("look_left", "look_right", "look_up", "look_down")
@@ -266,12 +278,19 @@ func _nearest_vehicle() -> Node3D:
 	return best
 
 
+var _enter_from := Transform3D()
+var _enter_t := 1.0
+@export var enter_time := 0.5      # s : du sol au siege (le corps glisse pendant que l'animation passe assise)
+
+
 func enter_vehicle(v: Node3D) -> void:
 	if crouched:
 		crouched = false
 		($Collision.shape as CapsuleShape3D).height = _stand_height
 		$Collision.position.y = _stand_height * 0.5
 	vehicle = v
+	_enter_from = global_transform
+	_enter_t = 0.0
 	$Collision.disabled = true
 	velocity = Vector3.ZERO
 	v.set_rider(true)
@@ -291,6 +310,8 @@ func exit_vehicle() -> void:
 	$CamPivot/SpringArm3D/Camera3D.current = true
 	# on descend cote gauche (portiere conducteur / gauche de la moto), debout, dans le meme sens
 	var xf: Transform3D = v.exit_transform()
+	_exit_from = body.global_transform           # le corps visible glisse du siege jusqu'au sol (_process)
+	_exit_t = 0.0
 	global_transform = Transform3D(Basis.IDENTITY, xf.origin)
 	_facing = v.rotation.y
 	body.rotation = Vector3(0, _facing, 0)
@@ -306,7 +327,13 @@ func _ride(_delta: float) -> void:
 	var seat: Transform3D = vehicle.seat_transform()
 	var hip := HIP_HEIGHT - (0.04 if genre == "femme" else 0.0)
 	hip -= seat_hip_drop + (car_seat_raise if vehicle.name == "Voiture" else 0.0)
-	global_transform = Transform3D(seat.basis, seat.origin - seat.basis.y * hip - seat.basis.z * seat_hip_back)
+	var target := Transform3D(seat.basis, seat.origin - seat.basis.y * hip - seat.basis.z * seat_hip_back)
+	if _enter_t < 1.0:
+		_enter_t = minf(1.0, _enter_t + _delta / enter_time)
+		var k := smoothstep(0.0, 1.0, _enter_t)
+		# on enjambe la moto / on se glisse dans la voiture : petit arc vers le haut a mi-chemin
+		target = _enter_from.interpolate_with(target, k).translated(Vector3.UP * sin(k * PI) * 0.12)
+	global_transform = target
 	_ride_ik()
 	body.rotation = Vector3.ZERO
 	if anim:

@@ -585,3 +585,26 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Sans recherche : patrouille stationnee de temps en temps ; exces de vitesse (> 70 km/h) devant elle : contravention
   de 2 000 F. Malaise (sante a zero) : reveil a la maison, 4 000 F de soins.
 - Test : tests/test_jeu.gd (achat, sauvegarde, premiere mission, police, malaise). Capture : tests/capture_jeu.gd -> docs/images/phase7_8_jeu.png.
+
+## Fin de l'etape 16 et etape 17 (16/10/2026)
+- Ragdoll (scripts/ragdoll.gd) : pieton percute par un vehicule (poussee > 5,5 m/s, pedestrians.gd ragdoll_push) :
+  capsules PhysicalBone3D creees au choc sur 12 os (couche 10, ne genent ni joueur ni circulation), 3 au plus a la
+  fois, puis corps retires et releve capte (LayToIdle). Les coups de poing gardent la chute captee (Death01).
+- Entree / sortie de vehicule animees (player.gd enter_time 0,5 s, exit_time 0,35 s) : le corps glisse du sol au siege
+  (petit arc pour enjamber) pendant que l'animation passe assise, et inversement.
+- Etape 17 (niveaux de detail) : maillages des personnages en LOD automatiques (import Godot, generate_lods) ; animation
+  des PNJ eloignes 1 image sur 2 a 4 (anim_ctrl lod_steps) ; ombres des PNJ coupees au-dela de 20 m ; pietons au-dela
+  de 140 m caches et mis a jour 1 image sur 4 (pedestrians.gd). Captures : docs/images/etape16d_ragdoll.png.
+
+## Phase 6 : concessions, harmattan
+- scripts/concessions.gd : murs d'enceinte (1,9 m, enduits de 5 teintes) et portail en tole peinte cote rue autour des
+  maisons basses (30 a 400 m2) la ou il y a la place ; collisions ; murs marques sur la carte de marche (pietons, props).
+  Graine fixe (memes concessions a chaque partie). 63 concessions sur la zone de l'aeroport.
+- Harmattan (weather.gd) : episode sec (12 %) : brume ocre (visibilite 1 a 2 km), soleil voile et orange, ombres
+  adoucies, ni pluie ni orage. F6 : declencher / arreter. Capture : docs/images/phase6_concessions_harmattan.png.
+- Textures issues de photos : en attente des releves terrain d'Olympe (facades, sols, enseignes) ; les materiaux
+  restent proceduraux.
+
+## Export (phase 10)
+- export_presets.cfg (versionne) : Windows (builds/windows/GTB.exe) et Web (builds/web/index.html). Modeles d'export
+  Godot 4.7.2 installes dans %APPDATA%/Godot/export_templates/4.7.2.stable (paquet officiel godotengine).

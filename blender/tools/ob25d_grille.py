@@ -12,7 +12,9 @@ import rasterio
 OSM, TIF, OUT = sys.argv[1:4]
 b = ET.parse(OSM).getroot().find("bounds")
 minlat, minlon, maxlat, maxlon = (float(b.get(k)) for k in ("minlat", "minlon", "maxlat", "maxlon"))
-lat0, lon0 = (minlat + maxlat) / 2, (minlon + maxlon) / 2
+# origine figee au centre de la premiere zone (aeroport, bounds 6.34638-6.353365 / 2.375259-2.3875) : agrandir la
+# zone (phase 9, Cadjehoun - Haie Vive au nord) ne deplace rien de ce qui existe deja dans le jeu
+lat0, lon0 = 6.3498725, 2.3813795
 KX = 111320.0 * math.cos(math.radians(lat0))
 KY = 110540.0
 MARGIN = 700.0                     # la zone OSM est plus petite que l'emprise Overture : on couvre large
