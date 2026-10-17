@@ -207,3 +207,7 @@ gtb_wet={
 "type": "float",
 "value": 0.0
 }
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://i18n/en.po")

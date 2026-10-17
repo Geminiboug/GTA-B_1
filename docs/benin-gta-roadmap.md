@@ -255,7 +255,7 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Jalon : trois "villes" et de la campagne, comme San Andreas, a notre sauce
 
 ### Phase 24 : Finition et sortie v1.0
-- [ ] Traduction anglaise (a partir du fichier de traduction de la Phase 13), puis fon pour les menus et une partie des dialogues
+- [ ] Traduction anglaise faite (i18n/en.po : 542 textes traduits sur 679, les noms propres et le fon restent ; godot/tools/faire_po.py ; choix Automatique / Francais / English dans les options ; capture_anglais) ; fon pour les menus et une partie des dialogues : a faire avec un locuteur (relecture d'Olympe)
 - [ ] Accessibilite : taille de l'interface (0,8 a 1,6), aide a la visee a la souris (et verrouillage a la manette), reaffectation des touches du clavier, sous-titres reglables : faits (test_finition) ; daltonisme a faire
 - [ ] Succes (13, gardes pour tout le jeu, page dans le menu) et 3 emplacements de sauvegarde (resume chapitre / missions / argent / date) : faits ; mode photo complet a faire
 - [ ] Optimisation finale sur 3 configurations (PC modeste, moyen, Olympe)

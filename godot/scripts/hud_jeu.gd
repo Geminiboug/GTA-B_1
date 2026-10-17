@@ -214,7 +214,10 @@ func texte_aide(ctx: String, manette: bool) -> String:
 			_:
 				l = ["Z : accélérer   S : freiner / reculer", "Q D : tourner", "Espace : frein à main", "H : klaxon",
 					"E : descendre", "K : limiteur 50 km/h"]
-	l.append(("Croix haut" if manette else "F2") + " : cacher l'aide")
+	l.append(tr("Croix haut") if manette else "F2")
+	l[-1] += tr(" : cacher l'aide")
+	for i in l.size():
+		l[i] = tr(l[i])
 	return "\n".join(l)
 
 

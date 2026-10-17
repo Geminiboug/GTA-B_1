@@ -35,7 +35,7 @@ var perso := {}                # progression du personnage (scripts/stats.gd) : 
 
 var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false,
 	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26, "vol_vehicules": 1.0, "vol_ambiance": 1.0,
-	"vol_effets": 1.0, "taille_interface": 1.0, "aide_visee": true, "touches": {}}
+	"vol_effets": 1.0, "taille_interface": 1.0, "aide_visee": true, "touches": {}, "langue": "auto"}
 # actions reaffectables au clavier (menu Options > Touches)
 const TOUCHES_REGLABLES := [["move_forward", "Avancer"], ["move_back", "Reculer"], ["move_left", "Gauche"],
 	["move_right", "Droite"], ["jump", "Sauter"], ["sprint", "Courir"], ["crouch", "S'accroupir"], ["interact", "Monter / descendre"],
@@ -404,6 +404,11 @@ func appliquer_options() -> void:
 			AudioServer.set_bus_volume_db(i, linear_to_db(maxf(float(options.get(e[1], 1.0)), 0.0001)))
 	if not Engine.is_editor_hint() and DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if options["plein_ecran"] else DisplayServer.WINDOW_MODE_WINDOWED)
+	# langue : francais (textes du jeu) ou anglais (i18n/en.po) ; "auto" suit la langue du systeme
+	var lg := String(options.get("langue", "auto"))
+	if lg == "auto" or DisplayServer.get_name() == "headless":
+		lg = "fr" if OS.get_locale_language() == "fr" or DisplayServer.get_name() == "headless" else "en"
+	TranslationServer.set_locale(lg)
 	# accessibilite : taille de toute l'interface
 	get_tree().root.content_scale_factor = clampf(float(options.get("taille_interface", 1.0)), 0.8, 1.6)
 	# touches reaffectees (clavier seulement ; la manette garde ses boutons)

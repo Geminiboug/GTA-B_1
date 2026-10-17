@@ -1,0 +1,679 @@
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+2,000 F bet on %s
+the maquis (betting)
+Mural photographed
+Mural photographed: %d / %d
+Mural collection complete
+Every mural in the neighbourhood! 25,000 F bonus.
+T: night zem race (1st: %s)
+Race on: %d checkpoints, %.1f km!
+You got off the zem: race abandoned.
+Zem race
+Finish: %s!
+Bet won
+Match over: %s win.
+Bet placed on %s: result within the hour.
+9 mm rounds
+Pump-action shotgun
+Homemade hunting rifle
+Bare hands
+=
+The bottle shattered.
+=
+=
+=
+=
+=
+=
+Water sachet (pure water)
+Roasted peanuts
+Pineapple
+Bread
+Red pâte with chicken
+Rice with peanut sauce
+Akassa and fried fish
+Local beer
+Petrol (1 litre)
+Phone credit
+SIM card
+Bag of rice (5 kg)
+Oil (1 litre)
+Can of tomato
+Mineral water (1.5 l)
+Reinforced motorbike jacket
+Coffee
+Sandwich
+Bissap juice
+Workout session
+Stick
+Machete
+Cutlass
+Pistol
+Shotgun shells
+the stall
+the maquis
+the petrol seller
+the phone booth
+the checkout
+the café
+the hardware store
+the Gaou
+=
+T: buy from %s
+Not enough money.
+Bottle
+=
+=
+Thanks!
+=
+Buy from %s   (%s on you)
+=
+1-%d or Enter: buy    T: close
+  (power cut)
+my brother
+big brother
+old man
+my sister
+my girl
+big sister
+girl
+Hello {appel}!
+=
+Have a good day {appel}.
+Hello, how's it going?
+Good evening {appel}!
+Good evening, how are you?
+What's up {appel}?
+Welcome back!
+=
+{appel}, come and buy!
+Ice-cold water! Pure water!
+It's fresh, come and see!
+My girl, come closer!
+I'll give you a good price!
+Roasted peanuts!
+Sweet pineapple!
+Hot bread, hot bread!
+Zem? Where to?
+{appel}, need a ride?
+Hop on, I know the way!
+Hey! Can't you see where you're going?
+Easy {appel}!
+Sorry eh!
+Are you blind or what?
+Oh God!
+Watch where you're walking!
+Are you crazy?
+My things! You're going to pay!
+Hey! My goods!
+Look what you've done!
+Why are you hitting me?!
+Hey! Are you sick?
+Help!
+Leave me alone!
+Hey! Leave him alone!
+What's wrong with you?
+Break them up!
+Oh Lord!
+Ahi! My leg!
+Are you mad? Can't you drive?
+You have to pay for my care!
+Oh God, it hurts!
+He ran someone over!
+Stop him!
+Call someone!
+You have to pay!
+Hey! You want to kill me?
+Easy, driver!
+You drive like a madman!
+Hey! Brake!
+My vehicle! Thief!
+Stop, thief! Catch him!
+Get off! That's mine!
+Hey! Someone's stealing my car!
+Move!
+Hey, get out of the way!
+What are you waiting for?
+Easy, where are we going?
+Hey! Are you crazy?
+Did you see what you did?
+You have to pay for the repairs!
+Can't you drive?
+Ahi! Run!
+Hey! No fighting in here!
+Get out of the shop!
+Security! Stop that!
+Easy, sir!
+Sorry {appel}.
+Excuse me.
+Hey, easy!
+Come on! You'll see!
+Looking for trouble, {appel}?
+We'll settle this right here!
+Come closer if you're tough!
+Hello, police? I'm being attacked!
+Come quick, there's a madman hitting people!
+Hello? He hit me, come!
+Ahi... my head...
+Mercy, mercy!
+Stop, stop!
+=
+Welcome back
+Talk to Aunt Mireille
+Ah, %s! Welcome home!
+my son
+my daughter
+Go buy me some bread from the seller at the end of the street. Here, take something to pay with.
+I'm going, auntie.
+Follow the yellow arrow to the stall, then T to buy bread
+Bring the bread back to Aunt Mireille
+Give the bread (T)
+Thank you! Your father would have been proud to see you back.
+His old zem is in front of the house. It still runs, take it.
+Here, 5,000 francs: go get me a bag of rice at the Ararat.
+Dad's zem
+Get on your father's zem (E)
+Buy a bag of rice at the Ararat Hypermarket
+Bring the rice home
+Give the rice (T)
+Good! Go see Old Codjo at the corner maquis, he's looking for someone to make deliveries.
+Zem delivery
+Talk to Old Codjo
+You're Basile's kid? Your father fixed anything that rolled and anything that flew.
+Take this parcel. Deliver it to that stall over there, in under three minutes. The customer won't wait!
+Parcel
+Deliver the parcel
+Customer ride
+A traveller is waiting outside the terminal. He wants to go to Sweet Dream Beach. Hurry!
+Pick up the customer outside the terminal (by zem)
+Drop the customer at Sweet Dream Beach
+Thanks, %s! Safe travels.
+At the market
+I need oil and a can of tomato for the sauce. Go to the Ararat.
+Here's 2,000 francs for the shopping.
+Buy oil
+Buy a can of tomato
+Go back home
+Give the shopping (T)
+Thank you. Listen... I kept something of your father's.
+His notebook. He wrote something the night before the last flight: "Wreck, cabin, row 12".
+The wreck on the beach? Dad was there?
+I don't know. But be careful. At night, the police patrol the beach.
+Basile's notebook
+The Flying Wreck
+Evening falls...
+Go to the wreck, on the beach
+Search the cabin, row 12 (T)
+A plate torn from a plane... and an engraved name: "Cdt Hounkpè".
+Cargo plate
+A patrol! Escape the police
+The Commander
+Talk to Commander Hounkpè
+Dossou... You have Basile's eyes.
+That cargo wasn't just carrying cotton. Your father had taken photos of the load.
+He hid them by the tarmac, near the parking stands. Go and look, at night.
+The hangar
+Night falls on the airport...
+Search the three tarmac stands (T)
+Photos of crates... and the logo of an unknown company.
+The alarm is raised! Escape the police
+END OF ACT 1
+Someone at the airport knew. To be continued.
+Supplies
+Talk to Mama Fifi, the maquis owner
+You're Codjo's boy? The maquis opens tonight and I've run out of oil and water!
+Here's 2,000 francs for the shopping. Hurry to the Ararat and come back quick, I'll pay you well.
+Buy oil at the Ararat
+Buy mineral water
+Bring the shopping back to the Haie Verte maquis
+Ah, you're fast! Come back whenever you like, there's always work here.
+The grand tour
+Talk to Mama Fifi
+Two customers are arriving on the evening flight. Pick them up at the terminal, one after the other.
+First customer: outside the terminal (by zem)
+Drop him at Haie Verte
+Thanks! Have a good evening.
+Second customer: go back to the terminal
+Drop him at Mama Fifi's maquis
+They told me it's the best maquis in the neighbourhood!
+THE LAST FLIGHT
+Cotonou, near the airport
+Odd jobs: on the zem, T to look for a customer
+New mission: "%s" (go into the yellow circle)
+Shopping money
+MISSION PASSED
+MISSION FAILED
+=
+Too late!
+T: talk
+You lost %s.
+Stop next to the customer
+T: search
+Found! (%d left)
+Found!
+T: look for a customer
+Pick up the customer
+Drop off the customer
+Zem ride
+The customer got off without paying.
+=
+Aunt Mireille
+Old Codjo
+=
+Mama Fifi
+The customer
+The seller
+=
+Later that night...
+Cardinal Cotodji Int. Airport
+=
+=
+=
+=
+=
+Beach
+Destination: %s
+=
+=
+=
+Home
+Left click / Enter / A: destination     Right click / P / X: marker     Wheel / triggers: zoom     Drag / WASD: move     M / Esc: close
+Left stick: walk
+Right stick: camera
+A (tap): run
+X: jump / climb
+R3: crouch
+Y: get in a vehicle
+D-pad right: talk / buy
+Select: map   D-pad down: view
+D-pad left: inventory (phone, torch)
+RB: weapon   LB: aim   L3: reload
+RT: accelerate   LT: brake
+Left stick: steer
+RB: rear brake
+L3: horn
+Y: get off
+D-pad right: look for a customer
+D-pad down: 50 km/h limiter
+RT: accelerate   LT: brake / reverse
+RB: handbrake
+W A S D: walk
+Mouse: camera
+Shift (tap): run   Alt: slow walk
+Space: jump / climb
+C: crouch
+E: get in a vehicle
+T: talk / buy
+M: map   V: view
+I: inventory   P: phone   L: torch
+Tab: weapon   right click: aim   R: reload
+W: accelerate   S: brake
+A D: steer
+Space: rear brake
+H: horn
+E: get off
+T: look for a customer (when stopped)
+K: 50 km/h limiter
+W: accelerate   S: brake / reverse
+Space: handbrake
+D-pad up
+: hide help
+=
+=
+=
+=
+Messages, map, zem on demand, camera.
+Battery torch. Handy at night and during power cuts.
+Fresh bread from the stall.
+Fragrant rice, for the house.
+Peanut oil.
+Tomato paste.
+Petrol from the kpayo, in a bottle.
+Top-up for the smartphone.
+One more SIM.
+A parcel to deliver. Do not open.
+Up / Down choose · Enter use · I close
+Take in hand
+Empty pockets.
+=
+=
+You eat: %s
+Cardinal Cotodji International Airport
+Groceries
+Drinks
+Health and beauty
+Household
+Dairy
+Canned goods
+Baby
+Rice and cereals
+Oils
+Sugar and coffee
+Tea and infusions
+Biscuits
+Bakery
+Fruit and vegetables
+Bulk
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+Brussels
+=
+=
+=
+Lomé
+=
+=
+=
+=
+=
+=
+Interior
+=
+Everything under one roof
+Checkout %d
+CARDINAL COTODJI INTERNATIONAL AIRPORT
+%s · Desk %d
+BOARDING\nPassengers with a boarding pass only
+LITTORAL CAFÉ
+BOOKSHOP · PRESS
+DEPARTURES
+Destination
+Time
+Gate
+Status
+On time
+Boarding
+Delayed
+E: sleep until morning and save
+A new day begins
+=
+Gbê Town Bénin · The Last Flight
+New game
+Continue
+Load a game
+Options
+Credits
+Quit
+Pause
+Resume
+Save
+Save (impossible: wanted)
+Statistics
+Achievements
+Controls
+Quit to title screen
+Back
+To be continued
+Keep playing
+Give feedback
+Volume
+Vehicles
+Ambience (city, sea, rain)
+Effects and voices
+Mouse sensitivity
+Camera effects (recentring, shake)
+Fullscreen
+Subtitles
+Subtitle size
+Interface size
+Aim assist (mouse)
+Keyboard keys
+Reduced violence (weaker weapons)
+Graphics quality
+Apply and go back
+=
+Default keys
+Back
+%d / %d achievements
+=
+Game progress: %d %%    Murals: %d / %d
+Figure: %s    Zem rides: %d    Missions: %d    Fines: %d
+PHOTO MODE   Enter capture · WASD / mouse move · Space / Ctrl height · wheel zoom · F12 exit
+=
+Torch
+Forward
+Back
+Left
+Right
+Jump
+Run
+Crouch
+Get in / out
+Talk / buy
+Punch / shoot
+Map
+Horn
+Handbrake
+Accelerate
+Brake
+Vehicles
+Ambience
+Effects
+Voices
+=
+=
+=
+Not enough money (%s)
+=
+Empty
+Unreadable
+=
+=
+Game saved
+Game loaded
+Chez Dossou, tailor
+Crossroads Thrift Shop
+=
+=
+Uncle Codjo's Garage
+Gbêkpo Real Estate
+Room in Cadjehoue
+Flat in Haie Verte
+Short cut
+Shaved head
+Tailor-made wax boubou (pattern %d)
+=
+Faded jeans
+%s jersey
+Full repair
+Respray in a new colour
+Two-tone horn
+  —  for sale
+=
+New outfit: the police won't recognise you as easily.
+Park your vehicle in front of the garage first.
+Uncle Codjo: "Good as new!"
+New colour: the police lost track of you.
+Uncle Codjo: "Nice colour, eh!"
+Two-tone horn fitted.
+You already own this place.
+%s is yours: E at the door to sleep and save.
+E: sleep and save (%s)
+A new day begins. Game saved.
+Someone called the police. They'll be here in about %d min.
+You lost the police
+Halt! Police!
+Stop!
+Freeze!
+Ticket: speeding
+Speeding!
+BUSTED
+Fine: %s
+Fine
+Gbê Town Police Station
+PASSED OUT
+Gbêkpo Health Centre: %s for care
+Care
+Gbêkpo Health Centre
+GBÊKPO HEALTH CENTRE
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+=
+The taste of home
+ZEM: WEAR YOUR HELMET
+Road safety - it's life
+OCEANIC BANK
+Your future starts here
+Everything under one roof
+RADIO LITTORAL 98.6
+The voice of Gbê Town
+KOTO SOAP
+Cleaner than ever
+SOLID CEMENT
+Build for your children
+MONEY TRANSFER - CREDIT
+Zem riding
+Car driving
+=
+Your body is changing: %s
+slimmer
+normal figure
+stockier
+=
+Back in the neighbourhood
+Finish the prologue
+Do your first zem ride
+Learning the trade
+Do 10 zem rides
+King of the night
+Win a night zem race
+Eye of the neighbourhood
+Photograph every mural
+Boss of the crossroads
+Hold 3 zem ranks
+A place of my own
+Buy a home
+Reach 60 muscle
+Reach 60 stamina
+Public enemy
+Reach wanted level 5
+Lose the police at 3 stars or more
+The Last Flight, part one
+Finish act 1
+Big boss
+Have 1,000,000 F on you
+Achievement: %s
+Home
+Airport (terminal)
+T: take a zem (fast travel)
+No zem will take you: the police are after you
+Zem to %s
+Zem: where to?   (%s on you)
+=
+1-%d: go    T: close
+Camera
+The commander
+The old man
+Hello? Have you eaten? Come back before dark.
+Don't hang around the beach at night, eh.
+I'd recognise your father's engine anywhere.
+Come and see me, I may have work.
+The maquis is open until midnight!
+If you're hungry, come, there's some pâte left.
+Get out of the vehicle first
+Not enough money for the ride
+Zem call
+=
+Call: %s
+Clear night
+=
+Up / Down · Enter open · Back return · P close
+=
+Objective: %s
+none for now
+No new messages.
+Zem on demand
+=
+United Zems Union
+The Littoral Lions
+Sena's crew
+Airport zem rank
+Cadjehoue crossroads
+Haie Verte crossroads
+Cadjehoue market
+=
+Cotodji crossroads
+T: challenge %s
+the neighbourhood
+   N: negotiate (%s)
+Zem rank negotiation
+Deal done: the zem rank is yours.
+Challenge on: knock all three zemidjans down!
+%s is attacking your zem rank: %s! You have 3 minutes.
+%s is yours!
+Attack repelled: %s stays yours.
+Challenge lost: the union keeps the zem rank.
+Zem ranks
+Hey boss!
+Welcome, chief!
+Respect, big brother!
+A zemidjan joins your crew (%d / %d).
+The crew follows you.
+The crew waits for you here.
+B: recruit a zemidjan into your crew (%d / %d)
+=

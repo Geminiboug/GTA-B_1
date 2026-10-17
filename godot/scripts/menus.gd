@@ -250,6 +250,20 @@ func _show_options() -> void:
 	_check("Aide à la visée (souris)", o.get("aide_visee", true), func(v: bool) -> void: o["aide_visee"] = v)
 	_button("Touches du clavier", _show_touches)
 	_check("Violence réduite (armes moins puissantes)", o.get("violence_reduite", false), func(v: bool) -> void: o["violence_reduite"] = v)
+	var rl := HBoxContainer.new()
+	var ll := Label.new()
+	ll.text = "Langue / Language"
+	ll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ll.add_theme_font_size_override("font_size", 20)
+	rl.add_child(ll)
+	var ol := OptionButton.new()
+	var codes := ["auto", "fr", "en"]
+	for n in ["Automatique", "Français", "English"]:
+		ol.add_item(n)
+	ol.selected = maxi(codes.find(String(o.get("langue", "auto"))), 0)
+	ol.item_selected.connect(func(i: int) -> void: o["langue"] = codes[i])
+	rl.add_child(ol)
+	_box.add_child(rl)
 	var row := HBoxContainer.new()
 	var l := Label.new()
 	l.text = "Qualité graphique"

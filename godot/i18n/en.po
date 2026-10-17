@@ -1,0 +1,2722 @@
+# GTB (Gbe Town Benin) : textes du jeu, genere par godot/tools/extraire_textes.py
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+#: scripts/activites.gd:11
+msgid "COIFFURE DIEU MERCI"
+msgstr ""
+
+#: scripts/activites.gd:11
+msgid "ATELIER LA GRACE"
+msgstr ""
+
+#: scripts/activites.gd:11
+msgid "VULCANISATEUR 24H/24"
+msgstr ""
+
+#: scripts/activites.gd:11
+msgid "PHOTO STUDIO LE MIROIR"
+msgstr ""
+
+#: scripts/activites.gd:12
+msgid "BOULANGERIE LE BON GOUT"
+msgstr ""
+
+#: scripts/activites.gd:12 scripts/props.gd:20
+msgid "PHARMACIE DU LITTORAL"
+msgstr ""
+
+#: scripts/activites.gd:12
+msgid "COUTURE MAMAN BENIE"
+msgstr ""
+
+#: scripts/activites.gd:12
+msgid "TELE-REPARATION ELECTRON"
+msgstr ""
+
+#: scripts/activites.gd:13
+msgid "MAQUIS LA JOIE"
+msgstr ""
+
+#: scripts/activites.gd:13
+msgid "ECOLE LES PETITS GENIES"
+msgstr ""
+
+#: scripts/activites.gd:13
+msgid "QUINCAILLERIE L'ESPOIR"
+msgstr ""
+
+#: scripts/activites.gd:13 scripts/props.gd:21
+msgid "AUTO-ECOLE LE VOLANT"
+msgstr ""
+
+#: scripts/activites.gd:13
+msgid "SALON AFRO STYLE"
+msgstr ""
+
+#: scripts/activites.gd:14
+msgid "PRESSING LA BLANCHEUR"
+msgstr ""
+
+#: scripts/activites.gd:14
+msgid "CABINE TRANSFERT RAPIDE"
+msgstr ""
+
+#: scripts/activites.gd:15 scripts/personnalisation.gd:25
+msgid "Étoile de Gbê Town"
+msgstr ""
+
+#: scripts/activites.gd:15 scripts/personnalisation.gd:25
+msgid "Racing Lagune"
+msgstr ""
+
+#: scripts/activites.gd:15 scripts/personnalisation.gd:25
+msgid "Atlantique FC"
+msgstr ""
+
+#: scripts/activites.gd:15 scripts/personnalisation.gd:25
+msgid "Union Sportive du Littoral"
+msgstr ""
+
+#: scripts/activites.gd:15 scripts/personnalisation.gd:25
+msgid "Avenir de Cotodji"
+msgstr ""
+
+#: scripts/activites.gd:42
+msgid "Pari 2 000 F sur %s"
+msgstr "2,000 F bet on %s"
+
+#: scripts/activites.gd:44
+msgid "le maquis (paris)"
+msgstr "the maquis (betting)"
+
+#: scripts/activites.gd:144
+msgid "Fresque photographiée"
+msgstr "Mural photographed"
+
+#: scripts/activites.gd:145
+msgid "Fresque photographiée : %d / %d"
+msgstr "Mural photographed: %d / %d"
+
+#: scripts/activites.gd:147
+msgid "Collection de fresques complète"
+msgstr "Mural collection complete"
+
+#: scripts/activites.gd:148
+msgid "Toutes les fresques du quartier ! Bonus de 25 000 F."
+msgstr "Every mural in the neighbourhood! 25,000 F bonus."
+
+#: scripts/activites.gd:169
+msgid "T : course de zems de nuit (1er : %s)"
+msgstr "T: night zem race (1st: %s)"
+
+#: scripts/activites.gd:203
+msgid "Course lancée : %d points de passage, %.1f km !"
+msgstr "Race on: %d checkpoints, %.1f km!"
+
+#: scripts/activites.gd:237
+msgid "Tu es descendu du zem : course abandonnée."
+msgstr "You got off the zem: race abandoned."
+
+#: scripts/activites.gd:282
+msgid "Course de zems"
+msgstr "Zem race"
+
+#: scripts/activites.gd:288
+msgid "Arrivée : %s !"
+msgstr "Finish: %s!"
+
+#: scripts/activites.gd:308
+msgid "Pari gagné"
+msgstr "Bet won"
+
+#: scripts/activites.gd:309
+msgid "Match terminé : victoire de %s."
+msgstr "Match over: %s win."
+
+#: scripts/activites.gd:317
+msgid "Pari enregistré sur %s : résultat dans l'heure."
+msgstr "Bet placed on %s: result within the hour."
+
+#: scripts/armes.gd:20 scripts/commerce.gd:23
+msgid "Balles 9 mm"
+msgstr "9 mm rounds"
+
+#: scripts/armes.gd:22 scripts/commerce.gd:22
+msgid "Fusil à pompe"
+msgstr "Pump-action shotgun"
+
+#: scripts/armes.gd:24 scripts/commerce.gd:22
+msgid "Fusil de chasse artisanal"
+msgstr "Homemade hunting rifle"
+
+#: scripts/armes.gd:103
+msgid "Mains nues"
+msgstr "Bare hands"
+
+#: scripts/armes.gd:103
+msgid " (%d / %d)"
+msgstr ""
+
+#: scripts/armes.gd:185
+msgid "La bouteille s'est brisée."
+msgstr "The bottle shattered."
+
+#: scripts/armes.gd:492
+msgid "QUINCAILLERIE LE BON CLOU"
+msgstr ""
+
+#: scripts/avion.gd:12
+msgid "Air Gbé"
+msgstr ""
+
+#: scripts/avion.gd:13
+msgid "Atlantique Express"
+msgstr ""
+
+#: scripts/avion.gd:14
+msgid "Sahel Airways"
+msgstr ""
+
+#: scripts/avion.gd:15
+msgid "Golfe Aviation"
+msgstr ""
+
+#: scripts/avion.gd:17
+msgid "Air Lagune"
+msgstr ""
+
+#: scripts/commerce.gd:12
+msgid "Eau en sachet (pure water)"
+msgstr "Water sachet (pure water)"
+
+#: scripts/commerce.gd:12
+msgid "Arachides grillées"
+msgstr "Roasted peanuts"
+
+#: scripts/commerce.gd:12
+msgid "Ananas"
+msgstr "Pineapple"
+
+#: scripts/commerce.gd:12 scripts/histoire.gd:167 scripts/histoire.gd:168 scripts/histoire.gd:169
+msgid "Pain"
+msgstr "Bread"
+
+#: scripts/commerce.gd:13
+msgid "Pâte rouge et poulet"
+msgstr "Red pâte with chicken"
+
+#: scripts/commerce.gd:13
+msgid "Riz sauce arachide"
+msgstr "Rice with peanut sauce"
+
+#: scripts/commerce.gd:13
+msgid "Akassa et poisson frit"
+msgstr "Akassa and fried fish"
+
+#: scripts/commerce.gd:13 scripts/commerce.gd:163
+msgid "Bière locale"
+msgstr "Local beer"
+
+#: scripts/commerce.gd:14 scripts/inventaire.gd:22
+msgid "Essence (1 litre)"
+msgstr "Petrol (1 litre)"
+
+#: scripts/commerce.gd:15 scripts/inventaire.gd:23
+msgid "Crédit téléphone"
+msgstr "Phone credit"
+
+#: scripts/commerce.gd:15 scripts/inventaire.gd:24
+msgid "Carte SIM"
+msgstr "SIM card"
+
+#: scripts/commerce.gd:16 scripts/histoire.gd:175 scripts/histoire.gd:176 scripts/histoire.gd:177 scripts/inventaire.gd:19
+msgid "Sac de riz (5 kg)"
+msgstr "Bag of rice (5 kg)"
+
+#: scripts/commerce.gd:16 scripts/histoire.gd:196 scripts/histoire.gd:199 scripts/histoire.gd:227 scripts/histoire.gd:229 scripts/histoire.gd:230
+msgid "Huile (1 litre)"
+msgstr "Oil (1 litre)"
+
+#: scripts/commerce.gd:16 scripts/histoire.gd:197 scripts/histoire.gd:198 scripts/histoire.gd:199 scripts/inventaire.gd:21
+msgid "Boîte de tomate"
+msgstr "Can of tomato"
+
+#: scripts/commerce.gd:16 scripts/histoire.gd:228 scripts/histoire.gd:230
+msgid "Eau minérale (1,5 l)"
+msgstr "Mineral water (1.5 l)"
+
+#: scripts/commerce.gd:17 scripts/commerce.gd:165
+msgid "Blouson de moto renforcé"
+msgstr "Reinforced motorbike jacket"
+
+#: scripts/commerce.gd:18
+msgid "Café"
+msgstr "Coffee"
+
+#: scripts/commerce.gd:18
+msgid "Sandwich"
+msgstr "Sandwich"
+
+#: scripts/commerce.gd:18
+msgid "Jus de bissap"
+msgstr "Bissap juice"
+
+#: scripts/commerce.gd:20 scripts/commerce.gd:158
+msgid "Séance de musculation"
+msgstr "Workout session"
+
+#: scripts/commerce.gd:21
+msgid "Bâton"
+msgstr "Stick"
+
+#: scripts/commerce.gd:21
+msgid "Machette"
+msgstr "Machete"
+
+#: scripts/commerce.gd:21
+msgid "Coupe-coupe"
+msgstr "Cutlass"
+
+#: scripts/commerce.gd:22
+msgid "Pistolet"
+msgstr "Pistol"
+
+#: scripts/commerce.gd:23
+msgid "Cartouches"
+msgstr "Shotgun shells"
+
+#: scripts/commerce.gd:25 scripts/commerce.gd:107
+msgid "l'étal"
+msgstr "the stall"
+
+#: scripts/commerce.gd:25
+msgid "le maquis"
+msgstr "the maquis"
+
+#: scripts/commerce.gd:25
+msgid "le vendeur d'essence"
+msgstr "the petrol seller"
+
+#: scripts/commerce.gd:25
+msgid "la cabine"
+msgstr "the phone booth"
+
+#: scripts/commerce.gd:26
+msgid "la caisse"
+msgstr "the checkout"
+
+#: scripts/commerce.gd:26
+msgid "le café"
+msgstr "the café"
+
+#: scripts/commerce.gd:26
+msgid "la quincaillerie"
+msgstr "the hardware store"
+
+#: scripts/commerce.gd:26
+msgid "le Gaou"
+msgstr "the Gaou"
+
+#: scripts/commerce.gd:27
+msgid "Gbêkpo Fitness"
+msgstr ""
+
+#: scripts/commerce.gd:107
+msgid "T : acheter à %s"
+msgstr "T: buy from %s"
+
+#: scripts/commerce.gd:141
+msgid "Pas assez d'argent."
+msgstr "Not enough money."
+
+#: scripts/commerce.gd:164
+msgid "Bouteille"
+msgstr "Bottle"
+
+#: scripts/commerce.gd:177
+msgid "Interact"
+msgstr ""
+
+#: scripts/commerce.gd:177
+msgid "Consume"
+msgstr ""
+
+#: scripts/commerce.gd:179
+msgid "Merci !"
+msgstr "Thanks!"
+
+#: scripts/commerce.gd:179
+msgid "Akpé !"
+msgstr ""
+
+#: scripts/commerce.gd:196
+msgid "Acheter à %s   (%s en poche)"
+msgstr "Buy from %s   (%s on you)"
+
+#: scripts/commerce.gd:203
+msgid "%s%d.  %s   %s"
+msgstr ""
+
+#: scripts/commerce.gd:208
+msgid "1-%d ou Entrée : acheter    T : fermer"
+msgstr "1-%d or Enter: buy    T: close"
+
+#: scripts/day_night.gd:147
+msgid "  (delestage)"
+msgstr "  (power cut)"
+
+#: scripts/dialogues.gd:7
+msgid "mon frère"
+msgstr "my brother"
+
+#: scripts/dialogues.gd:7
+msgid "grand frère"
+msgstr "big brother"
+
+#: scripts/dialogues.gd:7
+msgid "le vieux"
+msgstr "old man"
+
+#: scripts/dialogues.gd:8
+msgid "ma sœur"
+msgstr "my sister"
+
+#: scripts/dialogues.gd:8
+msgid "ma copine"
+msgstr "my girl"
+
+#: scripts/dialogues.gd:8
+msgid "grande sœur"
+msgstr "big sister"
+
+#: scripts/dialogues.gd:8
+msgid "la go"
+msgstr "girl"
+
+#: scripts/dialogues.gd:12
+msgid "Bonjour {appel} !"
+msgstr "Hello {appel}!"
+
+#: scripts/dialogues.gd:12
+msgid "A fon ganji à ?"
+msgstr ""
+
+#: scripts/dialogues.gd:12
+msgid "Bonne journée {appel}."
+msgstr "Have a good day {appel}."
+
+#: scripts/dialogues.gd:12
+msgid "Bonjour, ça va un peu ?"
+msgstr "Hello, how's it going?"
+
+#: scripts/dialogues.gd:13
+msgid "Bonsoir {appel} !"
+msgstr "Good evening {appel}!"
+
+#: scripts/dialogues.gd:13
+msgid "Bonsoir, ça va ?"
+msgstr "Good evening, how are you?"
+
+#: scripts/dialogues.gd:13
+msgid "On dit quoi {appel} ?"
+msgstr "What's up {appel}?"
+
+#: scripts/dialogues.gd:13
+msgid "Bonne arrivée !"
+msgstr "Welcome back!"
+
+#: scripts/dialogues.gd:13
+msgid "Mi kwabo !"
+msgstr ""
+
+#: scripts/dialogues.gd:14
+msgid "{appel}, viens acheter !"
+msgstr "{appel}, come and buy!"
+
+#: scripts/dialogues.gd:14
+msgid "Eau glacée ! Pure water !"
+msgstr "Ice-cold water! Pure water!"
+
+#: scripts/dialogues.gd:14
+msgid "C'est frais, viens voir !"
+msgstr "It's fresh, come and see!"
+
+#: scripts/dialogues.gd:14
+msgid "Ma copine, approche !"
+msgstr "My girl, come closer!"
+
+#: scripts/dialogues.gd:15
+msgid "Je te fais un bon prix !"
+msgstr "I'll give you a good price!"
+
+#: scripts/dialogues.gd:15
+msgid "Arachides grillées !"
+msgstr "Roasted peanuts!"
+
+#: scripts/dialogues.gd:15
+msgid "Ananas bien sucré !"
+msgstr "Sweet pineapple!"
+
+#: scripts/dialogues.gd:15
+msgid "Pain chaud, pain chaud !"
+msgstr "Hot bread, hot bread!"
+
+#: scripts/dialogues.gd:16
+msgid "Zem ? On va où ?"
+msgstr "Zem? Where to?"
+
+#: scripts/dialogues.gd:16
+msgid "{appel}, je te dépose ?"
+msgstr "{appel}, need a ride?"
+
+#: scripts/dialogues.gd:16
+msgid "Montez, je connais la route !"
+msgstr "Hop on, I know the way!"
+
+#: scripts/dialogues.gd:17
+msgid "Eh ! Tu ne vois pas devant toi ?"
+msgstr "Hey! Can't you see where you're going?"
+
+#: scripts/dialogues.gd:17
+msgid "Doucement {appel} !"
+msgstr "Easy {appel}!"
+
+#: scripts/dialogues.gd:17
+msgid "Pardon hein !"
+msgstr "Sorry eh!"
+
+#: scripts/dialogues.gd:17
+msgid "Tu es aveugle ou quoi ?"
+msgstr "Are you blind or what?"
+
+#: scripts/dialogues.gd:18 scripts/dialogues.gd:28
+msgid "Eh Dieu !"
+msgstr "Oh God!"
+
+#: scripts/dialogues.gd:18
+msgid "Regarde où tu marches !"
+msgstr "Watch where you're walking!"
+
+#: scripts/dialogues.gd:18
+msgid "Ça va pas non ?"
+msgstr "Are you crazy?"
+
+#: scripts/dialogues.gd:19
+msgid "Mes affaires ! Tu vas payer !"
+msgstr "My things! You're going to pay!"
+
+#: scripts/dialogues.gd:19
+msgid "Eh ! Ma marchandise !"
+msgstr "Hey! My goods!"
+
+#: scripts/dialogues.gd:19
+msgid "Regarde ce que tu as fait !"
+msgstr "Look what you've done!"
+
+#: scripts/dialogues.gd:20
+msgid "Tu me frappes pourquoi ?!"
+msgstr "Why are you hitting me?!"
+
+#: scripts/dialogues.gd:20
+msgid "Eh ! Tu es malade ?"
+msgstr "Hey! Are you sick?"
+
+#: scripts/dialogues.gd:20 scripts/dialogues.gd:28
+msgid "Au secours !"
+msgstr "Help!"
+
+#: scripts/dialogues.gd:20
+msgid "Laisse-moi tranquille !"
+msgstr "Leave me alone!"
+
+#: scripts/dialogues.gd:21
+msgid "Eh ! Laisse-le !"
+msgstr "Hey! Leave him alone!"
+
+#: scripts/dialogues.gd:21
+msgid "Qu'est-ce qui ne va pas chez toi ?"
+msgstr "What's wrong with you?"
+
+#: scripts/dialogues.gd:21
+msgid "Séparez-les !"
+msgstr "Break them up!"
+
+#: scripts/dialogues.gd:21 scripts/dialogues.gd:23
+msgid "Eh Seigneur !"
+msgstr "Oh Lord!"
+
+#: scripts/dialogues.gd:22
+msgid "Ahi ! Ma jambe !"
+msgstr "Ahi! My leg!"
+
+#: scripts/dialogues.gd:22
+msgid "Tu es fou ? Tu ne sais pas conduire ?"
+msgstr "Are you mad? Can't you drive?"
+
+#: scripts/dialogues.gd:22
+msgid "Il faut payer mes soins !"
+msgstr "You have to pay for my care!"
+
+#: scripts/dialogues.gd:22
+msgid "Eh Dieu, j'ai mal !"
+msgstr "Oh God, it hurts!"
+
+#: scripts/dialogues.gd:23
+msgid "Il a renversé quelqu'un !"
+msgstr "He ran someone over!"
+
+#: scripts/dialogues.gd:23
+msgid "Arrêtez-le !"
+msgstr "Stop him!"
+
+#: scripts/dialogues.gd:23
+msgid "Appelez quelqu'un !"
+msgstr "Call someone!"
+
+#: scripts/dialogues.gd:23
+msgid "Il faut payer !"
+msgstr "You have to pay!"
+
+#: scripts/dialogues.gd:24
+msgid "Eh ! Tu veux me tuer ?"
+msgstr "Hey! You want to kill me?"
+
+#: scripts/dialogues.gd:24
+msgid "Doucement chauffeur !"
+msgstr "Easy, driver!"
+
+#: scripts/dialogues.gd:24
+msgid "Tu roules comme un fou !"
+msgstr "You drive like a madman!"
+
+#: scripts/dialogues.gd:24
+msgid "Eh ! Freine !"
+msgstr "Hey! Brake!"
+
+#: scripts/dialogues.gd:25
+msgid "Mon véhicule ! Voleur !"
+msgstr "My vehicle! Thief!"
+
+#: scripts/dialogues.gd:25
+msgid "Au voleur ! Attrapez-le !"
+msgstr "Stop, thief! Catch him!"
+
+#: scripts/dialogues.gd:25
+msgid "Descends de là ! C'est à moi !"
+msgstr "Get off! That's mine!"
+
+#: scripts/dialogues.gd:25
+msgid "Eh ! On vole ma voiture !"
+msgstr "Hey! Someone's stealing my car!"
+
+#: scripts/dialogues.gd:26
+msgid "Avance !"
+msgstr "Move!"
+
+#: scripts/dialogues.gd:26
+msgid "Eh, bouge de là !"
+msgstr "Hey, get out of the way!"
+
+#: scripts/dialogues.gd:26
+msgid "Tu attends quoi ?"
+msgstr "What are you waiting for?"
+
+#: scripts/dialogues.gd:26
+msgid "Doucement, on va où ?"
+msgstr "Easy, where are we going?"
+
+#: scripts/dialogues.gd:27
+msgid "Eh ! Tu es fou ?"
+msgstr "Hey! Are you crazy?"
+
+#: scripts/dialogues.gd:27
+msgid "Tu as vu ce que tu as fait ?"
+msgstr "Did you see what you did?"
+
+#: scripts/dialogues.gd:27
+msgid "Il faut payer la réparation !"
+msgstr "You have to pay for the repairs!"
+
+#: scripts/dialogues.gd:27
+msgid "Tu ne sais pas conduire ?"
+msgstr "Can't you drive?"
+
+#: scripts/dialogues.gd:28
+msgid "Ahi ! Courez !"
+msgstr "Ahi! Run!"
+
+#: scripts/dialogues.gd:29
+msgid "Eh ! On ne se bat pas ici !"
+msgstr "Hey! No fighting in here!"
+
+#: scripts/dialogues.gd:29
+msgid "Sortez du magasin !"
+msgstr "Get out of the shop!"
+
+#: scripts/dialogues.gd:29
+msgid "Sécurité ! Arrêtez ça !"
+msgstr "Security! Stop that!"
+
+#: scripts/dialogues.gd:29
+msgid "Doucement, monsieur !"
+msgstr "Easy, sir!"
+
+#: scripts/dialogues.gd:30
+msgid "Pardon {appel}."
+msgstr "Sorry {appel}."
+
+#: scripts/dialogues.gd:30
+msgid "Excusez-moi."
+msgstr "Excuse me."
+
+#: scripts/dialogues.gd:30
+msgid "Eh, doucement !"
+msgstr "Hey, easy!"
+
+#: scripts/dialogues.gd:31
+msgid "Viens ! Tu vas voir !"
+msgstr "Come on! You'll see!"
+
+#: scripts/dialogues.gd:31
+msgid "Tu me cherches, {appel} ?"
+msgstr "Looking for trouble, {appel}?"
+
+#: scripts/dialogues.gd:31
+msgid "On va régler ça ici !"
+msgstr "We'll settle this right here!"
+
+#: scripts/dialogues.gd:31
+msgid "Approche si tu es fort !"
+msgstr "Come closer if you're tough!"
+
+#: scripts/dialogues.gd:32
+msgid "Allô, la police ? On m'agresse !"
+msgstr "Hello, police? I'm being attacked!"
+
+#: scripts/dialogues.gd:32
+msgid "Venez vite, il y a un fou qui frappe les gens !"
+msgstr "Come quick, there's a madman hitting people!"
+
+#: scripts/dialogues.gd:32
+msgid "Allô ? Il m'a frappé, venez !"
+msgstr "Hello? He hit me, come!"
+
+#: scripts/dialogues.gd:33
+msgid "Ahi... ma tête..."
+msgstr "Ahi... my head..."
+
+#: scripts/dialogues.gd:33
+msgid "Pitié, pitié !"
+msgstr "Mercy, mercy!"
+
+#: scripts/dialogues.gd:33
+msgid "Arrête, arrête !"
+msgstr "Stop, stop!"
+
+#: scripts/dialogues.gd:41
+msgid "{appel}"
+msgstr ""
+
+#: scripts/histoire.gd:162
+msgid "Bonne arrivée"
+msgstr "Welcome back"
+
+#: scripts/histoire.gd:163 scripts/histoire.gd:193
+msgid "Parle à tante Mireille"
+msgstr "Talk to Aunt Mireille"
+
+#: scripts/histoire.gd:164
+msgid "Ah, %s ! Bonne arrivée à la maison !"
+msgstr "Ah, %s! Welcome home!"
+
+#: scripts/histoire.gd:164
+msgid "mon fils"
+msgstr "my son"
+
+#: scripts/histoire.gd:164
+msgid "ma fille"
+msgstr "my daughter"
+
+#: scripts/histoire.gd:165
+msgid "Va m'acheter du pain chez la vendeuse, au bout de la rue. Tiens, prends de quoi payer."
+msgstr "Go buy me some bread from the seller at the end of the street. Here, take something to pay with."
+
+#: scripts/histoire.gd:166
+msgid "J'y vais, tantie."
+msgstr "I'm going, auntie."
+
+#: scripts/histoire.gd:167
+msgid "Suis la flèche jaune jusqu'à l'étal, puis T pour acheter du pain"
+msgstr "Follow the yellow arrow to the stall, then T to buy bread"
+
+#: scripts/histoire.gd:168
+msgid "Rapporte le pain à tante Mireille"
+msgstr "Bring the bread back to Aunt Mireille"
+
+#: scripts/histoire.gd:169
+msgid "Donne le pain (T)"
+msgstr "Give the bread (T)"
+
+#: scripts/histoire.gd:170
+msgid "Merci ! Ton père aurait été fier de te voir revenu."
+msgstr "Thank you! Your father would have been proud to see you back."
+
+#: scripts/histoire.gd:171
+msgid "Son vieux zem est devant la maison. Il roule encore, prends-le."
+msgstr "His old zem is in front of the house. It still runs, take it."
+
+#: scripts/histoire.gd:172
+msgid "Tiens, 5 000 francs : va me chercher un sac de riz à l'Ararat."
+msgstr "Here, 5,000 francs: go get me a bag of rice at the Ararat."
+
+#: scripts/histoire.gd:173
+msgid "Le zem de papa"
+msgstr "Dad's zem"
+
+#: scripts/histoire.gd:174
+msgid "Monte sur le zem de ton père (E)"
+msgstr "Get on your father's zem (E)"
+
+#: scripts/histoire.gd:175
+msgid "Achète un sac de riz à l'Ararat Hypermarket"
+msgstr "Buy a bag of rice at the Ararat Hypermarket"
+
+#: scripts/histoire.gd:176
+msgid "Rapporte le riz à la maison"
+msgstr "Bring the rice home"
+
+#: scripts/histoire.gd:177
+msgid "Donne le riz (T)"
+msgstr "Give the rice (T)"
+
+#: scripts/histoire.gd:178
+msgid "Bien ! Va voir Vieux Codjo au maquis du coin, il cherche quelqu'un pour des livraisons."
+msgstr "Good! Go see Old Codjo at the corner maquis, he's looking for someone to make deliveries."
+
+#: scripts/histoire.gd:179
+msgid "Livraison en zem"
+msgstr "Zem delivery"
+
+#: scripts/histoire.gd:180 scripts/histoire.gd:187
+msgid "Parle à Vieux Codjo"
+msgstr "Talk to Old Codjo"
+
+#: scripts/histoire.gd:181
+msgid "C'est toi l'enfant de Basile ? Ton père réparait tout ce qui roule et tout ce qui vole."
+msgstr "You're Basile's kid? Your father fixed anything that rolled and anything that flew."
+
+#: scripts/histoire.gd:182
+msgid "Tiens ce colis. Livre-le à l'étal là-bas, en moins de trois minutes. Le client n'attend pas !"
+msgstr "Take this parcel. Deliver it to that stall over there, in under three minutes. The customer won't wait!"
+
+#: scripts/histoire.gd:183 scripts/histoire.gd:184 scripts/histoire.gd:185 scripts/histoire.gd:391
+msgid "Colis"
+msgstr "Parcel"
+
+#: scripts/histoire.gd:184
+msgid "Livre le colis"
+msgstr "Deliver the parcel"
+
+#: scripts/histoire.gd:186
+msgid "Course client"
+msgstr "Customer ride"
+
+#: scripts/histoire.gd:188
+msgid "Un voyageur attend devant l'aérogare. Il veut aller à Sweet Dream Beach. Fais vite !"
+msgstr "A traveller is waiting outside the terminal. He wants to go to Sweet Dream Beach. Hurry!"
+
+#: scripts/histoire.gd:189
+msgid "Va chercher le client devant l'aérogare (en zem)"
+msgstr "Pick up the customer outside the terminal (by zem)"
+
+#: scripts/histoire.gd:190
+msgid "Dépose le client à Sweet Dream Beach"
+msgstr "Drop the customer at Sweet Dream Beach"
+
+#: scripts/histoire.gd:191
+msgid "Merci, %s ! Bonne route."
+msgstr "Thanks, %s! Safe travels."
+
+#: scripts/histoire.gd:192
+msgid "Au marché"
+msgstr "At the market"
+
+#: scripts/histoire.gd:194
+msgid "Il me faut de l'huile et une boîte de tomate pour la sauce. Va à l'Ararat."
+msgstr "I need oil and a can of tomato for the sauce. Go to the Ararat."
+
+#: scripts/histoire.gd:195
+msgid "Voilà 2 000 francs pour les courses."
+msgstr "Here's 2,000 francs for the shopping."
+
+#: scripts/histoire.gd:196
+msgid "Achète de l'huile"
+msgstr "Buy oil"
+
+#: scripts/histoire.gd:197
+msgid "Achète une boîte de tomate"
+msgstr "Buy a can of tomato"
+
+#: scripts/histoire.gd:198
+msgid "Rentre à la maison"
+msgstr "Go back home"
+
+#: scripts/histoire.gd:199 scripts/histoire.gd:230
+msgid "Donne les courses (T)"
+msgstr "Give the shopping (T)"
+
+#: scripts/histoire.gd:200
+msgid "Merci. Écoute... j'ai gardé quelque chose de ton père."
+msgstr "Thank you. Listen... I kept something of your father's."
+
+#: scripts/histoire.gd:201
+msgid "Son carnet. Il a écrit un mot la veille du dernier vol : « Épave, cabine, rangée 12 »."
+msgstr "His notebook. He wrote something the night before the last flight: \"Wreck, cabin, row 12\"."
+
+#: scripts/histoire.gd:202
+msgid "L'épave de la plage ? Papa y était ?"
+msgstr "The wreck on the beach? Dad was there?"
+
+#: scripts/histoire.gd:203
+msgid "Je ne sais pas. Mais sois prudent. La nuit, la police patrouille sur la plage."
+msgstr "I don't know. But be careful. At night, the police patrol the beach."
+
+#: scripts/histoire.gd:203
+msgid "Carnet de Basile"
+msgstr "Basile's notebook"
+
+#: scripts/histoire.gd:204 scripts/hud_carte.gd:39 scripts/taxi.gd:17
+msgid "L'Épave Volante"
+msgstr "The Flying Wreck"
+
+#: scripts/histoire.gd:205
+msgid "Le soir tombe..."
+msgstr "Evening falls..."
+
+#: scripts/histoire.gd:206
+msgid "Va à l'épave, sur la plage"
+msgstr "Go to the wreck, on the beach"
+
+#: scripts/histoire.gd:207
+msgid "Fouille la cabine, rangée 12 (T)"
+msgstr "Search the cabin, row 12 (T)"
+
+#: scripts/histoire.gd:208
+msgid "Une plaque d'avion arrachée... et un nom gravé : « Cdt Hounkpè »."
+msgstr "A plate torn from a plane... and an engraved name: \"Cdt Hounkpè\"."
+
+#: scripts/histoire.gd:209
+msgid "Plaque du cargo"
+msgstr "Cargo plate"
+
+#: scripts/histoire.gd:210
+msgid "Une patrouille ! Échappe à la police"
+msgstr "A patrol! Escape the police"
+
+#: scripts/histoire.gd:211
+msgid "Le Commandant"
+msgstr "The Commander"
+
+#: scripts/histoire.gd:212
+msgid "Parle au Commandant Hounkpè"
+msgstr "Talk to Commander Hounkpè"
+
+#: scripts/histoire.gd:213
+msgid "Dossou... Tu as les yeux de Basile."
+msgstr "Dossou... You have Basile's eyes."
+
+#: scripts/histoire.gd:214
+msgid "Ce cargo ne transportait pas que du coton. Ton père avait pris des photos du chargement."
+msgstr "That cargo wasn't just carrying cotton. Your father had taken photos of the load."
+
+#: scripts/histoire.gd:215
+msgid "Il les a cachées au bord du tarmac, près des postes de stationnement. Va voir, de nuit."
+msgstr "He hid them by the tarmac, near the parking stands. Go and look, at night."
+
+#: scripts/histoire.gd:216
+msgid "Le hangar"
+msgstr "The hangar"
+
+#: scripts/histoire.gd:217
+msgid "La nuit tombe sur l'aéroport..."
+msgstr "Night falls on the airport..."
+
+#: scripts/histoire.gd:218
+msgid "Fouille les trois postes du tarmac (T)"
+msgstr "Search the three tarmac stands (T)"
+
+#: scripts/histoire.gd:219
+msgid "Des photos de caisses... et le logo d'une société inconnue."
+msgstr "Photos of crates... and the logo of an unknown company."
+
+#: scripts/histoire.gd:220
+msgid "L'alerte est donnée ! Échappe à la police"
+msgstr "The alarm is raised! Escape the police"
+
+#: scripts/histoire.gd:221
+msgid "FIN DE L'ACTE 1"
+msgstr "END OF ACT 1"
+
+#: scripts/histoire.gd:221
+msgid "Quelqu'un, à l'aéroport, savait. À suivre."
+msgstr "Someone at the airport knew. To be continued."
+
+#: scripts/histoire.gd:223
+msgid "Ravitaillement"
+msgstr "Supplies"
+
+#: scripts/histoire.gd:224
+msgid "Parle à Maman Fifi, la patronne du maquis"
+msgstr "Talk to Mama Fifi, the maquis owner"
+
+#: scripts/histoire.gd:225
+msgid "C'est toi le petit de Codjo ? Le maquis ouvre ce soir et je n'ai plus d'huile ni d'eau !"
+msgstr "You're Codjo's boy? The maquis opens tonight and I've run out of oil and water!"
+
+#: scripts/histoire.gd:226
+msgid "Voilà 2 000 francs pour les courses. File à l'Ararat et reviens vite, je te paierai bien."
+msgstr "Here's 2,000 francs for the shopping. Hurry to the Ararat and come back quick, I'll pay you well."
+
+#: scripts/histoire.gd:227
+msgid "Achète de l'huile à l'Ararat"
+msgstr "Buy oil at the Ararat"
+
+#: scripts/histoire.gd:228
+msgid "Achète de l'eau minérale"
+msgstr "Buy mineral water"
+
+#: scripts/histoire.gd:229
+msgid "Rapporte les courses au maquis de Haie Verte"
+msgstr "Bring the shopping back to the Haie Verte maquis"
+
+#: scripts/histoire.gd:231
+msgid "Ah, tu es rapide ! Reviens quand tu veux, il y a toujours du travail ici."
+msgstr "Ah, you're fast! Come back whenever you like, there's always work here."
+
+#: scripts/histoire.gd:232
+msgid "Le grand tour"
+msgstr "The grand tour"
+
+#: scripts/histoire.gd:233
+msgid "Parle à Maman Fifi"
+msgstr "Talk to Mama Fifi"
+
+#: scripts/histoire.gd:234
+msgid "Deux clients arrivent par l'avion du soir. Va les chercher à l'aérogare, l'un après l'autre."
+msgstr "Two customers are arriving on the evening flight. Pick them up at the terminal, one after the other."
+
+#: scripts/histoire.gd:235
+msgid "Premier client : devant l'aérogare (en zem)"
+msgstr "First customer: outside the terminal (by zem)"
+
+#: scripts/histoire.gd:236
+msgid "Dépose-le à Haie Verte"
+msgstr "Drop him at Haie Verte"
+
+#: scripts/histoire.gd:237
+msgid "Merci ! Bonne soirée."
+msgstr "Thanks! Have a good evening."
+
+#: scripts/histoire.gd:238
+msgid "Second client : retourne à l'aérogare"
+msgstr "Second customer: go back to the terminal"
+
+#: scripts/histoire.gd:239
+msgid "Dépose-le au maquis de Maman Fifi"
+msgstr "Drop him at Mama Fifi's maquis"
+
+#: scripts/histoire.gd:240
+msgid "On m'a dit que c'était le meilleur maquis du quartier !"
+msgstr "They told me it's the best maquis in the neighbourhood!"
+
+#: scripts/histoire.gd:251
+msgid "LE DERNIER VOL"
+msgstr "THE LAST FLIGHT"
+
+#: scripts/histoire.gd:251
+msgid "Cotonou, près de l'aéroport"
+msgstr "Cotonou, near the airport"
+
+#: scripts/histoire.gd:267 scripts/histoire.gd:529
+msgid "Petits boulots : sur le zem, T pour chercher un client"
+msgstr "Odd jobs: on the zem, T to look for a customer"
+
+#: scripts/histoire.gd:274
+msgid "Nouvelle mission : « %s » (va dans le cercle jaune)"
+msgstr "New mission: \"%s\" (go into the yellow circle)"
+
+#: scripts/histoire.gd:354
+msgid "Argent des courses"
+msgstr "Shopping money"
+
+#: scripts/histoire.gd:367
+msgid "MISSION RÉUSSIE"
+msgstr "MISSION PASSED"
+
+#: scripts/histoire.gd:380
+msgid "MISSION ÉCHOUÉE"
+msgstr "MISSION FAILED"
+
+#: scripts/histoire.gd:406
+msgid "%s   %d:%02d"
+msgstr ""
+
+#: scripts/histoire.gd:408
+msgid "Trop tard !"
+msgstr "Too late!"
+
+#: scripts/histoire.gd:426
+msgid "T : parler"
+msgstr "T: talk"
+
+#: scripts/histoire.gd:435 scripts/territoires.gd:265
+msgid "Tu as perdu %s."
+msgstr "You lost %s."
+
+#: scripts/histoire.gd:449
+msgid "Arrête-toi près du client"
+msgstr "Stop next to the customer"
+
+#: scripts/histoire.gd:461
+msgid "T : fouiller"
+msgstr "T: search"
+
+#: scripts/histoire.gd:464
+msgid "Trouvé ! (%d restant)"
+msgstr "Found! (%d left)"
+
+#: scripts/histoire.gd:464
+msgid "Trouvé !"
+msgstr "Found!"
+
+#: scripts/histoire.gd:486
+msgid "T : chercher un client"
+msgstr "T: look for a customer"
+
+#: scripts/histoire.gd:495
+msgid "Va chercher le client"
+msgstr "Pick up the customer"
+
+#: scripts/histoire.gd:504
+msgid "Dépose le client"
+msgstr "Drop off the customer"
+
+#: scripts/histoire.gd:512
+msgid "Course de zem"
+msgstr "Zem ride"
+
+#: scripts/histoire.gd:517
+msgid "Le client est descendu sans payer."
+msgstr "The customer got off without paying."
+
+#: scripts/histoire.gd:566
+msgid "Sena"
+msgstr ""
+
+#: scripts/histoire.gd:566 scripts/telephone.gd:15 scripts/telephone.gd:18
+msgid "Tante Mireille"
+msgstr "Aunt Mireille"
+
+#: scripts/histoire.gd:566 scripts/telephone.gd:15 scripts/telephone.gd:19
+msgid "Vieux Codjo"
+msgstr "Old Codjo"
+
+#: scripts/histoire.gd:566
+msgid "Cdt Hounkpè"
+msgstr ""
+
+#: scripts/histoire.gd:567 scripts/telephone.gd:15 scripts/telephone.gd:20
+msgid "Maman Fifi"
+msgstr "Mama Fifi"
+
+#: scripts/histoire.gd:567
+msgid "Le client"
+msgstr "The customer"
+
+#: scripts/histoire.gd:567
+msgid "La vendeuse"
+msgstr "The seller"
+
+#: scripts/histoire.gd:702
+msgid "%s   (%d m)"
+msgstr ""
+
+#: scripts/histoire.gd:728
+msgid "Plus tard, dans la nuit..."
+msgstr "Later that night..."
+
+#: scripts/hud_carte.gd:37
+msgid "Aéroport Int. Cardinal Cotodji"
+msgstr "Cardinal Cotodji Int. Airport"
+
+#: scripts/hud_carte.gd:38 scripts/lieux.gd:19 scripts/taxi.gd:15
+msgid "Ararat Hypermarket"
+msgstr ""
+
+#: scripts/hud_carte.gd:40 scripts/taxi.gd:16
+msgid "Sweet Dream Beach"
+msgstr ""
+
+#: scripts/hud_carte.gd:41 scripts/taxi.gd:18
+msgid "Haie Verte"
+msgstr ""
+
+#: scripts/hud_carte.gd:42 scripts/taxi.gd:19
+msgid "Cadjéhoué"
+msgstr ""
+
+#: scripts/hud_carte.gd:43
+msgid "Maquis La Plaja"
+msgstr ""
+
+#: scripts/hud_carte.gd:44
+msgid "Plage"
+msgstr "Beach"
+
+#: scripts/hud_carte.gd:468 scripts/hud_carte.gd:760
+msgid "Destination : %s"
+msgstr "Destination: %s"
+
+#: scripts/hud_carte.gd:469 scripts/hud_jeu.gd:218 scripts/lieux.gd:376
+msgid "\n"
+msgstr ""
+
+#: scripts/hud_carte.gd:499
+msgid "%d m"
+msgstr ""
+
+#: scripts/hud_carte.gd:499
+msgid "%.1f km"
+msgstr ""
+
+#: scripts/hud_carte.gd:736 scripts/hud_carte.gd:737 scripts/lieux.gd:19
+msgid "Chez vous"
+msgstr "Home"
+
+#: scripts/hud_carte.gd:756
+msgid "Clic gauche / Entrée / A : destination     Clic droit / P / X : marqueur     Molette / gâchettes : zoom     Glisser / ZQSD : déplacer     M / Échap : fermer"
+msgstr "Left click / Enter / A: destination     Right click / P / X: marker     Wheel / triggers: zoom     Drag / WASD: move     M / Esc: close"
+
+#: scripts/hud_jeu.gd:197
+msgid "Stick gauche : marcher"
+msgstr "Left stick: walk"
+
+#: scripts/hud_jeu.gd:197
+msgid "Stick droit : caméra"
+msgstr "Right stick: camera"
+
+#: scripts/hud_jeu.gd:197
+msgid "A (tapoter) : courir"
+msgstr "A (tap): run"
+
+#: scripts/hud_jeu.gd:197
+msgid "X : sauter / escalader"
+msgstr "X: jump / climb"
+
+#: scripts/hud_jeu.gd:198
+msgid "R3 : s'accroupir"
+msgstr "R3: crouch"
+
+#: scripts/hud_jeu.gd:198
+msgid "Y : monter dans un véhicule"
+msgstr "Y: get in a vehicle"
+
+#: scripts/hud_jeu.gd:198
+msgid "Croix droite : parler / acheter"
+msgstr "D-pad right: talk / buy"
+
+#: scripts/hud_jeu.gd:198
+msgid "Select : carte   Croix bas : vue"
+msgstr "Select: map   D-pad down: view"
+
+#: scripts/hud_jeu.gd:198
+msgid "Croix gauche : inventaire (téléphone, torche)"
+msgstr "D-pad left: inventory (phone, torch)"
+
+#: scripts/hud_jeu.gd:198
+msgid "RB : arme   LB : viser   L3 : recharger"
+msgstr "RB: weapon   LB: aim   L3: reload"
+
+#: scripts/hud_jeu.gd:200
+msgid "RT : accélérer   LT : freiner"
+msgstr "RT: accelerate   LT: brake"
+
+#: scripts/hud_jeu.gd:200 scripts/hud_jeu.gd:203
+msgid "Stick gauche : tourner"
+msgstr "Left stick: steer"
+
+#: scripts/hud_jeu.gd:200
+msgid "RB : frein arrière"
+msgstr "RB: rear brake"
+
+#: scripts/hud_jeu.gd:200
+msgid "L3 : klaxon"
+msgstr "L3: horn"
+
+#: scripts/hud_jeu.gd:201 scripts/hud_jeu.gd:204
+msgid "Y : descendre"
+msgstr "Y: get off"
+
+#: scripts/hud_jeu.gd:201
+msgid "Croix droite : chercher un client"
+msgstr "D-pad right: look for a customer"
+
+#: scripts/hud_jeu.gd:201 scripts/hud_jeu.gd:204
+msgid "Croix bas : limiteur 50 km/h"
+msgstr "D-pad down: 50 km/h limiter"
+
+#: scripts/hud_jeu.gd:203
+msgid "RT : accélérer   LT : freiner / reculer"
+msgstr "RT: accelerate   LT: brake / reverse"
+
+#: scripts/hud_jeu.gd:203
+msgid "RB : frein à main"
+msgstr "RB: handbrake"
+
+#: scripts/hud_jeu.gd:208
+msgid "Z Q S D : marcher"
+msgstr "W A S D: walk"
+
+#: scripts/hud_jeu.gd:208
+msgid "Souris : caméra"
+msgstr "Mouse: camera"
+
+#: scripts/hud_jeu.gd:208
+msgid "Maj (tapoter) : courir   Alt : marche lente"
+msgstr "Shift (tap): run   Alt: slow walk"
+
+#: scripts/hud_jeu.gd:209
+msgid "Espace : sauter / escalader"
+msgstr "Space: jump / climb"
+
+#: scripts/hud_jeu.gd:209
+msgid "C : s'accroupir"
+msgstr "C: crouch"
+
+#: scripts/hud_jeu.gd:209
+msgid "E : monter dans un véhicule"
+msgstr "E: get in a vehicle"
+
+#: scripts/hud_jeu.gd:209
+msgid "T : parler / acheter"
+msgstr "T: talk / buy"
+
+#: scripts/hud_jeu.gd:210
+msgid "M : carte   V : vue"
+msgstr "M: map   V: view"
+
+#: scripts/hud_jeu.gd:210
+msgid "I : inventaire   P : téléphone   L : torche"
+msgstr "I: inventory   P: phone   L: torch"
+
+#: scripts/hud_jeu.gd:210
+msgid "Tab : arme   clic droit : viser   R : recharger"
+msgstr "Tab: weapon   right click: aim   R: reload"
+
+#: scripts/hud_jeu.gd:212
+msgid "Z : accélérer   S : freiner"
+msgstr "W: accelerate   S: brake"
+
+#: scripts/hud_jeu.gd:212 scripts/hud_jeu.gd:215
+msgid "Q D : tourner"
+msgstr "A D: steer"
+
+#: scripts/hud_jeu.gd:212
+msgid "Espace : frein arrière"
+msgstr "Space: rear brake"
+
+#: scripts/hud_jeu.gd:212 scripts/hud_jeu.gd:215
+msgid "H : klaxon"
+msgstr "H: horn"
+
+#: scripts/hud_jeu.gd:213 scripts/hud_jeu.gd:216
+msgid "E : descendre"
+msgstr "E: get off"
+
+#: scripts/hud_jeu.gd:213
+msgid "T : chercher un client (à l'arrêt)"
+msgstr "T: look for a customer (when stopped)"
+
+#: scripts/hud_jeu.gd:213 scripts/hud_jeu.gd:216
+msgid "K : limiteur 50 km/h"
+msgstr "K: 50 km/h limiter"
+
+#: scripts/hud_jeu.gd:215
+msgid "Z : accélérer   S : freiner / reculer"
+msgstr "W: accelerate   S: brake / reverse"
+
+#: scripts/hud_jeu.gd:215
+msgid "Espace : frein à main"
+msgstr "Space: handbrake"
+
+#: scripts/hud_jeu.gd:217
+msgid "Croix haut"
+msgstr "D-pad up"
+
+#: scripts/hud_jeu.gd:217
+msgid " : cacher l'aide"
+msgstr ": hide help"
+
+#: scripts/hud_jeu.gd:277
+msgid "   %d / %d"
+msgstr ""
+
+#: scripts/hud_jeu.gd:284
+msgid "%d km/h"
+msgstr ""
+
+#: scripts/hud_jeu.gd:285 scripts/hud_jeu.gd:286
+msgid " + tr("
+msgstr ""
+
+#: scripts/hud_jeu.gd:285
+msgid ") % roundi(Limiteur.vitesse_kmh) if Limiteur.actif else "
+msgstr ""
+
+#: scripts/inventaire.gd:16
+msgid "Messages, carte, zem à la demande, appareil photo."
+msgstr "Messages, map, zem on demand, camera."
+
+#: scripts/inventaire.gd:17
+msgid "Lampe torche à piles. Pratique la nuit et pendant les délestages."
+msgstr "Battery torch. Handy at night and during power cuts."
+
+#: scripts/inventaire.gd:18
+msgid "Pain frais de l'étal."
+msgstr "Fresh bread from the stall."
+
+#: scripts/inventaire.gd:19
+msgid "Riz parfumé, pour la maison."
+msgstr "Fragrant rice, for the house."
+
+#: scripts/inventaire.gd:20
+msgid "Huile d'arachide."
+msgstr "Peanut oil."
+
+#: scripts/inventaire.gd:21
+msgid "Concentré de tomate."
+msgstr "Tomato paste."
+
+#: scripts/inventaire.gd:22
+msgid "Essence du kpayo, en bouteille."
+msgstr "Petrol from the kpayo, in a bottle."
+
+#: scripts/inventaire.gd:23
+msgid "Recharge pour le smartphone."
+msgstr "Top-up for the smartphone."
+
+#: scripts/inventaire.gd:24
+msgid "Une puce de plus."
+msgstr "One more SIM."
+
+#: scripts/inventaire.gd:25
+msgid "Un colis à livrer. Ne pas ouvrir."
+msgstr "A parcel to deliver. Do not open."
+
+#: scripts/inventaire.gd:77
+msgid "Haut / Bas choisir · Entrée utiliser · I fermer"
+msgstr "Up / Down choose · Enter use · I close"
+
+#: scripts/inventaire.gd:154
+msgid "Prendre en main"
+msgstr "Take in hand"
+
+#: scripts/inventaire.gd:181
+msgid "Poches vides."
+msgstr "Empty pockets."
+
+#: scripts/inventaire.gd:190
+msgid "  x%d"
+msgstr ""
+
+#: scripts/inventaire.gd:190
+msgid "   [%s]"
+msgstr ""
+
+#: scripts/inventaire.gd:219
+msgid "Tu manges : %s"
+msgstr "You eat: %s"
+
+#: scripts/lieux.gd:19
+msgid "Aéroport International Cardinal Cotodji"
+msgstr "Cardinal Cotodji International Airport"
+
+#: scripts/lieux.gd:23
+msgid "Épicerie"
+msgstr "Groceries"
+
+#: scripts/lieux.gd:23
+msgid "Boissons"
+msgstr "Drinks"
+
+#: scripts/lieux.gd:23
+msgid "Hygiène et beauté"
+msgstr "Health and beauty"
+
+#: scripts/lieux.gd:23
+msgid "Entretien"
+msgstr "Household"
+
+#: scripts/lieux.gd:24
+msgid "Produits laitiers"
+msgstr "Dairy"
+
+#: scripts/lieux.gd:24
+msgid "Conserves"
+msgstr "Canned goods"
+
+#: scripts/lieux.gd:24
+msgid "Bébé"
+msgstr "Baby"
+
+#: scripts/lieux.gd:24
+msgid "Riz et céréales"
+msgstr "Rice and cereals"
+
+#: scripts/lieux.gd:24
+msgid "Huiles"
+msgstr "Oils"
+
+#: scripts/lieux.gd:25
+msgid "Sucre et café"
+msgstr "Sugar and coffee"
+
+#: scripts/lieux.gd:25
+msgid "Thé et infusions"
+msgstr "Tea and infusions"
+
+#: scripts/lieux.gd:25
+msgid "Biscuits"
+msgstr "Biscuits"
+
+#: scripts/lieux.gd:25
+msgid "Boulangerie"
+msgstr "Bakery"
+
+#: scripts/lieux.gd:26
+msgid "Fruits et légumes"
+msgstr "Fruit and vegetables"
+
+#: scripts/lieux.gd:26
+msgid "Gros conditionnement"
+msgstr "Bulk"
+
+#: scripts/lieux.gd:27
+msgid "AIR GBÉ"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "ATLANTIQUE EXPRESS"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "SAHEL AIRWAYS"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "GOLFE AVIATION"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "TRANS-OUEST"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "AIR LAGUNE"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Air Gbé 214"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Paris"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Atlantique Express 33"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Abidjan"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Sahel Airways 508"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Ouagadougou"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Golfe Aviation 72"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Lagos"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Air Gbé 118"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Bruxelles"
+msgstr "Brussels"
+
+#: scripts/lieux.gd:29
+msgid "Trans-Ouest 401"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Dakar"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Air Lagune 9"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Lomé"
+msgstr "Lomé"
+
+#: scripts/lieux.gd:30
+msgid "Atlantique Express 61"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Accra"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Air Gbé 300"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Casablanca"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Sahel Airways 17"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Douala"
+msgstr ""
+
+#: scripts/lieux.gd:202 scripts/partie.gd:59 scripts/partie.gd:62
+msgid "Interieur"
+msgstr "Interior"
+
+#: scripts/lieux.gd:279 scripts/props.gd:29
+msgid "ARARAT HYPERMARKET"
+msgstr ""
+
+#: scripts/lieux.gd:282
+msgid "Tout sous un même toit"
+msgstr "Everything under one roof"
+
+#: scripts/lieux.gd:287
+msgid "Caisse %d"
+msgstr "Checkout %d"
+
+#: scripts/lieux.gd:293
+msgid "AÉROPORT INTERNATIONAL CARDINAL COTODJI"
+msgstr "CARDINAL COTODJI INTERNATIONAL AIRPORT"
+
+#: scripts/lieux.gd:297
+msgid "%s · Comptoir %d"
+msgstr "%s · Desk %d"
+
+#: scripts/lieux.gd:304
+msgid "EMBARQUEMENT\nPassagers munis d'une carte d'embarquement uniquement"
+msgstr "BOARDING\nPassengers with a boarding pass only"
+
+#: scripts/lieux.gd:308
+msgid "CAFÉ DU LITTORAL"
+msgstr "LITTORAL CAFÉ"
+
+#: scripts/lieux.gd:311
+msgid "LIBRAIRIE · PRESSE"
+msgstr "BOOKSHOP · PRESS"
+
+#: scripts/lieux.gd:358
+msgid "DÉPARTS"
+msgstr "DEPARTURES"
+
+#: scripts/lieux.gd:358
+msgid "Destination"
+msgstr "Destination"
+
+#: scripts/lieux.gd:358
+msgid "Heure"
+msgstr "Time"
+
+#: scripts/lieux.gd:358
+msgid "Porte"
+msgstr "Gate"
+
+#: scripts/lieux.gd:358
+msgid "État"
+msgstr "Status"
+
+#: scripts/lieux.gd:361
+msgid "À l'heure"
+msgstr "On time"
+
+#: scripts/lieux.gd:366
+msgid "Embarquement"
+msgstr "Boarding"
+
+#: scripts/lieux.gd:368
+msgid "Retardé"
+msgstr "Delayed"
+
+#: scripts/lieux.gd:432
+msgid "E : dormir jusqu'au matin et sauvegarder"
+msgstr "E: sleep until morning and save"
+
+#: scripts/lieux.gd:465
+msgid "Une nouvelle journée commence"
+msgstr "A new day begins"
+
+#: scripts/menus.gd:59
+msgid "v%s"
+msgstr ""
+
+#: scripts/menus.gd:139
+msgid "Gbê Town Bénin · Le Dernier Vol"
+msgstr "Gbê Town Bénin · The Last Flight"
+
+#: scripts/menus.gd:143
+msgid "Nouvelle partie"
+msgstr "New game"
+
+#: scripts/menus.gd:144
+msgid "Continuer"
+msgstr "Continue"
+
+#: scripts/menus.gd:148 scripts/menus.gd:161 scripts/menus.gd:366
+msgid "Charger une partie"
+msgstr "Load a game"
+
+#: scripts/menus.gd:149 scripts/menus.gd:162 scripts/menus.gd:238
+msgid "Options"
+msgstr "Options"
+
+#: scripts/menus.gd:150 scripts/menus.gd:166 scripts/menus.gd:175 scripts/menus.gd:210
+msgid "Crédits"
+msgstr "Credits"
+
+#: scripts/menus.gd:151
+msgid "Quitter"
+msgstr "Quit"
+
+#: scripts/menus.gd:157
+msgid "Pause"
+msgstr "Pause"
+
+#: scripts/menus.gd:158
+msgid "Reprendre"
+msgstr "Resume"
+
+#: scripts/menus.gd:160 scripts/menus.gd:366
+msgid "Sauvegarder"
+msgstr "Save"
+
+#: scripts/menus.gd:160
+msgid "Sauvegarder (impossible : recherché)"
+msgstr "Save (impossible: wanted)"
+
+#: scripts/menus.gd:163 scripts/menus.gd:388
+msgid "Statistiques"
+msgstr "Statistics"
+
+#: scripts/menus.gd:164 scripts/menus.gd:345
+msgid "Succès"
+msgstr "Achievements"
+
+#: scripts/menus.gd:165 scripts/menus.gd:219
+msgid "Commandes"
+msgstr "Controls"
+
+#: scripts/menus.gd:167 scripts/menus.gd:211
+msgid "Quitter vers l'écran titre"
+msgstr "Quit to title screen"
+
+#: scripts/menus.gd:188 scripts/menus.gd:224
+msgid "Retour"
+msgstr "Back"
+
+#: scripts/menus.gd:199
+msgid "À suivre"
+msgstr "To be continued"
+
+#: scripts/menus.gd:207
+msgid "Continuer à jouer"
+msgstr "Keep playing"
+
+#: scripts/menus.gd:209
+msgid "Donner mon avis"
+msgstr "Give feedback"
+
+#: scripts/menus.gd:240
+msgid "Volume"
+msgstr "Volume"
+
+#: scripts/menus.gd:241
+msgid "Véhicules"
+msgstr "Vehicles"
+
+#: scripts/menus.gd:242
+msgid "Ambiance (ville, mer, pluie)"
+msgstr "Ambience (city, sea, rain)"
+
+#: scripts/menus.gd:243
+msgid "Effets et voix"
+msgstr "Effects and voices"
+
+#: scripts/menus.gd:244
+msgid "Sensibilité de la souris"
+msgstr "Mouse sensitivity"
+
+#: scripts/menus.gd:245
+msgid "Effets de caméra (recentrage, secousses)"
+msgstr "Camera effects (recentring, shake)"
+
+#: scripts/menus.gd:246
+msgid "Plein écran"
+msgstr "Fullscreen"
+
+#: scripts/menus.gd:247
+msgid "Sous-titres"
+msgstr "Subtitles"
+
+#: scripts/menus.gd:248
+msgid "Taille des sous-titres"
+msgstr "Subtitle size"
+
+#: scripts/menus.gd:249
+msgid "Taille de l'interface"
+msgstr "Interface size"
+
+#: scripts/menus.gd:250
+msgid "Aide à la visée (souris)"
+msgstr "Aim assist (mouse)"
+
+#: scripts/menus.gd:251 scripts/menus.gd:304
+msgid "Touches du clavier"
+msgstr "Keyboard keys"
+
+#: scripts/menus.gd:252
+msgid "Violence réduite (armes moins puissantes)"
+msgstr "Reduced violence (weaker weapons)"
+
+#: scripts/menus.gd:255
+msgid "Qualité graphique"
+msgstr "Graphics quality"
+
+#: scripts/menus.gd:266
+msgid "Appliquer et revenir"
+msgstr "Apply and go back"
+
+#: scripts/menus.gd:312 scripts/telephone.gd:245
+msgid "%s : %s"
+msgstr ""
+
+#: scripts/menus.gd:315
+msgid "Touches par défaut"
+msgstr "Default keys"
+
+#: scripts/menus.gd:325 scripts/menus.gd:360 scripts/menus.gd:380 scripts/menus.gd:422
+msgid "Revenir"
+msgstr "Back"
+
+#: scripts/menus.gd:357
+msgid "%d / %d succès"
+msgstr "%d / %d achievements"
+
+#: scripts/menus.gd:370
+msgid "%d.  %s"
+msgstr ""
+
+#: scripts/menus.gd:412
+msgid "Progression du jeu : %d %%    Fresques : %d / %d"
+msgstr "Game progress: %d %%    Murals: %d / %d"
+
+#: scripts/menus.gd:418
+msgid "Silhouette : %s    Courses de zem : %d    Missions : %d    Amendes : %d"
+msgstr "Figure: %s    Zem rides: %d    Missions: %d    Fines: %d"
+
+#: scripts/mode_photo.gd:27
+msgid "MODE PHOTO   Entrée capture · ZQSD / souris bouger · Espace / Ctrl hauteur · molette zoom · F12 sortir"
+msgstr "PHOTO MODE   Enter capture · WASD / mouse move · Space / Ctrl height · wheel zoom · F12 exit"
+
+#: scripts/partie.gd:20
+msgid "Smartphone"
+msgstr ""
+
+#: scripts/partie.gd:20
+msgid "Torche"
+msgstr "Torch"
+
+#: scripts/partie.gd:40
+msgid "Avancer"
+msgstr "Forward"
+
+#: scripts/partie.gd:40
+msgid "Reculer"
+msgstr "Back"
+
+#: scripts/partie.gd:40
+msgid "Gauche"
+msgstr "Left"
+
+#: scripts/partie.gd:41
+msgid "Droite"
+msgstr "Right"
+
+#: scripts/partie.gd:41
+msgid "Sauter"
+msgstr "Jump"
+
+#: scripts/partie.gd:41
+msgid "Courir"
+msgstr "Run"
+
+#: scripts/partie.gd:41
+msgid "S'accroupir"
+msgstr "Crouch"
+
+#: scripts/partie.gd:41
+msgid "Monter / descendre"
+msgstr "Get in / out"
+
+#: scripts/partie.gd:42
+msgid "Parler / acheter"
+msgstr "Talk / buy"
+
+#: scripts/partie.gd:42
+msgid "Frapper / tirer"
+msgstr "Punch / shoot"
+
+#: scripts/partie.gd:42
+msgid "Carte"
+msgstr "Map"
+
+#: scripts/partie.gd:42
+msgid "Klaxon"
+msgstr "Horn"
+
+#: scripts/partie.gd:43 scripts/tactile.gd:62
+msgid "Frein à main"
+msgstr "Handbrake"
+
+#: scripts/partie.gd:43
+msgid "Accélérer"
+msgstr "Accelerate"
+
+#: scripts/partie.gd:43
+msgid "Freiner"
+msgstr "Brake"
+
+#: scripts/partie.gd:48 scripts/partie.gd:53 scripts/partie.gd:401
+msgid "Vehicules"
+msgstr "Vehicles"
+
+#: scripts/partie.gd:49 scripts/partie.gd:53 scripts/partie.gd:401
+msgid "Ambiance"
+msgstr "Ambience"
+
+#: scripts/partie.gd:49 scripts/partie.gd:53 scripts/partie.gd:85 scripts/partie.gd:401
+msgid "Effets"
+msgstr "Effects"
+
+#: scripts/partie.gd:53
+msgid "Voix"
+msgstr "Voices"
+
+#: scripts/partie.gd:58 scripts/partie.gd:63
+msgid "Master"
+msgstr ""
+
+#: scripts/partie.gd:127
+msgid " F"
+msgstr ""
+
+#: scripts/partie.gd:135
+msgid "+%s : %s"
+msgstr ""
+
+#: scripts/partie.gd:141
+msgid "Pas assez d'argent (%s)"
+msgstr "Not enough money (%s)"
+
+#: scripts/partie.gd:147 scripts/partie.gd:158
+msgid "-%s : %s"
+msgstr ""
+
+#: scripts/partie.gd:252
+msgid "Vide"
+msgstr "Empty"
+
+#: scripts/partie.gd:255
+msgid "Illisible"
+msgstr "Unreadable"
+
+#: scripts/partie.gd:256
+msgid "%s · %d missions · %s · %s"
+msgstr ""
+
+#: scripts/partie.gd:334
+msgid "\t"
+msgstr ""
+
+#: scripts/partie.gd:335
+msgid "Partie sauvegardée"
+msgstr "Game saved"
+
+#: scripts/partie.gd:378 scripts/succes.gd:42
+msgid "Partie chargée"
+msgstr "Game loaded"
+
+#: scripts/personnalisation.gd:14
+msgid "Chez Dossou, tailleur"
+msgstr "Chez Dossou, tailor"
+
+#: scripts/personnalisation.gd:15
+msgid "Friperie du Carrefour"
+msgstr "Crossroads Thrift Shop"
+
+#: scripts/personnalisation.gd:16
+msgid "Maillots Sport 229"
+msgstr ""
+
+#: scripts/personnalisation.gd:17
+msgid "Salon Élégance"
+msgstr ""
+
+#: scripts/personnalisation.gd:18
+msgid "Garage de Tonton Codjo"
+msgstr "Uncle Codjo's Garage"
+
+#: scripts/personnalisation.gd:19
+msgid "Agence Immo Gbêkpo"
+msgstr "Gbêkpo Real Estate"
+
+#: scripts/personnalisation.gd:22
+msgid "Chambre à Cadjehoue"
+msgstr "Room in Cadjehoue"
+
+#: scripts/personnalisation.gd:23
+msgid "Appartement à Haie Verte"
+msgstr "Flat in Haie Verte"
+
+#: scripts/personnalisation.gd:28
+msgid "Coupe courte"
+msgstr "Short cut"
+
+#: scripts/personnalisation.gd:28
+msgid "Crâne rasé"
+msgstr "Shaved head"
+
+#: scripts/personnalisation.gd:48
+msgid "Boubou wax sur mesure (motif %d)"
+msgstr "Tailor-made wax boubou (pattern %d)"
+
+#: scripts/personnalisation.gd:52
+msgid "T-shirt %s"
+msgstr ""
+
+#: scripts/personnalisation.gd:53 scripts/personnalisation.gd:158
+msgid "Jean délavé"
+msgstr "Faded jeans"
+
+#: scripts/personnalisation.gd:59
+msgid "Maillot %s"
+msgstr "%s jersey"
+
+#: scripts/personnalisation.gd:65
+msgid "Réparation complète"
+msgstr "Full repair"
+
+#: scripts/personnalisation.gd:65
+msgid "Peinture d'une nouvelle couleur"
+msgstr "Respray in a new colour"
+
+#: scripts/personnalisation.gd:66
+msgid "Klaxon deux tons"
+msgstr "Two-tone horn"
+
+#: scripts/personnalisation.gd:126
+msgid "  —  à vendre"
+msgstr "  —  for sale"
+
+#: scripts/personnalisation.gd:156
+msgid "T-shirt "
+msgstr ""
+
+#: scripts/personnalisation.gd:179
+msgid "Nouvelle tenue : la police ne te reconnaît plus aussi bien."
+msgstr "New outfit: the police won't recognise you as easily."
+
+#: scripts/personnalisation.gd:244
+msgid "Gare ton véhicule devant le garage d'abord."
+msgstr "Park your vehicle in front of the garage first."
+
+#: scripts/personnalisation.gd:252
+msgid "Tonton Codjo : « Elle est comme neuve ! »"
+msgstr "Uncle Codjo: \"Good as new!\""
+
+#: scripts/personnalisation.gd:258
+msgid "Nouvelle couleur : la police a perdu ta trace."
+msgstr "New colour: the police lost track of you."
+
+#: scripts/personnalisation.gd:260
+msgid "Tonton Codjo : « Belle couleur, hein ! »"
+msgstr "Uncle Codjo: \"Nice colour, eh!\""
+
+#: scripts/personnalisation.gd:265
+msgid "Klaxon deux tons monté."
+msgstr "Two-tone horn fitted."
+
+#: scripts/personnalisation.gd:289
+msgid "Tu possèdes déjà ce logement."
+msgstr "You already own this place."
+
+#: scripts/personnalisation.gd:297
+msgid "%s est à toi : E devant la porte pour dormir et sauvegarder."
+msgstr "%s is yours: E at the door to sleep and save."
+
+#: scripts/personnalisation.gd:311
+msgid "E : dormir et sauvegarder (%s)"
+msgstr "E: sleep and save (%s)"
+
+#: scripts/personnalisation.gd:328
+msgid "Une nouvelle journée commence. Partie sauvegardée."
+msgstr "A new day begins. Game saved."
+
+#: scripts/police.gd:84
+msgid "Quelqu'un a appelé la police. Elle arrive dans environ %d min."
+msgstr "Someone called the police. They'll be here in about %d min."
+
+#: scripts/police.gd:203 scripts/succes.gd:40 scripts/succes.gd:42
+msgid "Tu as semé la police"
+msgstr "You lost the police"
+
+#: scripts/police.gd:494
+msgid "Halte ! Police !"
+msgstr "Halt! Police!"
+
+#: scripts/police.gd:494
+msgid "Arrêtez-vous !"
+msgstr "Stop!"
+
+#: scripts/police.gd:494
+msgid "Ne bougez plus !"
+msgstr "Freeze!"
+
+#: scripts/police.gd:559
+msgid "Contravention : excès de vitesse"
+msgstr "Ticket: speeding"
+
+#: scripts/police.gd:561
+msgid "Excès de vitesse !"
+msgstr "Speeding!"
+
+#: scripts/police.gd:575
+msgid "ARRÊTÉ"
+msgstr "BUSTED"
+
+#: scripts/police.gd:575
+msgid "Amende : %s"
+msgstr "Fine: %s"
+
+#: scripts/police.gd:579
+msgid "Amende"
+msgstr "Fine"
+
+#: scripts/police.gd:582
+msgid "Commissariat de Gbê Town"
+msgstr "Gbê Town Police Station"
+
+#: scripts/police.gd:592
+msgid "ÉVANOUI"
+msgstr "PASSED OUT"
+
+#: scripts/police.gd:592
+msgid "Centre de santé Gbêkpo : %s de soins"
+msgstr "Gbêkpo Health Centre: %s for care"
+
+#: scripts/police.gd:596
+msgid "Soins"
+msgstr "Care"
+
+#: scripts/police.gd:599
+msgid "Centre de santé Gbêkpo"
+msgstr "Gbêkpo Health Centre"
+
+#: scripts/police.gd:651
+msgid "CENTRE DE SANTÉ GBÊKPO"
+msgstr "GBÊKPO HEALTH CENTRE"
+
+#: scripts/props.gd:14
+msgid "BOUTIQUE LA GRACE DE DIEU"
+msgstr ""
+
+#: scripts/props.gd:14
+msgid "COIFFURE DIEU EST GRAND"
+msgstr ""
+
+#: scripts/props.gd:14
+msgid "QUINCAILLERIE LE BON BERGER"
+msgstr ""
+
+#: scripts/props.gd:15
+msgid "ATELIER DE COUTURE MAMAN CHERIE"
+msgstr ""
+
+#: scripts/props.gd:15
+msgid "ALIMENTATION GENERALE"
+msgstr ""
+
+#: scripts/props.gd:15
+msgid "SOUDURE ET FERRONNERIE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "PRESSING LA PROPRETE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "MAQUIS CHEZ TANTIE ROSE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "BAR LA DETENTE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "ECOLE PRIVEE LES ETOILES"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "CENTRE DE SANTE ESPOIR"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "ELECTRICITE BATIMENT"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "MENUISERIE LE CHARPENTIER"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "SALON DE BEAUTE GBE"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "DEPOT DE BOISSONS"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "PHOTO STUDIO SOURIRE"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "CYBER CAFE LE NAVIGATEUR"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "RESTAURANT CHEZ MAMI"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "GARAGE AUTO L'AMITIE"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "IMPRIMERIE LE SCRIBE"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "TAILLEUR LE GRAND BOUBOU"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "VENTE DE PAGNES"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "AGENCE IMMOBILIERE LE TOIT"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "BOULANGERIE LE BON PAIN"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "QUINCAILLERIE LA PERSEVERANCE"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "COIFFURE MIXTE LE PRESTIGE"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "CABINET MEDICAL LA GUERISON"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "SECRETARIAT PUBLIC"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "DEFENSE D'URINER ICI"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "CE TERRAIN N'EST PAS A VENDRE"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "A VENDRE"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "INTERDIT DE DEPOSER LES ORDURES"
+msgstr ""
+
+#: scripts/props.gd:24
+msgid "STATIONNEMENT INTERDIT"
+msgstr ""
+
+#: scripts/props.gd:24
+msgid "A LOUER"
+msgstr ""
+
+#: scripts/props.gd:24
+msgid "DIEU EST FIDELE"
+msgstr ""
+
+#: scripts/props.gd:26
+msgid "GBE COLA"
+msgstr ""
+
+#: scripts/props.gd:26
+msgid "La fraicheur du pays"
+msgstr "The taste of home"
+
+#: scripts/props.gd:27
+msgid "ZEM : PORTEZ VOTRE CASQUE"
+msgstr "ZEM: WEAR YOUR HELMET"
+
+#: scripts/props.gd:27
+msgid "Securite routiere - c'est la vie"
+msgstr "Road safety - it's life"
+
+#: scripts/props.gd:28
+msgid "BANQUE OCEANIQUE"
+msgstr "OCEANIC BANK"
+
+#: scripts/props.gd:28
+msgid "Votre avenir commence ici"
+msgstr "Your future starts here"
+
+#: scripts/props.gd:29
+msgid "Tout sous un meme toit"
+msgstr "Everything under one roof"
+
+#: scripts/props.gd:30
+msgid "RADIO LITTORAL 98.6"
+msgstr "RADIO LITTORAL 98.6"
+
+#: scripts/props.gd:30
+msgid "La voix de Gbê Town"
+msgstr "The voice of Gbê Town"
+
+#: scripts/props.gd:31
+msgid "SAVON KOTO"
+msgstr "KOTO SOAP"
+
+#: scripts/props.gd:31
+msgid "Propre comme jamais"
+msgstr "Cleaner than ever"
+
+#: scripts/props.gd:32
+msgid "CIMENT SOLIDE"
+msgstr "SOLID CEMENT"
+
+#: scripts/props.gd:32
+msgid "Batissez pour vos enfants"
+msgstr "Build for your children"
+
+#: scripts/props.gd:483
+msgid "TRANSFERT D'ARGENT - CREDIT"
+msgstr "MONEY TRANSFER - CREDIT"
+
+#: scripts/stats.gd:14
+msgid "Conduite du zem"
+msgstr "Zem riding"
+
+#: scripts/stats.gd:14
+msgid "Conduite en voiture"
+msgstr "Car driving"
+
+#: scripts/stats.gd:52
+msgid "%s : %d"
+msgstr ""
+
+#: scripts/stats.gd:139
+msgid "Ton corps change : %s"
+msgstr "Your body is changing: %s"
+
+#: scripts/stats.gd:139
+msgid "plus mince"
+msgstr "slimmer"
+
+#: scripts/stats.gd:139
+msgid "silhouette normale"
+msgstr "normal figure"
+
+#: scripts/stats.gd:139
+msgid "plus costaud"
+msgstr "stockier"
+
+#: scripts/stats.gd:184
+msgid "GBÊKPO FITNESS"
+msgstr ""
+
+#: scripts/succes.gd:7
+msgid "Retour au quartier"
+msgstr "Back in the neighbourhood"
+
+#: scripts/succes.gd:7
+msgid "Finir le prologue"
+msgstr "Finish the prologue"
+
+#: scripts/succes.gd:8
+msgid "Faire une première course de zem"
+msgstr "Do your first zem ride"
+
+#: scripts/succes.gd:9
+msgid "Le métier rentre"
+msgstr "Learning the trade"
+
+#: scripts/succes.gd:9
+msgid "Faire 10 courses de zem"
+msgstr "Do 10 zem rides"
+
+#: scripts/succes.gd:10
+msgid "Roi de la nuit"
+msgstr "King of the night"
+
+#: scripts/succes.gd:10
+msgid "Gagner une course de zems de nuit"
+msgstr "Win a night zem race"
+
+#: scripts/succes.gd:11
+msgid "Œil du quartier"
+msgstr "Eye of the neighbourhood"
+
+#: scripts/succes.gd:11
+msgid "Photographier toutes les fresques"
+msgstr "Photograph every mural"
+
+#: scripts/succes.gd:12
+msgid "Patron des carrefours"
+msgstr "Boss of the crossroads"
+
+#: scripts/succes.gd:12
+msgid "Tenir 3 stationnements de zems"
+msgstr "Hold 3 zem ranks"
+
+#: scripts/succes.gd:13
+msgid "Chez soi"
+msgstr "A place of my own"
+
+#: scripts/succes.gd:13
+msgid "Acheter un logement"
+msgstr "Buy a home"
+
+#: scripts/succes.gd:14
+msgid "Atteindre 60 en muscles"
+msgstr "Reach 60 muscle"
+
+#: scripts/succes.gd:15
+msgid "Atteindre 60 en endurance"
+msgstr "Reach 60 stamina"
+
+#: scripts/succes.gd:16
+msgid "Ennemi public"
+msgstr "Public enemy"
+
+#: scripts/succes.gd:16
+msgid "Être recherché au niveau 5"
+msgstr "Reach wanted level 5"
+
+#: scripts/succes.gd:17
+msgid "Semer la police à 3 étoiles ou plus"
+msgstr "Lose the police at 3 stars or more"
+
+#: scripts/succes.gd:18
+msgid "Le Dernier Vol, première partie"
+msgstr "The Last Flight, part one"
+
+#: scripts/succes.gd:18
+msgid "Finir l'acte 1"
+msgstr "Finish act 1"
+
+#: scripts/succes.gd:19
+msgid "Grand patron"
+msgstr "Big boss"
+
+#: scripts/succes.gd:19
+msgid "Avoir 1 000 000 F en poche"
+msgstr "Have 1,000,000 F on you"
+
+#: scripts/succes.gd:59
+msgid "Succès : %s"
+msgstr "Achievement: %s"
+
+#: scripts/taxi.gd:13
+msgid "Maison"
+msgstr "Home"
+
+#: scripts/taxi.gd:14
+msgid "Aéroport (aérogare)"
+msgstr "Airport (terminal)"
+
+#: scripts/taxi.gd:105
+msgid "T : prendre un zem (déplacement rapide)"
+msgstr "T: take a zem (fast travel)"
+
+#: scripts/taxi.gd:121
+msgid "Aucun zem ne veut te prendre : la police te cherche"
+msgstr "No zem will take you: the police are after you"
+
+#: scripts/taxi.gd:124
+msgid "Zem vers %s"
+msgstr "Zem to %s"
+
+#: scripts/taxi.gd:154
+msgid "Zem : où on va ?   (%s en poche)"
+msgstr "Zem: where to?   (%s on you)"
+
+#: scripts/taxi.gd:160
+msgid "%d.  %s   %s"
+msgstr ""
+
+#: scripts/taxi.gd:164
+msgid "1-%d : partir    T : fermer"
+msgstr "1-%d: go    T: close"
+
+#: scripts/telephone.gd:14 scripts/telephone.gd:160
+msgid "Appareil photo"
+msgstr "Camera"
+
+#: scripts/telephone.gd:15
+msgid "Le commandant"
+msgstr "The commander"
+
+#: scripts/telephone.gd:16
+msgid "Le vieux"
+msgstr "The old man"
+
+#: scripts/telephone.gd:18
+msgid "Allô ? Tu as mangé ? Reviens avant la nuit."
+msgstr "Hello? Have you eaten? Come back before dark."
+
+#: scripts/telephone.gd:18
+msgid "Ne traîne pas sur la plage le soir, hein."
+msgstr "Don't hang around the beach at night, eh."
+
+#: scripts/telephone.gd:19
+msgid "Le moteur de ton père, je le reconnaîtrais entre mille."
+msgstr "I'd recognise your father's engine anywhere."
+
+#: scripts/telephone.gd:19
+msgid "Passe me voir, j'ai peut-être du travail."
+msgstr "Come and see me, I may have work."
+
+#: scripts/telephone.gd:20
+msgid "Le maquis est ouvert jusqu'à minuit !"
+msgstr "The maquis is open until midnight!"
+
+#: scripts/telephone.gd:20
+msgid "Si tu as faim, viens, il reste de la pâte."
+msgstr "If you're hungry, come, there's some pâte left."
+
+#: scripts/telephone.gd:175
+msgid "Descends d'abord du véhicule"
+msgstr "Get out of the vehicle first"
+
+#: scripts/telephone.gd:178
+msgid "Pas assez d'argent pour la course"
+msgstr "Not enough money for the ride"
+
+#: scripts/telephone.gd:182
+msgid "Appel du zem"
+msgstr "Zem call"
+
+#: scripts/telephone.gd:189
+msgid "« %s »"
+msgstr ""
+
+#: scripts/telephone.gd:190
+msgid "Appel : %s"
+msgstr "Call: %s"
+
+#: scripts/telephone.gd:199
+msgid "Nuit claire"
+msgstr "Clear night"
+
+#: scripts/telephone.gd:200
+msgid "%02d:%02d    %s    %s"
+msgstr ""
+
+#: scripts/telephone.gd:229
+msgid "Haut / Bas · Entrée ouvrir · Retour revenir · P fermer"
+msgstr "Up / Down · Enter open · Back return · P close"
+
+#: scripts/telephone.gd:232
+msgid "GTB Phone"
+msgstr ""
+
+#: scripts/telephone.gd:239
+msgid "Objectif : %s"
+msgstr "Objective: %s"
+
+#: scripts/telephone.gd:239
+msgid "aucun pour l'instant"
+msgstr "none for now"
+
+#: scripts/telephone.gd:242
+msgid "Pas de nouveau message."
+msgstr "No new messages."
+
+#: scripts/telephone.gd:247
+msgid "Zem à la demande"
+msgstr "Zem on demand"
+
+#: scripts/telephone.gd:251
+msgid "%s   %s"
+msgstr ""
+
+#: scripts/territoires.gd:15
+msgid "Syndicat des Zems Unis"
+msgstr "United Zems Union"
+
+#: scripts/territoires.gd:16
+msgid "Les Lions du Littoral"
+msgstr "The Littoral Lions"
+
+#: scripts/territoires.gd:17
+msgid "La bande de Sena"
+msgstr "Sena's crew"
+
+#: scripts/territoires.gd:20
+msgid "Stationnement de l'aéroport"
+msgstr "Airport zem rank"
+
+#: scripts/territoires.gd:21
+msgid "Carrefour de Cadjehoue"
+msgstr "Cadjehoue crossroads"
+
+#: scripts/territoires.gd:22
+msgid "Carrefour de Haie Verte"
+msgstr "Haie Verte crossroads"
+
+#: scripts/territoires.gd:23
+msgid "Marché de Cadjehoue"
+msgstr "Cadjehoue market"
+
+#: scripts/territoires.gd:24
+msgid "Route des Filets"
+msgstr ""
+
+#: scripts/territoires.gd:25
+msgid "Carrefour de Cotodji"
+msgstr "Cotodji crossroads"
+
+#: scripts/territoires.gd:181
+msgid "T : défier %s"
+msgstr "T: challenge %s"
+
+#: scripts/territoires.gd:181
+msgid "le quartier"
+msgstr "the neighbourhood"
+
+#: scripts/territoires.gd:182
+msgid "   N : négocier (%s)"
+msgstr "   N: negotiate (%s)"
+
+#: scripts/territoires.gd:186
+msgid "Négociation du stationnement"
+msgstr "Zem rank negotiation"
+
+#: scripts/territoires.gd:188
+msgid "Accord conclu : le stationnement est à toi."
+msgstr "Deal done: the zem rank is yours."
+
+#: scripts/territoires.gd:219
+msgid "Défi lancé : mets les trois zemidjans à terre !"
+msgstr "Challenge on: knock all three zemidjans down!"
+
+#: scripts/territoires.gd:229
+msgid "%s attaque ton stationnement : %s ! Tu as 3 minutes."
+msgstr "%s is attacking your zem rank: %s! You have 3 minutes."
+
+#: scripts/territoires.gd:255
+msgid "%s est à toi !"
+msgstr "%s is yours!"
+
+#: scripts/territoires.gd:255
+msgid "Attaque repoussée : %s reste à toi."
+msgstr "Attack repelled: %s stays yours."
+
+#: scripts/territoires.gd:262
+msgid "Défi perdu : le syndicat garde le stationnement."
+msgstr "Challenge lost: the union keeps the zem rank."
+
+#: scripts/territoires.gd:292
+msgid "Stationnements de zems"
+msgstr "Zem ranks"
+
+#: scripts/territoires.gd:304
+msgid "Salut le boss !"
+msgstr "Hey boss!"
+
+#: scripts/territoires.gd:304
+msgid "Bonne arrivée, chef !"
+msgstr "Welcome, chief!"
+
+#: scripts/territoires.gd:304
+msgid "Respect, grand frère !"
+msgstr "Respect, big brother!"
+
+#: scripts/territoires.gd:320
+msgid "Un zemidjan rejoint ta bande (%d / %d)."
+msgstr "A zemidjan joins your crew (%d / %d)."
+
+#: scripts/territoires.gd:327
+msgid "La bande te suit."
+msgstr "The crew follows you."
+
+#: scripts/territoires.gd:327
+msgid "La bande t'attend ici."
+msgstr "The crew waits for you here."
+
+#: scripts/territoires.gd:333
+msgid "B : recruter un zemidjan dans ta bande (%d / %d)"
+msgstr "B: recruit a zemidjan into your crew (%d / %d)"
+
+#: scripts/traffic.gd:200
+msgid "GT %04d"
+msgstr ""
+

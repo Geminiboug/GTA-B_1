@@ -1,0 +1,679 @@
+COIFFURE DIEU MERCI
+ATELIER LA GRACE
+VULCANISATEUR 24H/24
+PHOTO STUDIO LE MIROIR
+BOULANGERIE LE BON GOUT
+PHARMACIE DU LITTORAL
+COUTURE MAMAN BENIE
+TELE-REPARATION ELECTRON
+MAQUIS LA JOIE
+ECOLE LES PETITS GENIES
+QUINCAILLERIE L'ESPOIR
+AUTO-ECOLE LE VOLANT
+SALON AFRO STYLE
+PRESSING LA BLANCHEUR
+CABINE TRANSFERT RAPIDE
+Étoile de Gbê Town
+Racing Lagune
+Atlantique FC
+Union Sportive du Littoral
+Avenir de Cotodji
+Pari 2 000 F sur %s
+le maquis (paris)
+Fresque photographiée
+Fresque photographiée : %d / %d
+Collection de fresques complète
+Toutes les fresques du quartier ! Bonus de 25 000 F.
+T : course de zems de nuit (1er : %s)
+Course lancée : %d points de passage, %.1f km !
+Tu es descendu du zem : course abandonnée.
+Course de zems
+Arrivée : %s !
+Pari gagné
+Match terminé : victoire de %s.
+Pari enregistré sur %s : résultat dans l'heure.
+Balles 9 mm
+Fusil à pompe
+Fusil de chasse artisanal
+Mains nues
+ (%d / %d)
+La bouteille s'est brisée.
+QUINCAILLERIE LE BON CLOU
+Air Gbé
+Atlantique Express
+Sahel Airways
+Golfe Aviation
+Air Lagune
+Eau en sachet (pure water)
+Arachides grillées
+Ananas
+Pain
+Pâte rouge et poulet
+Riz sauce arachide
+Akassa et poisson frit
+Bière locale
+Essence (1 litre)
+Crédit téléphone
+Carte SIM
+Sac de riz (5 kg)
+Huile (1 litre)
+Boîte de tomate
+Eau minérale (1,5 l)
+Blouson de moto renforcé
+Café
+Sandwich
+Jus de bissap
+Séance de musculation
+Bâton
+Machette
+Coupe-coupe
+Pistolet
+Cartouches
+l'étal
+le maquis
+le vendeur d'essence
+la cabine
+la caisse
+le café
+la quincaillerie
+le Gaou
+Gbêkpo Fitness
+T : acheter à %s
+Pas assez d'argent.
+Bouteille
+Interact
+Consume
+Merci !
+Akpé !
+Acheter à %s   (%s en poche)
+%s%d.  %s   %s
+1-%d ou Entrée : acheter    T : fermer
+  (delestage)
+mon frère
+grand frère
+le vieux
+ma sœur
+ma copine
+grande sœur
+la go
+Bonjour {appel} !
+A fon ganji à ?
+Bonne journée {appel}.
+Bonjour, ça va un peu ?
+Bonsoir {appel} !
+Bonsoir, ça va ?
+On dit quoi {appel} ?
+Bonne arrivée !
+Mi kwabo !
+{appel}, viens acheter !
+Eau glacée ! Pure water !
+C'est frais, viens voir !
+Ma copine, approche !
+Je te fais un bon prix !
+Arachides grillées !
+Ananas bien sucré !
+Pain chaud, pain chaud !
+Zem ? On va où ?
+{appel}, je te dépose ?
+Montez, je connais la route !
+Eh ! Tu ne vois pas devant toi ?
+Doucement {appel} !
+Pardon hein !
+Tu es aveugle ou quoi ?
+Eh Dieu !
+Regarde où tu marches !
+Ça va pas non ?
+Mes affaires ! Tu vas payer !
+Eh ! Ma marchandise !
+Regarde ce que tu as fait !
+Tu me frappes pourquoi ?!
+Eh ! Tu es malade ?
+Au secours !
+Laisse-moi tranquille !
+Eh ! Laisse-le !
+Qu'est-ce qui ne va pas chez toi ?
+Séparez-les !
+Eh Seigneur !
+Ahi ! Ma jambe !
+Tu es fou ? Tu ne sais pas conduire ?
+Il faut payer mes soins !
+Eh Dieu, j'ai mal !
+Il a renversé quelqu'un !
+Arrêtez-le !
+Appelez quelqu'un !
+Il faut payer !
+Eh ! Tu veux me tuer ?
+Doucement chauffeur !
+Tu roules comme un fou !
+Eh ! Freine !
+Mon véhicule ! Voleur !
+Au voleur ! Attrapez-le !
+Descends de là ! C'est à moi !
+Eh ! On vole ma voiture !
+Avance !
+Eh, bouge de là !
+Tu attends quoi ?
+Doucement, on va où ?
+Eh ! Tu es fou ?
+Tu as vu ce que tu as fait ?
+Il faut payer la réparation !
+Tu ne sais pas conduire ?
+Ahi ! Courez !
+Eh ! On ne se bat pas ici !
+Sortez du magasin !
+Sécurité ! Arrêtez ça !
+Doucement, monsieur !
+Pardon {appel}.
+Excusez-moi.
+Eh, doucement !
+Viens ! Tu vas voir !
+Tu me cherches, {appel} ?
+On va régler ça ici !
+Approche si tu es fort !
+Allô, la police ? On m'agresse !
+Venez vite, il y a un fou qui frappe les gens !
+Allô ? Il m'a frappé, venez !
+Ahi... ma tête...
+Pitié, pitié !
+Arrête, arrête !
+{appel}
+Bonne arrivée
+Parle à tante Mireille
+Ah, %s ! Bonne arrivée à la maison !
+mon fils
+ma fille
+Va m'acheter du pain chez la vendeuse, au bout de la rue. Tiens, prends de quoi payer.
+J'y vais, tantie.
+Suis la flèche jaune jusqu'à l'étal, puis T pour acheter du pain
+Rapporte le pain à tante Mireille
+Donne le pain (T)
+Merci ! Ton père aurait été fier de te voir revenu.
+Son vieux zem est devant la maison. Il roule encore, prends-le.
+Tiens, 5 000 francs : va me chercher un sac de riz à l'Ararat.
+Le zem de papa
+Monte sur le zem de ton père (E)
+Achète un sac de riz à l'Ararat Hypermarket
+Rapporte le riz à la maison
+Donne le riz (T)
+Bien ! Va voir Vieux Codjo au maquis du coin, il cherche quelqu'un pour des livraisons.
+Livraison en zem
+Parle à Vieux Codjo
+C'est toi l'enfant de Basile ? Ton père réparait tout ce qui roule et tout ce qui vole.
+Tiens ce colis. Livre-le à l'étal là-bas, en moins de trois minutes. Le client n'attend pas !
+Colis
+Livre le colis
+Course client
+Un voyageur attend devant l'aérogare. Il veut aller à Sweet Dream Beach. Fais vite !
+Va chercher le client devant l'aérogare (en zem)
+Dépose le client à Sweet Dream Beach
+Merci, %s ! Bonne route.
+Au marché
+Il me faut de l'huile et une boîte de tomate pour la sauce. Va à l'Ararat.
+Voilà 2 000 francs pour les courses.
+Achète de l'huile
+Achète une boîte de tomate
+Rentre à la maison
+Donne les courses (T)
+Merci. Écoute... j'ai gardé quelque chose de ton père.
+Son carnet. Il a écrit un mot la veille du dernier vol : « Épave, cabine, rangée 12 ».
+L'épave de la plage ? Papa y était ?
+Je ne sais pas. Mais sois prudent. La nuit, la police patrouille sur la plage.
+Carnet de Basile
+L'Épave Volante
+Le soir tombe...
+Va à l'épave, sur la plage
+Fouille la cabine, rangée 12 (T)
+Une plaque d'avion arrachée... et un nom gravé : « Cdt Hounkpè ».
+Plaque du cargo
+Une patrouille ! Échappe à la police
+Le Commandant
+Parle au Commandant Hounkpè
+Dossou... Tu as les yeux de Basile.
+Ce cargo ne transportait pas que du coton. Ton père avait pris des photos du chargement.
+Il les a cachées au bord du tarmac, près des postes de stationnement. Va voir, de nuit.
+Le hangar
+La nuit tombe sur l'aéroport...
+Fouille les trois postes du tarmac (T)
+Des photos de caisses... et le logo d'une société inconnue.
+L'alerte est donnée ! Échappe à la police
+FIN DE L'ACTE 1
+Quelqu'un, à l'aéroport, savait. À suivre.
+Ravitaillement
+Parle à Maman Fifi, la patronne du maquis
+C'est toi le petit de Codjo ? Le maquis ouvre ce soir et je n'ai plus d'huile ni d'eau !
+Voilà 2 000 francs pour les courses. File à l'Ararat et reviens vite, je te paierai bien.
+Achète de l'huile à l'Ararat
+Achète de l'eau minérale
+Rapporte les courses au maquis de Haie Verte
+Ah, tu es rapide ! Reviens quand tu veux, il y a toujours du travail ici.
+Le grand tour
+Parle à Maman Fifi
+Deux clients arrivent par l'avion du soir. Va les chercher à l'aérogare, l'un après l'autre.
+Premier client : devant l'aérogare (en zem)
+Dépose-le à Haie Verte
+Merci ! Bonne soirée.
+Second client : retourne à l'aérogare
+Dépose-le au maquis de Maman Fifi
+On m'a dit que c'était le meilleur maquis du quartier !
+LE DERNIER VOL
+Cotonou, près de l'aéroport
+Petits boulots : sur le zem, T pour chercher un client
+Nouvelle mission : « %s » (va dans le cercle jaune)
+Argent des courses
+MISSION RÉUSSIE
+MISSION ÉCHOUÉE
+%s   %d:%02d
+Trop tard !
+T : parler
+Tu as perdu %s.
+Arrête-toi près du client
+T : fouiller
+Trouvé ! (%d restant)
+Trouvé !
+T : chercher un client
+Va chercher le client
+Dépose le client
+Course de zem
+Le client est descendu sans payer.
+Sena
+Tante Mireille
+Vieux Codjo
+Cdt Hounkpè
+Maman Fifi
+Le client
+La vendeuse
+%s   (%d m)
+Plus tard, dans la nuit...
+Aéroport Int. Cardinal Cotodji
+Ararat Hypermarket
+Sweet Dream Beach
+Haie Verte
+Cadjéhoué
+Maquis La Plaja
+Plage
+Destination : %s
+\n
+%d m
+%.1f km
+Chez vous
+Clic gauche / Entrée / A : destination     Clic droit / P / X : marqueur     Molette / gâchettes : zoom     Glisser / ZQSD : déplacer     M / Échap : fermer
+Stick gauche : marcher
+Stick droit : caméra
+A (tapoter) : courir
+X : sauter / escalader
+R3 : s'accroupir
+Y : monter dans un véhicule
+Croix droite : parler / acheter
+Select : carte   Croix bas : vue
+Croix gauche : inventaire (téléphone, torche)
+RB : arme   LB : viser   L3 : recharger
+RT : accélérer   LT : freiner
+Stick gauche : tourner
+RB : frein arrière
+L3 : klaxon
+Y : descendre
+Croix droite : chercher un client
+Croix bas : limiteur 50 km/h
+RT : accélérer   LT : freiner / reculer
+RB : frein à main
+Z Q S D : marcher
+Souris : caméra
+Maj (tapoter) : courir   Alt : marche lente
+Espace : sauter / escalader
+C : s'accroupir
+E : monter dans un véhicule
+T : parler / acheter
+M : carte   V : vue
+I : inventaire   P : téléphone   L : torche
+Tab : arme   clic droit : viser   R : recharger
+Z : accélérer   S : freiner
+Q D : tourner
+Espace : frein arrière
+H : klaxon
+E : descendre
+T : chercher un client (à l'arrêt)
+K : limiteur 50 km/h
+Z : accélérer   S : freiner / reculer
+Espace : frein à main
+Croix haut
+ : cacher l'aide
+   %d / %d
+%d km/h
+ + tr(
+) % roundi(Limiteur.vitesse_kmh) if Limiteur.actif else 
+Messages, carte, zem à la demande, appareil photo.
+Lampe torche à piles. Pratique la nuit et pendant les délestages.
+Pain frais de l'étal.
+Riz parfumé, pour la maison.
+Huile d'arachide.
+Concentré de tomate.
+Essence du kpayo, en bouteille.
+Recharge pour le smartphone.
+Une puce de plus.
+Un colis à livrer. Ne pas ouvrir.
+Haut / Bas choisir · Entrée utiliser · I fermer
+Prendre en main
+Poches vides.
+  x%d
+   [%s]
+Tu manges : %s
+Aéroport International Cardinal Cotodji
+Épicerie
+Boissons
+Hygiène et beauté
+Entretien
+Produits laitiers
+Conserves
+Bébé
+Riz et céréales
+Huiles
+Sucre et café
+Thé et infusions
+Biscuits
+Boulangerie
+Fruits et légumes
+Gros conditionnement
+AIR GBÉ
+ATLANTIQUE EXPRESS
+SAHEL AIRWAYS
+GOLFE AVIATION
+TRANS-OUEST
+AIR LAGUNE
+Air Gbé 214
+Paris
+Atlantique Express 33
+Abidjan
+Sahel Airways 508
+Ouagadougou
+Golfe Aviation 72
+Lagos
+Air Gbé 118
+Bruxelles
+Trans-Ouest 401
+Dakar
+Air Lagune 9
+Lomé
+Atlantique Express 61
+Accra
+Air Gbé 300
+Casablanca
+Sahel Airways 17
+Douala
+Interieur
+ARARAT HYPERMARKET
+Tout sous un même toit
+Caisse %d
+AÉROPORT INTERNATIONAL CARDINAL COTODJI
+%s · Comptoir %d
+EMBARQUEMENT\nPassagers munis d'une carte d'embarquement uniquement
+CAFÉ DU LITTORAL
+LIBRAIRIE · PRESSE
+DÉPARTS
+Destination
+Heure
+Porte
+État
+À l'heure
+Embarquement
+Retardé
+E : dormir jusqu'au matin et sauvegarder
+Une nouvelle journée commence
+v%s
+Gbê Town Bénin · Le Dernier Vol
+Nouvelle partie
+Continuer
+Charger une partie
+Options
+Crédits
+Quitter
+Pause
+Reprendre
+Sauvegarder
+Sauvegarder (impossible : recherché)
+Statistiques
+Succès
+Commandes
+Quitter vers l'écran titre
+Retour
+À suivre
+Continuer à jouer
+Donner mon avis
+Volume
+Véhicules
+Ambiance (ville, mer, pluie)
+Effets et voix
+Sensibilité de la souris
+Effets de caméra (recentrage, secousses)
+Plein écran
+Sous-titres
+Taille des sous-titres
+Taille de l'interface
+Aide à la visée (souris)
+Touches du clavier
+Violence réduite (armes moins puissantes)
+Qualité graphique
+Appliquer et revenir
+%s : %s
+Touches par défaut
+Revenir
+%d / %d succès
+%d.  %s
+Progression du jeu : %d %%    Fresques : %d / %d
+Silhouette : %s    Courses de zem : %d    Missions : %d    Amendes : %d
+MODE PHOTO   Entrée capture · ZQSD / souris bouger · Espace / Ctrl hauteur · molette zoom · F12 sortir
+Smartphone
+Torche
+Avancer
+Reculer
+Gauche
+Droite
+Sauter
+Courir
+S'accroupir
+Monter / descendre
+Parler / acheter
+Frapper / tirer
+Carte
+Klaxon
+Frein à main
+Accélérer
+Freiner
+Vehicules
+Ambiance
+Effets
+Voix
+Master
+ F
++%s : %s
+Pas assez d'argent (%s)
+-%s : %s
+Vide
+Illisible
+%s · %d missions · %s · %s
+\t
+Partie sauvegardée
+Partie chargée
+Chez Dossou, tailleur
+Friperie du Carrefour
+Maillots Sport 229
+Salon Élégance
+Garage de Tonton Codjo
+Agence Immo Gbêkpo
+Chambre à Cadjehoue
+Appartement à Haie Verte
+Coupe courte
+Crâne rasé
+Boubou wax sur mesure (motif %d)
+T-shirt %s
+Jean délavé
+Maillot %s
+Réparation complète
+Peinture d'une nouvelle couleur
+Klaxon deux tons
+  —  à vendre
+T-shirt 
+Nouvelle tenue : la police ne te reconnaît plus aussi bien.
+Gare ton véhicule devant le garage d'abord.
+Tonton Codjo : « Elle est comme neuve ! »
+Nouvelle couleur : la police a perdu ta trace.
+Tonton Codjo : « Belle couleur, hein ! »
+Klaxon deux tons monté.
+Tu possèdes déjà ce logement.
+%s est à toi : E devant la porte pour dormir et sauvegarder.
+E : dormir et sauvegarder (%s)
+Une nouvelle journée commence. Partie sauvegardée.
+Quelqu'un a appelé la police. Elle arrive dans environ %d min.
+Tu as semé la police
+Halte ! Police !
+Arrêtez-vous !
+Ne bougez plus !
+Contravention : excès de vitesse
+Excès de vitesse !
+ARRÊTÉ
+Amende : %s
+Amende
+Commissariat de Gbê Town
+ÉVANOUI
+Centre de santé Gbêkpo : %s de soins
+Soins
+Centre de santé Gbêkpo
+CENTRE DE SANTÉ GBÊKPO
+BOUTIQUE LA GRACE DE DIEU
+COIFFURE DIEU EST GRAND
+QUINCAILLERIE LE BON BERGER
+ATELIER DE COUTURE MAMAN CHERIE
+ALIMENTATION GENERALE
+SOUDURE ET FERRONNERIE
+PRESSING LA PROPRETE
+MAQUIS CHEZ TANTIE ROSE
+BAR LA DETENTE
+ECOLE PRIVEE LES ETOILES
+CENTRE DE SANTE ESPOIR
+ELECTRICITE BATIMENT
+MENUISERIE LE CHARPENTIER
+SALON DE BEAUTE GBE
+DEPOT DE BOISSONS
+PHOTO STUDIO SOURIRE
+CYBER CAFE LE NAVIGATEUR
+RESTAURANT CHEZ MAMI
+GARAGE AUTO L'AMITIE
+IMPRIMERIE LE SCRIBE
+TAILLEUR LE GRAND BOUBOU
+VENTE DE PAGNES
+AGENCE IMMOBILIERE LE TOIT
+BOULANGERIE LE BON PAIN
+QUINCAILLERIE LA PERSEVERANCE
+COIFFURE MIXTE LE PRESTIGE
+CABINET MEDICAL LA GUERISON
+SECRETARIAT PUBLIC
+DEFENSE D'URINER ICI
+CE TERRAIN N'EST PAS A VENDRE
+A VENDRE
+INTERDIT DE DEPOSER LES ORDURES
+STATIONNEMENT INTERDIT
+A LOUER
+DIEU EST FIDELE
+GBE COLA
+La fraicheur du pays
+ZEM : PORTEZ VOTRE CASQUE
+Securite routiere - c'est la vie
+BANQUE OCEANIQUE
+Votre avenir commence ici
+Tout sous un meme toit
+RADIO LITTORAL 98.6
+La voix de Gbê Town
+SAVON KOTO
+Propre comme jamais
+CIMENT SOLIDE
+Batissez pour vos enfants
+TRANSFERT D'ARGENT - CREDIT
+Conduite du zem
+Conduite en voiture
+%s : %d
+Ton corps change : %s
+plus mince
+silhouette normale
+plus costaud
+GBÊKPO FITNESS
+Retour au quartier
+Finir le prologue
+Faire une première course de zem
+Le métier rentre
+Faire 10 courses de zem
+Roi de la nuit
+Gagner une course de zems de nuit
+Œil du quartier
+Photographier toutes les fresques
+Patron des carrefours
+Tenir 3 stationnements de zems
+Chez soi
+Acheter un logement
+Atteindre 60 en muscles
+Atteindre 60 en endurance
+Ennemi public
+Être recherché au niveau 5
+Semer la police à 3 étoiles ou plus
+Le Dernier Vol, première partie
+Finir l'acte 1
+Grand patron
+Avoir 1 000 000 F en poche
+Succès : %s
+Maison
+Aéroport (aérogare)
+T : prendre un zem (déplacement rapide)
+Aucun zem ne veut te prendre : la police te cherche
+Zem vers %s
+Zem : où on va ?   (%s en poche)
+%d.  %s   %s
+1-%d : partir    T : fermer
+Appareil photo
+Le commandant
+Le vieux
+Allô ? Tu as mangé ? Reviens avant la nuit.
+Ne traîne pas sur la plage le soir, hein.
+Le moteur de ton père, je le reconnaîtrais entre mille.
+Passe me voir, j'ai peut-être du travail.
+Le maquis est ouvert jusqu'à minuit !
+Si tu as faim, viens, il reste de la pâte.
+Descends d'abord du véhicule
+Pas assez d'argent pour la course
+Appel du zem
+« %s »
+Appel : %s
+Nuit claire
+%02d:%02d    %s    %s
+Haut / Bas · Entrée ouvrir · Retour revenir · P fermer
+GTB Phone
+Objectif : %s
+aucun pour l'instant
+Pas de nouveau message.
+Zem à la demande
+%s   %s
+Syndicat des Zems Unis
+Les Lions du Littoral
+La bande de Sena
+Stationnement de l'aéroport
+Carrefour de Cadjehoue
+Carrefour de Haie Verte
+Marché de Cadjehoue
+Route des Filets
+Carrefour de Cotodji
+T : défier %s
+le quartier
+   N : négocier (%s)
+Négociation du stationnement
+Accord conclu : le stationnement est à toi.
+Défi lancé : mets les trois zemidjans à terre !
+%s attaque ton stationnement : %s ! Tu as 3 minutes.
+%s est à toi !
+Attaque repoussée : %s reste à toi.
+Défi perdu : le syndicat garde le stationnement.
+Stationnements de zems
+Salut le boss !
+Bonne arrivée, chef !
+Respect, grand frère !
+Un zemidjan rejoint ta bande (%d / %d).
+La bande te suit.
+La bande t'attend ici.
+B : recruter un zemidjan dans ta bande (%d / %d)
+GT %04d
