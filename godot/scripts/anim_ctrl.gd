@@ -11,13 +11,22 @@ extends Node3D
 ## mode (sol, air, assis, accroupi) -> impulsion (une fois) -> reception (une fois) -> coup (une fois).
 ## Par-dessus l'animation : regard (tete et buste), inclinaison dans les virages, respiration haletante.
 
-const LIBS := {"ual1": "res://assets/animations/UAL1_RM.glb", "ual2": "res://assets/animations/UAL2_RM.glb"}
+const LIBS := {"ual1": "res://assets/animations/UAL1_RM.glb", "ual2": "res://assets/animations/UAL2_RM.glb",
+	"mx": "res://assets/animations/MX_GTB.glb"}      # captures Mixamo fournies par Olympe (blender/tools/build_mixamo.py)
 const ROOT_TRACK := "%GeneralSkeleton:Root"
 const LOCO := [["Idle", 0.0], ["Walk", 1.0], ["Jog_Fwd", 2.0], ["Sprint", 3.0]]   # [clip, position dans le melange]
 const MODES := ["sol", "air", "assis", "accroupi"]
 # vitesse du pied d'appui dans chaque clip (tests/calibre_clips.gd sur l'homme, en hauteurs de hanche par seconde) :
 # plus juste que la piste Root (la marche y avance plus vite que ses pieds)
-const CALIB := {"Walk": 0.914, "Jog_Fwd": 5.79, "Sprint": 9.5, "Crouch_Fwd": 0.914, "Walk_Carry": 0.58}
+const CALIB := {"Walk": 0.914, "Jog_Fwd": 5.79, "Sprint": 9.5, "Crouch_Fwd": 0.914, "Walk_Carry": 0.58,
+}
+const HIPS_TRACK := "%GeneralSkeleton:Hips"
+# gestes : nom generique -> clips captes (Mixamo) ; le premier present est pris au hasard
+const ALIAS := {"Idle_Talking": ["MX_Parle"], "Idle_TalkingPhone_Loop": ["MX_Telephone"], "Dispute": ["MX_Dispute_1", "MX_Dispute_2"],
+	"Salut": ["MX_Salue"]}
+# attentes et demarches captees (Mixamo), variees d'un personnage a l'autre
+const MX_IDLES := ["MX_Idle_Respire", "MX_Idle_Neutre", "MX_Idle_Appui", "MX_Idle_Regarde", "MX_Idle_Content"]
+const MX_MARCHES := ["MX_Marche", "MX_Marche_Standard"]
 
 @export var walk_to_jog := Vector2(1.9, 3.0)     # m/s : passage progressif marche -> trot
 @export var jog_to_sprint := Vector2(5.6, 6.6)   # m/s : passage trot -> sprint
@@ -57,6 +66,8 @@ var rain_cover := 0.0
 # cibles en position monde (Vector3.INF : aucune) : mains sur le guidon / volant, pieds sur les repose-pieds / pedales
 var visee := 0.0          # 0..1 : bras tendus sur l'arme (haut du corps seulement, les jambes marchent)
 var visee_pitch := 0.0    # -1 (vers le bas) .. 1 (vers le haut)
+var mx := false            # locomotion captee (Mixamo) : pas de corrections faites pour les clips Quaternius
+var loco_clips: Array = ["Idle", "Walk", "Jog_Fwd", "Sprint"]
 var ik_targets := {"LeftHand": Vector3.INF, "RightHand": Vector3.INF, "LeftFoot": Vector3.INF, "RightFoot": Vector3.INF}
 
 static var _libs := {}            # bibliotheques chargees une fois pour tous les personnages
@@ -82,11 +93,29 @@ static func _load_libs() -> void:
 		_libs[key] = lib
 		for n in lib.get_animation_list():
 			var a := lib.get_animation(n)
+			if key == "mx":
+				_sur_place(n, a)
+				continue
 			var t := a.find_track(NodePath(ROOT_TRACK), Animation.TYPE_POSITION_3D)
 			if t >= 0 and a.length > 0.0:
 				var d: Vector3 = a.position_track_interpolate(t, a.length) - a.position_track_interpolate(t, 0.0)
 				_natural[n] = CALIB.get(n, Vector2(d.x, d.z).length() / a.length)
 		s.free()
+
+
+static func _sur_place(n: String, a: Animation) -> void:
+	## Clips Mixamo (exportes avec le deplacement) : vitesse naturelle = avance du bassin sur le cycle (hauteurs de
+	## hanche / s, comme CALIB), puis l'avance est retiree (le balancement lateral et vertical du bassin reste).
+	var t := a.find_track(NodePath(HIPS_TRACK), Animation.TYPE_POSITION_3D)
+	if t < 0 or a.length <= 0.0 or a.track_get_key_count(t) < 2:
+		return
+	var p0: Vector3 = a.track_get_key_value(t, 0)
+	var p1: Vector3 = a.track_get_key_value(t, a.track_get_key_count(t) - 1)
+	var d := Vector3(p1.x - p0.x, 0.0, p1.z - p0.z)
+	_natural[n] = Vector2(d.x, d.z).length() / a.length
+	for k in a.track_get_key_count(t):
+		var u := a.track_get_key_time(t, k) / a.length
+		a.track_set_key_value(t, k, (a.track_get_key_value(t, k) as Vector3) - d * u)
 
 
 static func clip(name: String) -> String:
@@ -112,7 +141,11 @@ func _ready() -> void:
 	_player.root_node = NodePath("..")
 	for key in _libs:
 		_player.add_animation_library(key, _libs[key])
-	for n in ["Idle", "Walk", "Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd", "Driving", "Idle_Talking"]:
+	_choisir_loco()
+	for n in loco_clips + ["Idle", "Walk", "Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd", "Driving", "Idle_Talking"] + MX_IDLES + \
+			["MX_Parle", "MX_Telephone", "MX_Dispute_1", "MX_Dispute_2"]:
+		if clip(n) == "":
+			continue
 		var a: Animation = _player.get_animation(clip(n))
 		if a:
 			a.loop_mode = Animation.LOOP_LINEAR
@@ -127,6 +160,19 @@ func _ready() -> void:
 	_tree.active = true
 
 
+func _choisir_loco() -> void:
+	## Attente et demarche captees (Mixamo) si la bibliotheque est la : chaque personnage a la sienne (le joueur respire
+	## calmement ; les femmes ont la marche feminine) ; trot, course et sprint captes aussi.
+	if clip("MX_Marche") == "":
+		return
+	mx = true
+	var h := absi(hash(get_instance_id()))
+	var femme_ := String(get_meta("genre", "")) == "femme" or femme
+	var idle: String = "MX_Idle_Respire" if not anim_lod else MX_IDLES[h % (MX_IDLES.size() - 1)]
+	var marche: String = "MX_Marche_Femme" if femme_ else ("MX_Marche" if not anim_lod else MX_MARCHES[(h / 7) % MX_MARCHES.size()])
+	loco_clips = [idle, marche, "MX_Course", "MX_Sprint"]
+
+
 func _anim(name: String) -> AnimationNodeAnimation:
 	var n := AnimationNodeAnimation.new()
 	n.animation = clip(name)
@@ -139,8 +185,8 @@ func _build_tree() -> AnimationNodeBlendTree:
 	loco.sync = not anim_lod      # joueur : cycles synchronises ; PNJ : seuls les clips actifs sont calcules
 	loco.min_space = 0.0
 	loco.max_space = 3.0
-	for e in LOCO:
-		loco.add_blend_point(_anim(e[0]), e[1], -1, e[0])
+	for i in LOCO.size():
+		loco.add_blend_point(_anim(loco_clips[i]), LOCO[i][1], -1, LOCO[i][0])
 	bt.add_node("loco", loco, Vector2(0, 0))
 	bt.add_node("echelle", AnimationNodeTimeScale.new(), Vector2(200, 0))
 	bt.connect_node("echelle", 0, "loco")
@@ -225,9 +271,9 @@ func _gait(v: float) -> float:
 func _natural_speed(g: float) -> float:
 	## Vitesse (m/s) a laquelle les pieds du melange avancent a vitesse de lecture normale.
 	var k := _skel.motion_scale if _skel else 1.0
-	var w: float = _natural.get("Walk", 1.0) * k
-	var j: float = _natural.get("Jog_Fwd", 5.0) * k
-	var s: float = _natural.get("Sprint", 8.0) * k
+	var w: float = _natural.get(loco_clips[1], 1.0) * k
+	var j: float = _natural.get(loco_clips[2], 5.0) * k
+	var s: float = _natural.get(loco_clips[3], 8.0) * k
 	if g <= 1.0:
 		return w
 	if g <= 2.0:
@@ -354,7 +400,7 @@ func _physics_process(delta: float) -> void:
 func _overlay(delta: float) -> void:
 	## Ajouts par-dessus l'animation : regard (tete 65 %, buste 30 %), respiration haletante, inclinaison en virage.
 	var moving := clampf((speed - 0.3) / 0.6, 0.0, 1.0) if on_floor and not seated and not crouch and _clip_free() else 0.0
-	if moving > 0.01 and (not anim_lod or _lod_every() <= 1):
+	if moving > 0.01 and (not anim_lod or _lod_every() <= 1) and not mx:
 		_upright(moving)
 	_look = _look.lerp(Vector2(clampf(look_yaw, -1.2, 1.2), clampf(look_pitch, -0.4, 0.6)), 1.0 - exp(-5.0 * delta))
 	var breath := sin(_t * (1.7 + 2.6 * essouffle)) * 0.035 * essouffle
@@ -388,7 +434,7 @@ func _overlay(delta: float) -> void:
 	# au repos, pieds a largeur de bassin et presque alignes (le clip Idle se tient en garde : 0,26 m d'ecart lateral
 	# trop large et un pied 0,38 m devant l'autre)
 	var still := (1.0 - clampf(speed / 0.4, 0.0, 1.0)) if on_floor and not seated and not crouch else 0.0
-	if still > 0.01 and ik_targets["LeftFoot"] == Vector3.INF:
+	if still > 0.01 and ik_targets["LeftFoot"] == Vector3.INF and not mx:
 		var lf := _skel.global_transform * _gpose(_bone["LeftFoot"], {}).origin
 		var rf := _skel.global_transform * _gpose(_bone["RightFoot"], {}).origin
 		var bb := _skel.global_transform.basis.orthonormalized()
@@ -497,6 +543,12 @@ func root_offset(name: String, t: float) -> Vector3:
 func play_clips(seq: Array, in_place := false) -> void:
 	## Joue une suite de clips (ex. [["Death01", 1.2], ["LayToIdle", 0.0]]) a la place de l'arbre, puis reprend.
 	## in_place : le deplacement de la racine est retire (le controleur deplace lui-meme le corps, ex. escalade).
+	seq = seq.duplicate(true)
+	for e in seq:
+		if ALIAS.has(e[0]):
+			var choix: Array = (ALIAS[e[0]] as Array).filter(func(c: String) -> bool: return clip(c) != "")
+			if not choix.is_empty():
+				e[0] = choix[randi() % choix.size()]
 	if _skel == null:
 		return
 	if _clip == null:

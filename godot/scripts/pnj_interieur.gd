@@ -10,7 +10,9 @@
 
 const ANIM := preload("res://scripts/anim_ctrl.gd")   # clips captes, comme le joueur
 const ACTIVE_RANGE := 90.0
-const BATCH := 4               # personnages crees par image
+const BUILD_RANGE := INF       # personnages fabriques des le chargement de la partie (une fois) : aucun a-coup en jeu
+const HIDE_RANGE := 130.0      # m : caches (pas detruits) au-dela ; marge pour ne pas basculer sans cesse
+const BATCH := 2               # personnages crees par image
 
 var _root: Node3D
 var _key := ""
@@ -23,6 +25,7 @@ var _spots := {}               # type -> [Transform3D]
 var _walkers: Array = []
 var _statics: Array = []
 var _active := false
+var _built := false
 var _building := false
 var _guards: Array = []        # vigiles (figes) qui interviennent a la voix
 
@@ -67,11 +70,14 @@ func _physics_process(delta: float) -> void:
 		return
 	var pv = _player.get("vehicle")
 	var pp: Vector3 = (pv as Node3D).global_position if pv else _player.global_position
-	var near := pp.distance_to(_center) < ACTIVE_RANGE
-	if near and not _active:
+	var d := pp.distance_to(_center)
+	if not _built and d < BUILD_RANGE:
 		_activate()
-	elif not near and _active:
-		_deactivate()
+		return
+	if d < ACTIVE_RANGE and not _active:
+		_montrer(true)
+	elif d > HIDE_RANGE and _active:
+		_montrer(false)
 	if _active:
 		for w in _walkers:
 			_walk(w, delta)
@@ -138,8 +144,20 @@ func _carry(ch: Node3D, what: String) -> void:
 	ba.add_child(mi)
 
 
+func _montrer(on: bool) -> void:
+	## Personnages deja fabriques : affiches et animes pres du lieu, caches et figes loin (rien n'est detruit).
+	_active = on
+	for w in _walkers:
+		var n := w["node"] as Node3D
+		n.visible = on
+		n.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
+	for st in _statics:
+		(st as Node3D).visible = on
+
+
 func _activate() -> void:
-	_active = true
+	## Fabrication (une fois) : peu de personnages par image, caches tant que le joueur n'est pas assez pres.
+	_built = true
 	_building = true
 	if _adj.is_empty() and _wp.size() > 0:
 		_build_graph()
@@ -179,11 +197,6 @@ func _activate() -> void:
 		# la pose n'est appliquee au maillage que deux images plus tard
 		await get_tree().process_frame
 		await get_tree().process_frame
-		if not _active:
-			for ch in posed:
-				ch.queue_free()
-			_building = false
-			return
 		for ch in posed:
 			var mesh := PnjUtil.merge(ch)
 			var mi := MeshInstance3D.new()
@@ -215,12 +228,9 @@ func _activate() -> void:
 		var start := _rng.randi() % _wp.size()
 		ch.global_position = _wp[start]
 		_walkers.append({"node": ch, "at": start, "to": start, "pause": _rng.randf_range(0.0, 4.0), "speed": _rng.randf_range(1.0, 1.35), "yaw": 0.0})
-		if i % 2 == 1:
-			await get_tree().process_frame
-			if not _active:
-				_building = false
-				return
+		await get_tree().process_frame          # un personnage par image : pas d'a-coup
 	_building = false
+	_montrer(_player != null and _player.global_position.distance_to(_center) < ACTIVE_RANGE)
 
 
 func _suitcase_at(t: Transform3D) -> void:

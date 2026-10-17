@@ -830,7 +830,12 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 				_set_state(w, w.get("after", "walk") if w.get("after", "walk") != "walk" else "resume")
 		"angry":
 			face = p2 - me2
-			ch.set("gesture", 1.0)
+			if ch.get("mx"):
+				# dispute captee (Mixamo, deux variantes) plutot que les bras agites par IK
+				if t < 0.05 and ch.has_method("play_clips") and not ch.playing_clip():
+					ch.play_clips([["Dispute", 0.0]])
+			else:
+				ch.set("gesture", 1.0)
 			if t > 1.2 and t < 1.3 and w["talk_cd"] <= 0.0:
 				_speak(w, w.get("line_after", "bouscule"))
 			if t > 4.5:

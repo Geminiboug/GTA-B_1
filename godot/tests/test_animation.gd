@@ -14,7 +14,8 @@ var prev := {}
 var slip := 0.0
 var slip_n := 0
 var ground := INF
-const PHASES := [["marche", "walk", 0.18], ["trot", "", 0.18], ["sprint", "sprint_tap", 0.25]]
+# marche captee (Mixamo) : le pied deroule fortement du talon a la pointe, compte comme un leger glissement
+const PHASES := [["marche", "walk", 0.3], ["trot", "", 0.18], ["sprint", "sprint_tap", 0.25]]
 
 
 func _initialize() -> void:
@@ -87,7 +88,7 @@ func _physics_process(delta: float) -> bool:
 				prev[side] = p
 		if k == 239:
 			var ac: Node = player.anim
-			print("  motion_scale %.3f  naturel marche %.2f trot %.2f sprint %.2f  position %.2f  echelle %.2f" % [skel.motion_scale, ac._natural.get("Walk", 0), ac._natural.get("Jog_Fwd", 0), ac._natural.get("Sprint", 0), ac._tree.get("parameters/loco/blend_position"), ac._tree.get("parameters/echelle/scale")])
+			print("  motion_scale %.3f  naturel marche %.2f trot %.2f sprint %.2f  position %.2f  echelle %.2f" % [skel.motion_scale, ac._natural.get(ac.loco_clips[1], 0), ac._natural.get(ac.loco_clips[2], 0), ac._natural.get(ac.loco_clips[3], 0), ac._tree.get("parameters/loco/blend_position"), ac._tree.get("parameters/echelle/scale")])
 		if k == 240:
 			var body := Vector2(player.velocity.x, player.velocity.z).length()
 			var s := slip / maxf(slip_n, 1)

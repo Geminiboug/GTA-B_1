@@ -121,7 +121,13 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
   - [x] Fleches qui faisaient bouger le joueur pendant un achat : deplacement bloque tant qu'un menu est ouvert (achat, inventaire, telephone)
   - [x] Nom de l'assistant retire des credits
   - [x] Plage : blocages et sursauts. Le sable n'avait pas de collision (on tombait sur le fond marin a -1,2 m) et le filet de securite des vehicules les ramenait en arriere des que l'estran passait sous -0,6 m. Collision ajoutee, seuil abaisse sous le fond marin, l'eau freine les vehicules (test_plage)
-  - [ ] Realisme des voitures et minibus beaucoup plus pousse : conduite, apparence, degats, son et effets
+  - [x] Realisme des voitures et minibus beaucoup plus pousse : conduite, apparence, degats, son et effets (voir la deuxieme passe vehicules)
+  - [x] Mission de la plage : destination sur un toit (inaccessible), recalee sur la rue devant Sweet Dream Beach (histoire.gd, _rue)
+  - [x] Torche : orientee chaque image comme le faisceau, quelle que soit la pose de la main
+  - [x] Vetements plus fins : une subdivision de plus sur tous les tissus, plus d'allegement du pantalon (build_character.py) ; niveaux de detail de Godot pour la foule
+  - [x] Mouvements naturels : 22 captures Mixamo fournies par Olympe (attentes, marches homme / femme, course, sprint, virages, parler, telephoner, saluer, deux disputes) reunies par blender/tools/build_mixamo.py, retargetees (bonemap_mixamo.tres), mises sur place au chargement avec leur vitesse naturelle mesuree ; attente et demarche propres a chaque PNJ ; tests/mesure_foulee.gd
+  - [x] Chute d'images en entrant dans l'Ararat et l'aerogare : les clients et voyageurs etaient fabriques a l'entree (pics de 140 ms) ; ils sont fabriques une fois au chargement puis seulement montres / caches ; tests/perf_entree.gd
+  - [ ] Virages sur place et demarrages / arrets avec les clips captes (MX_Tourne_*, MX_Depart, MX_Arret)
 - [ ] Jalon : 3 testeurs finissent l'acte 1 sans aide, sans bug bloquant, et ont envie de continuer
 
 ### Demande d'Olympe du 17/10/2026 : inventaire et vehicules realistes
