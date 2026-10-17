@@ -34,12 +34,59 @@ var tenue := {}                # tenue du joueur (scripts/personnalisation.gd) :
 var perso := {}                # progression du personnage (scripts/stats.gd) : endurance, muscles, poids, competences
 
 var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false,
-	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26}
+	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26, "vol_vehicules": 1.0, "vol_ambiance": 1.0,
+	"vol_effets": 1.0}
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
+
+
+# mixage (phase 19) : un bus par categorie, regle dans les options ; reverberation des grands interieurs (Lieux)
+const BUS_SONS := {"Vehicules": ["voiture", "zem_audio", "traffic", "avion", "air_traffic", "police", "taxi"],
+	"Ambiance": ["ambience", "weather", "day_night", "balisage"], "Effets": []}
+
+
+func _buses() -> void:
+	for nom in ["Vehicules", "Ambiance", "Effets", "Voix"]:
+		if AudioServer.get_bus_index(nom) < 0:
+			AudioServer.add_bus()
+			var i := AudioServer.bus_count - 1
+			AudioServer.set_bus_name(i, nom)
+			AudioServer.set_bus_send(i, "Master")
+	if AudioServer.get_bus_index("Interieur") < 0:
+		AudioServer.add_bus()
+		var r := AudioServer.bus_count - 1
+		AudioServer.set_bus_name(r, "Interieur")
+		AudioServer.set_bus_send(r, "Master")
+		var rev := AudioEffectReverb.new()
+		rev.room_size = 0.75
+		rev.damping = 0.35
+		rev.wet = 0.45
+		rev.dry = 0.0
+		rev.spread = 0.8
+		AudioServer.add_bus_effect(r, rev)
+	get_tree().node_added.connect(_ranger_son)
+
+
+func _ranger_son(n: Node) -> void:
+	## Chaque source sonore va dans le bus de sa categorie, selon le script qui l'a creee.
+	if not (n is AudioStreamPlayer3D or n is AudioStreamPlayer):
+		return
+	var p := n.get_parent()
+	var nom := ""
+	while p and nom == "":
+		var sc: Script = p.get_script()
+		if sc:
+			nom = sc.resource_path.get_file().get_basename()
+		p = p.get_parent()
+	var bus := "Effets"
+	for b in BUS_SONS:
+		if nom in BUS_SONS[b]:
+			bus = b
+	n.set("bus", bus)
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_buses()
 	journal = preload("res://scripts/journal.gd").new()
 	journal.name = "Journal"
 	add_child(journal)
@@ -292,6 +339,10 @@ func sauver_options() -> void:
 
 func appliquer_options() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(float(options["volume"]), 0.0001)))
+	for e in [["Vehicules", "vol_vehicules"], ["Ambiance", "vol_ambiance"], ["Effets", "vol_effets"]]:
+		var i := AudioServer.get_bus_index(e[0])
+		if i >= 0:
+			AudioServer.set_bus_volume_db(i, linear_to_db(maxf(float(options.get(e[1], 1.0)), 0.0001)))
 	if not Engine.is_editor_hint() and DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if options["plein_ecran"] else DisplayServer.WINDOW_MODE_WINDOWED)
 	var scene := get_tree().current_scene

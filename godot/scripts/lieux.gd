@@ -194,6 +194,23 @@ func _zone(mi: MeshInstance3D, key: String) -> void:
 	mi.visible = false
 	var aabb := mi.global_transform * mi.mesh.get_aabb()
 	zones.append({"name": key, "aabb": aabb.grow(0.3)})
+	if key in ["ararat", "terminal"]:
+		# grand volume ferme : les sons qui y naissent resonnent (bus Interieur, scripts/partie.gd)
+		var zone := Area3D.new()
+		zone.name = "Reverb_" + key
+		zone.reverb_bus_enabled = true
+		zone.reverb_bus_name = &"Interieur"
+		zone.reverb_bus_amount = 0.45
+		zone.reverb_bus_uniformity = 0.3
+		zone.monitoring = false
+		zone.monitorable = false
+		var cs := CollisionShape3D.new()
+		var bx := BoxShape3D.new()
+		bx.size = aabb.size
+		cs.shape = bx
+		zone.add_child(cs)
+		add_child(zone)
+		zone.global_position = aabb.get_center()
 	var probe := ReflectionProbe.new()
 	probe.interior = true
 	probe.size = aabb.size

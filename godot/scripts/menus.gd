@@ -241,6 +241,9 @@ func _show_options() -> void:
 	_clear("Options")
 	var o: Dictionary = Partie.options
 	_slider("Volume", o["volume"], 0.0, 1.0, func(v: float) -> void: o["volume"] = v)
+	_slider("Véhicules", o.get("vol_vehicules", 1.0), 0.0, 1.0, func(v: float) -> void: o["vol_vehicules"] = v)
+	_slider("Ambiance (ville, mer, pluie)", o.get("vol_ambiance", 1.0), 0.0, 1.0, func(v: float) -> void: o["vol_ambiance"] = v)
+	_slider("Effets et voix", o.get("vol_effets", 1.0), 0.0, 1.0, func(v: float) -> void: o["vol_effets"] = v)
 	_slider("Sensibilité de la souris", o["sensibilite"], 0.3, 2.5, func(v: float) -> void: o["sensibilite"] = v)
 	_check("Effets de caméra (recentrage, secousses)", o["effets_camera"], func(v: bool) -> void: o["effets_camera"] = v)
 	_check("Plein écran", o["plein_ecran"], func(v: bool) -> void: o["plein_ecran"] = v)
