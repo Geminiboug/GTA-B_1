@@ -191,6 +191,8 @@ common/physics_interpolation=true
 
 [rendering]
 
+textures/vram_compression/import_etc2_astc=true
+
 occlusion_culling/use_occlusion_culling=true
 
 [shader_globals]
