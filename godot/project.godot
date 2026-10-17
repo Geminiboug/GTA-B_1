@@ -20,6 +20,10 @@ config/version="0.1.0"
 run/main_scene="res://scenes/zone_aeroport.tscn"
 config/features=PackedStringArray("4.7")
 
+[audio]
+
+general/default_playback_type.web=0
+
 [autoload]
 
 Partie="*res://scripts/partie.gd"

@@ -65,6 +65,15 @@ func _ready() -> void:
 	_root.visible = false
 	if titre_au_lancement and get_tree().current_scene == get_parent():
 		_open("titre")
+		# version web lancee avec ?test : nouvelle partie directe (mesure des images/s, phase 11)
+		if OS.has_feature("web") and String(JavaScriptBridge.eval("location.search")).contains("test"):
+			_nouvelle_partie.call_deferred()
+
+
+func _nouvelle_partie() -> void:
+	Partie.nouvelle_partie()
+	_close()
+	get_tree().call_group("histoire", "commencer")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -127,10 +136,7 @@ func _show_title() -> void:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 24)
 	_box.add_child(sub)
-	var first := _button("Nouvelle partie", func() -> void:
-		Partie.nouvelle_partie()
-		_close()
-		get_tree().call_group("histoire", "commencer"))
+	var first := _button("Nouvelle partie", _nouvelle_partie)
 	_button("Continuer", func() -> void:
 		_close()
 		Partie.charger(get_parent())

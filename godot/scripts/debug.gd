@@ -24,6 +24,7 @@ var _panel: PanelContainer
 var _lines: MeshInstance3D
 var _imesh: ImmediateMesh
 var _t := 0.0
+var _web_t := 10.0
 var _scene: Node
 
 
@@ -139,6 +140,12 @@ func info_text() -> String:
 
 
 func _process(delta: float) -> void:
+	# version web : images/s dans la console du navigateur toutes les 10 s (verification phase 11)
+	if OS.has_feature("web"):
+		_web_t -= delta
+		if _web_t <= 0.0:
+			_web_t = 10.0
+			print("FPS web : %d images/s, %d objets" % [Engine.get_frames_per_second(), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)])
 	if mode == 0:
 		return
 	_label.text = info_text()
