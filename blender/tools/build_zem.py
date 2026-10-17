@@ -51,7 +51,16 @@ def material(name, srgb, rough=0.6, metal=0.0, emit=None):
     return m
 
 
-PAINT = material("veh_peinture_rouge", (0.62, 0.06, 0.05), 0.28, 0.1)
+def coat(m, weight=0.5, rough=0.18):
+    """Vernis de carrosserie (exporte en KHR_materials_clearcoat, lu par Godot : reflets nets sur la peinture)."""
+    bsdf = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    if "Coat Weight" in bsdf.inputs:
+        bsdf.inputs["Coat Weight"].default_value = weight
+        bsdf.inputs["Coat Roughness"].default_value = rough
+    return m
+
+
+PAINT = coat(material("veh_peinture_rouge", (0.62, 0.06, 0.05), 0.28, 0.1))
 BLACK = material("veh_plastique_noir", (0.05, 0.05, 0.055), 0.65)
 FRAME = material("veh_cadre", (0.07, 0.07, 0.075), 0.45, 0.3)
 CHROME = material("veh_chrome", (0.82, 0.82, 0.85), 0.12, 1.0)

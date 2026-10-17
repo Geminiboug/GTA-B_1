@@ -62,9 +62,18 @@ def mat(name, srgb, rough=0.6, metal=0.0, alpha=1.0, emit=None):
     return m
 
 
+def coat(m, weight=0.5, rough=0.18):
+    """Vernis de carrosserie (exporte en KHR_materials_clearcoat, lu par Godot : reflets nets sur la peinture)."""
+    bsdf = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    if "Coat Weight" in bsdf.inputs:
+        bsdf.inputs["Coat Weight"].default_value = weight
+        bsdf.inputs["Coat Roughness"].default_value = rough
+    return m
+
+
 def mats():
     return {
-        "body": mat("mat_carrosserie", (0.92, 0.92, 0.9), 0.38, 0.12),
+        "body": coat(mat("mat_carrosserie", (0.92, 0.92, 0.9), 0.32, 0.18)),
         "glass": mat("mat_verre_auto", (0.06, 0.08, 0.1), 0.04, 0.0, alpha=0.55),
         "lamp": mat("mat_lampe", (0.95, 0.95, 0.9), 0.08),
         "tail": mat("mat_feu_arriere", (0.62, 0.04, 0.04), 0.15),
@@ -76,6 +85,9 @@ def mats():
         "seat": mat("mat_siege", (0.22, 0.2, 0.18), 0.95),
         "plate": mat("mat_plaque", (0.93, 0.93, 0.9), 0.5),
         "chrome": mat("mat_chrome", (0.8, 0.8, 0.82), 0.15, 1.0),
+        "disc": mat("mat_disque", (0.42, 0.41, 0.4), 0.45, 0.9),
+        "lens": mat("mat_glace_phare", (0.85, 0.88, 0.9), 0.02, 0.0, alpha=0.25),
+        "mirror": mat("mat_miroir", (0.75, 0.78, 0.8), 0.03, 1.0),
         "rack": mat("mat_galerie", (0.2, 0.2, 0.22), 0.6, 0.6),
         "cargo": mat("mat_bache", (0.25, 0.35, 0.55), 0.9),
         "sac": mat("mat_sac", (0.55, 0.45, 0.3), 0.95),
@@ -122,6 +134,17 @@ class Mesh:
                 j = (i + 1) % seg
                 self.face((rings[a][i], rings[a][j], rings[a + 1][j], rings[a + 1][i]), m, smooth)
         return rings
+
+    def lathe_y(self, m, c, prof, seg=16, cap=True):
+        """Solide de revolution d'axe Y (optiques). prof : [(y, rayon)] de l'arriere vers l'avant."""
+        rings = [[self.bm.verts.new((c[0] + r * math.cos(i / seg * math.tau), c[1] + y, c[2] + r * math.sin(i / seg * math.tau)))
+                  for i in range(seg)] for y, r in prof]
+        for a in range(len(rings) - 1):
+            for i in range(seg):
+                j = (i + 1) % seg
+                self.face((rings[a][i], rings[a][j], rings[a + 1][j], rings[a + 1][i]), m, True)
+        if cap:
+            self.face(rings[-1] if prof[-1][0] > prof[0][0] else rings[-1][::-1], m, True)
 
     def disc_x(self, m, c, r, seg=24, flip=False):
         vs = [self.bm.verts.new((c[0], c[1] + r * math.cos(i / seg * math.tau), c[2] + r * math.sin(i / seg * math.tau))) for i in range(seg)]
@@ -235,11 +258,28 @@ def body_shell(name, M, stations):
                 m = M["glass"]
             elif row == ROW_TOP and st.get("top") == "glass":
                 m = M["glass"]
-            elif row == ROW_GUTTER and st.get("top") == "glass" and st.get("win"):
-                m = M["glass"]
             me.face((rings[a][j], rings[a][(j + 1) % n], rings[a + 1][(j + 1) % n], rings[a + 1][j]), m, True)
     me.face(rings[0], M["body"], True)
     me.face(rings[-1][::-1], M["body"], True)
+    # plis vifs gardes par la subdivision : epaule, appui de vitre, gouttiere, bas de caisse ; montants des vitres
+    cl = me.bm.edges.layers.float.get("crease_edge") or me.bm.edges.layers.float.new("crease_edge")
+    crease_rows = {2: 0.55, 4: 0.75, 5: 0.9, 6: 0.85}
+    for a in range(len(rings) - 1):
+        for j in range(n):
+            row = j if j <= half else (2 * half - j)
+            if row in crease_rows:
+                e = me.bm.edges.get((rings[a][j], rings[a + 1][j]))
+                if e:
+                    e[cl] = crease_rows[row]
+    for a in range(1, len(rings) - 1):
+        before, after = stations[a - 1], stations[a]
+        if bool(before.get("win")) != bool(after.get("win")) or before.get("top") != after.get("top"):
+            for j in range(n):
+                row = j if j < half else (2 * half - 1 - j)
+                if row >= ROW_SIDE_WIN:
+                    e = me.bm.edges.get((rings[a][j], rings[a][(j + 1) % n]))
+                    if e:
+                        e[cl] = 0.8
     ob = me.obj()
     modifier(ob, "SUBSURF", levels=2, render_levels=2)
     for p in ob.data.polygons:
@@ -280,6 +320,12 @@ def wheel(M, name, piv, r, w, side, spokes=5):
     for i in range(spokes):
         a = i / spokes * math.tau
         m.box(M["rim"], (s * w * 0.33, math.cos(a) * r * 0.39, math.sin(a) * r * 0.39), (0.04, 0.07, r * 0.42), rx=a + math.pi / 2)
+        m.box(M["rim"], (s * w * 0.3, math.cos(a + 0.3) * r * 0.42, math.sin(a + 0.3) * r * 0.42), (0.03, 0.035, r * 0.36), rx=a + 0.3 + math.pi / 2)
+    # disque de frein ventile derriere les branches, ecrous de roue
+    m.lathe_x(M["disc"], (0, 0, 0), [(-s * w * 0.05, r * 0.2), (-s * w * 0.05, r * 0.52), (-s * w * 0.2, r * 0.52), (-s * w * 0.2, r * 0.2)], 24)
+    for i in range(4):
+        a = i / 4 * math.tau + 0.4
+        m.lathe_x(M["chrome"], (s * w * 0.4, math.cos(a) * r * 0.13, math.sin(a) * r * 0.13), [(0.0, 0.012), (s * 0.02, 0.012), (s * 0.025, 0.0)], 6)
     ob = m.obj(piv)
     for p in ob.data.polygons:
         p.use_smooth = True
@@ -335,7 +381,7 @@ def vehicle(name, sp):
         bw = c["hw"] * 2 + 0.02
         det.box(M[sp.get("bumper_mat", "body")], (0, y0 - dirn * 0.02, bz), (bw - 0.18, 0.2, sp["bumper_h"]), smooth=True)
         for s in (-1, 1):
-            det.box(M[sp.get("bumper_mat", "body")], (s * (bw / 2 - 0.14), y0 - dirn * 0.12, bz), (0.2, 0.3, sp["bumper_h"]), rz=s * dirn * 0.45, smooth=True)
+            det.box(M[sp.get("bumper_mat", "body")], (s * (bw / 2 - 0.16), y0 - dirn * 0.12, bz), (0.14, 0.26, sp["bumper_h"] * 0.96), rz=s * dirn * 0.5, smooth=True)
         det.box(M["black"], (0, y0 + dirn * 0.1, bz - sp["bumper_h"] * 0.32), (bw - 0.4, 0.05, 0.06))
     # avant : calandre a lamelles, phares en amande, clignotants ; plaque
     fz = sp["lamp_z"]
@@ -345,8 +391,12 @@ def vehicle(name, sp):
         det.box(M["chrome"], (0, yf + 0.03, fz - 0.02 - sp["grille_h"] * 0.4 + k * sp["grille_h"] * 0.27), (cf["hw"] * 0.82, 0.02, 0.012))
     for s in (-1, 1):
         lx = s * (cf["hw"] - 0.25)
-        det.box(M["chrome"], (lx, yf - 0.03, fz), (0.36, 0.1, sp["lamp_h"] + 0.03), rz=-s * 0.12)
-        det.box(M["lamp"], (lx, yf - 0.0, fz), (0.33, 0.08, sp["lamp_h"]), rz=-s * 0.12)
+        lh = sp["lamp_h"]
+        det.box(M["black"], (lx, yf - 0.025, fz), (0.37, 0.1, lh + 0.04), rz=-s * 0.12)
+        det.box(M["lamp"], (lx, yf + 0.024, fz), (0.34, 0.012, lh * 0.92), rz=-s * 0.12)     # glace (s'allume la nuit)
+        det.box(M["chrome"], (lx, yf + 0.03, fz + lh * 0.5), (0.35, 0.014, 0.012), rz=-s * 0.12)
+        det.box(M["chrome"], (lx, yf + 0.03, fz - lh * 0.5), (0.35, 0.014, 0.012), rz=-s * 0.12)
+        det.box(M["lamp"], (lx + s * 0.15, yf - 0.02, fz - lh * 0.3), (0.05, 0.01, 0.015), rz=-s * 0.12)
         det.box(M["orange"], (s * (cf["hw"] - 0.05), yf - 0.12, fz - 0.01), (0.07, 0.14, sp["lamp_h"] * 0.6), rz=-s * 0.5)
         # antibrouillard dans le pare-chocs
         det.box(M["lamp"], (s * (cf["hw"] - 0.3), yf + 0.12, bz - 0.02), (0.12, 0.02, 0.06))
@@ -355,19 +405,27 @@ def vehicle(name, sp):
     tz = sp["tail_z"]
     cr = belt_at(yr + 0.05)
     for s in (-1, 1):
+        det.box(M["black"], (s * (cr["hw"] - 0.17), yr + 0.012, tz), (0.33, 0.07, sp["tail_h"] + 0.03), rz=s * 0.1)
+        for k in (-1, 1):                                                       # cloisons du bloc optique
+            det.box(M["black"], (s * (cr["hw"] - 0.17) + k * 0.075, yr - 0.016, tz), (0.008, 0.012, sp["tail_h"]), rz=s * 0.1)
         det.box(M["tail"], (s * (cr["hw"] - 0.17), yr - 0.0, tz), (0.3, 0.07, sp["tail_h"]), rz=s * 0.1)
         det.box(M["orange"], (s * (cr["hw"] - 0.17), yr - 0.01, tz - sp["tail_h"] * 0.38), (0.28, 0.07, sp["tail_h"] * 0.25), rz=s * 0.1)
         det.box(M["lamp"], (s * (cr["hw"] - 0.17), yr - 0.012, tz + sp["tail_h"] * 0.32), (0.12, 0.06, sp["tail_h"] * 0.2), rz=s * 0.1)
     det.box(M["plate"], (0, yr - 0.03, sp["rear_plate_z"]), (0.44, 0.02, 0.11))
     det.box(M["chrome"], (0, yr - 0.02, sp["rear_plate_z"] + 0.1), (0.3, 0.02, 0.03))
-    det.box(M["chrome"], (hw * 0.55, yr + 0.05, st[0]["zb"] + 0.02), (0.06, 0.25, 0.06))
+    det.lathe_y(M["chrome"], (hw * 0.55, yr + 0.05, st[0]["zb"] + 0.02), [(0.25, 0.024), (-0.12, 0.032), (-0.14, 0.03)], 12, cap=False)
+    det.lathe_y(M["black"], (hw * 0.55, yr + 0.05, st[0]["zb"] + 0.02), [(-0.13, 0.026), (-0.125, 0.0)], 12)
+    for k, x in enumerate((-0.13, -0.08, -0.03, 0.02, 0.07, 0.12)):        # numero fictif sur la plaque arriere
+        det.box(M["black"], (x, yr - 0.042, sp["rear_plate_z"] + (0.01 if k % 2 else -0.01)), (0.03, 0.004, 0.06))
     # retroviseurs (coque couleur caisse sur un bras noir), poignees, encadrements de vitres, essuie-glaces
     my = sp["mirror_y"]
     cm = belt_at(my)
     for s in (-1, 1):
-        det.box(M["black"], (s * (cm["hw"] * 0.97 + 0.04), my, cm["belt"] + 0.04), (0.1, 0.06, 0.05))
-        det.box(M["body"], (s * (cm["hw"] * 0.97 + 0.12), my - 0.02, cm["belt"] + 0.1), (0.1, 0.1, 0.14), rz=s * 0.15, smooth=True)
-        det.box(M["glass"], (s * (cm["hw"] * 0.97 + 0.12), my - 0.075, cm["belt"] + 0.1), (0.08, 0.01, 0.11), rz=s * 0.15)
+        sill = cm["rw"] + (cm["hw"] * 0.965 - cm["rw"]) * 0.72      # appui de vitre (voir half_section)
+        det.box(M["black"], (s * (sill + 0.01), my - 0.02, cm["belt"] + 0.05), (0.04, 0.16, 0.09))   # embase triangulaire
+        det.box(M["black"], (s * (sill + 0.06), my - 0.03, cm["belt"] + 0.07), (0.08, 0.04, 0.03))
+        det.box(M["body"], (s * (sill + 0.13), my - 0.04, cm["belt"] + 0.09), (0.13, 0.08, 0.1), rz=s * 0.12, smooth=True)
+        det.box(M["mirror"], (s * (sill + 0.13), my - 0.083, cm["belt"] + 0.09), (0.11, 0.008, 0.08), rz=s * 0.12)
         for y in sp["doors"]:
             c = belt_at(y)
             det.box(M["black"], (s * (c["hw"] * 0.985 + 0.01), y, c["belt"] - 0.12), (0.025, 0.15, 0.035))
@@ -379,6 +437,13 @@ def vehicle(name, sp):
         # baguette de protection laterale
         det.box(M["black"], (s * (hw * 1.0 + 0.004), (sp["door_lines"][0] + sp["door_lines"][-1]) / 2, sp["strip_z"]),
                 (0.012, abs(sp["door_lines"][0] - sp["door_lines"][-1]) + 0.2, 0.04))
+    cfuel = belt_at(-wb / 2 + 0.05)
+    det.box(M["black"], (cfuel["hw"] + 0.003, -wb / 2 + 0.05, cfuel["belt"] - 0.13), (0.006, 0.17, 0.12))
+    for yl, dirn in ((sp["wiper_y"] + 0.05, 1), (st[2]["y"] if not sp.get("rack") else None, -1)):
+        if yl is None:
+            continue
+        c = belt_at(yl)
+        det.box(M["black"], (0, yl, c["belt"] + 0.012), (c["hw"] * 1.6, 0.006, 0.006))
     wy = sp["wiper_y"]
     cw = belt_at(wy)
     for s in (-0.35, 0.25):
