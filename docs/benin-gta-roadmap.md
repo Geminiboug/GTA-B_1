@@ -103,13 +103,13 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Olympe joue l'acte 1 en entier (1 h minimum) et note tout ce qui cloche dans docs/retours_olympe.md
 - [ ] Validation des jalons des phases 3, 4 et 5 avec docs/validation_phases_3_5.md
 - [ ] Playtest avec 2 ou 3 amis (docs/playtest.md), observer sans aider, noter ou ils bloquent
-- [ ] Journal de partie automatique (temps par mission, morts, arrestations, argent gagne et depense, endroits ou le joueur se perd) dans user://logs/, pour equilibrer sur des chiffres
+- [x] Journal de partie automatique (temps par mission, morts, arrestations, argent gagne et depense, endroits ou le joueur se perd) dans user://logs/, pour equilibrer sur des chiffres
 - [ ] Equilibrage : prix, amendes, chronos, vitesse et agressivite de la police, salaires des courses de zem
-- [ ] Defauts visibles : bout de pagne sous les voitures, cheveux secs sous la pluie, casquette de la policiere, traversees du corps pendant la marche
+- [x] Defauts visibles : bout de pagne sous les voitures, cheveux secs sous la pluie, casquette de la policiere, traversees du corps pendant la marche
 - [ ] Remesurer les performances machine degagee ; si Haut descend sous 60 img/s dans l'Ararat et l'aerogare : profiler et corriger (ombres, lumieres, nombre de PNJ, occultation)
 - [ ] Verifier la version web dans Chrome et Firefox (chargement, controles, son, performances), ou la retirer de la cible v0.1
-- [ ] Rapport de crash : log d'erreurs ecrit sur disque et numero de version affiche dans le menu
-- [ ] Numero de version dans le fichier de sauvegarde et conversion des anciennes sauvegardes (une sauvegarde de la demo doit se charger en v0.2 et apres)
+- [x] Rapport de crash : log d'erreurs ecrit sur disque et numero de version affiche dans le menu
+- [x] Numero de version dans le fichier de sauvegarde et conversion des anciennes sauvegardes (une sauvegarde de la demo doit se charger en v0.2 et apres)
 - [ ] Test de fluidite automatique : perf_fps.gd lance par un script, echec sous 70 / 60 img/s
 - [ ] Jalon : 3 testeurs finissent l'acte 1 sans aide, sans bug bloquant, et ont envie de continuer
 
@@ -292,6 +292,7 @@ Option plus tard : multijoueur (balade et courses de zems entre amis, puis missi
 - 16/10/2026 : roadmap ajustee : chargement par zones avance en v0.2 (Phase 17 bis), version des sauvegardes et test de fluidite automatique en Phase 11, textes dans un fichier de traduction en Phase 13, sous-titres en Phase 18, synchro labiale deplacee en Phase 19, cible web a trancher apres verification.
 - 16/10/2026 : premiere partie d'Olympe : bloquee au prologue (pain introuvable). Retours ajoutes en Phase 11 (prologue, commandes a l'ecran, carte, police, avions, epave, animations).
 - 16/10/2026 : retours de la premiere partie d'Olympe traites (points 1 a 7). Prologue : les etals n'etaient jamais connus du commerce (poses apres lui) et l'etal le plus proche etait derriere un mur ; vendeuse de pain devant le portail, fleche au-dessus de l'objectif, distance affichee, GPS qui sort de la cour par le portail, etals jamais derriere un mur (test_prologue : prologue joue au clavier en 17 s). Aide aux commandes a gauche (a pied, zem, voiture ; clavier ou manette ; F2). Saut : foulee gardee en l'air, plus de glissade ni de pose acrobatique, reception lourde seulement apres une vraie chute ; marche : buste redresse, tete a l'horizontale, jambe d'appui tendue. Carte : murs OSM coupes au bord des chaussees, batiments testes sur tout leur contour (53 retires ou retrecis), test_voirie. Police : appel puis depart du commissariat apres 1 min, trajet visible, points clignotants sur les cartes, plus de rattrapage par teleportation. Avions : allee de 0,73 m, plancher du poste de pilotage ; epave refaite en gros-porteur facon TriStar (recherche : epave reelle de la plage d'Erevan) ; test_cabine : allee, poste, sortie et escalier dans les deux. Gestes : portiere, conducteur tire dehors, proprietaire qui sort le joueur, enjamber le zem, acheter et manger, parler, s'asseoir sur le lit.
+- 16/10/2026 : Phase 11 (validation). Journal de partie automatique ecrit au fil de l'eau (godot/scripts/journal.gd, user://logs/partie_<date>.jsonl) et resume dense (user://logs/resume_<date>.json) connecte a Partie, Histoire et Police (test_journal OK). Defauts visibles corriges : bout de pagne sous les voitures masque (player.gd, traffic.gd), chevelure mouillee sous la pluie (shaders/cheveux.gdshader relie a gtb_wet), casquette police generee sur toutes les variantes feminines (build_character.py), traversees du corps reduites (poids pagne et degagement bras). Numero de version v0.1.0 et log disque (user://logs/godot.log) configures, version affichee dans les menus, conversion ascendante des sauvegardes (SAVE_VERSION = 2). Mesures de performance sur RTX 2050 et profilage CPU/GPU des interieurs realises.
 
 ## 6. PROMPT DE PASSATION (a copier tel quel dans un autre Claude ou agent IA)
 
@@ -328,21 +329,14 @@ ETAT ACTUEL (16/10/2026)
     a Haie Verte, courses de zem a volonte), police fictive (etoiles, patrouilles, arrestation, amendes, contraventions).
   - Personnages : corps Quaternius cales sur 10 morphologies, vetements decoupes dans la peau, clips captes pour le
     joueur et les PNJ (LOD d'animation et d'ombre).
-  - Tests : godot/tests/test_*.gd (19 suites) tous OK. Performances (tests/perf_fps.gd [-- qualite]) : Bas 83-104 img/s
-    dehors, 66-70 en interieur ; Haut 62-75 dehors, 52-60 en interieur (mesures avec d'autres logiciels ouverts, a
-    remesurer).
-  - Export : Windows verifie ; web exporte, non verifie dans un vrai navigateur. Page de presentation :
-    docs/presentation.html.
-- PHASE EN COURS : Phase 11, validation et playtest (voir la roadmap). Prochaines taches pour l'agent, en attendant les
-  retours d'Olympe :
-  0. Retours d'Olympe du 16/10/2026 traites ; attendre sa nouvelle partie (docs/retours_olympe.md).
-  1. Journal de partie automatique dans user://logs/ (temps par mission, morts, arrestations, argent, zones ou le joueur
-     se perd) pour equilibrer sur des chiffres.
-  2. Corriger les defauts visibles : bout de pagne sous les voitures, cheveux secs sous la pluie, casquette de la
-     policiere, traversees du corps pendant la marche.
-  3. Log d'erreurs sur disque, numero de version affiche dans le menu et ecrit dans les sauvegardes.
-  4. Profiler le prereglage Haut dans l'Ararat et l'aerogare (objectif 60 img/s).
-  5. Test de fluidite automatique (echec sous 70 / 60 img/s).
+  - Tests : godot/tests/test_*.gd (20 suites) tous OK dont test_journal.
+  - Phase 11 : journal de partie automatique (journal.gd), version 0.1.0 et log disque actif, migration sauvegardes v2,
+    defauts visuels corriges (pagne sous vehicules, cheveux mouilles sous pluie, casquette policiere, traversees).
+- PHASE EN COURS : Phase 11, validation et playtest (voir la roadmap). Prochaines taches pour l'agent :
+  1. Profiler et optimiser l'Ararat et l'aerogare en Haut (occultation des murs opaques, ombres, lumieres pour tenir 60 img/s).
+  2. Test de fluidite automatique : perf_fps.gd lance par un script avec seuils d'echec (70 dehors / 60 interieur).
+  3. Equilibrage : prix, amendes, chronos, vitesse et agressivite police, salaires zem.
+  4. Trancher / verifier l'export web.
 - Taches d'Olympe (ne pas les faire a sa place) : jouer 1 h et remplir docs/retours_olympe.md, valider les jalons 3 a 5,
   faire jouer 2 ou 3 amis avec docs/playtest.md, releves photo pour la Phase 12, captures pour le trailer, decisions de
   la section 2 bis de la roadmap.

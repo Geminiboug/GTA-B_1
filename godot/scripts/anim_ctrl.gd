@@ -1,4 +1,4 @@
-﻿extends Node3D
+extends Node3D
 ## Pilote d'animation a base de clips captes (Quaternius, CC0), redirigees sur le squelette standard des personnages.
 ## Remplace l'animation procedurale (character_anim.gd) avec la meme interface : speed, on_floor, vertical_speed,
 ## turn_rate, accel, seated, crouch, land(), punch(), essouffle, look_yaw, look_pitch, femme, gesture...
@@ -423,6 +423,9 @@ func _upright(w: float) -> void:
 		var ahead := _skel.global_transform.basis.orthonormalized() * Vector3(0, 0, 1)
 		_two_bone_ik("LeftUpperLeg", "LeftLowerLeg", "LeftFoot", feet["Left"], ahead)
 		_two_bone_ik("RightUpperLeg", "RightLowerLeg", "RightFoot", feet["Right"], ahead)
+	# bras : ecart minimal aux hanches (evite que la main ou l'avant-bras ne traverse le bassin, le pagne ou la poche)
+	for e in [["Left", 1.0, -0.055], ["Right", -1.0, 0.055]]:
+		_turn_bone(e[0] + "UpperArm", Vector3(0.0, 0.0, float(e[2]) * w))
 
 
 func _arm_to(side: String, goal: Vector3, w: float, pole := Vector3.ZERO) -> void:

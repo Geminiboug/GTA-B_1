@@ -60,6 +60,7 @@ func crime(kind: String, _where: Vector3) -> void:
 	var add: int = DELITS.get(kind, 1)
 	var avant := Partie.recherche
 	var temoin := _witness()
+	Partie.journal.delit(kind, temoin)
 	# deja recherche : un nouveau delit fait monter le niveau
 	Partie.set_recherche(maxi(Partie.recherche, 0) + add)
 	_hors_vue = 0.0
@@ -148,6 +149,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		_hors_vue += delta
 		if _hors_vue > perte_vue + 4.0 * Partie.recherche:
+			Partie.journal.compter("police_semee", 1, {"niveau": Partie.recherche})
 			Partie.set_recherche(0)
 			Partie.notifier("Tu as semé la police")
 	# arrestation
@@ -426,6 +428,8 @@ func _routine(delta: float, pv: Node3D, ppos: Vector3) -> void:
 		return
 	if pv and _ticket_cd <= 0.0 and absf(float(pv.get("speed"))) > limite_vitesse and car.global_position.distance_to(ppos) < 30.0:
 		_ticket_cd = 60.0
+		Partie.journal.compter("contraventions", 1, {"kmh": roundi(absf(float(pv.get("speed"))) * 3.6)})
+		Partie.journal.amende(mini(contravention, Partie.argent))
 		Partie.prelever(contravention, "Contravention : excès de vitesse")
 		Partie.stats["amendes"] = int(Partie.stats.get("amendes", 0)) + 1
 		Bulle.say(car, "Excès de vitesse !", 2.5, 2.2)
@@ -436,6 +440,8 @@ func _arrest() -> void:
 	var lvl := Partie.recherche
 	_busy = true
 	_arrest_t = 0.0
+	Partie.journal.compter("arrestations", 1, {"niveau": lvl, "amende": Partie.amende_par_niveau * lvl})
+	Partie.journal.amende(mini(Partie.amende_par_niveau * lvl, Partie.argent))
 	var hj := get_tree().get_first_node_in_group("hud_jeu")
 	if hj:
 		hj.annonce("ARRÊTÉ", "Amende : %s" % Partie.fcfa(Partie.amende_par_niveau * lvl), 3.5)
@@ -452,6 +458,7 @@ func _malaise() -> void:
 	if _busy:
 		return
 	_busy = true
+	Partie.journal.compter("morts", 1, {"recherche": Partie.recherche})
 	var hj := get_tree().get_first_node_in_group("hud_jeu")
 	if hj:
 		hj.annonce("ÉVANOUI", "Frais de soins : %s" % Partie.fcfa(Partie.frais_hopital), 3.5)

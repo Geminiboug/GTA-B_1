@@ -105,6 +105,11 @@ func _build_meshes() -> Dictionary:
 			asm2.add_child(dr)
 			var look := PnjUtil.random_look(dr, _rng)
 			PnjUtil.apply(dr, look)
+			# dans la voiture, seul le haut est visible : le bas du pagne / boubou depasserait sous le plancher
+			for sn in ["chr_pagne_long", "chr_jupe", "chr_boubou"]:
+				var smi := dr.find_child(sn, true, false) as Node3D
+				if smi:
+					smi.visible = false
 			dr.scale = Vector3.ONE
 			PnjUtil.pose_driving(dr)
 			dr.position = sp - Vector3(0, 0.89 if genre == "homme" else 0.85, 0)

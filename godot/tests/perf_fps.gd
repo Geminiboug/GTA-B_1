@@ -1,6 +1,9 @@
 extends SceneTree
 ## Mesure des images par seconde en rendu reel (fenetre, synchro verticale coupee) depuis plusieurs points de vue.
 ## Lancement : godot --path godot --resolution 1600x900 --script res://tests/perf_fps.gd [-- <qualite 0 a 2>]
+## Test de fluidite (phase 11) : budget d'Olympe, moyenne d'au moins 70 images/s dehors et 60 en interieur ;
+## resultat OK / ECHEC et code de sortie 1 en cas d'echec (tests/perf.sh lance les trois qualites).
+## Fermer l'editeur Godot, Blender et les logiciels lourds avant de mesurer.
 
 var frame := 0
 var scene: Node
@@ -11,6 +14,9 @@ var views := [["quartier", Vector3(300, 1, 120), 2.4], ["route des peches", Vect
 	["haie vive (nord)", Vector3(150, 1, -900), 0.8]]
 var idx := 0
 var samples: Array[float] = []
+var budget_dehors := 70.0
+var budget_interieur := 60.0
+var fails := 0
 
 
 func _initialize() -> void:
@@ -45,7 +51,14 @@ func _process(_delta: float) -> bool:
 			s += x
 		print("FPS %s : %.0f images/s (min %.0f) | objets dessines %d, primitives %dk" % [v[0], s / samples.size(), samples.min(),
 			Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000])
+		var interieur: bool = String(v[0]).contains("interieur") or String(v[0]).contains("hall")
+		var budget := budget_interieur if interieur else budget_dehors
+		if s / samples.size() < budget:
+			fails += 1
+			print("ECHEC %s sous le budget de %.0f images/s" % [v[0], budget])
 		idx += 1
 		if idx >= views.size():
+			print("RESULTAT perf : %s" % ("OK" if fails == 0 else "%d vue(s) sous le budget" % fails))
+			quit(1 if fails else 0)
 			return true
 	return false

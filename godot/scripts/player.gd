@@ -330,12 +330,29 @@ func knocked_out_of_vehicle(from: Vector3) -> void:
 		anim.play_clips([["Hit_Knockback", 0.0]])
 
 
+func _skirt_visible(vis: bool) -> void:
+	var m := get_node_or_null("Body/Model")
+	if m == null:
+		return
+	for n in ["chr_pagne_long", "chr_jupe", "chr_boubou"]:
+		var mi := m.find_child(n, true, false) as MeshInstance3D
+		if mi and (vis or mi.visible):
+			if not vis:
+				mi.set_meta("_car_hide", true)
+				mi.visible = false
+			elif mi.has_meta("_car_hide"):
+				mi.remove_meta("_car_hide")
+				mi.visible = true
+
+
 func enter_vehicle(v: Node3D) -> void:
 	if crouched:
 		crouched = false
 		($Collision.shape as CapsuleShape3D).height = _stand_height
 		$Collision.position.y = _stand_height * 0.5
 	vehicle = v
+	if v.get("kind") != "zem":
+		_skirt_visible(false)
 	_enter_from = global_transform
 	_enter_t = 0.0
 	$Collision.disabled = true
@@ -350,6 +367,7 @@ func enter_vehicle(v: Node3D) -> void:
 
 func exit_vehicle() -> void:
 	var v := vehicle
+	_skirt_visible(true)
 	_clear_ik()
 	vehicle = null
 	v.set_rider(false)

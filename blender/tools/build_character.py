@@ -1130,8 +1130,8 @@ def skirt(name, rings, mat):
         t = 1.0 - ss(hem_z, top_z, p.z)
         side = "G" if p.x < 0 else "D"
         lat = min(1.0, abs(p.x) / 0.08)
-        # l avant suit presque entierement la cuisse (assis : le tissu enveloppe les jambes au lieu d etre traverse)
-        wl = t * (0.95 * min(1.0, abs(p.x) / 0.04) if p.y > 0.0 else 0.55 * lat)
+        # l avant et l arriere suivent la cuisse (assis et en marchant : la jambe ne traverse plus le pagne)
+        wl = t * (0.95 * min(1.0, abs(p.x) / 0.04) if p.y > 0.0 else 0.9 * min(1.0, abs(p.x) / 0.05))
         groups["piv_bassin"].add([v.index], 1.0 - wl, "REPLACE")
         if wl > 0:
             groups["piv_hanche_" + side].add([v.index], wl, "REPLACE")
@@ -1224,10 +1224,10 @@ else:
     hair_objs.append(shell("chr_bonnet", sk, CAP, 0.011 * k, lambda c: c.z > 0.1 * k + 0.25 * max(c.y, 0.0), hc, seg=32))
     hair_objs.append(loft("chr_bonnet_revers", [(0.105 * k, 0.098 * k, 0.11 * k, 0, 0.0), (0.135 * k, 0.1 * k, 0.112 * k, 0, 0.0)],
                           CAP, seg=24, caps=(False, False), center=hc))
-    hair_objs.append(shell("chr_casquette", skd, CAP, 0.012 * k, lambda c: c.z > 0.165 * k + 0.2 * c.y, hc, seg=40,
-                           edge=lambda c: 0.165 * k + 0.2 * c.y))
-    hair_objs.append(loft("chr_casquette_visiere", [(0.075 * k, 0.072 * k, 0.005, 0, 0.17 * k), (0.15 * k, 0.07 * k, 0.005, 0, 0.162 * k),
-                                                   (0.17 * k, 0.05 * k, 0.004, 0, 0.158 * k)], CAP, axis="Y", seg=8, center=hc))
+hair_objs.append(shell("chr_casquette", skd, CAP, 0.012 * k, lambda c: c.z > 0.165 * k + 0.2 * c.y, hc, seg=40,
+                       edge=lambda c: 0.165 * k + 0.2 * c.y))
+hair_objs.append(loft("chr_casquette_visiere", [(0.075 * k, 0.072 * k, 0.005, 0, 0.17 * k), (0.15 * k, 0.07 * k, 0.005, 0, 0.162 * k),
+                                               (0.17 * k, 0.05 * k, 0.004, 0, 0.158 * k)], CAP, axis="Y", seg=8, center=hc))
 if USE_UBC:
     # coiffures et couvre-chefs reposes sur le crane sculpte : chaque point garde son ecart au crane procedural,
     # mesure le long d'un rayon partant du centre de la tete ; sous le crane (tresses, vanilles), deplacement moyen

@@ -50,6 +50,18 @@ func _ready() -> void:
 	_box = VBoxContainer.new()
 	_box.add_theme_constant_override("separation", 8)
 	col.add_child(_box)
+	var ver := Label.new()
+	ver.name = "Version"
+	ver.text = "v%s" % Partie.version_jeu()
+	ver.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	ver.offset_left = -160
+	ver.offset_top = -36
+	ver.offset_right = -18
+	ver.offset_bottom = -10
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	ver.add_theme_font_size_override("font_size", 16)
+	ver.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85, 0.75))
+	_root.add_child(ver)
 	_root.visible = false
 	if titre_au_lancement and get_tree().current_scene == get_parent():
 		_open("titre")

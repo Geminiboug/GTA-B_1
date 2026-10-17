@@ -316,7 +316,7 @@ func _build_minimap() -> void:
 	_blips.draw.connect(_draw_blips)
 	_holder.add_child(_blips)
 	_info = Label.new()
-	_info.position = Vector2(-20, minimap_size + 4.0)
+	_info.position = Vector2(-20, minimap_size + 12.0)   # sous la barre de sante (scripts/hud_jeu.gd)
 	_info.size = Vector2(minimap_size + 40.0, 44.0)
 	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_info.add_theme_font_size_override("font_size", 15)

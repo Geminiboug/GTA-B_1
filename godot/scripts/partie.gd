@@ -28,10 +28,14 @@ signal evanoui
 var stats := {"courses": 0, "livraisons": 0, "amendes": 0, "distance_zem": 0.0}
 
 var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false}
+var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	journal = preload("res://scripts/journal.gd").new()
+	journal.name = "Journal"
+	add_child(journal)
 	nouvelle_partie()
 	charger_options()
 
@@ -63,6 +67,7 @@ static func fcfa(n: int) -> String:
 func gagner(n: int, raison := "") -> void:
 	argent += n
 	argent_change.emit(argent, n)
+	journal.argent(n, raison)
 	if raison != "":
 		notification.emit("+%s : %s" % [fcfa(n), raison])
 
@@ -74,6 +79,7 @@ func payer(n: int, raison := "") -> bool:
 		return false
 	argent -= n
 	argent_change.emit(argent, -n)
+	journal.argent(-n, raison)
 	if raison != "":
 		notification.emit("-%s : %s" % [fcfa(n), raison])
 	return true
@@ -84,6 +90,7 @@ func prelever(n: int, raison := "") -> void:
 	var m := mini(n, argent)
 	argent -= m
 	argent_change.emit(argent, -m)
+	journal.argent(-m, raison)
 	if raison != "":
 		notification.emit("-%s : %s" % [fcfa(m), raison])
 
@@ -130,18 +137,57 @@ func set_recherche(n: int) -> void:
 	if n != recherche:
 		recherche = n
 		recherche_change.emit(n)
+		journal.recherche(n)
 
 
 # ------------------------------------------------------------------ sauvegarde
+const SAVE_VERSION := 2
+
+
+static func version_jeu() -> String:
+	return str(ProjectSettings.get_setting("application/config/version", "0.1.0"))
+
+
 func existe_sauvegarde() -> bool:
 	return FileAccess.file_exists(save_path)
+
+
+static func convertir_sauvegarde(d: Dictionary) -> Dictionary:
+	## Convertit une ancienne sauvegarde vers le format actuel (SAVE_VERSION) pour qu'une sauvegarde de la demo v0.1
+	## se charge sans perte en v0.2 et apres.
+	var out := d.duplicate(true)
+	var v := int(out.get("version", 0))
+	if v < 1:
+		out["chapitre"] = out.get("chapitre", "prologue")
+		out["missions"] = out.get("missions", [])
+		out["drapeaux"] = out.get("drapeaux", {})
+		out["inventaire"] = out.get("inventaire", {})
+		out["stats"] = out.get("stats", {})
+		out["sante"] = float(out.get("sante", 100.0))
+		v = 1
+	if v < 2:
+		if not out.has("version_jeu"):
+			out["version_jeu"] = "0.1.0"
+		var st: Dictionary = out.get("stats", {}) if typeof(out.get("stats")) == TYPE_DICTIONARY else {}
+		for k in ["courses", "livraisons", "amendes"]:
+			st[k] = int(st.get(k, 0))
+		st["distance_zem"] = float(st.get("distance_zem", 0.0))
+		out["stats"] = st
+		var dr: Dictionary = out.get("drapeaux", {}) if typeof(out.get("drapeaux")) == TYPE_DICTIONARY else {}
+		if not dr.has("mission") and out.get("missions") is Array:
+			dr["mission"] = (out["missions"] as Array).size()
+		out["drapeaux"] = dr
+		v = 2
+	out["version"] = SAVE_VERSION
+	return out
 
 
 func sauver(scene: Node) -> bool:
 	## Position du joueur, heure, meteo, argent, inventaire, histoire. Pas en vehicule ni recherche par la police.
 	var player := scene.get_node_or_null("Player") if scene else null
-	var d := {"version": 1, "argent": argent, "inventaire": inventaire, "missions": missions_faites, "chapitre": chapitre,
-		"drapeaux": drapeaux, "stats": stats, "sante": sante, "date": Time.get_datetime_string_from_system()}
+	var d := {"version": SAVE_VERSION, "version_jeu": version_jeu(), "argent": argent, "inventaire": inventaire,
+		"missions": missions_faites, "chapitre": chapitre, "drapeaux": drapeaux, "stats": stats, "sante": sante,
+		"date": Time.get_datetime_string_from_system()}
 	if player:
 		var p: Vector3 = player.global_position
 		d["joueur"] = {"pos": [p.x, p.y, p.z], "genre": player.get("genre"), "cap": float(player.get("_facing"))}
@@ -160,9 +206,10 @@ func charger(scene: Node) -> bool:
 	if not existe_sauvegarde():
 		return false
 	var f := FileAccess.open(save_path, FileAccess.READ)
-	var d = JSON.parse_string(f.get_as_text())
-	if typeof(d) != TYPE_DICTIONARY:
+	var raw = JSON.parse_string(f.get_as_text())
+	if typeof(raw) != TYPE_DICTIONARY:
 		return false
+	var d := convertir_sauvegarde(raw)
 	argent = int(d.get("argent", argent_depart))
 	inventaire = {}
 	for k in d.get("inventaire", {}):

@@ -83,9 +83,9 @@ func _ready() -> void:
 	_sante = ProgressBar.new()
 	_sante.show_percentage = false
 	_sante.offset_left = 18
-	_sante.offset_top = 268
+	_sante.offset_top = 262
 	_sante.offset_right = 258
-	_sante.offset_bottom = 276
+	_sante.offset_bottom = 268
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = Color(0.35, 0.8, 0.35)
 	var bg := StyleBoxFlat.new()
@@ -103,7 +103,7 @@ func _ready() -> void:
 	_on_recherche(Partie.recherche)
 	_aide = _label(17, Color(1, 1, 1))
 	_aide.offset_left = 18
-	_aide.offset_top = 290
+	_aide.offset_top = 326
 	_aide.offset_right = 420
 	var ab := StyleBoxFlat.new()
 	ab.bg_color = Color(0, 0, 0, 0.45)

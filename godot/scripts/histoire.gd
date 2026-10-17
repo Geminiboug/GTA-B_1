@@ -233,6 +233,7 @@ func commencer() -> void:
 	Partie.drapeaux["mission"] = 0
 	Partie.chapitre = "prologue"
 	active = true
+	Partie.journal.debut("nouvelle_partie")
 	_wait(0)
 	if _hj():
 		_hj().annonce("LE DERNIER VOL", "Cotonou, près de l'aéroport", 4.0)
@@ -240,6 +241,7 @@ func commencer() -> void:
 
 func reprendre() -> void:
 	active = true
+	Partie.journal.debut("chargement")
 	_clear_mission()
 	_wait(int(Partie.drapeaux.get("mission", 0)))
 
@@ -263,6 +265,7 @@ func _wait(i: int) -> void:
 func _start_mission() -> void:
 	step = 0
 	var m: Dictionary = missions[idx]
+	Partie.journal.mission_debut(m["titre"])
 	if _hj():
 		_hj().annonce(m["titre"], "", 2.5)
 	_enter_step()
@@ -274,6 +277,7 @@ func _enter_step() -> void:
 		_complete()
 		return
 	var e: Dictionary = m["etapes"][step]
+	Partie.journal.etape(step, e["t"], e.get("obj", ""))
 	if e.has("chrono"):
 		_chrono = float(e["chrono"])
 	for a in e.get("retirer", []) if e["t"] != "parler" else []:
@@ -340,6 +344,7 @@ func _advance() -> void:
 
 func _complete() -> void:
 	var m: Dictionary = missions[idx]
+	Partie.journal.mission_fin(true)
 	if int(m["rec"]) > 0:
 		Partie.gagner(int(m["rec"]), m["titre"])
 	if _hj():
@@ -354,6 +359,7 @@ func _complete() -> void:
 
 
 func _fail(reason: String) -> void:
+	Partie.journal.mission_fin(false, reason)
 	if _hj():
 		_hj().annonce("MISSION ÉCHOUÉE", reason, 3.5)
 	_clear_mission()
@@ -489,6 +495,7 @@ func _boulots(_delta: float, pv: Node3D, ppos: Vector3) -> void:
 			var prix := int(round((course_prix_base + course_prix_km * km) / 50.0)) * 50
 			Partie.gagner(prix, "Course de zem")
 			Partie.stats["courses"] = int(Partie.stats.get("courses", 0)) + 1
+			Partie.journal.compter("courses_zem", 1, {"km": snappedf(km, 0.01), "prix": prix})
 			_end_boulot(true)
 		elif pv == null:
 			Partie.notifier("Le client est descendu sans payer.")

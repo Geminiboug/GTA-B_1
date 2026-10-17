@@ -10,6 +10,7 @@ const VARIANTS := {"homme": "homme", "homme_fort": "homme", "femme": "femme", "f
 const HAIR_PARTS := ["chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches"]
 const WAX := preload("res://shaders/wax.gdshader")
 const MAILLOT := preload("res://shaders/maillot.gdshader")
+const CHEVEUX := preload("res://shaders/cheveux.gdshader")
 # clubs fictifs (aucun club reel) : [couleur 1, couleur 2, motif]
 const CLUBS := [
 	[Color(0.1, 0.5, 0.25), Color(0.98, 0.85, 0.15), 0],    # Etoile de Gbe Town
@@ -218,32 +219,20 @@ static func random_face(rng: RandomNumberGenerator) -> Dictionary:
 	return f
 
 
-static func salt_pepper(white: float) -> Material:
-	## Cheveux poivre et sel : melange de meches grises et noires (bruit fin), part de blanc 0..1.
-	var key := "sp_%.2f" % white
+static func hair_mat(white := 0.0) -> Material:
+	## Cheveux noirs ou poivre et sel (white 0..1), relies a gtb_wet (mouilles et brillants sous la pluie).
+	var key := "hr_%.2f" % white
 	if _mat_cache.has(key):
 		return _mat_cache[key]
-	var noise := FastNoiseLite.new()
-	noise.frequency = 0.12
-	noise.seed = 3
-	var ramp := Gradient.new()
-	ramp.set_color(0, Color(0.07, 0.06, 0.06))
-	ramp.set_color(1, Color(0.78, 0.77, 0.74))
-	ramp.add_point(clampf(1.0 - white, 0.05, 0.95), Color(0.3, 0.29, 0.28))
-	var tex := NoiseTexture2D.new()
-	tex.noise = noise
-	tex.color_ramp = ramp
-	tex.width = 256
-	tex.height = 256
-	tex.seamless = true
-	var m := StandardMaterial3D.new()
-	m.albedo_texture = tex
-	m.uv1_triplanar = true
-	m.uv1_scale = Vector3(14, 14, 14)
-	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	m.roughness = 0.85
+	var m := ShaderMaterial.new()
+	m.shader = CHEVEUX
+	m.set_shader_parameter("white_share", white)
 	_mat_cache[key] = m
 	return m
+
+
+static func salt_pepper(white: float) -> Material:
+	return hair_mat(white)
 
 
 static func skin_mat(c: Color, genre := "homme") -> Material:
@@ -295,6 +284,8 @@ static func apply(ch: Node, look: Dictionary) -> void:
 				var m: Material = (mi as MeshInstance3D).mesh.surface_get_material(s)
 				if m and m.resource_name == "chr_peau":
 					(mi as MeshInstance3D).set_surface_override_material(s, skin_mat(look["skin"], String(ch.get_meta("genre", "homme"))))
+				elif m and m.resource_name == "chr_cheveux":
+					(mi as MeshInstance3D).set_surface_override_material(s, look.get("hair", hair_mat()))
 			continue
 		if _starts(n, OPTIONAL):
 			mi.visible = _starts(n, look["show"])
@@ -309,8 +300,8 @@ static func apply(ch: Node, look: Dictionary) -> void:
 			mat = look.get("helmet", null)
 		elif n.begins_with("chr_casquette") or n.begins_with("chr_bonnet"):
 			mat = look.get("cap", null)
-		elif look.has("hair") and _starts(n, HAIR_PARTS):
-			mat = look["hair"]
+		elif _starts(n, HAIR_PARTS):
+			mat = look.get("hair", hair_mat())
 		if mat:
 			(mi as MeshInstance3D).set_surface_override_material(0, mat)
 	if ch.get("femme") != null:
