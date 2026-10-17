@@ -37,6 +37,7 @@ func _ready() -> void:
 	for mi in zone.find_children("*", "MeshInstance3D", true, false):
 		_apply(mi)
 		_add_avoid(mi, avoid)
+		_sol_plage(mi)
 	_build_sea()
 
 
@@ -155,3 +156,16 @@ func _build_sea() -> void:
 	sea.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	sea.position = Vector3(sea_rect.position.x + sea_rect.size.x / 2.0, sea_level, sea_rect.position.y + sea_rect.size.y / 2.0)
 	add_child(sea)
+
+
+func _sol_plage(mi: MeshInstance3D) -> void:
+	## Sable de plage sans collision dans l'import (seul l'estran a son -col) : on lui en donne une, sinon joueur et
+	## vehicules passent au travers jusqu'au fond marin (Limites, -1,2 m) et butent contre le bord de l'estran.
+	if not String(mi.name).to_lower().begins_with("plage") or mi.find_children("*", "StaticBody3D", false, false).size() > 0:
+		return
+	var body := StaticBody3D.new()
+	body.name = "SolPlage"
+	var cs := CollisionShape3D.new()
+	cs.shape = mi.mesh.create_trimesh_shape()
+	body.add_child(cs)
+	mi.add_child(body)

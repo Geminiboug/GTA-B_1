@@ -2,7 +2,7 @@ GTB · Gbê Town Bénin
 Le Dernier Vol
 
 Création, direction, terrain : Olympe
-Code, modèles et sons générés par script avec l'aide de Claude (Anthropic)
+Code, modèles et sons générés par script
 
 Personnages, lieux, sociétés et marques de ce jeu sont fictifs.
 Toute ressemblance avec des personnes réelles serait fortuite.

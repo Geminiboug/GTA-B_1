@@ -25,10 +25,16 @@ var recherche := 0             # niveau de recherche (0 a 5), pas sauvegarde
 var police_voit := false       # un agent voit le joueur (les etoiles clignotent)
 var sante := 100.0             # 0 : le joueur s'evanouit et se reveille a l'hopital
 signal sante_change(valeur: float)
+var armure := 0.0              # blouson de moto renforce (Ararat) : absorbe une part des coups et des chutes
+signal armure_change(valeur: float)
+@export var armure_absorbe := 0.6              # part des degats prise par l'armure tant qu'il en reste
 signal evanoui
 var stats := {"courses": 0, "livraisons": 0, "amendes": 0, "distance_zem": 0.0}
+var tenue := {}                # tenue du joueur (scripts/personnalisation.gd) : style, couleurs, coiffure, chaussures
+var perso := {}                # progression du personnage (scripts/stats.gd) : endurance, muscles, poids, competences
 
-var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false}
+var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false,
+	"violence_reduite": false}
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
 
 
@@ -49,7 +55,11 @@ func nouvelle_partie() -> void:
 	drapeaux = {}
 	recherche = 0
 	sante = 100.0
+	armure = 0.0
+	armure_change.emit(armure)
 	stats = {"courses": 0, "livraisons": 0, "amendes": 0, "distance_zem": 0.0}
+	perso = {}
+	tenue = {}
 	argent_change.emit(argent, 0)
 	inventaire_change.emit()
 
@@ -123,10 +133,20 @@ func soigner(n: float) -> void:
 func blesser(n: float) -> void:
 	if sante <= 0.0:
 		return
+	if armure > 0.0:
+		var pris := minf(armure, n * armure_absorbe)
+		armure -= pris
+		n -= pris
+		armure_change.emit(armure)
 	sante = maxf(0.0, sante - n)
 	sante_change.emit(sante)
 	if sante <= 0.0:
 		evanoui.emit()
+
+
+func equiper_armure(n: float) -> void:
+	armure = minf(100.0, armure + n)
+	armure_change.emit(armure)
 
 
 func notifier(texte: String) -> void:
@@ -194,7 +214,7 @@ func sauver(scene: Node) -> bool:
 	## Position du joueur, heure, meteo, argent, inventaire, histoire. Pas en vehicule ni recherche par la police.
 	var player := scene.get_node_or_null("Player") if scene else null
 	var d := {"version": SAVE_VERSION, "version_jeu": version_jeu(), "argent": argent, "inventaire": inventaire,
-		"missions": missions_faites, "chapitre": chapitre, "drapeaux": drapeaux, "stats": stats, "sante": sante,
+		"missions": missions_faites, "chapitre": chapitre, "drapeaux": drapeaux, "stats": stats, "perso": perso, "tenue": tenue, "sante": sante, "armure": armure,
 		"date": Time.get_datetime_string_from_system()}
 	if player:
 		var p: Vector3 = player.global_position
@@ -226,8 +246,12 @@ func charger(scene: Node) -> bool:
 	chapitre = d.get("chapitre", "prologue")
 	drapeaux = d.get("drapeaux", {})
 	stats.merge(d.get("stats", {}), true)
+	perso = (d.get("perso", {}) as Dictionary).duplicate() if typeof(d.get("perso")) == TYPE_DICTIONARY else {}
+	tenue = (d.get("tenue", {}) as Dictionary).duplicate() if typeof(d.get("tenue")) == TYPE_DICTIONARY else {}
 	sante = float(d.get("sante", 100.0))
 	sante_change.emit(sante)
+	armure = float(d.get("armure", 0.0))
+	armure_change.emit(armure)
 	recherche = 0
 	argent_change.emit(argent, 0)
 	inventaire_change.emit()
@@ -277,4 +301,7 @@ func appliquer_options() -> void:
 	if player:
 		player.set("mouse_sensitivity", 0.0025 * float(options["sensibilite"]))
 		player.set("camera_effects", bool(options["effets_camera"]))
+	var armes := scene.get_node_or_null("Armes")
+	if armes:
+		armes.set("violence_reduite", bool(options.get("violence_reduite", false)))
 	Qualite.appliquer(scene, int(options["qualite"]))

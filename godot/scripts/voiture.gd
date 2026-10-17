@@ -44,6 +44,13 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 @export var drag := 0.0011             # trainee aerodynamique (par metre)
 @export var roll_factor := 0.012
 @export var pitch_factor := 0.011
+@export_group("Pneus et chassis")
+@export var repartition_avant := 0.6     # part du poids sur l'essieu avant a l'arret
+@export var hauteur_cg := 0.55           # m : hauteur du centre de gravite (transferts de charge, roulis)
+@export var rigidite_avant := 11.0       # rigidite de derive / charge (par rad) : plus haut = plus vif
+@export var rigidite_arriere := 12.5     # un peu plus a l'arriere : la voiture sous-vire, stable
+@export var abs_actif := true            # freinage a la limite d'adherence sans bloquer les roues
+@export_group("")
 
 var kind := "voiture"
 var model_name := "veh_berline"
@@ -80,7 +87,36 @@ var _wheel_r := 0.31
 var _wheelbase := 2.6
 var _body_mats: Array = []          # [MeshInstance3D, surface, materiau carrosserie d'origine]
 var _tail_mat: StandardMaterial3D
-var _engine: AudioStreamPlayer3D
+var _engine: AudioStreamPlayer3D      # moteur en charge (pied sur l'accelerateur)
+var _engine_off: AudioStreamPlayer3D  # moteur a vide (frein moteur, ralenti)
+var _roul: AudioStreamPlayer3D        # roulement des pneus (goudron ou gravier selon le revetement)
+var _wind: AudioStreamPlayer3D
+var _fx: AudioStreamPlayer3D          # bruits ponctuels : passage de rapport, petarade, portieres
+var _roll_gravier := false
+var _rapport_prec := 0
+var _thr_prec := 0.0
+static var _sons := {}                # boucles calculees une fois pour toutes les voitures
+var _poussiere: GPUParticles3D        # laterite ou sable souleve par les roues
+var _fumee_pneus: GPUParticles3D      # pneus qui fument en derapage ou en patinage
+var _trace_prec := [Vector3.ZERO, Vector3.ZERO]
+static var _traces: MultiMeshInstance3D   # traces de pneus sur le goudron (anneau de TRACES_MAX quads)
+static var _trace_i := 0
+static var _trace_n := 0
+const TRACES_MAX := 700
+const VITRE_CASSEE := preload("res://shaders/vitre_cassee.gdshader")
+const SALETE := preload("res://shaders/salete_auto.gdshader")
+static var _verre: StandardMaterial3D      # vitres teintees qui refletent le ciel (communes a toutes les voitures)
+var usure := Vector2(-1.0, -1.0)          # (poussiere, rouille) 0..1 ; negatif : tire au hasard a la creation
+# degats visibles : tole enfoncee au point de choc, vitres etoilees, phares casses, feu moteur
+var _tole: Dictionary = {}            # MeshInstance3D -> [surfaces d'origine (Array d'arrays), materiaux]
+var _vitres: Array = []               # [MeshInstance3D, surface] des vitres
+var _vitre_mat: ShaderMaterial
+var _phares_casses := [false, false]
+var _feu: GPUParticles3D
+var _feu_lum: OmniLight3D
+var _recul: SpotLight3D                # feux de recul : eclairent le sol derriere en marche arriere
+var _clign_mat: StandardMaterial3D     # clignotants (warnings quand la voiture est en panne)
+var _clign_t := 0.0
 var _horn: AudioStreamPlayer3D
 var _screech: AudioStreamPlayer3D
 var _crash: AudioStreamPlayer3D
@@ -89,6 +125,14 @@ var _lights: Array[SpotLight3D] = []
 var _crash_cd := 0.0
 var _last_safe := Vector3.ZERO
 var _day_night: Node
+var _meteo: Node
+var adresse := 1.0               # competence du conducteur (scripts/stats.gd) : adherence tiree des pneus
+var surface := "route"           # revetement sous la voiture : route, paves, terre, plage, eau
+var adherence := 1.0             # multiplicateur d'adherence du revetement (pluie comprise)
+var derive := 0.0                # angle de derive de la caisse (rad) : derapage visible et crissements
+var _surf_t := 0.0
+const SURFACES := {"route": [1.0, 0.015], "paves": [0.85, 0.02], "terre": [0.7, 0.03], "herbe": [0.6, 0.04],
+	"plage": [0.5, 0.09], "eau": [0.35, 0.2]}   # [adherence, resistance au roulement]
 
 signal crashed(impact: float, other: Object)
 
@@ -137,23 +181,54 @@ func setup(model: Node3D, model_id: String, color: Color) -> void:
 				"mat_carrosserie":
 					var d := (m as BaseMaterial3D).duplicate() as BaseMaterial3D
 					d.albedo_color = color
+					d.next_pass = _salete()
 					mi.set_surface_override_material(s, d)
 					_body_mats.append([d, color])
+				"mat_verre_auto":
+					mi.set_surface_override_material(s, _verre_teinte())
+					_vitres.append([mi, s])
 				"mat_lampe":
 					mi.set_surface_override_material(s, LAMP_MAT)
 				"mat_feu_arriere":
 					mi.set_surface_override_material(s, _tail_mat)
+				"mat_clignotant":
+					if _clign_mat == null:
+						_clign_mat = (m as BaseMaterial3D).duplicate() as StandardMaterial3D
+						_clign_mat.emission_enabled = true
+						_clign_mat.emission = Color(1.0, 0.55, 0.05)
+						_clign_mat.emission_energy_multiplier = 0.0
+					mi.set_surface_override_material(s, _clign_mat)
 
 
 func _ready() -> void:
 	_yaw = rotation.y
 	_last_safe = global_position
 	_day_night = get_parent().get_node_or_null("JourNuit") if get_parent() else null
-	_engine = _sound(AudioSynth.voiture_loop(), -6.0, 6.0, 90.0, true)
+	_meteo = get_parent().get_node_or_null("Meteo") if get_parent() else null
+	var diesel := diesel_moteur()
+	_engine = _sound(_son("on%s" % diesel, func() -> AudioStream: return AudioSynth.moteur(diesel, true)), -8.0, 6.0, 90.0, true)
+	_engine_off = _sound(_son("off%s" % diesel, func() -> AudioStream: return AudioSynth.moteur(diesel, false)), -80.0, 6.0, 90.0, true)
+	_roul = _sound(_son("roll0", func() -> AudioStream: return AudioSynth.roulement_loop(false)), -80.0, 5.0, 50.0, true)
+	_wind = _sound(_son("vent", func() -> AudioStream: return AudioSynth.vent_loop()), -80.0, 4.0, 30.0, true)
+	_fx = _sound(_son("rapport", func() -> AudioStream: return AudioSynth.passage_rapport()), -6.0, 6.0, 60.0, false)
+	_roul.position = Vector3(0, 0.3, 0)
+	_engine.position = Vector3(0, 0.6, -1.4) if not model_name == "veh_minibus" else Vector3(0, 0.6, -1.2)
+	_engine_off.position = _engine.position
 	_horn = _sound(AudioSynth.klaxon(350.0, 440.0, 0.5), -2.0, 10.0, 140.0, false)
 	_screech = _sound(AudioSynth.crissement_loop(), -80.0, 6.0, 90.0, true)
 	_crash = _sound(AudioSynth.choc(), 0.0, 8.0, 120.0, false)
 	_smoke = _make_smoke()
+	_recul = SpotLight3D.new()
+	_recul.spot_range = 9.0
+	_recul.spot_angle = 50.0
+	_recul.light_energy = 0.0
+	_recul.light_color = Color(1.0, 1.0, 0.97)
+	_recul.shadow_enabled = false
+	_recul.position = Vector3(0, 0.8, _wheelbase * 0.5 + 0.9)
+	_recul.rotation = Vector3(-0.35, PI, 0)
+	_visual.add_child(_recul)
+	_poussiere = _particules(Color(0.62, 0.42, 0.28, 0.32), 48, 1.6, Vector3(0, 0.25, 1.8), 1.4)
+	_fumee_pneus = _particules(Color(0.85, 0.85, 0.85, 0.4), 40, 1.3, Vector3(0, 0.2, 1.4), 1.0)
 	for side in [-0.6, 0.6]:
 		var l := SpotLight3D.new()
 		l.spot_range = 34.0
@@ -165,6 +240,50 @@ func _ready() -> void:
 		l.rotation.x = -0.08
 		_visual.add_child(l)
 		_lights.append(l)
+
+
+func _salete() -> ShaderMaterial:
+	## Poussiere de laterite et rouille propres a chaque voiture (les vieux minibus et berlines rouillent plus).
+	if usure.x < 0.0:
+		var vieux := model_name in ["veh_minibus", "veh_berline"]
+		usure = Vector2(randf_range(0.25, 0.9), randf_range(0.0, 0.7) if vieux and randf() < 0.6 else randf_range(0.0, 0.15))
+	var m := ShaderMaterial.new()
+	m.shader = SALETE
+	m.set_shader_parameter("poussiere", usure.x)
+	m.set_shader_parameter("rouille", usure.y)
+	m.set_shader_parameter("haut_caisse", 1.0 if model_name == "veh_berline" else 1.2)
+	return m
+
+
+static func _verre_teinte() -> StandardMaterial3D:
+	if _verre == null:
+		_verre = StandardMaterial3D.new()
+		_verre.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_verre.albedo_color = Color(0.05, 0.065, 0.075, 0.74)
+		_verre.roughness = 0.03
+		_verre.metallic = 0.15
+		_verre.metallic_specular = 0.9
+		_verre.rim_enabled = true
+		_verre.rim = 0.35
+		_verre.rim_tint = 0.2
+	return _verre
+
+
+func diesel_moteur() -> bool:
+	return model_name != "veh_berline"
+
+
+static func _son(cle: String, fabrique: Callable) -> AudioStream:
+	if not _sons.has(cle):
+		_sons[cle] = fabrique.call()
+	return _sons[cle]
+
+
+func portiere(fermer: bool) -> void:
+	## Bruit de portiere (scripts/player.gd en montant et en descendant).
+	_fx.stream = _son("porte%s" % fermer, func() -> AudioStream: return AudioSynth.portiere(fermer))
+	_fx.volume_db = -2.0
+	_fx.play()
 
 
 func _sound(stream: AudioStream, db: float, unit: float, maxd: float, play: bool) -> AudioStreamPlayer3D:
@@ -201,11 +320,123 @@ func _make_smoke() -> GPUParticles3D:
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.albedo_texture = _tache()
 	m.albedo_color = Color(0.35, 0.35, 0.35, 0.35)
 	q.material = m
 	p.draw_pass_1 = q
 	add_child(p)
 	return p
+
+
+func _particules(col: Color, amount: int, life: float, pos: Vector3, taille: float) -> GPUParticles3D:
+	## Nuage derriere les roues arriere (poussiere, fumee de pneus), en coordonnees du monde (il reste en place).
+	var p := GPUParticles3D.new()
+	p.amount = amount
+	p.lifetime = life
+	p.emitting = false
+	p.local_coords = false
+	p.position = pos
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(0.8, 0.05, 0.2)
+	pm.direction = Vector3(0, 0.6, 1)
+	pm.spread = 35.0
+	pm.initial_velocity_min = 0.5
+	pm.initial_velocity_max = 2.0
+	pm.gravity = Vector3(0, 0.25, 0)
+	pm.damping_min = 1.0
+	pm.damping_max = 2.0
+	pm.scale_min = taille * 0.6
+	pm.scale_max = taille * 1.6
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1, 1, 1, 1))
+	fade.set_color(1, Color(1, 1, 1, 0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = fade
+	pm.color_ramp = gt
+	var grow := Curve.new()
+	grow.add_point(Vector2(0, 0.4))
+	grow.add_point(Vector2(1, 1.6))
+	var ct := CurveTexture.new()
+	ct.curve = grow
+	pm.scale_curve = ct
+	p.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.8, 0.8)
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.albedo_texture = _tache()
+	m.vertex_color_use_as_albedo = true
+	m.albedo_color = col
+	q.material = m
+	p.draw_pass_1 = q
+	add_child(p)
+	return p
+
+
+func _effets(delta: float) -> void:
+	## Poussiere sur la laterite et le sable, fumee et traces de pneus sur le goudron quand ca glisse.
+	var v := absf(speed)
+	var terreux := surface in ["terre", "plage", "herbe"]
+	_poussiere.emitting = terreux and v > 4.0
+	if _poussiere.emitting:
+		_poussiere.amount_ratio = clampf(v / 20.0, 0.2, 1.0)
+		var sable := surface == "plage"
+		var col := Color(0.86, 0.78, 0.6, 0.3) if sable else Color(0.62, 0.42, 0.28, 0.32)
+		((_poussiere.draw_pass_1 as QuadMesh).material as StandardMaterial3D).albedo_color = col
+	var glisse := (absf(derive) > 0.14 and v > 5.0) or patine or (braking and v > 8.0 and not abs_actif)
+	_fumee_pneus.emitting = glisse and not terreux
+	if glisse and not terreux and is_inside_tree():
+		_trace(delta)
+	else:
+		_trace_prec = [Vector3.ZERO, Vector3.ZERO]
+
+
+func _trace(_delta: float) -> void:
+	## Deux bandes sombres sous les roues arriere, posees tous les 0,35 m.
+	if _traces == null or not is_instance_valid(_traces):
+		_traces = MultiMeshInstance3D.new()
+		_traces.name = "TracesPneus"
+		_trace_i = 0
+		_trace_n = 0
+		_traces.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		var q := QuadMesh.new()
+		q.size = Vector2(0.2, 1.0)
+		q.orientation = PlaneMesh.FACE_Y
+		var m := StandardMaterial3D.new()
+		m.albedo_color = Color(0.05, 0.05, 0.05, 0.55)
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.roughness = 1.0
+		q.material = m
+		mm.mesh = q
+		mm.instance_count = TRACES_MAX
+		mm.visible_instance_count = 0
+		_traces.multimesh = mm
+		get_tree().current_scene.add_child(_traces) if get_tree().current_scene else get_parent().add_child(_traces)
+	var mm := _traces.multimesh
+	for k in 2:
+		var side := -0.75 if k == 0 else 0.75
+		var p := global_transform * Vector3(side, 0.0, _wheelbase * 0.45)
+		p.y = global_position.y + 0.025
+		var prev: Vector3 = _trace_prec[k]
+		if prev == Vector3.ZERO:
+			_trace_prec[k] = p
+			continue
+		var d := p - prev
+		d.y = 0.0
+		if d.length() < 0.35:
+			continue
+		var mid := (p + prev) * 0.5
+		var b := Basis(Vector3.UP, atan2(d.x, d.z)).scaled(Vector3(1, 1, d.length()))
+		mm.set_instance_transform(_trace_i, Transform3D(b, mid))
+		_trace_i = (_trace_i + 1) % TRACES_MAX
+		_trace_n = mini(_trace_n + 1, TRACES_MAX)
+		mm.visible_instance_count = _trace_n
+		_trace_prec[k] = p
 
 
 func set_rider(value: bool) -> void:
@@ -241,6 +472,182 @@ func damage(amount: float) -> void:
 	_smoke.emitting = health < 40.0
 	if health <= 0.0:
 		(_smoke.process_material as ParticleProcessMaterial).color = Color(0.1, 0.1, 0.1)
+	if health < 15.0 and _feu == null:
+		_allumer_feu()
+
+
+func enfoncer(point: Vector3, normale: Vector3, impact: float) -> void:
+	## Tole enfoncee autour du point de choc (sommets de la caisse et des details pousses vers l'interieur, d'autant plus
+	## pres du point et fort le choc) ; vitres etoilees et phares casses au-dela d'un gros choc.
+	if impact < 4.0 or _visual == null:
+		return
+	var prof := clampf((impact - 4.0) * 0.028, 0.03, 0.32)
+	var rayon := clampf(0.45 + impact * 0.03, 0.5, 1.1)
+	for mi in _visual.find_children("*", "MeshInstance3D", true, false):
+		var nm := String(mi.name)
+		if nm.contains("roue") or nm.contains("interieur") or not (mi.mesh is ArrayMesh):
+			continue
+		var inv := (mi as Node3D).global_transform.affine_inverse()
+		var pl := inv * point
+		if not (mi.mesh as ArrayMesh).get_aabb().grow(rayon).has_point(pl):
+			continue
+		var dl := (inv.basis * normale).normalized()
+		_deformer(mi, pl, dl, prof, rayon)
+	var loc := _visual.global_transform.affine_inverse() * point
+	if impact > 9.0 and not _vitres.is_empty():
+		if _vitre_mat == null:
+			_vitre_mat = ShaderMaterial.new()
+			_vitre_mat.shader = VITRE_CASSEE
+			for v in _vitres:
+				(v[0] as MeshInstance3D).set_surface_override_material(int(v[1]), _vitre_mat)
+		_vitre_mat.set_shader_parameter("impact", loc)
+		_vitre_mat.set_shader_parameter("force", clampf((impact - 9.0) / 10.0 + 0.3, 0.3, 1.0))
+	if impact > 7.0 and loc.z < -_wheelbase * 0.5:
+		_phares_casses[0 if loc.x < 0.0 else 1] = true
+
+
+func _deformer(mi: MeshInstance3D, p: Vector3, dir: Vector3, prof: float, rayon: float) -> void:
+	var am := mi.mesh as ArrayMesh
+	if not _tole.has(mi):
+		# premiere bosse : copie propre de la piece (le maillage d'origine est partage entre les voitures du modele)
+		var orig: Array = []
+		var mats0: Array = []
+		for sidx in am.get_surface_count():
+			orig.append(am.surface_get_arrays(sidx))
+			mats0.append(am.surface_get_material(sidx))
+		_tole[mi] = [orig, mats0]
+		var copie := ArrayMesh.new()
+		for sidx in orig.size():
+			copie.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, (orig[sidx] as Array).duplicate(true))
+			copie.surface_set_material(sidx, mats0[sidx])
+		mi.mesh = copie
+		am = copie
+	var arrays: Array = []
+	var mats: Array = []
+	for sidx in am.get_surface_count():
+		var arr := am.surface_get_arrays(sidx)
+		var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var norms: PackedVector3Array = arr[Mesh.ARRAY_NORMAL] if arr[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
+		for i in verts.size():
+			var d := verts[i].distance_to(p)
+			if d < rayon:
+				var f := 1.0 - d / rayon
+				# tole froissee : enfoncement irregulier (bruit fixe par sommet) et reflets casses
+				var h := fposmod(sin(verts[i].dot(Vector3(12.9898, 78.233, 37.719))) * 43758.5453, 1.0)
+				verts[i] += dir * prof * f * (0.6 + 0.8 * h)
+				if i < norms.size():
+					var j := Vector3(h - 0.5, fposmod(h * 7.31, 1.0) - 0.5, fposmod(h * 3.17, 1.0) - 0.5)
+					norms[i] = (norms[i] + j * 1.2 * f).normalized()
+		arr[Mesh.ARRAY_VERTEX] = verts
+		if norms.size() == verts.size():
+			arr[Mesh.ARRAY_NORMAL] = norms
+		arrays.append(arr)
+		mats.append(am.surface_get_material(sidx))
+	am.clear_surfaces()
+	for sidx in arrays.size():
+		am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays[sidx])
+		am.surface_set_material(sidx, mats[sidx])
+
+
+func _allumer_feu() -> void:
+	## Moteur en feu sous le capot (voiture tres abimee) : flammes, lueur qui vacille.
+	_feu = GPUParticles3D.new()
+	_feu.amount = 36
+	_feu.lifetime = 0.7
+	_feu.position = Vector3(0, 0.95, -_wheelbase * 0.55)
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(0.45, 0.05, 0.3)
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 15.0
+	pm.initial_velocity_min = 1.0
+	pm.initial_velocity_max = 2.2
+	pm.gravity = Vector3(0, 1.5, 0)
+	pm.scale_min = 0.5
+	pm.scale_max = 1.1
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.85, 0.3, 1.0))
+	g.set_color(1, Color(0.6, 0.1, 0.02, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = g
+	pm.color_ramp = gt
+	_feu.process_material = pm
+	var q := QuadMesh.new()
+	q.size = Vector2(0.5, 0.6)
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.albedo_texture = _tache()
+	m.vertex_color_use_as_albedo = true
+	q.material = m
+	_feu.draw_pass_1 = q
+	add_child(_feu)
+	_feu_lum = OmniLight3D.new()
+	_feu_lum.light_color = Color(1.0, 0.55, 0.2)
+	_feu_lum.omni_range = 6.0
+	_feu_lum.light_energy = 2.0
+	_feu_lum.shadow_enabled = false
+	_feu_lum.position = _feu.position + Vector3(0, 0.4, 0)
+	add_child(_feu_lum)
+
+
+func reparer() -> void:
+	## Garage (phase 16) : tole redressee, vitres et phares neufs, moteur repare.
+	health = 100.0
+	for mi in _tole:
+		if not is_instance_valid(mi):
+			continue
+		var orig: Array = _tole[mi][0]
+		var mats0: Array = _tole[mi][1]
+		var am := ArrayMesh.new()
+		for sidx in orig.size():
+			am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, orig[sidx])
+			am.surface_set_material(sidx, mats0[sidx])
+		(mi as MeshInstance3D).mesh = am
+	_tole.clear()
+	for v in _vitres:
+		(v[0] as MeshInstance3D).set_surface_override_material(int(v[1]), _verre_teinte())
+	_vitre_mat = null
+	_phares_casses = [false, false]
+	if _feu:
+		_feu.queue_free()
+		_feu_lum.queue_free()
+		_feu = null
+		_feu_lum = null
+	_smoke.emitting = false
+	(_smoke.process_material as ParticleProcessMaterial).color = Color(1, 1, 1)
+	for e in _body_mats:
+		(e[0] as BaseMaterial3D).albedo_color = e[1]
+		(e[0] as BaseMaterial3D).roughness = 0.35
+
+
+func _sonde_surface(delta: float) -> void:
+	## Revetement sous la voiture (surfaces nommees de scripts/realism.gd, couche 10) : goudron, paves, laterite,
+	## herbe, sable, eau ; la pluie rend le goudron et les paves glissants, la laterite boueuse.
+	_surf_t -= delta
+	if _surf_t > 0.0 or not is_inside_tree():
+		return
+	_surf_t = 0.15
+	var p := global_position
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3(0, 1.0, 0), p + Vector3(0, -1.5, 0), 1 << 9)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	var n := String((hit["collider"] as Node).name) if not hit.is_empty() else ""
+	if p.y < -0.45:
+		surface = "eau"
+	elif n.begins_with("plage"):
+		surface = "plage"
+	elif n.ends_with("_paves"):
+		surface = "paves"
+	elif n.ends_with("_terre") or n.begins_with("accotement"):
+		surface = "terre"
+	elif n == "":
+		surface = "terre"            # sol nu hors des surfaces nommees : laterite
+	else:
+		surface = "route"
+	var wet: float = float(_meteo.get("wet")) if _meteo else 0.0
+	adherence = float(SURFACES[surface][0]) * (1.0 - wet * (0.25 if surface in ["route", "paves"] else 0.15))
 
 
 func couple(regime: float) -> float:
@@ -290,8 +697,9 @@ func _physics_process(delta: float) -> void:
 	var steer_in := 0.0
 	var hand := not has_rider  # frein de stationnement quand personne ne conduit
 	if has_rider:
-		acc_in = Input.get_action_strength("accelerate")
-		brake_in = Input.get_action_strength("brake")
+		Limiteur.entrees()
+		acc_in = Limiteur.gaz(Input.get_action_strength("accelerate"), speed)
+		brake_in = maxf(Input.get_action_strength("brake"), Limiteur.retenue(speed))
 		steer_in = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
 		hand = Input.is_action_pressed("handbrake")
 		if Input.is_action_just_pressed("horn"):
@@ -304,6 +712,7 @@ func _physics_process(delta: float) -> void:
 		hand = false
 	if health <= 0.0:
 		acc_in = 0.0
+	_sonde_surface(delta)
 	var fwd := Vector2(-sin(_yaw), -cos(_yaw))
 	var right := Vector2(cos(_yaw), -sin(_yaw))
 	var v_long := _vel.dot(fwd)
@@ -331,7 +740,8 @@ func _physics_process(delta: float) -> void:
 	var load := part_motrice
 	if part_motrice < 1.0:
 		load += shift_load if part_motrice < 0.5 else -shift_load
-	var traction := grip * G * clampf(load, 0.2, 1.0)
+	var mu := grip * adherence * (adresse if has_rider else 1.0)
+	var traction := mu * G * clampf(load, 0.2, 1.0)
 	if acc_in > 0.0:
 		if v_long > -0.5:
 			var force := couple(engine) * acc_in * ratio * rendement / _wheel_r
@@ -346,14 +756,19 @@ func _physics_process(delta: float) -> void:
 		else:
 			a += brake_decel * acc_in
 			braking = true
+	var bloque := false
 	if brake_in > 0.0:
 		if v_long > 0.5:
-			a -= brake_decel * brake_in
+			var dec := brake_decel * brake_in
+			if dec > mu * G:
+				bloque = not abs_actif
+				dec = mu * G * (0.75 if bloque else 0.97)     # ABS : a la limite ; roues bloquees : moins bien
+			a -= dec
 			braking = true
 		elif v_long > -max_reverse:
 			a -= minf(couple(engine) * brake_in * rapport_arriere * pont * rendement / _wheel_r / masse, traction) * 0.7
 	# resistances : trainee aerodynamique, roulement, frein moteur (pied leve, rapport engage)
-	var resist := (0.5 * 1.2 * trainee * v_long * v_long + 0.015 * masse * G) / masse
+	var resist := (0.5 * 1.2 * trainee * v_long * v_long + float(SURFACES[surface][1]) * masse * G) / masse
 	if acc_in == 0.0 and absf(v_long) > 1.0:
 		resist += couple_max * 0.12 * ratio * rendement / _wheel_r / masse
 	if hand:
@@ -365,22 +780,67 @@ func _physics_process(delta: float) -> void:
 		nl -= signf(nl) * minf(resist * delta, absf(nl))
 	_boite(nl, acc_in)
 	rpm = lerpf(rpm, engine, 1.0 - exp(-10.0 * delta))
-	# --- direction : modele bicyclette limite par l'adherence ---
-	var steer_limit := max_steer / (1.0 + absf(nl) * 0.055)
-	_steer = move_toward(_steer, steer_in * steer_limit, steer_speed * delta)
-	var target_rate := nl * tan(_steer) / _wheelbase
-	var max_rate := grip * G / maxf(absf(nl), 1.0)
-	if hand and absf(nl) > 5.0:
-		max_rate *= 1.8           # l'arriere decroche : la voiture pivote
-		target_rate *= 1.5
-	target_rate = clampf(target_rate, -max_rate, max_rate)
-	_yaw_rate = lerpf(_yaw_rate, target_rate, 1.0 - exp(-7.0 * delta))
-	# --- lateral : les pneus "rattrapent" la glissade jusqu'a la limite d'adherence ---
-	var lat_grip := grip * G * (0.3 if hand and absf(nl) > 3.0 else 1.0)
-	var nlat := move_toward(v_lat, 0.0, lat_grip * delta)
-	_vel = fwd * nl + right * nlat
+	# --- direction et pneus : modele bicyclette dynamique (derive des pneus, charge sur chaque essieu, inertie de
+	# lacet). Sous-virage si l'avant sature (entree trop rapide), survirage si l'arriere decroche (frein a main, lever
+	# de pied en appui, terre ou sable), contre-braquage possible. A basse vitesse : geometrie pure (manoeuvres).
+	var steer_limit := max_steer / (1.0 + absf(nl) * 0.045)
+	var steer_goal := steer_in * steer_limit
+	# volant qui revient seul au centre plus vite qu'il ne braque
+	var rate := steer_speed * (1.6 if absf(steer_goal) < absf(_steer) else 1.0)
+	_steer = move_toward(_steer, steer_goal, rate * delta)
+	var L := _wheelbase
+	var la := L * (1.0 - repartition_avant)     # CG -> essieu avant
+	var lb := L * repartition_avant             # CG -> essieu arriere
+	var iz := masse * la * lb * 1.15
+	var vy := -v_lat                            # lateral vers la gauche
+	var r := _yaw_rate
+	var vx := nl
+	var n_sub := 4
+	var h := delta / n_sub
+	var hand_on := hand and absf(vx) > 2.0
+	for _k in n_sub:
+		if absf(vx) < 2.5:
+			# manoeuvre : geometrie d'Ackermann, glissade laterale amortie
+			var rk := vx * tan(_steer) / L
+			r = lerpf(r, rk, 1.0 - exp(-12.0 * h))
+			vy = move_toward(vy, 0.0, mu * G * h)
+			continue
+		var fz_f := masse * (G * lb - _a_long * hauteur_cg) / L
+		var fz_r := masse * (G * la + _a_long * hauteur_cg) / L
+		var mu_f := mu
+		var mu_r := mu * (0.35 if hand_on else 1.0)
+		# cercle d'adherence : les roues motrices qui patinent ou freinent ont moins de grip lateral
+		if patine:
+			if part_motrice >= 0.99:
+				mu_f *= 0.6
+				mu_r *= 0.6
+			elif part_motrice < 0.5:
+				mu_r *= 0.55
+			else:
+				mu_f *= 0.55
+		if bloque:
+			mu_f *= 0.3
+			mu_r *= 0.3
+		var af := _steer - atan((vy + la * r) / vx)
+		var ar := -atan((vy - lb * r) / vx)
+		var cf := rigidite_avant * fz_f * (0.4 if hand_on else 1.0)
+		var cr := rigidite_arriere * fz_r * (0.3 if hand_on else 1.0)
+		var ff := mu_f * fz_f * tanh(cf * af / maxf(mu_f * fz_f, 1.0))
+		var fr := mu_r * fz_r * tanh(cr * ar / maxf(mu_r * fz_r, 1.0))
+		var dvy := (ff * cos(_steer) + fr) / masse - vx * r
+		var dr := (la * ff * cos(_steer) - lb * fr) / iz
+		vy += dvy * h
+		r += dr * h
+	_yaw_rate = r
+	var nlat := -vy
+	derive = atan2(vy, maxf(absf(vx), 1.0))
+	# vitesses calculees dans le repere de la caisse (le terme vx.r y tient deja compte de sa rotation) : on les
+	# remet dans le monde avec le cap mis a jour
 	_yaw += _yaw_rate * delta
 	rotation.y = _yaw
+	fwd = Vector2(-sin(_yaw), -cos(_yaw))
+	right = Vector2(cos(_yaw), -sin(_yaw))
+	_vel = fwd * nl + right * nlat
 
 	# --- deplacement et chocs ---
 	var before := _vel
@@ -407,15 +867,20 @@ func _physics_process(delta: float) -> void:
 				_crash.volume_db = linear_to_db(clampf(impact / 15.0, 0.15, 1.0))
 				_crash.play()
 				damage((impact - 3.0) * 2.2)
+				enfoncer(c.get_position(), n, impact)
 				crashed.emit(impact, c.get_collider())
 				get_tree().call_group("circulation", "on_vehicle_hit", c.get_collider(), impact)
 	# filet de securite : jamais sous la carte (retour au dernier endroit sur, a l'arret)
-	if global_position.y < -0.6:
+	# (sous le fond marin des limites du monde, -1,2 m : l estran de la plage descend jusque-la)
+	if global_position.y < -2.0:
 		global_position = _last_safe + Vector3.UP * 0.3
 		_vel = Vector2.ZERO
 		velocity = Vector3.ZERO
-	elif is_on_floor() and absf(global_position.y) < 0.2:
+	elif is_on_floor() and global_position.y > -0.3:
 		_last_safe = global_position
+	# dans la mer (surface a -0,3 m) : l eau freine fort, on ne traverse pas l ocean en voiture
+	if global_position.y < -0.5:
+		_vel *= exp(-1.6 * delta)
 	var rv := get_real_velocity()
 	if Vector2(rv.x, rv.z).length() < _vel.length():
 		_vel = Vector2(rv.x, rv.z)
@@ -424,6 +889,7 @@ func _physics_process(delta: float) -> void:
 	_a_lat = lerpf(_a_lat, speed * _yaw_rate, 1.0 - exp(-6.0 * delta))
 	_update_visual(delta, absf(nlat))
 	_update_sound(delta, absf(nlat))
+	_effets(delta)
 
 
 func _update_visual(delta: float, slip: float) -> void:
@@ -434,8 +900,17 @@ func _update_visual(delta: float, slip: float) -> void:
 		w.rotation.x -= speed / _wheel_r * delta
 	var night: float = _day_night.get("night") if _day_night else 0.0
 	_tail_mat.emission_energy_multiplier = (2.5 if braking else 0.0) + night * 0.8
-	for l in _lights:
-		l.light_energy = 6.0 * night if has_rider or speed != 0.0 else 0.0
+	for i in _lights.size():
+		var l := _lights[i]
+		l.light_energy = 0.0 if _phares_casses[i] else (6.0 * night if has_rider or speed != 0.0 else 0.0)
+	if _feu_lum:
+		_feu_lum.light_energy = 1.6 + randf() * 0.9
+	_recul.light_energy = 2.5 if rapport < 0 and absf(speed) > 0.05 and has_rider else 0.0
+	# warnings : la voiture abimee (moteur qui fume) clignote a 1,5 Hz
+	if _clign_mat:
+		_clign_t += delta
+		var on := health < 40.0 and fmod(_clign_t * 1.5, 1.0) < 0.5
+		_clign_mat.emission_energy_multiplier = 3.0 if on else 0.0
 	if (slip > 3.0 and absf(speed) > 4.0) or patine:
 		_screech.volume_db = linear_to_db(clampf((slip - 3.0) / 6.0, 0.05, 1.0)) - 4.0
 	else:
@@ -485,7 +960,58 @@ func _suspension(delta: float) -> void:
 
 
 func _update_sound(delta: float, _slip: float) -> void:
+	## Moteur : deux boucles (en charge / a vide) accordees sur le regime et melangees selon l'accelerateur ; roulement
+	## selon le revetement, vent au-dela de 60 km/h, clonc du passage de rapport, petarades au lever de pied.
 	if health <= 0.0:
 		rpm = lerpf(rpm, 0.0, 1.0 - exp(-6.0 * delta))
-	_engine.pitch_scale = maxf(0.3, rpm / 2200.0)
-	_engine.volume_db = -80.0 if health <= 0.0 else -10.0 + throttle * 5.0
+	var pitch := maxf(0.25, rpm / AudioSynth.MOTEUR_REF_RPM)
+	_engine.pitch_scale = pitch
+	_engine_off.pitch_scale = pitch
+	var load := clampf(throttle, 0.0, 1.0)
+	var vol := -11.0 + 7.0 * clampf(rpm / regime_max, 0.0, 1.0)
+	if health <= 0.0:
+		_engine.volume_db = -80.0
+		_engine_off.volume_db = -80.0
+	else:
+		_engine.volume_db = vol + linear_to_db(maxf(load, 0.05)) + 3.0
+		_engine_off.volume_db = vol + linear_to_db(maxf(1.0 - load, 0.05)) - 1.0
+	var v := absf(speed)
+	var gravier := surface in ["terre", "plage", "herbe"]
+	if gravier != _roll_gravier:
+		_roll_gravier = gravier
+		_roul.stream = _son("roll%s" % gravier, func() -> AudioStream: return AudioSynth.roulement_loop(gravier))
+		_roul.play()
+	_roul.volume_db = linear_to_db(clampf(v / 25.0, 0.0, 1.0) * (1.0 if gravier else 0.6) + 0.0001) - 6.0
+	_roul.pitch_scale = clampf(0.7 + v / 40.0, 0.7, 1.6)
+	_wind.volume_db = linear_to_db(clampf((v - 15.0) / 25.0, 0.0, 1.0) + 0.0001) - 8.0
+	if rapport != _rapport_prec and rapport > 0 and _rapport_prec >= 0 and not _fx.playing:
+		_fx.stream = _son("rapport", func() -> AudioStream: return AudioSynth.passage_rapport())
+		_fx.volume_db = -8.0
+		_fx.play()
+	_rapport_prec = rapport
+	if model_name == "veh_berline" and _thr_prec > 0.7 and throttle < 0.2 and rpm > regime_max * 0.7 and randf() < 0.5 and not _fx.playing:
+		_fx.stream = _son("petarade", func() -> AudioStream: return AudioSynth.petarade())
+		_fx.volume_db = -4.0
+		_fx.play()
+	_thr_prec = throttle
+
+
+static var _tache_tex: Texture2D
+
+
+static func _tache() -> Texture2D:
+	## Tache ronde et floue (blanc au centre, transparent au bord) pour la fumee, la poussiere et les flammes.
+	if _tache_tex == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		g.add_point(0.45, Color(1, 1, 1, 0.55))
+		var t := GradientTexture2D.new()
+		t.gradient = g
+		t.fill = GradientTexture2D.FILL_RADIAL
+		t.fill_from = Vector2(0.5, 0.5)
+		t.fill_to = Vector2(1.0, 0.5)
+		t.width = 64
+		t.height = 64
+		_tache_tex = t
+	return _tache_tex

@@ -293,3 +293,196 @@ static func ding() -> AudioStreamWAV:
 
 static func step_f(x: float, edge: float) -> float:
 	return 1.0 if x < edge else 0.0
+
+
+# ------------------------------------------------------------------ moteurs de voiture (phase vehicules realistes)
+const MOTEUR_REF_RPM := 2000.0     # regime de reference des boucles : pitch_scale = regime / MOTEUR_REF_RPM
+
+
+static func moteur(diesel: bool, charge: bool, cylindres := 4) -> AudioStreamWAV:
+	## Boucle de moteur 4 temps a MOTEUR_REF_RPM : une explosion par cylindre tous les deux tours (4 cylindres :
+	## 2 par tour), chacune un peu differente (desequilibre des cylindres : grondement), resonance d'echappement.
+	## En charge (pied sur l'accelerateur) : plus de mordant et de souffle ; a vide (frein moteur) : plus creux.
+	## Diesel : cognement sec a chaque explosion (claquement aigu), timbre plus grave et plus rugueux.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = (11 if diesel else 13) + (1 if charge else 0)
+	var fire_hz := MOTEUR_REF_RPM / 60.0 * cylindres / 2.0
+	var per := int(round(RATE / fire_hz))
+	var pulses := cylindres * 12
+	var n := per * pulses
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var amp: Array = []
+	for c in cylindres:
+		amp.append(rng.randf_range(0.8, 1.15))
+	var res_f := (95.0 if diesel else 130.0)      # resonance du pot d'echappement
+	var lp := 0.0
+	var hp_prev := 0.0
+	var bp := 0.0
+	for k in pulses:
+		var a: float = amp[k % cylindres] * rng.randf_range(0.93, 1.07)
+		for j in per:
+			var t := float(j) / RATE
+			var env := exp(-t * (38.0 if charge else 55.0))
+			var s := sin(TAU * res_f * t) * env * a
+			s += sin(TAU * res_f * 2.7 * t) * exp(-t * 90.0) * a * (0.45 if charge else 0.2)
+			s += (rng.randf() * 2.0 - 1.0) * env * (0.35 if charge else 0.15)
+			if diesel:
+				# cognement : salve aiguë tres courte au debut de chaque combustion
+				var knock := (rng.randf() * 2.0 - 1.0) * exp(-t * 600.0) * 0.9
+				var hp := knock - hp_prev
+				hp_prev = knock
+				s += hp * (0.8 if charge else 0.5)
+			out[k * per + j] = s
+	# lissage (filtre passe-bas doux) et souffle d'admission en charge
+	for i in n:
+		lp += (out[i] - lp) * (0.35 if diesel else 0.45)
+		bp += ((rng.randf() * 2.0 - 1.0) - bp) * 0.08
+		out[i] = (lp + (bp * 0.25 if charge else 0.0)) * 0.42
+	# raccord de boucle sans clic
+	for i in 200:
+		var w := float(i) / 200.0
+		out[n - 200 + i] = lerpf(out[n - 200 + i], out[i], w * 0.5)
+	return _wav(out, true)
+
+
+static func roulement_loop(gravier: bool) -> AudioStreamWAV:
+	## Bruit de roulement des pneus : souffle doux sur le goudron, crepitement de cailloux sur la laterite et le sable.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 51 if gravier else 53
+	var n := RATE * 2
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	for i in n:
+		var w := rng.randf() * 2.0 - 1.0
+		lp += (w - lp) * (0.25 if gravier else 0.06)
+		lp2 += (lp - lp2) * 0.3
+		var s := lp2 * (0.9 if gravier else 1.4)
+		if gravier and rng.randf() < 0.004:
+			s += rng.randf_range(-1.0, 1.0) * 0.8       # caillou projete
+		out[i] = s * 0.5
+	for i in 1500:
+		var k := float(i) / 1500.0
+		out[i] *= k
+		out[n - 1 - i] *= k
+	return _wav(out, true)
+
+
+static func vent_loop() -> AudioStreamWAV:
+	## Vent autour de la caisse a vitesse elevee : souffle large qui ondule.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 57
+	var n := RATE * 3
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		lp += ((rng.randf() * 2.0 - 1.0) - lp) * 0.12
+		out[i] = lp * (0.7 + 0.3 * sin(TAU * t / 3.0 * 2.0)) * 0.6
+	for i in 2000:
+		var k := float(i) / 2000.0
+		out[i] *= k
+		out[n - 1 - i] *= k
+	return _wav(out, true)
+
+
+static func portiere(fermer: bool) -> AudioStreamWAV:
+	## Portiere : clac sourd de la fermeture (ou declic de la poignee et grincement a l'ouverture).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 61 if fermer else 63
+	var n := int(RATE * 0.45)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var s := 0.0
+		if fermer:
+			s = sin(TAU * 85.0 * t) * exp(-t * 22.0) * 0.9
+			lp += ((rng.randf() * 2.0 - 1.0) - lp) * 0.4
+			s += lp * exp(-t * 40.0) * 0.6
+			s += sin(TAU * 1900.0 * t) * exp(-t * 70.0) * 0.12    # loquet
+		else:
+			s = sin(TAU * 2400.0 * t) * exp(-t * 90.0) * 0.3      # declic de la poignee
+			if t > 0.05:
+				var u := t - 0.05
+				s += sin(TAU * (380.0 + 60.0 * sin(TAU * 9.0 * u)) * u) * exp(-u * 9.0) * 0.08    # charniere
+		out[i] = s
+	return _wav(out, false)
+
+
+static func petarade() -> AudioStreamWAV:
+	## Petarade d'echappement au lever de pied a haut regime (deux ou trois detonations seches).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 67
+	var n := int(RATE * 0.35)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for k in 3:
+		var t0 := [0.0, 0.09, 0.2][k] as float
+		var a := [1.0, 0.7, 0.45][k] as float
+		for i in n:
+			var t := float(i) / RATE - t0
+			if t < 0.0:
+				continue
+			out[i] += (sin(TAU * 110.0 * t) * 0.6 + (rng.randf() * 2.0 - 1.0) * 0.8) * exp(-t * 60.0) * a
+	return _wav(out, false)
+
+
+static func passage_rapport() -> AudioStreamWAV:
+	## Petit clonc mecanique du passage de rapport (boite automatique qui passe).
+	var n := int(RATE * 0.12)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for i in n:
+		var t := float(i) / RATE
+		out[i] = sin(TAU * 160.0 * t) * exp(-t * 60.0) * 0.35
+	return _wav(out, false)
+
+
+static func coup_de_feu(kind: int) -> AudioStreamWAV:
+	## Detonation : claquement sec (bruit tres court) + souffle grave qui s'eteint + echo des facades.
+	## kind 0 pistolet (sec), 1 fusil a pompe (gros et grave), 2 fusil de chasse artisanal (long, poudre noire).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 71 + kind
+	var n := int(RATE * (0.9 if kind == 0 else 1.3))
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	var dec := [55.0, 30.0, 22.0][kind] as float
+	var grave := [140.0, 85.0, 70.0][kind] as float
+	for i in n:
+		var t := float(i) / RATE
+		var w := rng.randf() * 2.0 - 1.0
+		lp += (w - lp) * (0.6 if t < 0.01 else 0.12)
+		var s := w * exp(-t * 300.0) * 1.0 + lp * exp(-t * dec) * 1.4 + sin(TAU * grave * t) * exp(-t * 25.0) * 0.6
+		# echo des murs (rue etroite) : repetition attenuee a 120 ms et 260 ms
+		out[i] = s
+	for e in [[0.12, 0.35], [0.26, 0.18]]:
+		var off := int(RATE * float(e[0]))
+		for i in range(n - 1, off - 1, -1):
+			out[i] += out[i - off] * float(e[1])
+	for i in n:
+		out[i] = clampf(out[i] * 0.7, -1.0, 1.0)
+	return _wav(out, false)
+
+
+static func coup_arme(verre: bool) -> AudioStreamWAV:
+	## Coup porte avec une arme blanche : bruit sourd (corps), tintement de verre si la bouteille frappe.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 79 if verre else 83
+	var n := int(RATE * 0.3)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		lp += ((rng.randf() * 2.0 - 1.0) - lp) * 0.25
+		var s := sin(TAU * 95.0 * t) * exp(-t * 35.0) * 0.8 + lp * exp(-t * 30.0) * 0.5
+		if verre:
+			s += (sin(TAU * 3100.0 * t) + sin(TAU * 4700.0 * t) * 0.6) * exp(-t * 18.0) * 0.18
+		out[i] = s
+	return _wav(out, false)

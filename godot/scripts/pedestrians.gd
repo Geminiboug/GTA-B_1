@@ -1074,13 +1074,13 @@ func _incident(at: Vector2, line: String, radius: float) -> void:
 			_set_state(w, "flee")
 
 
-func player_attack(origin: Vector3, dir: Vector3, coup := 0) -> bool:
+func player_attack(origin: Vector3, dir: Vector3, coup := 0, degats := -1.0, portee := 1.6, arme := false) -> bool:
 	## Coup du joueur (touche F, clic gauche, manette B) ; coup 0 direct, 1 croise, 2 crochet (scripts/player.gd).
 	## Renvoie vrai si quelqu'un est touche. Chaque passant a des points de vie et un caractere : le bagarreur se
 	## met en garde et rend les coups, le peureux fuit, un autre appelle la police au telephone. Un passant a terre
 	## peut encore etre frappe ; a zero point de vie il reste K.-O. un moment, puis se releve et s'enfuit.
 	var best: Dictionary = {}
-	var bd := 1.6
+	var bd := portee
 	for w in _walkers:
 		var rel: Vector3 = w["pos"] - origin
 		rel.y = 0.0
@@ -1090,7 +1090,9 @@ func player_attack(origin: Vector3, dir: Vector3, coup := 0) -> bool:
 			best = w
 	if best.is_empty():
 		return false
-	var dmg: float = [25.0, 30.0, 50.0][clampi(coup, 0, 2)]
+	var dmg: float = degats if degats >= 0.0 else [25.0, 30.0, 50.0][clampi(coup, 0, 2)]
+	if arme:
+		coup = 2 if degats >= 45.0 else 1      # arme blanche : un gros coup fait tomber
 	best["pv"] = float(best.get("pv", 100.0)) - dmg
 	var push := Vector2(dir.x, dir.z) * 3.5
 	var car: String = best.get("caractere", "peureux")
@@ -1116,10 +1118,53 @@ func player_attack(origin: Vector3, dir: Vector3, coup := 0) -> bool:
 		best["after"] = after
 		if not was_fighting:
 			_speak(best, "frappe", true)
-	get_tree().call_group("police", "crime", "agression", best["pos"])
+	get_tree().call_group("police", "crime", "arme_blanche" if arme else "agression", best["pos"])
 	var me: Vector3 = best["pos"]
 	_incident(Vector2(me.x, me.z), "temoin_bagarre", 22.0)
 	return true
+
+
+func tir(origin: Vector3, dir: Vector3, degats: float, portee: float) -> Vector3:
+	## Balle du joueur (scripts/armes.gd) : le passant le plus proche dans l'axe du tir (a moins de 0,45 m de la ligne)
+	## tombe (blesse, jamais de sang : decision d'Olympe) ; tout le monde fuit a 45 m a la ronde.
+	## Renvoie le point touche (Vector3.INF si personne).
+	var best: Dictionary = {}
+	var bt := portee
+	for w in _walkers:
+		var c: Vector3 = (w["pos"] as Vector3) + Vector3(0, 1.1, 0)
+		var t := (c - origin).dot(dir)
+		if t < 0.3 or t > bt:
+			continue
+		if (origin + dir * t).distance_to(c) < 0.45:
+			bt = t
+			best = w
+	var at := origin + dir * minf(bt, portee)
+	_panique(Vector2(at.x, at.z), 45.0)
+	if best.is_empty():
+		return Vector3.INF
+	best["pv"] = float(best.get("pv", 100.0)) - degats
+	var push := Vector2(dir.x, dir.z) * 2.5
+	_knock_down(best, push, "flee")
+	best["lie"] = _rng.randf_range(6.0, 10.0) if best["pv"] <= 0.0 else _rng.randf_range(2.0, 3.5)
+	_speak(best, "ko", true)
+	return (best["pos"] as Vector3) + Vector3(0, 1.1, 0)
+
+
+func _panique(at: Vector2, rayon: float) -> void:
+	## Coup de feu : les passants proches fuient en criant, loin du bruit.
+	var cris := 0
+	for w in _walkers:
+		if w["state"] in ["down", "flee"]:
+			continue
+		var me: Vector3 = w["pos"]
+		if Vector2(me.x, me.z).distance_to(at) > rayon:
+			continue
+		w["flee_from"] = at
+		w["flee_time"] = _rng.randf_range(5.0, 9.0)
+		_set_state(w, "flee")
+		if cris < 3 and _rng.randf() < 0.4:
+			_speak(w, "bagarre", cris == 0)
+			cris += 1
 
 
 func _on_driver_ejected(pos: Vector3, yaw: float, genre: String, by: Node3D, rider := []) -> void:

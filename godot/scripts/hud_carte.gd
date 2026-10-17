@@ -396,6 +396,13 @@ func _draw_blips() -> void:
 		if q.length() < R * 0.9:
 			_blips.draw_circle(c + q, 5.0, Color(0, 0, 0, 0.8))
 			_blips.draw_circle(c + q, 3.8, COL_PIN)
+	# reperes carres (stationnements de zems, scripts/territoires.gd) : couleur du proprietaire
+	for n in get_tree().get_nodes_in_group("carte_repere"):
+		var p3 := (n as Node3D).global_position
+		var rq := _to_mini(Vector2(p3.x, p3.z), pp, h, R)
+		if rq.length() < R * 0.9:
+			_blips.draw_rect(Rect2(c + rq - Vector2(5, 5), Vector2(10, 10)), Color(0, 0, 0, 0.85))
+			_blips.draw_rect(Rect2(c + rq - Vector2(3.8, 3.8), Vector2(7.6, 7.6)), n.get_meta("couleur", Color.WHITE))
 	# maison du joueur (toujours indiquee, collee au bord si loin)
 	if _home != Vector2.INF:
 		var hq := _to_mini(_home, pp, h, R)

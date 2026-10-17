@@ -121,6 +121,10 @@ func ouvrir(on: bool) -> void:
 	if ouvert and inv and inv.get("ouvert"):
 		inv.ouvrir(false)
 	_panel.visible = ouvert
+	var plm := get_node_or_null("../Player")
+	if plm:
+		if ouvert: plm.menus["telephone"] = true
+		else: plm.menus.erase("telephone")
 	# le joueur tient le telephone (clip Idle_TalkingPhone_Loop) tant qu'il est ouvert, a pied et immobile
 	var pl := get_node_or_null("../Player")
 	var an: Node = pl.get("anim") if pl else null

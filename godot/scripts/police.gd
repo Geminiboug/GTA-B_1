@@ -26,10 +26,12 @@ extends Node3D
 @export var contravention := 2000        # FCFA
 @export var agent_vitesse := 5.2         # m/s a la course
 @export var delai_appel := 60.0          # s entre l'appel et le depart des patrouilles (sans policier temoin)
+@export var hopital := Vector3(140, 0, -60)        # Centre de sante Gbekpo (fictif) : reveil apres un malaise
 @export var commissariat := Vector3(330, 0, -250)   # d'ou partent les patrouilles (et ou l'on sort apres arrestation)
 @export var rattrapage := false          # patrouille avancee hors champ quand elle traine (desactive : on la voit venir)
 
-const DELITS := {"vol": 1, "agression": 1, "renverse": 1, "choc_police": 1, "evasion": 1}
+const DELITS := {"vol": 1, "agression": 1, "renverse": 1, "choc_police": 1, "evasion": 1, "arme_blanche": 2, "tir": 2,
+	"tir_police": 3}
 const COMPOSITION := [[], ["pied"], ["pied", "berline"], ["berline", "berline"], ["berline", "special", "special"],
 	["special", "special", "moto", "moto"]]
 const ZEM_SCENE := preload("res://scenes/zem.tscn")
@@ -50,6 +52,7 @@ var appel_t := 0.0                        # s avant le depart des patrouilles (>
 var _arrivee := false                     # une patrouille est arrivee pres du joueur (on peut alors la semer)
 var _spawn_cd := 0.0
 @export var arrestation := true   # faux : jamais d arrestation (tests)
+@export var patrouilles_sans_recherche := false   # vrai : patrouilles stationnees et contraventions sans recherche
 
 
 func _ready() -> void:
@@ -60,6 +63,7 @@ func _ready() -> void:
 	_carte = Carte.zone()
 	Partie.recherche_change.connect(_on_level)
 	Partie.evanoui.connect(_malaise)
+	_batir_hopital.call_deferred()
 
 
 func crime(kind: String, _where: Vector3) -> void:
@@ -191,7 +195,8 @@ func _physics_process(delta: float) -> void:
 	if seen or not _arrivee:
 		_hors_vue = 0.0          # tant qu'aucune patrouille n'est arrivee, on ne peut pas la semer
 	else:
-		_hors_vue += delta
+		# cache au marche (au milieu des etals et des maquis) : la police perd la trace trois fois plus vite
+		_hors_vue += delta * (3.0 if pv == null and _au_marche(ppos) else 1.0)
 		if _hors_vue > perte_vue + 4.0 * Partie.recherche:
 			Partie.journal.compter("police_semee", 1, {"niveau": Partie.recherche})
 			Partie.set_recherche(0)
@@ -520,6 +525,12 @@ func _release(u: Dictionary) -> void:
 func _routine(delta: float, pv: Node3D, ppos: Vector3) -> void:
 	## Sans recherche : une patrouille stationne parfois au bord de la route ; un exces de vitesse devant elle
 	## coute une contravention.
+	if not patrouilles_sans_recherche:
+		# decision d Olympe (17/10/2026) : aucun policier a l ecran tant que personne n a appele la police
+		if not _patrol.is_empty() and is_instance_valid(_patrol.get("car")) and not _patrol["car"].get("has_rider"):
+			_patrol["car"].queue_free()
+		_patrol = {}
+		return
 	if _patrol.is_empty() or not is_instance_valid(_patrol.get("car")):
 		_patrol = {}
 		if _rng.randf() < delta / 30.0:
@@ -578,15 +589,73 @@ func _malaise() -> void:
 	Partie.journal.compter("morts", 1, {"recherche": Partie.recherche})
 	var hj := get_tree().get_first_node_in_group("hud_jeu")
 	if hj:
-		hj.annonce("ÉVANOUI", "Frais de soins : %s" % Partie.fcfa(Partie.frais_hopital), 3.5)
+		hj.annonce("ÉVANOUI", "Centre de santé Gbêkpo : %s de soins" % Partie.fcfa(Partie.frais_hopital), 3.5)
 	_fade_then(func() -> void:
 		if _player.get("vehicle"):
 			_player.exit_vehicle()
 		Partie.prelever(Partie.frais_hopital, "Soins")
 		Partie.set_recherche(0)
 		Partie.soigner(100.0)
-		var lieux := get_node_or_null("../Lieux")
-		_teleport(lieux.home_position() if lieux else Vector3.ZERO, "Réveil à la maison"))
+		_teleport(_hopital_rue(), "Centre de santé Gbêkpo"))
+
+
+func _au_marche(p: Vector3) -> bool:
+	var com := get_node_or_null("../Commerce")
+	if com == null:
+		return false
+	var n := 0
+	for s in com.spots:
+		if s["kind"] in ["etal", "maquis", "kpayo"] and Vector2(p.x - s["pos"].x, p.z - s["pos"].z).length() < 14.0:
+			n += 1
+	return n >= 3
+
+
+func _hopital_rue() -> Vector3:
+	## Point de rue le plus proche du centre de sante (on se reveille devant, sur le trottoir).
+	var near := _carte.nearest_on_network(Vector2(hopital.x, hopital.z)) if _carte else {}
+	if near.is_empty():
+		return hopital
+	var q: Vector2 = near["point"]
+	return Vector3(q.x, 0.0, q.y)
+
+
+func _batir_hopital() -> void:
+	## Repere visible du centre de sante : poteau, croix verte lumineuse et enseigne, au bord de la rue.
+	var p := _hopital_rue()
+	var root := Node3D.new()
+	root.name = "CentreSante"
+	add_child(root)
+	root.global_position = p + Vector3(3.0, 0, 0)
+	var poteau := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.06
+	cyl.bottom_radius = 0.06
+	cyl.height = 3.2
+	poteau.mesh = cyl
+	poteau.position.y = 1.6
+	root.add_child(poteau)
+	var croix_mat := StandardMaterial3D.new()
+	croix_mat.albedo_color = Color(0.1, 0.7, 0.3)
+	croix_mat.emission_enabled = true
+	croix_mat.emission = Color(0.1, 0.9, 0.35)
+	croix_mat.emission_energy_multiplier = 1.5
+	for sz in [Vector3(0.9, 0.3, 0.12), Vector3(0.3, 0.9, 0.12)]:
+		var b := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = sz
+		bm.material = croix_mat
+		b.mesh = bm
+		b.position.y = 3.5
+		root.add_child(b)
+	var enseigne := Label3D.new()
+	enseigne.text = "CENTRE DE SANTÉ GBÊKPO"
+	enseigne.font_size = 64
+	enseigne.pixel_size = 0.006
+	enseigne.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	enseigne.modulate = Color(1, 1, 1)
+	enseigne.outline_size = 12
+	enseigne.position.y = 2.7
+	root.add_child(enseigne)
 
 
 func _teleport(p: Vector3, place: String) -> void:

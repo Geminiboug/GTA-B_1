@@ -63,6 +63,15 @@ func _ground(x: float, z: float) -> Vector3:
 	return hit["position"] if not hit.is_empty() else Vector3(x, 0, z)
 
 
+func _rue(x: float, z: float) -> Vector3:
+	## Point de rue (reseau des routes, scripts/carte.gd) le plus proche : jamais sur un toit ni dans une cour fermee.
+	var near: Dictionary = Carte.zone().nearest_on_network(Vector2(x, z)) if Carte.zone() else {}
+	if near.is_empty():
+		return _ground(x, z)
+	var q: Vector2 = near["point"]
+	return _ground(q.x, q.y)
+
+
 func _nearest_shop(kind: String, from: Vector3, min_d := 0.0) -> Vector3:
 	var com := get_node_or_null("../Commerce")
 	var best := Vector3.INF
@@ -99,10 +108,10 @@ func _setup() -> void:
 	points["codjo"] = _nearest_shop("maquis", home) + Vector3(1.6, 0, 1.0)
 	points["colis"] = _nearest_shop("etal", home, 250.0)
 	points["aerogare"] = _ground(397, -300)
-	points["plage"] = _ground(622, 292)
+	points["plage"] = _rue(622, 292)              # devant Sweet Dream Beach, sur la rue (le point exact est un toit)
 	points["epave"] = _ground(-177, 247)
 	points["commandant"] = _nearest_shop("maquis", points["epave"]) + Vector3(1.4, 0, 1.2)
-	points["haie_verte"] = _ground(-150, -840)
+	points["haie_verte"] = _rue(-150, -840)
 	points["patronne"] = _nearest_shop("maquis", points["haie_verte"]) + Vector3(1.4, 0, 1.0)
 	var air := get_node_or_null("../TraficAerien")
 	var stands: Array = air.get("stands") if air else []
@@ -157,9 +166,10 @@ func _build_missions() -> void:
 				["joueur", "J'y vais, tantie."]]},
 			{"t": "acheter", "article": "Pain", "ou": "etal", "obj": "Suis la flèche jaune jusqu'à l'étal, puis T pour acheter du pain"},
 			{"t": "aller", "ou": "tante", "r": 2.5, "obj": "Rapporte le pain à tante Mireille", "avec": "Pain"},
-			{"t": "parler", "qui": "tante", "obj": "Donne le pain (T)", "retirer": ["Pain"], "lignes": [
+			{"t": "parler", "qui": "tante", "obj": "Donne le pain (T)", "retirer": ["Pain"], "argent": 5000, "lignes": [
 				["tante", "Merci ! Ton père aurait été fier de te voir revenu."],
-				["tante", "Son vieux zem est devant la maison. Il roule encore, prends-le."]]}]},
+				["tante", "Son vieux zem est devant la maison. Il roule encore, prends-le."],
+				["tante", "Tiens, 5 000 francs : va me chercher un sac de riz à l'Ararat."]]}]},
 		{"titre": "Le zem de papa", "donneur": "tante", "rec": 500, "etapes": [
 			{"t": "monter", "obj": "Monte sur le zem de ton père (E)"},
 			{"t": "acheter", "article": "Sac de riz (5 kg)", "ou": "caisse", "obj": "Achète un sac de riz à l'Ararat Hypermarket"},
@@ -180,8 +190,9 @@ func _build_missions() -> void:
 			{"t": "deposer", "ou": "plage", "r": 8.0, "obj": "Dépose le client à Sweet Dream Beach", "chrono": 240.0},
 			{"t": "fin", "lignes": [["client", "Merci, %s ! Bonne route." % _g("tonton", "tantie")]], "drapeau": "boulots"}]},
 		{"titre": "Au marché", "donneur": "tante", "rec": 0, "etapes": [
-			{"t": "parler", "qui": "tante", "obj": "Parle à tante Mireille", "lignes": [
-				["tante", "Il me faut de l'huile et une boîte de tomate pour la sauce. Va à l'Ararat."]]},
+			{"t": "parler", "qui": "tante", "obj": "Parle à tante Mireille", "argent": 2000, "lignes": [
+				["tante", "Il me faut de l'huile et une boîte de tomate pour la sauce. Va à l'Ararat."],
+				["tante", "Voilà 2 000 francs pour les courses."]]},
 			{"t": "acheter", "article": "Huile (1 litre)", "ou": "caisse", "obj": "Achète de l'huile"},
 			{"t": "acheter", "article": "Boîte de tomate", "ou": "caisse", "obj": "Achète une boîte de tomate"},
 			{"t": "aller", "ou": "tante", "r": 3.0, "obj": "Rentre à la maison", "avec": "Boîte de tomate"},
@@ -210,9 +221,9 @@ func _build_missions() -> void:
 			{"t": "fin", "annonce": ["FIN DE L'ACTE 1", "Quelqu'un, à l'aéroport, savait. À suivre."], "chapitre": "fin_acte1"}]},
 		# missions secondaires du quartier nord (phase 9)
 		{"titre": "Ravitaillement", "donneur": "patronne", "rec": 3000, "etapes": [
-			{"t": "parler", "qui": "patronne", "obj": "Parle à Maman Fifi, la patronne du maquis", "lignes": [
+			{"t": "parler", "qui": "patronne", "obj": "Parle à Maman Fifi, la patronne du maquis", "argent": 2000, "lignes": [
 				["patronne", "C'est toi le petit de Codjo ? Le maquis ouvre ce soir et je n'ai plus d'huile ni d'eau !"],
-				["patronne", "File à l'Ararat et reviens vite, je te paierai bien."]]},
+				["patronne", "Voilà 2 000 francs pour les courses. File à l'Ararat et reviens vite, je te paierai bien."]]},
 			{"t": "acheter", "article": "Huile (1 litre)", "ou": "caisse", "obj": "Achète de l'huile à l'Ararat"},
 			{"t": "acheter", "article": "Eau minérale (1,5 l)", "ou": "caisse", "obj": "Achète de l'eau minérale"},
 			{"t": "aller", "ou": "patronne", "r": 3.0, "obj": "Rapporte les courses au maquis de Haie Verte", "avec": "Huile (1 litre)"},
@@ -339,6 +350,8 @@ func _advance() -> void:
 	if e["t"] == "parler":
 		for a in e.get("retirer", []):
 			Partie.retirer(a)
+	if e.has("argent"):
+		Partie.gagner(int(e["argent"]), "Argent des courses")   # le donneur avance l argent des achats demandes
 	if e.has("chrono") or e["t"] == "deposer":
 		_chrono = -1.0
 	step += 1

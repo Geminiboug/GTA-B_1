@@ -302,6 +302,27 @@ def cut_arches(ob, wheels, r, W):
         bpy.data.objects.remove(cy, do_unlink=True)
 
 
+def cut_bed(ob, M, y0, y1, hw, floor_z):
+    """Plateau ouvert du pick-up : on evide le dessus de la caisse arriere (parois de 5 cm, plancher a floor_z) ;
+    les faces de la decoupe prennent le revetement noir du plateau."""
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(0, (y0 + y1) / 2, floor_z + 0.6))
+    cb = bpy.context.active_object
+    cb.scale = (2 * (hw - 0.05), y1 - y0, 1.2)
+    cb.data.materials.append(M["black"])
+    bpy.context.view_layer.objects.active = cb
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    md = ob.modifiers.new("plateau", "BOOLEAN")
+    md.operation = "DIFFERENCE"
+    md.object = cb
+    if hasattr(md, "solver"):
+        md.solver = "EXACT"
+    if hasattr(md, "material_mode"):
+        md.material_mode = "TRANSFER"
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.modifier_apply(modifier=md.name)
+    bpy.data.objects.remove(cb, do_unlink=True)
+
+
 def sedan_stations(sp):
     return sp["stations"]
 
@@ -349,6 +370,8 @@ def vehicle(name, sp):
     st = sp["stations"]
     shell = body_shell(name + "_caisse", M, st)
     cut_arches(shell, [(wb / 2, r), (-wb / 2, r)], r, W)
+    if sp.get("bed"):
+        cut_bed(shell, M, sp["bed"][0], sp["bed"][1], hw, sp["bed"][2])
     shell.parent = root
 
     det = Mesh(name + "_details")
@@ -461,6 +484,16 @@ def vehicle(name, sp):
         det.box(M["cargo"], (0.1, (y0 + y1) / 2 - 0.3, rz + 0.24), (1.1, 1.3, 0.2), smooth=True)
         det.box(M["sac"], (-0.45, (y0 + y1) / 2 + 0.75, rz + 0.24), (0.5, 0.6, 0.2), smooth=True)
         det.box(M["sac"], (0.35, (y0 + y1) / 2 + 0.8, rz + 0.23), (0.55, 0.45, 0.18), smooth=True)
+    if sp.get("bed"):
+        y0, y1, fz = sp["bed"]
+        cb = belt_at((y0 + y1) / 2)
+        for s in (-1, 1):
+            det.box(M["black"], (s * (cb["hw"] - 0.035), (y0 + y1) / 2, cb["belt"] + 0.01), (0.07, y1 - y0 + 0.08, 0.025))   # rebord des ridelles
+            for k in range(3):                                                                                          # anneaux d'arrimage
+                det.box(M["chrome"], (s * (cb["hw"] - 0.09), y0 + 0.25 + k * (y1 - y0 - 0.5) / 2, fz + 0.12), (0.02, 0.06, 0.04))
+        det.box(M["black"], (0, yr - 0.02, sp["tail_z"] + 0.08), (0.22, 0.02, 0.05))                                     # poignee du hayon
+        for k in range(5):                                                                                              # nervures du plancher
+            det.box(M["rack"], (-0.6 + k * 0.3, (y0 + y1) / 2, fz + 0.012), (0.05, y1 - y0 - 0.1, 0.02))
     if sp.get("spare"):
         sp_mesh = Mesh("roue_secours")
         sp_mesh.lathe_x(M["tire"], (0, 0, 0), [(0.13, r * 0.6), (0.14, r * 0.9), (0.1, r), (-0.1, r), (-0.12, r * 0.9), (-0.11, r * 0.6)], 24)
@@ -605,8 +638,8 @@ MINIBUS = dict(L=4.85, W=1.88, wb=2.57, r=0.33, track=1.62, tire_w=0.21, spokes=
     mirror_y=1.9, wiper_y=2.05, doors=[1.55, 0.35], door_lines=[2.05, 1.2, -0.3], strip_z=0.6,
     seat_rows=[1.45, 0.45, -0.45, -1.4], seat_z=0.6, dash_y=2.05)
 
-# Pick-up simple cabine (5,30 x 1,85 x 1,80 m, empattement 3,08 m) : cabine courte, long plateau bache (le dessus du
-# plateau est ferme a hauteur de ceinture), tres courant a Cotonou pour les livraisons (phase 9).
+# Pick-up simple cabine (5,30 x 1,85 x 1,80 m, empattement 3,08 m) : cabine courte, long plateau ouvert (benne evidee,
+# plancher noir), tres courant a Cotonou pour les livraisons (phase 9).
 PICKUP = dict(L=5.3, W=1.85, wb=3.08, r=0.36, track=1.54, tire_w=0.24, spokes=6, bumper_mat="black", stations=[
     S(-2.62, 0.45, 1.0, 1.03, 0.88, 0.78),
     S(-2.55, 0.42, 1.02, 1.06, 0.9, 0.82),
@@ -621,7 +654,7 @@ PICKUP = dict(L=5.3, W=1.85, wb=3.08, r=0.36, track=1.54, tire_w=0.24, spokes=6,
     S(2.6, 0.56, 0.86, 0.87, 0.78, 0.66),
 ], bumper_z=0.55, bumper_h=0.22, lamp_z=0.88, lamp_h=0.13, grille_h=0.18, tail_z=0.9, tail_h=0.24, rear_plate_z=0.72,
     mirror_y=1.3, wiper_y=1.36, doors=[0.35], door_lines=[1.3, -0.72], strip_z=0.7,
-    seat_rows=[0.1], seat_z=0.64, dash_y=1.05)
+    seat_rows=[0.1], seat_z=0.64, dash_y=1.05, bed=(-2.5, -0.9, 0.82))
 
 for nm, sp in (("veh_berline", SEDAN), ("veh_4x4", SUV), ("veh_minibus", MINIBUS), ("veh_pickup", PICKUP)):
     vehicle(nm, sp)

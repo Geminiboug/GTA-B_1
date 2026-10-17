@@ -55,6 +55,8 @@ var posture := 0.0
 var carry_head := false
 var rain_cover := 0.0
 # cibles en position monde (Vector3.INF : aucune) : mains sur le guidon / volant, pieds sur les repose-pieds / pedales
+var visee := 0.0          # 0..1 : bras tendus sur l'arme (haut du corps seulement, les jambes marchent)
+var visee_pitch := 0.0    # -1 (vers le bas) .. 1 (vers le haut)
 var ik_targets := {"LeftHand": Vector3.INF, "RightHand": Vector3.INF, "LeftFoot": Vector3.INF, "RightFoot": Vector3.INF}
 
 static var _libs := {}            # bibliotheques chargees une fois pour tous les personnages
@@ -172,7 +174,38 @@ func _build_tree() -> AnimationNodeBlendTree:
 		bt.connect_node(s[0], 1, s[0] + "_clip")
 		prev = s[0]
 		x += 220
-	bt.connect_node("output", 0, prev)
+	# visee : pose de tir au pistolet (vers le bas / droit / vers le haut) sur le haut du corps seulement
+	var aim := AnimationNodeBlendSpace1D.new()
+	aim.min_space = -1.0
+	aim.max_space = 1.0
+	for e in [["Pistol_Aim_Down", -1.0], ["Pistol_Aim_Neutral", 0.0], ["Pistol_Aim_Up", 1.0]]:
+		if clip(e[0]) != "":
+			aim.add_blend_point(_anim(e[0]), e[1], -1, e[0])
+	bt.add_node("visee_bs", aim, Vector2(x, 250))
+	var haut := AnimationNodeBlend2.new()
+	haut.filter_enabled = true
+	if _skel:
+		for i in _skel.get_bone_count():
+			var bn := _skel.get_bone_name(i)
+			for key in ["Spine", "Chest", "Neck", "Head", "Shoulder", "Arm", "Hand", "Thumb", "Index", "Middle", "Ring", "Little"]:
+				if bn.contains(key):
+					haut.set_filter_path(NodePath(ROOT_TRACK.get_slice(":", 0) + ":" + bn), true)
+					break
+	bt.add_node("visee", haut, Vector2(x + 220, 100))
+	bt.connect_node("visee", 0, prev)
+	bt.connect_node("visee", 1, "visee_bs")
+	# immobile : pose de tir complete (bassin de trois quarts, appuis ecartes), comme dans le clip
+	var aim2 := AnimationNodeBlendSpace1D.new()
+	aim2.min_space = -1.0
+	aim2.max_space = 1.0
+	for e in [["Pistol_Aim_Down", -1.0], ["Pistol_Aim_Neutral", 0.0], ["Pistol_Aim_Up", 1.0]]:
+		if clip(e[0]) != "":
+			aim2.add_blend_point(_anim(e[0]), e[1], -1, e[0])
+	bt.add_node("visee_bs2", aim2, Vector2(x + 220, 250))
+	bt.add_node("visee_plein", AnimationNodeBlend2.new(), Vector2(x + 440, 100))
+	bt.connect_node("visee_plein", 0, "visee")
+	bt.connect_node("visee_plein", 1, "visee_bs2")
+	bt.connect_node("output", 0, "visee_plein")
 	return bt
 
 
@@ -310,6 +343,10 @@ func _physics_process(delta: float) -> void:
 	var cn: float = _natural.get("Crouch_Fwd", 0.8) * (_skel.motion_scale if _skel else 1.0)
 	_tree.set("parameters/accroupi/blend_position", clampf(speed / 0.5, 0.0, 1.0))
 	_tree.set("parameters/echelle_accroupi/scale", clampf(speed / cn, 0.6, 1.8) if speed > 0.2 else 1.0)
+	_tree.set("parameters/visee/blend_amount", visee)
+	_tree.set("parameters/visee_bs/blend_position", visee_pitch)
+	_tree.set("parameters/visee_bs2/blend_position", visee_pitch)
+	_tree.set("parameters/visee_plein/blend_amount", visee * (1.0 - clampf(speed / 0.8, 0.0, 1.0)))
 	_tree.advance(delta)
 	_overlay(delta)
 

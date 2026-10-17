@@ -18,6 +18,8 @@ extends Node3D
 @export var steer_gain := 2.2          # reactivite du volant (1/s)
 
 const ZEM_SCENE := preload("res://assets/models/veh_zem.glb")
+const SALETE := preload("res://shaders/salete_auto.gdshader")
+const VOITURE := preload("res://scripts/voiture.gd")
 const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 0.71, 0.72), Color(0.08, 0.08, 0.09),
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
@@ -172,9 +174,17 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 			if m and m.resource_name == "mat_carrosserie":
 				var d := (m as BaseMaterial3D).duplicate() as BaseMaterial3D
 				d.albedo_color = col
+				var sal := ShaderMaterial.new()          # poussiere de laterite et rouille, comme les voitures conduites
+				sal.shader = SALETE
+				sal.set_shader_parameter("poussiere", _rng.randf_range(0.25, 0.9))
+				sal.set_shader_parameter("rouille", _rng.randf_range(0.0, 0.6) if model in ["veh_minibus", "veh_berline"] and _rng.randf() < 0.6 else 0.0)
+				sal.set_shader_parameter("haut_caisse", 1.0 if model == "veh_berline" else 1.2)
+				d.next_pass = sal
 				mi.set_surface_override_material(s, d)
 			elif m and m.resource_name == "mat_lampe":
 				mi.set_surface_override_material(s, LAMP_MAT)
+			elif m and m.resource_name == "mat_verre_auto":
+				mi.set_surface_override_material(s, VOITURE._verre_teinte())
 		var aabb: AABB = mi.mesh.get_aabb()
 		box.size = Vector3(aabb.size.x - 0.15, aabb.size.y - 0.04, aabb.size.z - 0.1)
 		cs.position = Vector3(0, aabb.position.y + 0.02 + box.size.y / 2.0, aabb.get_center().z)

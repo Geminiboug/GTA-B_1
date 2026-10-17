@@ -7,16 +7,24 @@ extends CanvasLayer
 @export var player_path: NodePath = ^"../Player"
 @export var portee := 2.2          # m
 
-const ARTICLES := {
+# [nom, prix, sante rendue (mange sur place), quantite]
+var ARTICLES := {
 	"etal": [["Eau en sachet (pure water)", 50, 6], ["Arachides grillées", 200, 10], ["Ananas", 500, 15], ["Pain", 150, 12]],
 	"maquis": [["Pâte rouge et poulet", 1500, 60], ["Riz sauce arachide", 1000, 45], ["Akassa et poisson frit", 800, 40], ["Bière locale", 600, 5]],
 	"kpayo": [["Essence (1 litre)", 650, 0]],
 	"cabine": [["Crédit téléphone", 500, 0], ["Carte SIM", 1000, 0]],
-	"caisse": [["Sac de riz (5 kg)", 4500, 0], ["Huile (1 litre)", 1500, 0], ["Boîte de tomate", 300, 0], ["Eau minérale (1,5 l)", 500, 8]],
+	"caisse": [["Sac de riz (5 kg)", 4500, 0], ["Huile (1 litre)", 1500, 0], ["Boîte de tomate", 300, 0], ["Eau minérale (1,5 l)", 500, 8],
+		["Blouson de moto renforcé", 12000, 0]],
 	"cafe": [["Café", 700, 5], ["Sandwich", 2000, 35], ["Jus de bissap", 800, 10]],
+	# armes (scripts/armes.gd) : quincaillerie de jour, le Gaou la nuit pres de la plage
+	"salle": [["Séance de musculation", 1000, 0]],
+	"quincaillerie": [["Bâton", 500, 0], ["Machette", 3500, 0], ["Coupe-coupe", 2500, 0]],
+	"gaou": [["Fusil de chasse artisanal", 60000, 0], ["Pistolet", 150000, 0], ["Fusil à pompe", 220000, 0],
+		["Balles 9 mm", 1500, 0, 12], ["Cartouches", 2000, 0, 6]],
 }
-const NOMS := {"etal": "l'étal", "maquis": "le maquis", "kpayo": "le vendeur d'essence", "cabine": "la cabine",
-	"caisse": "la caisse", "cafe": "le café"}
+var NOMS := {"etal": "l'étal", "maquis": "le maquis", "kpayo": "le vendeur d'essence", "cabine": "la cabine",
+	"caisse": "la caisse", "cafe": "le café", "quincaillerie": "la quincaillerie", "gaou": "le Gaou",
+	"salle": "Gbêkpo Fitness"}
 
 var spots: Array = []          # [{pos, kind}]
 var _player: Node3D
@@ -66,11 +74,18 @@ func _collect() -> void:
 		spots.append_array(lieux.shop_spots)
 
 
+func _nuit() -> float:
+	var dn := get_node_or_null("../JourNuit")
+	return float(dn.get("night")) if dn else 0.0
+
+
 func nearest(p: Vector3) -> Dictionary:
 	var best := {}
 	var bd := portee
 	for s in spots:
 		var d := Vector2(p.x - s["pos"].x, p.z - s["pos"].z).length()
+		if s.get("nuit", false) and _nuit() < 0.5:
+			continue           # le Gaou ne vend qu'a la nuit tombee
 		if d < bd and absf(p.y - s["pos"].y) < 2.5:
 			bd = d
 			best = s
@@ -119,14 +134,38 @@ var _key_held := {}
 
 func buy(kind: String, i: int) -> bool:
 	var it: Array = ARTICLES[kind][i]
+	var perso := get_node_or_null("../Personnalisation")
+	if perso and perso.gere(kind):
+		# tenues, coiffeur, garage, agence : applique d'abord, facture seulement si c'est possible
+		if Partie.argent < int(it[1]):
+			Partie.notifier(tr("Pas assez d'argent."))
+			return false
+		if not perso.achat(kind, i):
+			return false
+		Partie.payer(int(it[1]), it[0])
+		if _open != "":
+			_refresh()
+		return true
 	if not Partie.payer(int(it[1]), it[0]):
 		return false
 	# nourriture : mangee sur place (sante), sauf si une mission demande de la rapporter (Partie.drapeaux["garder"])
 	var mange := int(it[2]) > 0 and not (Partie.drapeaux.get("garder", []) as Array).has(String(it[0]))
-	if mange:
+	if String(it[0]) == "Séance de musculation":
+		var st2 := get_node_or_null("../Stats")
+		if st2:
+			st2.seance_salle()
+		return true
+	if String(it[0]) == "Bière locale":
+		Partie.ajouter("Bouteille")           # la bouteille vide reste : arme improvisee (scripts/armes.gd)
+	if String(it[0]) == "Blouson de moto renforcé":
+		Partie.equiper_armure(100.0)          # enfile tout de suite : barre bleue sous la sante
+	elif mange:
 		Partie.soigner(int(it[2]))
+		var st := get_node_or_null("../Stats")
+		if st:
+			st.mange(float(it[2]))
 	else:
-		Partie.ajouter(String(it[0]))
+		Partie.ajouter(String(it[0]), int(it[3]) if it.size() > 3 else 1)
 	# geste : on tend la main pour payer et prendre, puis on mange sur place
 	var an: Node = _player.get("anim") if _player else null
 	if an and an.has_method("play_clips"):
@@ -138,6 +177,8 @@ func buy(kind: String, i: int) -> bool:
 
 func _show(kind: String) -> void:
 	_open = kind
+	if _player:
+		_player.menus["commerce"] = true
 	_sel = 0
 	_panel.visible = true
 	_refresh()
@@ -167,4 +208,6 @@ func _refresh() -> void:
 
 func _close() -> void:
 	_open = ""
+	if _player:
+		_player.menus.erase("commerce")
 	_panel.visible = false

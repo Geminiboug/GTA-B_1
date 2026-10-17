@@ -4,6 +4,8 @@ extends CanvasLayer
 ## souris, effets de camera, qualite graphique, plein ecran ; enregistrees dans user://options.cfg).
 ## Les tests (scene lancee par un script, current_scene nul) demarrent directement en jeu, sans ecran titre.
 
+const STATS_SCRIPT := preload("res://scripts/stats.gd")
+
 @export var titre_au_lancement := true
 @export var formulaire_retours := ""   # lien du formulaire de retours des joueurs (ecran de fin de demo), vide = pas de bouton
 
@@ -162,6 +164,7 @@ func _show_pause() -> void:
 		Partie.charger(get_parent())
 		get_tree().call_group("histoire", "reprendre"), Partie.existe_sauvegarde())
 	_button("Options", _show_options)
+	_button("Statistiques", _show_stats)
 	_button("Commandes", _show_controls)
 	_button("Crédits", _show_credits)
 	_button("Quitter vers l'écran titre", func() -> void:
@@ -241,6 +244,7 @@ func _show_options() -> void:
 	_slider("Sensibilité de la souris", o["sensibilite"], 0.3, 2.5, func(v: float) -> void: o["sensibilite"] = v)
 	_check("Effets de caméra (recentrage, secousses)", o["effets_camera"], func(v: bool) -> void: o["effets_camera"] = v)
 	_check("Plein écran", o["plein_ecran"], func(v: bool) -> void: o["plein_ecran"] = v)
+	_check("Violence réduite (armes moins puissantes)", o.get("violence_reduite", false), func(v: bool) -> void: o["violence_reduite"] = v)
 	var row := HBoxContainer.new()
 	var l := Label.new()
 	l.text = "Qualité graphique"
@@ -284,3 +288,37 @@ func _check(text: String, value: bool, cb: Callable) -> void:
 	c.add_theme_font_size_override("font_size", 20)
 	c.toggled.connect(cb)
 	_box.add_child(c)
+
+
+func _show_stats() -> void:
+	## Statistiques du personnage (phase 15) : barres 0..100, silhouette, compteurs de partie.
+	_page = "stats"
+	_clear("Statistiques")
+	var st := get_parent().get_node_or_null("Stats") if get_parent() else null
+	for k in ["endurance", "muscles", "graisse", "respect", "zem", "voiture", "tir", "natation"]:
+		var row := HBoxContainer.new()
+		var l := Label.new()
+		l.text = tr(STATS_SCRIPT.NOMS[k])
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.add_theme_font_size_override("font_size", 20)
+		row.add_child(l)
+		var bar := ProgressBar.new()
+		bar.custom_minimum_size = Vector2(240, 18)
+		bar.value = float(Partie.perso.get(k, 0.0))
+		bar.show_percentage = false
+		row.add_child(bar)
+		var n := Label.new()
+		n.text = "%d" % roundi(bar.value)
+		n.custom_minimum_size = Vector2(48, 0)
+		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		n.add_theme_font_size_override("font_size", 20)
+		row.add_child(n)
+		_box.add_child(row)
+	var info := Label.new()
+	var corps := {"mince": "mince", "": "normale", "fort": "costaud"}
+	var c: String = st.morpho() if st else ""
+	info.text = tr("Silhouette : %s    Courses de zem : %d    Missions : %d    Amendes : %d") % [tr(corps.get(c, "normale")),
+		int(Partie.stats.get("courses", 0)), Partie.missions_faites.size(), int(Partie.stats.get("amendes", 0))]
+	info.add_theme_font_size_override("font_size", 17)
+	_box.add_child(info)
+	_button("Revenir", _back).grab_focus.call_deferred()

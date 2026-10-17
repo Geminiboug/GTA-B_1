@@ -21,6 +21,7 @@ signal rider_changed(has_rider: bool)
 
 var has_rider := false
 var ai := false                  # pilote automatique (motos de police, scripts/police.gd)
+var adresse := 1.0               # competence zem du joueur (scripts/stats.gd) : guidon plus vif et sur
 var ai_input := Vector3.ZERO     # (gaz, frein, direction) comme voiture.gd
 var speed := 0.0          # vitesse longitudinale (m/s, negative = marche arriere)
 var throttle := 0.0       # 0..1, lu par le son
@@ -58,8 +59,9 @@ func _physics_process(delta: float) -> void:
 	var rear_brake := false
 	if has_rider:
 		# clavier : Z / S ; manette : gachettes RT / LT (analogiques), stick gauche pour diriger
-		accel_in = Input.get_action_strength("accelerate")
-		brake_in = Input.get_action_strength("brake")
+		Limiteur.entrees()
+		accel_in = Limiteur.gaz(Input.get_action_strength("accelerate"), speed)
+		brake_in = maxf(Input.get_action_strength("brake"), Limiteur.retenue(speed))
 		steer_in = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
 		rear_brake = Input.is_action_pressed("handbrake")
 		if Input.is_action_just_pressed("horn") and audio:
@@ -88,7 +90,7 @@ func _physics_process(delta: float) -> void:
 
 	# --- Direction : le guidon braque moins quand on va vite ---
 	var steer_limit: float = max_steer / (1.0 + abs(speed) * 0.22)
-	_steer = move_toward(_steer, steer_in * steer_limit, steer_speed * delta)
+	_steer = move_toward(_steer, steer_in * steer_limit, steer_speed * (adresse if has_rider else 1.0) * delta)
 	# modele bicyclette : vitesse de lacet = v * tan(braquage) / empattement
 	var yaw_rate := speed * tan(_steer) / wheelbase
 	if rear_brake and abs(speed) > 4.0:
@@ -109,12 +111,16 @@ func _physics_process(delta: float) -> void:
 		velocity.y = -0.5
 	move_and_slide()
 	# filet de securite : jamais sous la carte
-	if global_position.y < -0.6:
+	# (sous le fond marin des limites du monde, -1,2 m : l estran de la plage descend jusque-la)
+	if global_position.y < -2.0:
 		global_position = _last_safe + Vector3.UP * 0.3
 		speed = 0.0
 		velocity = Vector3.ZERO
-	elif is_on_floor() and absf(global_position.y) < 0.2:
+	elif is_on_floor() and global_position.y > -0.3:
 		_last_safe = global_position
+	# dans la mer (surface a -0,3 m) : l eau freine fort
+	if global_position.y < -0.5:
+		speed *= exp(-1.8 * delta)
 	# un choc contre un mur coupe la vitesse
 	for i in get_slide_collision_count():
 		var n := get_slide_collision(i).get_normal()

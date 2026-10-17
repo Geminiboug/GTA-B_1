@@ -1356,12 +1356,33 @@ if USE_UBC:
             _k.data[i].co = v.co + face_offset(fk, v.co - hc)
     for _n in [o.name for o in scene.objects if o.type == "MESH" and o.data.shape_keys and o.name != "chr_corps"]:
         scene.objects[_n].shape_key_clear()
-    for _n in ("chr_pantalon", "chr_short", "chr_chaussures"):
-        _decimate(scene.objects.get(_n), 0.4, keep_border=True)
+    _decimate(scene.objects.get("chr_chaussures"), 0.4, keep_border=True)
     # apres allegement (corps et vetements), le tissu est repousse au-dessus de la peau simplifiee, ourlet a plat
     clear_skin(["chr_haut", "chr_haut_long"], 0.014)
     clear_skin(["chr_pantalon", "chr_short"], 0.007)
     flat_hem()
+
+# vetements plus fins (retour d'Olympe du 17/10/2026) : une subdivision de plus sur tous les tissus (plis et bords plus
+# souples, pas de facettes aux coudes et aux genoux) ; les PNJ eloignes passent par les niveaux de detail de Godot
+def _subdiviser(ob):
+    if ob is None or ob.type != "MESH":
+        return
+    md = ob.modifiers.new("tissu_fin", "SUBSURF")
+    md.levels = 1
+    md.render_levels = 1
+    md.boundary_smooth = "PRESERVE_CORNERS"
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.modifier_apply(modifier=md.name)
+    for p in ob.data.polygons:
+        p.use_smooth = True
+
+
+_tissus = [o for o in scene.objects if o.type == "MESH" and any(o.name.startswith(t) for t in
+           ("chr_haut", "chr_pantalon", "chr_short", "chr_boubou", "chr_pagne", "chr_jupe", "chr_foulard"))]
+for _o in _tissus:
+    _subdiviser(_o)
+clear_skin([o.name for o in _tissus if o.name.startswith("chr_haut") or o.name.startswith("chr_boubou")], 0.012)
+clear_skin([o.name for o in _tissus if o.name.startswith("chr_pantalon") or o.name.startswith("chr_short")], 0.006)
 
 # demi-tour : le personnage regarde -Y Blender (= +Z Godot), comme le standard glTF et le profil humanoide de Godot
 from mathutils import Matrix

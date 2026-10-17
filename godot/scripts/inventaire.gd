@@ -25,10 +25,10 @@ const DESCRIPTIONS := {
 	"Colis": "Un colis à livrer. Ne pas ouvrir.",
 }
 const ORDRE := ["Smartphone", "Torche"]   # toujours en tete de liste
-const COMMERCE := preload("res://scripts/commerce.gd")
 
 var ouvert := false
 var torche_allumee := false
+var _torche_pieces: Node3D        # corps et tete de la torche, orientes chaque image comme le faisceau
 var _player: Node3D
 var _panel: PanelContainer
 var _list: VBoxContainer
@@ -121,6 +121,9 @@ func _input(event: InputEvent) -> void:
 func ouvrir(on: bool) -> void:
 	ouvert = on
 	_panel.visible = on
+	if _player:
+		if on: _player.menus["inventaire"] = true
+		else: _player.menus.erase("inventaire")
 	if on:
 		_sel = 0
 		_refresh()
@@ -146,15 +149,26 @@ func _action(item: String) -> String:
 			return "Ouvrir"
 		"Torche":
 			return "Éteindre" if torche_allumee else "Allumer"
+	if _arme(item):
+		var ar := get_node_or_null("../Armes")
+		return "Ranger" if ar.arme == item else "Prendre en main"
 	return "Manger" if _soin(item) > 0 else ""
 
 
 func _soin(item: String) -> int:
-	for kind in COMMERCE.ARTICLES:
-		for a in COMMERCE.ARTICLES[kind]:
+	var com := get_node_or_null("../Commerce")
+	if com == null:
+		return 0
+	for kind in com.ARTICLES:
+		for a in com.ARTICLES[kind]:
 			if a[0] == item:
 				return int(a[2])
 	return 0
+
+
+func _arme(item: String) -> bool:
+	var ar := get_node_or_null("../Armes")
+	return ar != null and ar.ARMES.has(item)
 
 
 func _refresh() -> void:
@@ -191,10 +205,17 @@ func utiliser(item: String) -> void:
 		"Torche":
 			torche(not torche_allumee)
 			_refresh()
+		_ when _arme(item):
+			var ar := get_node_or_null("../Armes")
+			ar.equiper("" if ar.arme == item else item)
+			_refresh()
 		_:
 			var soin := _soin(item)
 			if soin > 0 and Partie.retirer(item):
 				Partie.soigner(soin)
+				var st := get_node_or_null("../Stats")
+				if st:
+					st.mange(float(soin))
 				Partie.notifier(tr("Tu manges : %s") % tr(item))
 				var an: Node = _player.get("anim") if _player else null
 				if an and an.has_method("play_clips") and _player.get("vehicle") == null:
@@ -246,9 +267,11 @@ func _attach_lamp() -> void:
 	m.roughness = 0.4
 	cm.material = m
 	body.mesh = cm
-	body.position = Vector3(0, 0.06, 0.03)
-	body.rotation = Vector3(PI / 2.0, 0, 0)
-	ba.add_child(body)
+	body.position = Vector3(0.03, 0.06, 0)
+	body.rotation = Vector3(0, 0, -PI / 2.0)   # axe +X de la main : vers l avant (mesure), tete au bout, comme le faisceau
+	_torche_pieces = Node3D.new()
+	ba.add_child(_torche_pieces)
+	_torche_pieces.add_child(body)
 	var head := MeshInstance3D.new()
 	var hm := CylinderMesh.new()
 	hm.top_radius = 0.03
@@ -262,9 +285,9 @@ func _attach_lamp() -> void:
 	em.emission_energy_multiplier = 3.0
 	hm.material = em
 	head.mesh = hm
-	head.position = Vector3(0, 0.06, 0.15)
-	head.rotation = Vector3(PI / 2.0, 0, 0)
-	ba.add_child(head)
+	head.position = Vector3(0.15, 0.06, 0)
+	head.rotation = Vector3(0, 0, -PI / 2.0)
+	_torche_pieces.add_child(head)
 	_lamp = ba
 	_lamp.visible = torche_allumee
 
@@ -282,6 +305,12 @@ func _process(delta: float) -> void:
 	var pitch := clampf(pivot.rotation.x + 0.12, -0.9, 0.5) if pivot else -0.1
 	var basis := Basis.from_euler(Vector3(pitch, yaw, 0))
 	_spot.global_transform = Transform3D(basis, _player.global_position + Vector3(0, 1.15, 0) + basis * Vector3(0.22, 0, -0.35))
+	# la torche suit le faisceau, quelle que soit la rotation de la main dans le clip (axe +X des pieces = avant)
+	if _torche_pieces and is_instance_valid(_torche_pieces):
+		var d := -basis.z
+		var z := d.cross(Vector3.UP).normalized()
+		var sc := _torche_pieces.global_basis.get_scale().abs()
+		_torche_pieces.global_basis = Basis(d, -z.cross(d).normalized(), -z).scaled(sc)   # base directe, +Y des pieces vers le bas
 	# a l'arret, la torche est levee devant soi (clip Idle_Torch_Loop)
 	var an: Node = _player.get("anim")
 	var still: bool = not in_car and Vector2(_player.velocity.x, _player.velocity.z).length() < 0.2 and not _player.get("garde")

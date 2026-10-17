@@ -15,25 +15,27 @@ Ce qui fait l'identite de GTB :
 
 ## 2. Decisions actees
 
-- Cible : PC d'abord. Export web fait en Phase 10 mais non verifie : a garder dans la v0.1 seulement s'il passe la verification de la Phase 11 (a confirmer par Olympe)
+- Cible : Android, Windows et Linux (decision d'Olympe du 17/10/2026). Pas d'Apple. Web abandonne.
 - Moteur : Godot 4.7
 - Modelisation : Blender, export glTF 2.0 (.glb)
 - Echelle : 1 unite = 1 metre, axe Z vers le haut dans Blender, export en Y up
-- Premiere zone : aeroport de Cotonou (Cadjehoun), Erevan, la plage (remplace Zogbo, decision du 14/10/2026), etendue a Haie Verte et Cadjehoue
+- Premiere zone : aeroport de Cotonou (Cadjehoue), Erevan, la plage (remplace Zogbo, decision du 14/10/2026), etendue a Haie Verte et Cadjehoue
 - Style : semi-realiste, low a mid poly pour tenir sur PC modeste
 - Materiaux proceduraux jusqu'aux releves photo (Phase 12)
 - Nom : GTB, Gbê Town Bénin (ne jamais utiliser GTA ni "Grand Theft" pour eviter un conflit de marque)
 - Langue du jeu : francais (et possibilite d'ajouter fon/anglais plus tard)
 - Histoire : "Le Dernier Vol" (docs/histoire.md), prologue et acte 1 faits
 
-## 2 bis. Decisions a prendre (par Olympe)
+## 2 bis. Decisions d'Olympe (validees le 17/10/2026)
 
-- Plateforme de la demo : itch.io seul, ou itch.io + page Steam "bientot disponible"
-- Demo gratuite, puis jeu complet payant ou gratuit
-- Armes : lesquelles, et jusqu'ou va la violence (a fixer avant la Phase 14)
-- Voix : comediens amateurs (amis, etudiants) ou professionnels, et budget
-- Musique des radios : compositions originales, artistes locaux sous contrat, ou les deux
-- Ordre de l'extension : centre de Cotonou d'abord (grand marche) ou bord de lagune
+- Plateformes de la demo : smartphone Android, PC Windows et Linux. Pas d'Apple (iOS, macOS), trop lourd a gerer. Web abandonne (7 a 10 img/s).
+- Distribution : itch.io tout de suite, page Steam "bientot disponible" quand le trailer existe.
+- Modele : demo gratuite, jeu complet payant a petit prix (10 a 15 EUR) avec prix regionaux bas en Afrique de l'Ouest.
+- Armes et violence (niveau PEGI 16) : armes blanches et improvisees (baton, machette, bouteille, coupe-coupe), quelques armes a feu fictives rares et cheres (pistolet, fusil a pompe, fusil de chasse artisanal) ; pas de flaques de sang, pas de demembrement, aucune violence sur les enfants ; PNJ K.-O. ou blesses ; option "violence reduite".
+- Voix : comediens amateurs pour la demo (amis, etudiants, troupes de theatre de Cotonou), en fon, francais et mina, avec contrat de cession de droits ; professionnels pour le jeu complet si le budget le permet.
+- Musique des radios : compositions originales libres de droits + quelques artistes locaux sous contrat simple.
+- Ordre de l'extension : centre de Cotonou d'abord (grand marche fictif facon Dantokpa), bord de lagune ensuite.
+- Police : aucun policier a l'ecran tant que le joueur n'a rien fait et que personne n'a appele.
 
 ## 3. Ce dont tu as besoin
 
@@ -107,10 +109,19 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Equilibrage : prix, amendes, chronos, vitesse et agressivite de la police, salaires des courses de zem
 - [x] Defauts visibles : bout de pagne sous les voitures, cheveux secs sous la pluie, casquette de la policiere, traversees du corps pendant la marche
 - [x] Remesurer les performances machine degagee ; si Haut descend sous 60 img/s dans l'Ararat et l'aerogare : profiler et corriger (ombres, lumieres, nombre de PNJ, occultation)
-- [x] Verifier la version web dans Chrome et Firefox (chargement, controles, son, performances), ou la retirer de la cible v0.1 : Chrome verifie le 17/10 (chargement complet, son corrige, mais 7 a 10 img/s : un seul fil, pas d'occultation, WebGL) ; Firefox absent de la machine. Proposition : retirer le web de la v0.1 et le retenter apres le chargement par zones (Phase 17 bis), a confirmer par Olympe
+- [x] Verifier la version web dans Chrome et Firefox (chargement, controles, son, performances), ou la retirer de la cible v0.1 : Chrome verifie le 17/10 (chargement complet, son corrige, mais 7 a 10 img/s : un seul fil, pas d'occultation, WebGL) ; Firefox absent de la machine. web retire de la cible (decision d'Olympe du 17/10/2026)
 - [x] Rapport de crash : log d'erreurs ecrit sur disque et numero de version affiche dans le menu
 - [x] Numero de version dans le fichier de sauvegarde et conversion des anciennes sauvegardes (une sauvegarde de la demo doit se charger en v0.2 et apres)
 - [x] Test de fluidite automatique : perf_fps.gd lance par un script, echec sous 70 / 60 img/s
+- [ ] Retours d'Olympe du 17/10/2026 :
+  - [x] Torche tenue a l'envers dans la main (le faisceau etait bon) : modele retourne
+  - [x] Police visible seulement apres une betise signalee : plus de patrouilles stationnees au niveau 0 (reglage police.patrouilles_sans_recherche)
+  - [x] Prologue bloque au riz de l'Ararat (4 500 F pour 3 000 F en poche) : tante Mireille donne 5 000 F, puis 2 000 F pour la sauce ; Maman Fifi avance 2 000 F
+  - [x] Limiteur de vitesse (K, manette croix bas) a 50 km/h, sous le seuil des contraventions, compteur de vitesse a l'ecran (test_limiteur)
+  - [x] Fleches qui faisaient bouger le joueur pendant un achat : deplacement bloque tant qu'un menu est ouvert (achat, inventaire, telephone)
+  - [x] Nom de l'assistant retire des credits
+  - [x] Plage : blocages et sursauts. Le sable n'avait pas de collision (on tombait sur le fond marin a -1,2 m) et le filet de securite des vehicules les ramenait en arriere des que l'estran passait sous -0,6 m. Collision ajoutee, seuil abaisse sous le fond marin, l'eau freine les vehicules (test_plage)
+  - [ ] Realisme des voitures et minibus beaucoup plus pousse : conduite, apparence, degats, son et effets
 - [ ] Jalon : 3 testeurs finissent l'acte 1 sans aide, sans bug bloquant, et ont envie de continuer
 
 ### Demande d'Olympe du 17/10/2026 : inventaire et vehicules realistes
@@ -120,6 +131,13 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Zem refait en detail (moteur a ailettes, echappement, fourche, selle biplace, porte-bagages, clignotants, roues) : blender/tools/build_zem.py, plongee de fourche au freinage
 - [x] Voitures, 4x4, minibus, pick-up refaits (carrosserie nette, montants, jours de portes, optiques, roues et freins) : plis vifs, phares qui s'allument la nuit, peinture vernie ; tests/capture_modeles.gd
 - [x] Conduite plus realiste : suspension par roue, pneus (adherence selon la charge), boite de vitesses reelle : couple selon le regime, 5 rapports, masse et trainee par modele (Vehicules.TUNING) ; test_conduite (berline 0-80 en 8 s, pointe 166 km/h, plongee 6 degres au freinage)
+- [ ] Deuxieme passe (retour d'Olympe du 17/10/2026, voitures et minibus pas assez realistes) :
+  - [x] Conduite : modele de pneus (derive, charge par essieu selon la hauteur du centre de gravite, inertie de lacet) : sous-virage, survirage au lever de pied ou au frein a main, contre-braquage ; adherence selon le revetement (goudron, paves, laterite, sable, eau) et la pluie ; ABS ; volant qui revient au centre ; reglages par modele (repartition, hauteur du centre de gravite, rigidite des pneus) ; test_tenue
+  - [x] Son : moteur essence (berline) ou diesel qui claque (4x4, minibus, pick-up) par explosions de cylindres, en charge et a vide melanges selon l'accelerateur, accordes sur le regime ; roulement selon le revetement, vent, passages de rapport, petarades, portieres
+  - [x] Effets : poussiere de laterite ou de sable, fumee et traces de pneus sur le goudron en glisse, fumees douces
+  - [x] Degats : tole froissee au point de choc, pare-brise etoile, phares casses, feu moteur sous 15 %, reparer() pour le garage (phase 16) ; tests/capture_degats.gd
+  - [x] Apparence : vitres teintees qui refletent le ciel, poussiere rouge en bas de caisse et rouille propres a chaque voiture (aussi dans la circulation), pick-up a plateau ouvert
+  - [ ] Detail des modeles : minibus facon taxi-brousse (porte coulissante, montants plus serres), interieurs, clignotants et feux de recul animes
 
 ### Phase 12 : Cotonou reel (v0.1)
 - [ ] Releves photo d'Olympe (facades, sols, portails, enseignes, toits) classes dans refs/terrain/ par type
@@ -138,32 +156,34 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Tous les textes du jeu (menus, HUD, dialogues, missions) sortis du code dans un fichier de traduction (base de la traduction de la Phase 24) : godot/i18n/gtb.pot (427 textes) genere par godot/tools/extraire_textes.py, francais comme cle, Label / Button / Label3D traduits par Godot ; quelques repliques composees a la volee (prenom, prix) seront a reprendre en Phase 24
 - [x] Credits complets en jeu (OSM ODbL, Overture, Open Buildings CC BY 4.0, Sentinel-2, Quaternius CC0, autres de docs/CREDITS.md) : bouton Credits (titre et pause), texte dans godot/assets/data/credits.txt
 - [x] Verification legale complete avec docs/LEGAL.md avant publication : docs/verification_legale.md, controle automatique tests/test_legal.gd (avis d'avocat recommande avant une sortie payante)
+- [ ] Export Linux (x86_64) verifie
+- [ ] Export Android : commandes tactiles (joystick virtuel, boutons d'action, camera au doigt), interface lisible sur petit ecran, prereglage "Mobile" (renderer Mobile, ombres et distance reduites), objectif 30 img/s sur un telephone de milieu de gamme
 - [ ] Jalon : demo publiee, 20 premiers retours de joueurs recus et tries
 
 ### Phase 14 : Combat et armes (v0.2)
 - [x] Corps a corps facon San Andreas : enchainements de coups, blocage, esquive, saisie, coups au sol : direct / croise / croise appuye (clic), garde (clic droit, LB) qui pare 85 %, roulade (garde + saut), coups au sol ; la saisie attend un clip adapte (aucun dans les bibliotheques Quaternius) ; test_combat
-- [ ] Visee : verrouillage de cible (manette) et visee libre (souris), changement de cible
-- [ ] Armes fictives, choix valide par Olympe (voir 2 bis), avec animations, sons synthetises, recul
-- [ ] Sante, armure, hopital : reapparition a l'hopital fictif avec perte d'argent
+- [x] Visee : visee libre a la souris (clic droit, camera par-dessus l'epaule, reticule, haut du corps en pose de tir et jambes qui marchent, pose complete a l'arret), verrouillage de cible a la manette (LB) et changement de cible d'un coup de stick droit
+- [x] Armes fictives (choix d'Olympe du 17/10/2026) : baton, bouteille (biere du maquis, casse apres 3 coups), machette, coupe-coupe (Quincaillerie Le Bon Clou, de jour) ; pistolet, fusil a pompe, fusil de chasse artisanal et munitions (le Gaou, la nuit pres de la plage) ; Tab / RB change d'arme, R / L3 recharge ; clips d'epee et de pistolet, detonations et echo synthetises, recul, eclair au canon, impacts ; le decor et les voitures arretent les balles ; passants qui fuient, police a 2 etoiles ; option violence reduite ; scripts/armes.gd, test_armes, capture_armes
+- [x] Sante, armure, hopital : blouson de moto renforce (Ararat, 12 000 F) qui absorbe 60 % des coups et des chutes (barre bleue), reveil devant le Centre de sante Gbekpo (fictif, croix verte) avec 4 000 F de soins ; test_sante
 - [x] PNJ qui se defendent, fuient ou appellent la police selon leur caractere : bagarreur (35 %) en garde qui rend les coups, peureux qui fuit, un sur cinq qui appelle la police au telephone ; points de vie et K.-O.
 - [x] Police a 5 niveaux : 1 agent a pied, 2 agent + patrouille, 3 barrage de deux voitures devant le joueur, 4 unite speciale en 4x4, 5 motos de police qui suivent les rues (test_police_niveaux)
-- [ ] Moyens de semer la police : se cacher dans un marche, changer de tenue, repeindre le vehicule au garage (attend la Phase 16)
+- [x] Moyens de semer la police : se cacher au marche (trace perdue 3 fois plus vite au milieu des etals), changer de tenue (une etoile de moins hors de vue), repeindre le vehicule au garage (plus recherche hors de vue)
 - [ ] Jalon : un combat de rue et une poursuite a 3 etoiles sont lisibles et amusants
 
 ### Phase 15 : Progression du personnage (v0.2)
-- [ ] Statistiques visibles : endurance, muscles, poids, respect, competences (zem, voiture, tir, natation)
-- [ ] Le corps change avec les statistiques (morphologies existantes : mince, normal, fort)
-- [ ] Manger (maquis, etals, Ararat) et faire du sport (salle fictive, footing sur la plage) influencent le corps
-- [ ] Competences qui augmentent a l'usage : zem plus stable, voiture mieux tenue, visee plus precise
-- [ ] Ecran de statistiques dans le menu pause
+- [x] Statistiques visibles : endurance, muscles, poids, respect, competences (zem, voiture, tir, natation) ; scripts/stats.gd, sauvegardees (Partie.perso), message a chaque palier de 10
+- [x] Le corps change avec les statistiques (morphologies existantes : mince, normal, fort) ; l'arme et la torche reviennent dans la main
+- [x] Manger (maquis, etals, Ararat) et faire du sport (salle Gbekpo Fitness, 1 000 F la seance ; footing) influencent le corps
+- [x] Competences qui augmentent a l'usage : zem plus stable (guidon), voiture mieux tenue (adherence), visee plus precise (dispersion), muscles qui renforcent les coups, endurance qui allonge le sprint
+- [x] Ecran de statistiques dans le menu pause ; test_stats
 - [ ] Jalon : apres 2 h de jeu, le joueur sent que son personnage a progresse
 
 ### Phase 16 : Personnalisation et proprietes (v0.2)
-- [ ] Tailleur (wax sur mesure), friperie, boutique de maillots fictifs, chaussures
-- [ ] Coiffeur et tresseuse (coupes, tresses, teintures), barbe
-- [ ] Garage de Tonton Codjo : reparer, repeindre, customiser motos et voitures (pots, jantes, autocollants, klaxons)
-- [ ] Proprietes a acheter (chambre, appartement, concession) qui servent de planques et de points de sauvegarde, avec garage
-- [ ] Garde-robe et vehicules gardes dans les sauvegardes
+- [x] Tailleur Chez Dossou (boubou en wax sur mesure), Friperie du Carrefour (t-shirts, jean, sandales, baskets), Maillots Sport 229 (5 clubs fictifs) ; scripts/personnalisation.gd, test_perso
+- [x] Coiffeur Salon Elegance : coupe courte, afro, tresses, crane rase (barbe et teintures : il faudra des maillages dans build_character.py)
+- [x] Garage de Tonton Codjo : reparer, repeindre (seme la police hors de vue), klaxon deux tons ; pots, jantes et autocollants restent a modeliser
+- [x] Proprietes (Agence Immo Gbekpo) : chambre a Cadjehoue (150 000 F), appartement a Haie Verte (600 000 F), planques ou l'on dort et sauvegarde, vehicule gare devant garde
+- [x] Garde-robe (Partie.tenue, drapeaux garde_robe) et vehicules gares gardes dans les sauvegardes
 - [ ] Jalon : deux joueurs n'ont pas le meme Sena ni le meme zem
 
 ### Phase 17 : Territoires des zems (v0.2)
@@ -320,7 +340,7 @@ STACK
 - Moteur : Godot 4.7.2 (Forward+), physique interpolee, RTX 2050 chez Olympe
 - Echelle : 1 unite = 1 metre
 - Zone : aeroport de Cotonou, Erevan, la plage, Haie Verte et Cadjehoue. Bbox N 6.3610, S 6.346380, O 2.375259, E 2.387500 (1,35 x 1,6 km), OSM dans refs/osm/zone-gtb.osm ; origine figee au centre de la premiere zone (6.3498725, 2.3813795)
-- Cible : PC d'abord, web dans la v0.1 seulement si la verification de la Phase 11 passe
+- Cible : Android, Windows et Linux ; pas d'Apple, pas de web
 
 CONVENTIONS
 - Nommage : bld_ (batiments), prop_ (objets), veh_ (vehicules), chr_ (personnages)
@@ -351,7 +371,7 @@ ETAT ACTUEL (16/10/2026)
 - PHASE EN COURS : Phase 11, validation et playtest (voir la roadmap). Prochaines taches pour l'agent :
   1. Fluidite : faite (tests/perf.sh au vert dans les trois qualites, outils tests/ab_gpu.gd et tests/profil_vue.gd).
   2. Equilibrage : prix, amendes, chronos, vitesse et agressivite police, salaires zem.
-  3. Export web verifie (7-10 img/s dans Chrome) : retrait de la v0.1 propose, attend la confirmation d'Olympe.
+  3. Web retire de la cible (decision d'Olympe du 17/10/2026) ; demo sur Android, Windows et Linux.
 - Taches d'Olympe (ne pas les faire a sa place) : jouer 1 h et remplir docs/retours_olympe.md, valider les jalons 3 a 5,
   faire jouer 2 ou 3 amis avec docs/playtest.md, releves photo pour la Phase 12, captures pour le trailer, decisions de
   la section 2 bis de la roadmap.

@@ -13,16 +13,19 @@ const CAM_SCRIPT := preload("res://scripts/zem_camera.gd")
 const TUNING := {
 	"veh_berline": {"max_speed": 46.0, "grip": 0.95, "roll_factor": 0.011, "masse": 1150.0, "couple_max": 140.0,
 		"regime_couple": 4000.0, "regime_max": 6200.0, "rapports": [3.45, 1.94, 1.31, 1.03, 0.84], "pont": 4.1,
-		"part_motrice": 0.6, "trainee": 0.62},
+		"part_motrice": 0.6, "trainee": 0.62, "repartition_avant": 0.61, "hauteur_cg": 0.55},
 	"veh_4x4": {"max_speed": 42.0, "grip": 0.85, "roll_factor": 0.016, "masse": 1950.0, "couple_max": 300.0,
 		"regime_couple": 2200.0, "regime_max": 4300.0, "rapports": [4.3, 2.4, 1.48, 1.0, 0.79], "pont": 3.9,
-		"part_motrice": 1.0, "trainee": 1.05},
+		"part_motrice": 1.0, "trainee": 1.05, "repartition_avant": 0.55, "hauteur_cg": 0.78,
+		"rigidite_avant": 9.5, "rigidite_arriere": 11.0},
 	"veh_minibus": {"max_speed": 33.0, "grip": 0.78, "roll_factor": 0.02, "masse": 1800.0, "couple_max": 210.0,
 		"regime_couple": 2400.0, "regime_max": 4500.0, "rapports": [4.5, 2.5, 1.5, 1.0, 0.82], "pont": 4.3,
-		"part_motrice": 0.55, "trainee": 1.25},
+		"part_motrice": 0.55, "trainee": 1.25, "repartition_avant": 0.5, "hauteur_cg": 0.95,
+		"rigidite_avant": 9.0, "rigidite_arriere": 11.0},
 	"veh_pickup": {"max_speed": 40.0, "grip": 0.82, "roll_factor": 0.015, "masse": 1650.0, "couple_max": 240.0,
 		"regime_couple": 2300.0, "regime_max": 4500.0, "rapports": [4.3, 2.35, 1.45, 1.0, 0.82], "pont": 4.1,
-		"part_motrice": 0.45, "trainee": 0.95},
+		"part_motrice": 0.45, "trainee": 0.95, "repartition_avant": 0.58, "hauteur_cg": 0.72,
+		"rigidite_avant": 10.0, "rigidite_arriere": 11.0},
 }
 
 static var _merged := {}

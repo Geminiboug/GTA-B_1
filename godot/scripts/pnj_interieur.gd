@@ -379,7 +379,7 @@ func _flee(w: Dictionary) -> void:
 	_pick_away(w)
 
 
-func player_attack(origin: Vector3, dir: Vector3, _coup := 0) -> bool:
+func player_attack(origin: Vector3, dir: Vector3, _coup := 0, _degats := -1.0, _portee := 1.6, _arme := false) -> bool:
 	## Coup du joueur dans le magasin ou l'aerogare : la personne touchee tombe, les clients proches
 	## s'enfuient en criant, le vigile intervient a la voix.
 	if not _active:

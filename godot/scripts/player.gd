@@ -99,6 +99,13 @@ func _ready() -> void:
 
 
 var _punch_cd := 0.0
+var menus := {}               # menus ouverts (achat, inventaire...) : le joueur ne bouge plus, les fleches servent au menu
+
+
+func _move_input() -> Vector2:
+	return Vector2.ZERO if not menus.is_empty() else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+
+
 # ---------- Corps a corps (phase 14) : enchainement direct / croise / crochet, garde, roulade ----------
 const COUPS := ["Punch_Jab", "Punch_Cross", "Punch_Cross"]   # 3e coup : croise appuye qui fait tomber (Melee_Hook part au sol)
 @export var combo_fenetre := 0.9        # s pour enchainer le coup suivant
@@ -107,6 +114,15 @@ const COUPS := ["Punch_Jab", "Punch_Cross", "Punch_Cross"]   # 3e coup : croise 
 @export var garde_reduction := 0.85     # part des degats paree en garde, face a l'adversaire
 var combo := 0
 var garde := false
+# armes (scripts/armes.gd) : arme en main, arme a feu (le clic droit vise au lieu de parer), visee en cours
+var arme := ""
+var force := 1.0                       # muscles (scripts/stats.gd) : multiplie les degats des coups de poing
+var corps := ""                        # silhouette : "mince", "" (normale) ou "fort" (scripts/stats.gd)
+var arme_feu := false
+var visee := false
+@export var visee_fov := 52.0
+@export var visee_distance := 1.9        # m : camera rapprochee, par-dessus l'epaule droite
+@export var visee_epaule := 0.55
 var _combo_t := 0.0
 var _roll_t := 0.0
 var _roll_dir := Vector2.ZERO
@@ -158,7 +174,19 @@ func _dress(model: Node, g: String) -> void:
 	model.set_meta("genre", g)
 	model.set_meta("age", "adulte")
 	set_meta("genre", g)
-	PnjUtil.apply(model, _player_look(g))
+	var perso := get_parent().get_node_or_null("Personnalisation") if get_parent() else null
+	PnjUtil.apply(model, perso.look(g) if perso and not Partie.tenue.is_empty() else _player_look(g))
+
+
+signal modele_change
+
+
+func set_corps(c: String) -> void:
+	## Silhouette qui suit les statistiques (phase 15) : mince, normale ou forte (morphologies existantes).
+	if c == corps:
+		return
+	corps = c
+	set_genre(genre)
 
 
 func set_genre(g: String) -> void:
@@ -168,13 +196,19 @@ func set_genre(g: String) -> void:
 	if old:
 		body.remove_child(old)
 		old.queue_free()
-	var m := PnjUtil.make(g)
+	var variante := g
+	if corps == "mince":
+		variante = g + "_mince"
+	elif corps == "fort":
+		variante = "homme_fort" if g == "homme" else "femme_ronde"
+	var m := PnjUtil.make(variante)
 	m.set_script(ANIM_SCRIPT)
 	m.set("anim_lod", false)
 	m.name = "Model"
 	body.add_child(m)
 	anim = m
 	_dress(m, g)
+	modele_change.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -202,6 +236,7 @@ func _unhandled_input(event: InputEvent) -> void:
 @export var stick_look_speed := 2.6  # rad/s au stick droit
 
 
+var _visee_k := 0.0
 var _exit_from := Transform3D()
 var _exit_t := 1.0
 @export var exit_time := 0.35       # s : du siege au sol en descendant
@@ -232,6 +267,16 @@ func _camera_gta(delta: float) -> void:
 	_cam_idle += delta
 	var cam := spring_arm.get_node_or_null("Camera3D") as Camera3D
 	var hv := Vector2(velocity.x, velocity.z).length()
+	if visee or _visee_k > 0.0:
+		# visee : camera par-dessus l'epaule, champ resserre (retour en douceur quand on relache)
+		_visee_k = move_toward(_visee_k, 1.0 if visee else 0.0, delta * 5.0)
+		if cam:
+			cam.fov = lerpf(fov_base, visee_fov, _visee_k)
+			cam.h_offset = visee_epaule * _visee_k
+		spring_arm.spring_length = lerpf(view_distances[_view], visee_distance, _visee_k)
+		_cam_idle = 0.0
+		if visee:
+			return
 	if not camera_effects:
 		if cam:
 			cam.fov = fov_base
@@ -404,6 +449,8 @@ func enter_vehicle(v: Node3D) -> void:
 	$Collision.disabled = true
 	velocity = Vector3.ZERO
 	v.set_rider(true)
+	if v.has_method("portiere"):
+		v.portiere(true)
 	v.get_node("CamRig").activate(true)
 	if anim:
 		anim.seated = true
@@ -417,6 +464,8 @@ func exit_vehicle() -> void:
 	_clear_ik()
 	vehicle = null
 	v.set_rider(false)
+	if v.has_method("portiere"):
+		v.portiere(false)
 	v.get_node("CamRig").activate(false)
 	$CamPivot/SpringArm3D/Camera3D.current = true
 	# on descend cote gauche (portiere conducteur / gauche de la moto), debout, dans le meme sens
@@ -475,7 +524,7 @@ func _physics_process(delta: float) -> void:
 		_climb_step(delta)
 		return
 	# un geste (achat, conversation...) s'arrete des qu'on repart
-	if anim and anim.has_method("stop_clips") and anim.playing_clip() and _combo_t <= 0.0 and not garde and _roll_t <= 0.0 and Input.get_vector("move_left", "move_right", "move_forward", "move_back").length() > 0.2:
+	if anim and anim.has_method("stop_clips") and anim.playing_clip() and _combo_t <= 0.0 and not garde and _roll_t <= 0.0 and _move_input().length() > 0.2:
 		anim.stop_clips()
 	if Input.is_action_just_pressed("crouch") and is_on_floor():
 		_set_crouch(not crouched)
@@ -485,12 +534,12 @@ func _physics_process(delta: float) -> void:
 	_combo_t = maxf(0.0, _combo_t - delta)
 	_roll_t = maxf(0.0, _roll_t - delta)
 	var was_guard := garde
-	garde = Input.is_action_pressed("garde") and is_on_floor() and _roll_t <= 0.0 and _combat_ok()
+	garde = Input.is_action_pressed("garde") and is_on_floor() and _roll_t <= 0.0 and _combat_ok() and not arme_feu
 	if garde and anim and anim.has_method("play_clips") and (not was_guard or not anim.playing_clip()):
 		anim.play_clips([["Idle_Shield_Loop", 0.3]], true)
 	elif was_guard and not garde and anim and anim.has_method("stop_clips"):
 		anim.stop_clips()
-	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and not garde and _roll_t <= 0.0 and _combat_ok():
+	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and not garde and _roll_t <= 0.0 and _combat_ok() and arme == "":
 		_punch_cd = 0.38
 		combo = (combo + 1) % COUPS.size() if _combo_t > 0.0 else 0
 		_combo_t = combo_fenetre
@@ -508,7 +557,10 @@ func _physics_process(delta: float) -> void:
 		get_tree().create_timer(0.18 + 0.06 * coup).timeout.connect(func() -> void:
 			for tg in targets:
 				if is_instance_valid(tg):
-					tg.player_attack(global_position, fwd, coup))
+					if tg.player_attack(global_position, fwd, coup, [25.0, 30.0, 50.0][coup] * force):
+						var st := get_parent().get_node_or_null("Stats")
+						if st:
+							st.coup_porte())
 	# filet de securite : si on passe sous la carte, retour au dernier endroit sur
 	if global_position.y < -20.0:
 		global_position = _last_safe + Vector3.UP * 1.0
@@ -522,7 +574,7 @@ func _physics_process(delta: float) -> void:
 		_fall_speed = max(_fall_speed, -velocity.y)
 	elif garde and Input.is_action_just_pressed("jump"):
 		# esquive : roulade dans la direction voulue (sinon en arriere), invulnerable pendant la roulade
-		var iv := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		var iv := _move_input()
 		var rd := Basis(Vector3.UP, cam_pivot.rotation.y) * Vector3(iv.x, 0, iv.y)
 		_roll_dir = Vector2(rd.x, rd.z).normalized() if rd.length() > 0.2 else -Vector2(-sin(_facing), -cos(_facing))
 		_roll_t = roulade_duree
@@ -538,7 +590,7 @@ func _physics_process(delta: float) -> void:
 		else:
 			velocity.y = jump_velocity
 
-	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var input := _move_input()
 	var dir := (Basis(Vector3.UP, cam_pivot.rotation.y) * Vector3(input.x, 0, input.y))
 	# sprint facon GTA V : tapoter rapproche du sprint maximal, maintenir donne un sprint moyen ; endurance cachee
 	if Input.is_action_just_pressed("sprint") and crouched:
@@ -594,6 +646,10 @@ func _physics_process(delta: float) -> void:
 		var air_goal := Vector2(dir.x, dir.z) * target_speed
 		hvel = hvel.move_toward(air_goal, air_accel * delta) if dir.length() > 0.01 else hvel
 
+	if visee and is_on_floor():
+		# en visee : le corps regarde ou vise la camera, on se deplace au pas dans toutes les directions
+		_facing = cam_pivot.rotation.y
+		hvel = hvel.move_toward(Vector2(dir.x, dir.z).limit_length(1.0) * walk_speed, ground_accel * delta)
 	if _roll_t > 0.0:
 		hvel = _roll_dir * roulade_vitesse * (0.4 + 0.6 * _roll_t / roulade_duree)
 		_facing = atan2(-_roll_dir.x, -_roll_dir.y)

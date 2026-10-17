@@ -17,6 +17,10 @@ var _delta_t := 0.0
 var _annonce_t := 0.0
 var _clign := 0.0
 var _sante: ProgressBar
+var _armure: ProgressBar                 # blouson renforce : barre bleue sous la sante, cachee a zero
+var _arme_lbl: Label                     # arme en main et munitions (bas a droite, a pied)
+var _reticule: Label                     # croix de visee au centre (arme a feu, clic droit)
+var _compteur: Label                     # vitesse en vehicule (bas a droite) et etat du limiteur (K)
 # aide aux commandes (a gauche, sous la mini-carte) : selon la situation (a pied, zem, voiture) et l'appareil
 # (clavier ou manette) ; affichee pendant les premieres minutes de jeu, F2 (manette : croix haut) l'affiche ou la cache
 @export var aide_duree := 600.0          # s de jeu pendant lesquelles l'aide reste affichee
@@ -61,6 +65,38 @@ func _ready() -> void:
 	_notifs.offset_top = 152
 	_notifs.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(_notifs)
+	_arme_lbl = _label(24, Color(1, 1, 1))
+	_arme_lbl.anchor_left = 1.0
+	_arme_lbl.anchor_right = 1.0
+	_arme_lbl.anchor_top = 1.0
+	_arme_lbl.anchor_bottom = 1.0
+	_arme_lbl.offset_left = -420
+	_arme_lbl.offset_right = -24
+	_arme_lbl.offset_top = -70
+	_arme_lbl.offset_bottom = -24
+	_arme_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_reticule = _label(30, Color(1, 1, 1, 0.9))
+	_reticule.text = "+"
+	_reticule.anchor_left = 0.5
+	_reticule.anchor_right = 0.5
+	_reticule.anchor_top = 0.5
+	_reticule.anchor_bottom = 0.5
+	_reticule.offset_left = -20
+	_reticule.offset_right = 20
+	_reticule.offset_top = -22
+	_reticule.offset_bottom = 18
+	_reticule.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_compteur = _label(26, Color(1, 1, 1))
+	_compteur.anchor_left = 1.0
+	_compteur.anchor_right = 1.0
+	_compteur.anchor_top = 1.0
+	_compteur.anchor_bottom = 1.0
+	_compteur.offset_left = -360
+	_compteur.offset_right = -24
+	_compteur.offset_top = -96
+	_compteur.offset_bottom = -24
+	_compteur.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_compteur.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_objectif = _label(24, Color(1, 1, 1))
 	_objectif.anchor_top = 1.0
 	_objectif.anchor_bottom = 1.0
@@ -96,6 +132,23 @@ func _ready() -> void:
 	add_child(_sante)
 	Partie.sante_change.connect(func(v: float) -> void: _sante.value = v)
 	_sante.value = Partie.sante
+	_armure = ProgressBar.new()
+	_armure.show_percentage = false
+	_armure.offset_left = 18
+	_armure.offset_top = 271
+	_armure.offset_right = 258
+	_armure.offset_bottom = 276
+	var fa := StyleBoxFlat.new()
+	fa.bg_color = Color(0.35, 0.6, 0.95)
+	_armure.add_theme_stylebox_override("fill", fa)
+	_armure.add_theme_stylebox_override("background", bg)
+	_armure.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_armure)
+	var maj_armure := func(v: float) -> void:
+		_armure.value = v
+		_armure.visible = v > 0.0
+	Partie.armure_change.connect(maj_armure)
+	maj_armure.call(Partie.armure)
 	Partie.argent_change.connect(_on_argent)
 	Partie.notification.connect(notifier)
 	Partie.recherche_change.connect(_on_recherche)
@@ -142,25 +195,25 @@ func texte_aide(ctx: String, manette: bool) -> String:
 		match ctx:
 			"pied":
 				l = ["Stick gauche : marcher", "Stick droit : caméra", "A (tapoter) : courir", "X : sauter / escalader",
-					"R3 : s'accroupir", "Y : monter dans un véhicule", "Croix droite : parler / acheter", "Select : carte   Croix bas : vue", "Croix gauche : inventaire (téléphone, torche)"]
+					"R3 : s'accroupir", "Y : monter dans un véhicule", "Croix droite : parler / acheter", "Select : carte   Croix bas : vue", "Croix gauche : inventaire (téléphone, torche)", "RB : arme   LB : viser   L3 : recharger"]
 			"zem":
 				l = ["RT : accélérer   LT : freiner", "Stick gauche : tourner", "RB : frein arrière", "L3 : klaxon",
-					"Y : descendre", "Croix droite : chercher un client"]
+					"Y : descendre", "Croix droite : chercher un client", "Croix bas : limiteur 50 km/h"]
 			_:
 				l = ["RT : accélérer   LT : freiner / reculer", "Stick gauche : tourner", "RB : frein à main",
-					"Y : descendre"]
+					"Y : descendre", "Croix bas : limiteur 50 km/h"]
 	else:
 		match ctx:
 			"pied":
 				l = ["Z Q S D : marcher", "Souris : caméra", "Maj (tapoter) : courir   Alt : marche lente",
 					"Espace : sauter / escalader", "C : s'accroupir", "E : monter dans un véhicule", "T : parler / acheter",
-					"M : carte   V : vue", "I : inventaire   P : téléphone   L : torche"]
+					"M : carte   V : vue", "I : inventaire   P : téléphone   L : torche", "Tab : arme   clic droit : viser   R : recharger"]
 			"zem":
 				l = ["Z : accélérer   S : freiner", "Q D : tourner", "Espace : frein arrière", "H : klaxon",
-					"E : descendre", "T : chercher un client (à l'arrêt)"]
+					"E : descendre", "T : chercher un client (à l'arrêt)", "K : limiteur 50 km/h"]
 			_:
 				l = ["Z : accélérer   S : freiner / reculer", "Q D : tourner", "Espace : frein à main", "H : klaxon",
-					"E : descendre"]
+					"E : descendre", "K : limiteur 50 km/h"]
 	l.append(("Croix haut" if manette else "F2") + " : cacher l'aide")
 	return "\n".join(l)
 
@@ -215,6 +268,23 @@ func annonce(titre: String, sous := "", duree := 3.5) -> void:
 
 func _process(delta: float) -> void:
 	_delta_t = maxf(0.0, _delta_t - delta)
+	var veh: Node3D = _player.get("vehicle") if _player else null
+	var ar := get_node_or_null("../Armes")
+	var nom: String = ar.arme if ar else ""
+	_arme_lbl.visible = nom != "" and veh == null and Partie.get("en_jeu") != false
+	if _arme_lbl.visible:
+		var a: Dictionary = ar.ARMES[nom]
+		_arme_lbl.text = tr(nom) + ("   %d / %d" % [ar.chargeur.get(nom, 0), Partie.inventaire.get(a["munition"], 0)] if a["type"] == "feu" else "")
+	_reticule.visible = _player != null and bool(_player.get("visee"))
+	if _reticule.visible:
+		_reticule.add_theme_color_override("font_color", Color(1, 0.35, 0.3) if ar and not (ar.cible as Dictionary).is_empty() else Color(1, 1, 1, 0.9))
+	_compteur.visible = veh != null and Partie.get("en_jeu") != false
+	if _compteur.visible:
+		var kmh := roundi(absf(float(veh.get("speed"))) * 3.6)
+		_compteur.text = "%d km/h" % kmh + ("
+" + tr("LIMITEUR %d (K)") % roundi(Limiteur.vitesse_kmh) if Limiteur.actif else "
+" + tr("K : limiteur"))
+		_compteur.add_theme_color_override("font_color", Color(0.55, 0.95, 0.55) if Limiteur.actif else Color(1, 1, 1))
 	_delta.visible = _delta_t > 0.0
 	if _aide_on:
 		_aide_t += delta

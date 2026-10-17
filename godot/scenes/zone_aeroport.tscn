@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -31,6 +31,9 @@
 [ext_resource type="Script" path="res://scripts/mode_photo.gd" id="49_photo"]
 [ext_resource type="Script" path="res://scripts/inventaire.gd" id="50_inventaire"]
 [ext_resource type="Script" path="res://scripts/telephone.gd" id="51_telephone"]
+[ext_resource type="Script" path="res://scripts/armes.gd" id="52_armes"]
+[ext_resource type="Script" path="res://scripts/stats.gd" id="53_stats"]
+[ext_resource type="Script" path="res://scripts/personnalisation.gd" id="54_perso"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -161,3 +164,12 @@ script = ExtResource("50_inventaire")
 
 [node name="Telephone" type="CanvasLayer" parent="."]
 script = ExtResource("51_telephone")
+
+[node name="Armes" type="Node3D" parent="."]
+script = ExtResource("52_armes")
+
+[node name="Stats" type="Node" parent="."]
+script = ExtResource("53_stats")
+
+[node name="Personnalisation" type="Node3D" parent="."]
+script = ExtResource("54_perso")
