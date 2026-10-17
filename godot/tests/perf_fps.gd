@@ -17,11 +17,14 @@ var samples: Array[float] = []
 var budget_dehors := 70.0
 var budget_interieur := 60.0
 var fails := 0
+var cpu_ms := 0.0
+var gpu_ms := 0.0
 
 
 func _initialize() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
+	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
 	scene = load("res://scenes/zone_aeroport.tscn").instantiate()
 	root.add_child(scene)
 	player = scene.get_node("Player")
@@ -43,14 +46,20 @@ func _process(_delta: float) -> bool:
 		player.reset_physics_interpolation()
 		player.cam_pivot.rotation = Vector3(-0.15, v[2], 0)
 		samples.clear()
+		cpu_ms = 0.0
+		gpu_ms = 0.0
 	elif local > 100 and local % 20 == 0:
 		samples.append(Engine.get_frames_per_second())
+		var vp := root.get_viewport_rid()
+		cpu_ms += RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu()
+		gpu_ms += RenderingServer.viewport_get_measured_render_time_gpu(vp)
 	if local == 399:
 		var s := 0.0
 		for x in samples:
 			s += x
-		print("FPS %s : %.0f images/s (min %.0f) | objets dessines %d, primitives %dk" % [v[0], s / samples.size(), samples.min(),
-			Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000])
+		print("FPS %s : %.0f images/s (min %.0f) | objets dessines %d, primitives %dk | image %.1f ms dont rendu CPU %.1f ms, GPU %.1f ms" % [v[0], s / samples.size(), samples.min(),
+			Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000,
+			1000.0 * samples.size() / s, cpu_ms / samples.size(), gpu_ms / samples.size()])
 		var interieur: bool = String(v[0]).contains("interieur") or String(v[0]).contains("hall")
 		var budget := budget_interieur if interieur else budget_dehors
 		if s / samples.size() < budget:

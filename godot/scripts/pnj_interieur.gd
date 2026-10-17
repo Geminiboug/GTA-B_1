@@ -189,6 +189,7 @@ func _activate() -> void:
 			var mi := MeshInstance3D.new()
 			mi.mesh = mesh
 			mi.visibility_range_end = 70.0
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # sous le toit : pas d'ombre du soleil
 			add_child(mi)
 			mi.global_transform = ch.global_transform
 			_statics.append(mi)
@@ -209,6 +210,8 @@ func _activate() -> void:
 		add_child(ch)
 		PnjUtil.dress_random(ch, _rng)
 		_carry(ch, "panier" if _key == "ararat" else "sac")
+		for g in ch.find_children("*", "GeometryInstance3D", true, false):
+			(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var start := _rng.randi() % _wp.size()
 		ch.global_position = _wp[start]
 		_walkers.append({"node": ch, "at": start, "to": start, "pause": _rng.randf_range(0.0, 4.0), "speed": _rng.randf_range(1.0, 1.35), "yaw": 0.0})

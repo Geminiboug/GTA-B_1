@@ -106,11 +106,11 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Journal de partie automatique (temps par mission, morts, arrestations, argent gagne et depense, endroits ou le joueur se perd) dans user://logs/, pour equilibrer sur des chiffres
 - [ ] Equilibrage : prix, amendes, chronos, vitesse et agressivite de la police, salaires des courses de zem
 - [x] Defauts visibles : bout de pagne sous les voitures, cheveux secs sous la pluie, casquette de la policiere, traversees du corps pendant la marche
-- [ ] Remesurer les performances machine degagee ; si Haut descend sous 60 img/s dans l'Ararat et l'aerogare : profiler et corriger (ombres, lumieres, nombre de PNJ, occultation)
+- [x] Remesurer les performances machine degagee ; si Haut descend sous 60 img/s dans l'Ararat et l'aerogare : profiler et corriger (ombres, lumieres, nombre de PNJ, occultation)
 - [ ] Verifier la version web dans Chrome et Firefox (chargement, controles, son, performances), ou la retirer de la cible v0.1
 - [x] Rapport de crash : log d'erreurs ecrit sur disque et numero de version affiche dans le menu
 - [x] Numero de version dans le fichier de sauvegarde et conversion des anciennes sauvegardes (une sauvegarde de la demo doit se charger en v0.2 et apres)
-- [ ] Test de fluidite automatique : perf_fps.gd lance par un script, echec sous 70 / 60 img/s
+- [x] Test de fluidite automatique : perf_fps.gd lance par un script, echec sous 70 / 60 img/s
 - [ ] Jalon : 3 testeurs finissent l'acte 1 sans aide, sans bug bloquant, et ont envie de continuer
 
 ### Phase 12 : Cotonou reel (v0.1)
@@ -293,6 +293,7 @@ Option plus tard : multijoueur (balade et courses de zems entre amis, puis missi
 - 16/10/2026 : premiere partie d'Olympe : bloquee au prologue (pain introuvable). Retours ajoutes en Phase 11 (prologue, commandes a l'ecran, carte, police, avions, epave, animations).
 - 16/10/2026 : retours de la premiere partie d'Olympe traites (points 1 a 7). Prologue : les etals n'etaient jamais connus du commerce (poses apres lui) et l'etal le plus proche etait derriere un mur ; vendeuse de pain devant le portail, fleche au-dessus de l'objectif, distance affichee, GPS qui sort de la cour par le portail, etals jamais derriere un mur (test_prologue : prologue joue au clavier en 17 s). Aide aux commandes a gauche (a pied, zem, voiture ; clavier ou manette ; F2). Saut : foulee gardee en l'air, plus de glissade ni de pose acrobatique, reception lourde seulement apres une vraie chute ; marche : buste redresse, tete a l'horizontale, jambe d'appui tendue. Carte : murs OSM coupes au bord des chaussees, batiments testes sur tout leur contour (53 retires ou retrecis), test_voirie. Police : appel puis depart du commissariat apres 1 min, trajet visible, points clignotants sur les cartes, plus de rattrapage par teleportation. Avions : allee de 0,73 m, plancher du poste de pilotage ; epave refaite en gros-porteur facon TriStar (recherche : epave reelle de la plage d'Erevan) ; test_cabine : allee, poste, sortie et escalier dans les deux. Gestes : portiere, conducteur tire dehors, proprietaire qui sort le joueur, enjamber le zem, acheter et manger, parler, s'asseoir sur le lit.
 - 16/10/2026 : Phase 11 (validation). Journal de partie automatique ecrit au fil de l'eau (godot/scripts/journal.gd, user://logs/partie_<date>.jsonl) et resume dense (user://logs/resume_<date>.json) connecte a Partie, Histoire et Police (test_journal OK). Defauts visibles corriges : bout de pagne sous les voitures masque (player.gd, traffic.gd), chevelure mouillee sous la pluie (shaders/cheveux.gdshader relie a gtb_wet), casquette police generee sur toutes les variantes feminines (build_character.py), traversees du corps reduites (poids pagne et degagement bras). Numero de version v0.1.0 et log disque (user://logs/godot.log) configures, version affichee dans les menus, conversion ascendante des sauvegardes (SAVE_VERSION = 2). Mesures de performance sur RTX 2050 et profilage CPU/GPU des interieurs realises.
+- 17/10/2026 : Phase 11, fluidite. tests/perf.sh lance perf_fps.gd dans les trois qualites (echec sous 70 img/s dehors, 60 dedans) ; perf_fps affiche aussi le temps GPU et CPU de rendu. Outils de profil : tests/ab_gpu.gd (A/B alterne, insensible a la chauffe de la machine, mode cpu) et tests/profil_vue.gd. Cause principale trouvee : les ~3 500 arbres lointains (Horizon) dessines en modele complet dans un seul MultiMesh (7 ms de GPU) ; desormais par tuiles de 250 m avec silhouette simplifiee au-dela de 250 m. Aussi : murs des lieux en occulteurs, pas d'ombre du soleil pour les produits, le mobilier et les PNJ d'interieur, radiance du ciel incrementale, circulation lointaine (> 120 m) mise a jour un pas sur 4, Haut sans SSIL et ombre a 160 m. Resultat (RTX 2050, 1600x900) : Bas 65-133, Moyen 66-101, Haut 69-111 img/s, tout au budget.
 
 ## 6. PROMPT DE PASSATION (a copier tel quel dans un autre Claude ou agent IA)
 
@@ -333,10 +334,9 @@ ETAT ACTUEL (16/10/2026)
   - Phase 11 : journal de partie automatique (journal.gd), version 0.1.0 et log disque actif, migration sauvegardes v2,
     defauts visuels corriges (pagne sous vehicules, cheveux mouilles sous pluie, casquette policiere, traversees).
 - PHASE EN COURS : Phase 11, validation et playtest (voir la roadmap). Prochaines taches pour l'agent :
-  1. Profiler et optimiser l'Ararat et l'aerogare en Haut (occultation des murs opaques, ombres, lumieres pour tenir 60 img/s).
-  2. Test de fluidite automatique : perf_fps.gd lance par un script avec seuils d'echec (70 dehors / 60 interieur).
-  3. Equilibrage : prix, amendes, chronos, vitesse et agressivite police, salaires zem.
-  4. Trancher / verifier l'export web.
+  1. Fluidite : faite (tests/perf.sh au vert dans les trois qualites, outils tests/ab_gpu.gd et tests/profil_vue.gd).
+  2. Equilibrage : prix, amendes, chronos, vitesse et agressivite police, salaires zem.
+  3. Trancher / verifier l'export web.
 - Taches d'Olympe (ne pas les faire a sa place) : jouer 1 h et remplir docs/retours_olympe.md, valider les jalons 3 a 5,
   faire jouer 2 ou 3 amis avec docs/playtest.md, releves photo pour la Phase 12, captures pour le trailer, decisions de
   la section 2 bis de la roadmap.

@@ -26,6 +26,9 @@ const CAR_MODELS := ["veh_berline", "veh_4x4", "veh_minibus", "veh_pickup"]
 const DRIVERS_PER_MODEL := 4
 @export var zem_number_pos := Vector3(0, 1.17, 0.29)   # dos du conducteur assis (repere du zem)
 @export var zem_number_tilt := -0.25                  # buste penche en avant
+@export var lod_distance := 120.0       # m : au-dela, vehicule mis a jour un pas physique sur lod_pas
+@export var lod_pas := 4
+var _tick := 0
 const ZEM_VARIANTS := ["zem_a", "zem_b", "zem_c", "zem_passager_h", "zem_passager_f", "zem_passager_f2"]
 var _looks := {}   # variante de zem -> [[genre, morphologie, tenue]] du conducteur et du passager
 
@@ -393,9 +396,16 @@ func _physics_process(delta: float) -> void:
 		var pv = _player.get("vehicle")
 		ppos = (pv as Node3D).global_position if pv else _player.global_position
 	_obstacles = get_tree().get_nodes_in_group("vehicules") + get_tree().get_nodes_in_group("obstacles_route")
+	_tick += 1
 	for a in _agents:
 		if a.get("active", true):
-			_drive(a, delta, ppos)
+			# loin du joueur : mis a jour un pas sur lod_pas, avec le temps cumule (budget CPU, phase 11)
+			a["dt"] = a.get("dt", 0.0) + delta
+			var far: bool = (a["vis_pos"] as Vector3).distance_squared_to(ppos) > lod_distance * lod_distance
+			if far and (_tick + int(a["id"])) % lod_pas != 0:
+				continue
+			_drive(a, minf(a["dt"], 0.1), ppos)
+			a["dt"] = 0.0
 
 
 func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:

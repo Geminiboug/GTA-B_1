@@ -8,7 +8,7 @@ const NOMS := ["Bas", "Moyen", "Haut"]
 const PRESETS := [
 	[80.0, false, false, false, 0.75, 4.0],
 	[140.0, true, false, true, 0.9, 2.0],
-	[200.0, true, true, true, 1.0, 1.0],
+	[160.0, true, false, true, 1.0, 1.0],
 ]
 
 
@@ -22,6 +22,8 @@ static func appliquer(scene: Node, niveau: int) -> void:
 		we.environment.ssao_enabled = p[1]
 		we.environment.ssil_enabled = p[2]
 		we.environment.glow_enabled = p[3]
+		if we.environment.sky:
+			we.environment.sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
 	var vp := scene.get_viewport()
 	if vp:
 		vp.scaling_3d_scale = p[4]

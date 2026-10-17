@@ -358,8 +358,8 @@ func _build_city() -> void:
 	for mi in veg.find_children("*", "MeshInstance3D", true, false):
 		meshes[String(mi.name)] = (mi as MeshInstance3D).mesh
 	veg.free()
-	_multimesh(meshes.get("veg_arbre"), trees, "ArbresLointains")
-	_multimesh(meshes.get("veg_cocotier"), palms, "CocotiersLointains")
+	_multimesh_tiles(meshes.get("veg_arbre"), trees, "ArbresLointains", Color(0.2, 0.33, 0.14))
+	_multimesh_tiles(meshes.get("veg_cocotier"), palms, "CocotiersLointains", Color(0.3, 0.4, 0.18))
 	print("Horizon : %d maisons, %d arbres, %d cocotiers au-dela de la carte" % [walls.size(), trees.size(), palms.size()])
 
 
@@ -406,6 +406,63 @@ func _multimesh_box(items: Array, name_: String, rough: float) -> void:
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mmi)
+
+
+# arbres lointains (optimisation, phase 11) : par tuiles de tuile_arbres m (decoupage camera par tuile), vrai modele
+# jusqu'a detail_arbres m, au-dela une silhouette de quelques dizaines de triangles (houppier, sans tronc)
+@export var tuile_arbres := 250.0
+@export var detail_arbres := 250.0
+
+
+func _multimesh_tiles(mesh: Mesh, xforms: Array, name_: String, crown: Color) -> void:
+	if mesh == null or xforms.is_empty():
+		return
+	var proxy := _crown_proxy(mesh.get_aabb(), crown)
+	var tiles := {}
+	for t in xforms:
+		var k := Vector2i(floori(t.origin.x / tuile_arbres), floori(t.origin.z / tuile_arbres))
+		if not tiles.has(k):
+			tiles[k] = []
+		tiles[k].append(t)
+	var parent := Node3D.new()
+	parent.name = name_
+	add_child(parent)
+	for k in tiles:
+		for far in [false, true]:
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = proxy if far else mesh
+			mm.instance_count = tiles[k].size()
+			for i in tiles[k].size():
+				mm.set_instance_transform(i, tiles[k][i])
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			if far:
+				mmi.visibility_range_begin = detail_arbres
+			else:
+				mmi.visibility_range_end = detail_arbres
+			parent.add_child(mmi)
+
+
+func _crown_proxy(box: AABB, col: Color) -> Mesh:
+	var sm := SphereMesh.new()
+	sm.radial_segments = 7
+	sm.rings = 3
+	var r := maxf(box.size.x, box.size.z) * 0.42
+	var crown_h := box.size.y * 0.55
+	var arr := sm.get_mesh_arrays()
+	var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	for i in v.size():
+		v[i] = Vector3(v[i].x * 2.0 * r, v[i].y * crown_h, v[i].z * 2.0 * r) + Vector3(box.get_center().x, box.end.y - crown_h * 0.5, box.get_center().z)
+	arr[Mesh.ARRAY_VERTEX] = v
+	var am := ArrayMesh.new()
+	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.roughness = 0.95
+	am.surface_set_material(0, m)
+	return am
 
 
 func _multimesh(mesh: Mesh, xforms: Array, name_: String) -> void:

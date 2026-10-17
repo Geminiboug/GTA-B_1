@@ -62,6 +62,25 @@ func _ready() -> void:
 
 
 # ------------------------------------------------------------------ mise en place
+# occultation : les murs pleins du lieu (portes et vitrines deja en trous) cachent la ville quand on est dedans
+func _occluder(mi: MeshInstance3D) -> void:
+	var verts := PackedVector3Array()
+	var idx := PackedInt32Array()
+	for s in mi.mesh.get_surface_count():
+		var arr := mi.mesh.surface_get_arrays(s)
+		var base := verts.size()
+		verts.append_array(arr[Mesh.ARRAY_VERTEX])
+		var ind: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+		for i in ind:
+			idx.append(base + i)
+	var occ := ArrayOccluder3D.new()
+	occ.set_arrays(verts, idx)
+	var oi := OccluderInstance3D.new()
+	oi.name = "Occultation"
+	oi.occluder = occ
+	mi.add_child(oi)
+
+
 func _setup(root: Node3D, key: String) -> void:
 	# direction des gondoles (perpendiculaire a la facade d'entree) pour le shader des produits
 	var axis := Vector3.ZERO
@@ -75,6 +94,9 @@ func _setup(root: Node3D, key: String) -> void:
 		var n := String(mi.name)
 		if key != "maison" and (n.contains("produits") or n.contains("deco") or n.contains("mobilier")):
 			(mi as MeshInstance3D).visibility_range_end = 85.0    # details d'interieur : seulement de pres
+			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # sous le toit
+		if n.begins_with(key + "_structure"):
+			_occluder(mi as MeshInstance3D)
 	for e in root.find_children("*", "Node3D", true, false):
 		var n := String(e.name)
 		if e is MeshInstance3D:
