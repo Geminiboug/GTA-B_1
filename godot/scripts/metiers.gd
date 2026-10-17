@@ -42,7 +42,7 @@ func _physics_process(delta: float) -> void:
 	if not ligne.is_empty():
 		_ligne_maj(v, delta)
 		return
-	if v and String(v.get("model_name")) == "veh_minibus" and absf(float(v.get("speed"))) < 1.0:
+	if v and str(v.get("model_name")) == "veh_minibus" and absf(float(v.get("speed"))) < 1.0:
 		if _hud and _hud.has_method("show_hint"):
 			_hud.show_hint(tr("T : commencer une ligne de minibus"))
 		if Input.is_action_just_pressed("parler"):
@@ -73,7 +73,7 @@ func lancer_ligne(v: Node3D) -> void:
 
 
 func _ligne_maj(v: Node3D, delta: float) -> void:
-	if v == null or String(v.get("model_name")) != "veh_minibus":
+	if v == null or str(v.get("model_name")) != "veh_minibus":
 		ligne = {}
 		if _marq:
 			_marq.visible = false

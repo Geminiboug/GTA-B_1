@@ -11,8 +11,8 @@ extends Node3D
 ##   battent a tes cotes ; G (manette : croix haut) les fait suivre ou attendre.
 ## - Dans un quartier tenu, les passants saluent le patron.
 
-const SYNDICATS := {
-	"szu": {"nom": "Syndicat des Zems Unis", "couleur": Color(0.85, 0.2, 0.15)},
+var SYNDICATS := {
+	"szu": {"nom": "Syndicat des Zems Unis", "couleur": Color(1.0, 0.55, 0.0) if Partie.options.get("daltonisme", false) else Color(0.85, 0.2, 0.15)},
 	"lions": {"nom": "Les Lions du Littoral", "couleur": Color(0.15, 0.35, 0.85)},
 	"joueur": {"nom": "La bande de Sena", "couleur": Color(0.95, 0.8, 0.1)},
 }

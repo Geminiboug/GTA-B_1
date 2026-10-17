@@ -36,7 +36,8 @@ var _player: Node
 func _ready() -> void:
 	layer = 5
 	add_to_group("hud_jeu")
-	_argent = _label(30, Color(0.55, 0.95, 0.55))
+	var dalt: bool = bool(Partie.options.get("daltonisme", false))
+	_argent = _label(30, Color(0.4, 0.85, 1.0) if dalt else Color(0.55, 0.95, 0.55))
 	_argent.anchor_left = 1.0
 	_argent.anchor_right = 1.0
 	_argent.offset_left = -320
@@ -123,7 +124,7 @@ func _ready() -> void:
 	_sante.offset_right = 258
 	_sante.offset_bottom = 268
 	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color(0.35, 0.8, 0.35)
+	fill.bg_color = Color(0.3, 0.65, 1.0) if dalt else Color(0.35, 0.8, 0.35)   # daltonisme : pas de vert
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0, 0, 0, 0.6)
 	_sante.add_theme_stylebox_override("fill", fill)
@@ -139,7 +140,7 @@ func _ready() -> void:
 	_armure.offset_right = 258
 	_armure.offset_bottom = 276
 	var fa := StyleBoxFlat.new()
-	fa.bg_color = Color(0.35, 0.6, 0.95)
+	fa.bg_color = Color(0.92, 0.92, 0.92) if dalt else Color(0.35, 0.6, 0.95)
 	_armure.add_theme_stylebox_override("fill", fa)
 	_armure.add_theme_stylebox_override("background", bg)
 	_armure.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -229,7 +229,8 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Missions de metier : chauffeur de minibus fait (T au volant d'un minibus : 6 arrets, passagers qui paient 200 F, prime de fin de ligne ; scripts/metiers.gd, test_metiers), livreur (courses de zem) fait ; ambulance, pompier, vigile a faire
 - [x] Courses de zems de nuit (20 h - 5 h, Route des Filets, 8 points de passage, 2 rivaux pilotes, 10 000 F au 1er) ; courses de voitures a faire ; scripts/activites.gd, test_activites
 - [x] Paris sur les matchs de foot au maquis (clubs fictifs, cote 3 contre 1, resultat a l'heure de jeu suivante)
-- [ ] Evenements de quartier : funerailles avec fanfare, mariages, fetes, coupures de courant qui ouvrent des opportunites
+- [x] Evenements de quartier : funerailles avec fanfare a 16 h (accompagner le cortege : respect). Reste : mariages, fetes, coupures de courant qui ouvrent des opportunites
+- [x] Option daltonisme (couleurs des syndicats adaptees)
 - [x] Collectibles : 15 enseignes peintes (noms fictifs) a photographier avec le telephone ou F12, 1 000 F chacune, 25 000 F la collection ; 20 sacs de cauris caches (500 F, 20 000 F la collection) ; sauts acrobatiques en zem ou en voiture (plus de 1,2 s ou 15 m en l'air, payes selon la longueur)
 - [x] Taux de completion (pourcentage) dans le menu Statistiques : missions, stationnements, proprietes, fresques, courses
 - [ ] Jalon : un joueur peut passer 5 h sans toucher a l'histoire

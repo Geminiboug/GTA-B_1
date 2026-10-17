@@ -35,7 +35,7 @@ var perso := {}                # progression du personnage (scripts/stats.gd) : 
 
 var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false,
 	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26, "vol_vehicules": 1.0, "vol_ambiance": 1.0,
-	"vol_effets": 1.0, "taille_interface": 1.0, "aide_visee": true, "touches": {}, "langue": "auto"}
+	"vol_effets": 1.0, "taille_interface": 1.0, "aide_visee": true, "touches": {}, "langue": "auto", "daltonisme": false}
 # actions reaffectables au clavier (menu Options > Touches)
 const TOUCHES_REGLABLES := [["move_forward", "Avancer"], ["move_back", "Reculer"], ["move_left", "Gauche"],
 	["move_right", "Droite"], ["jump", "Sauter"], ["sprint", "Courir"], ["crouch", "S'accroupir"], ["interact", "Monter / descendre"],

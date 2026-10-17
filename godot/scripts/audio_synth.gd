@@ -486,3 +486,45 @@ static func coup_arme(verre: bool) -> AudioStreamWAV:
 			s += (sin(TAU * 3100.0 * t) + sin(TAU * 4700.0 * t) * 0.6) * exp(-t * 18.0) * 0.18
 		out[i] = s
 	return _wav(out, false)
+
+
+static func fanfare_loop() -> AudioStreamWAV:
+	## Fanfare de funerailles (boucle de 8 s) : cuivres a l'unisson sur une melodie lente et grave, soubassophone,
+	## caisse claire et grosse caisse au pas. Notes inventees, aucun air existant.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 97
+	var bpm := 72.0
+	var temps := 60.0 / bpm
+	var n := int(RATE * temps * 10.0)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	# melodie (demi-tons depuis la4 grave) et basse, un temps par note
+	var melodie := [0, 3, 5, 3, 7, 5, 3, 0, 2, 0]
+	var basse := [-12, -12, -7, -7, -9, -9, -5, -5, -12, -12]
+	for k in 10:
+		var f := 220.0 * pow(2.0, float(melodie[k]) / 12.0)
+		var fb := 110.0 * pow(2.0, float(basse[k]) / 12.0)
+		var i0 := int(k * temps * RATE)
+		var i1 := int((k + 1) * temps * RATE)
+		for i in range(i0, mini(i1, n)):
+			var t := float(i - i0) / RATE
+			var env := minf(t / 0.04, 1.0) * (1.0 - smoothstep(temps * 0.75, temps, t))
+			var ph := TAU * f * t
+			# timbre cuivre : harmoniques decroissantes, leger vibrato
+			var vib := 1.0 + 0.004 * sin(TAU * 5.5 * t)
+			var cuivre := 0.0
+			for h in range(1, 7):
+				cuivre += sin(ph * h * vib) / float(h)
+			var tuba := sin(TAU * fb * t) * 0.9 + sin(TAU * fb * 2.0 * t) * 0.3
+			out[i] += (cuivre * 0.22 + tuba * 0.25) * env
+		# grosse caisse sur chaque temps, caisse claire roulee en contretemps
+		for i in range(i0, mini(i0 + int(RATE * 0.25), n)):
+			var t := float(i - i0) / RATE
+			out[i] += sin(TAU * 60.0 * t) * exp(-t * 14.0) * 0.5
+		var ic := i0 + int(temps * 0.5 * RATE)
+		for i in range(ic, mini(ic + int(RATE * 0.12), n)):
+			var t := float(i - ic) / RATE
+			out[i] += (rng.randf() * 2.0 - 1.0) * exp(-t * 30.0) * 0.25
+	for i in n:
+		out[i] = clampf(out[i] * 0.6, -1.0, 1.0)
+	return _wav(out, true)

@@ -249,6 +249,7 @@ func _show_options() -> void:
 	_slider("Taille de l'interface", o.get("taille_interface", 1.0), 0.8, 1.6, func(v: float) -> void: o["taille_interface"] = v)
 	_check("Aide à la visée (souris)", o.get("aide_visee", true), func(v: bool) -> void: o["aide_visee"] = v)
 	_button("Touches du clavier", _show_touches)
+	_check("Couleurs adaptées au daltonisme (au prochain lancement)", o.get("daltonisme", false), func(v: bool) -> void: o["daltonisme"] = v)
 	_check("Violence réduite (armes moins puissantes)", o.get("violence_reduite", false), func(v: bool) -> void: o["violence_reduite"] = v)
 	var rl := HBoxContainer.new()
 	var ll := Label.new()

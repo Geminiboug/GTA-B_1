@@ -23,6 +23,7 @@ func _key(k: Key) -> void:
 		e.keycode = k
 		e.pressed = down
 		Input.parse_input_event(e)
+		Input.flush_buffered_events()   # tout de suite, meme si le jeu rame
 
 
 func _initialize() -> void:
