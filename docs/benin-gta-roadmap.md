@@ -163,7 +163,7 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Credits complets en jeu (OSM ODbL, Overture, Open Buildings CC BY 4.0, Sentinel-2, Quaternius CC0, autres de docs/CREDITS.md) : bouton Credits (titre et pause), texte dans godot/assets/data/credits.txt
 - [x] Verification legale complete avec docs/LEGAL.md avant publication : docs/verification_legale.md, controle automatique tests/test_legal.gd (avis d'avocat recommande avant une sortie payante)
 - [x] Export Linux (x86_64) verifie : builds/linux/GTB.x86_64 lance dans Ubuntu (WSL), partie chargee sans erreur ; preset Web retire
-- [ ] Export Android : commandes tactiles faites (scripts/tactile.gd : joystick virtuel, camera au doigt, boutons a pied / en vehicule, carte, sac, telephone, pause ; qualite Basse au premier lancement ; aide clavier masquee ; capture_tactile), preset Android et orientation paysage prets ; reste : installer le SDK Android et un JDK 17 (Olympe), exporter l'APK, mesurer 30 img/s sur un telephone de milieu de gamme
+- [ ] Export Android : commandes tactiles faites (scripts/tactile.gd : joystick virtuel, camera au doigt, boutons a pied / en vehicule, carte, sac, telephone, pause ; qualite Basse au premier lancement ; aide clavier masquee ; capture_tactile), preset Android et orientation paysage prets ; SDK Android et Java installes (18/10), compression ETC2/ASTC activee, APK de debug exporte (builds/android/GTB.apk, 86 Mo ; procedure : docs/android.md) ; reste : icone du jeu, mesurer 30 img/s sur un telephone de milieu de gamme
 - [ ] Jalon : demo publiee, 20 premiers retours de joueurs recus et tries
 
 ### Phase 14 : Combat et armes (v0.2)
