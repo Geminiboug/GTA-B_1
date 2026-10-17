@@ -17,6 +17,7 @@ const OPTIONS := "user://options.cfg"
 
 var argent := 0
 var inventaire := {}          # article -> quantite
+const INVENTAIRE_DEPART := {"Smartphone": 1, "Torche": 1}   # dans les poches au debut de chaque partie
 var missions_faites: Array = []
 var chapitre := "prologue"     # prologue, acte1, fin_acte1
 var drapeaux := {}             # etapes de l'histoire, rencontres...
@@ -42,7 +43,7 @@ func _ready() -> void:
 
 func nouvelle_partie() -> void:
 	argent = argent_depart
-	inventaire = {}
+	inventaire = INVENTAIRE_DEPART.duplicate()
 	missions_faites = []
 	chapitre = "prologue"
 	drapeaux = {}
@@ -141,7 +142,7 @@ func set_recherche(n: int) -> void:
 
 
 # ------------------------------------------------------------------ sauvegarde
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 
 static func version_jeu() -> String:
@@ -178,6 +179,13 @@ static func convertir_sauvegarde(d: Dictionary) -> Dictionary:
 			dr["mission"] = (out["missions"] as Array).size()
 		out["drapeaux"] = dr
 		v = 2
+	if v < 3:
+		# version 3 (inventaire du joueur) : torche et smartphone dans les poches
+		var inv: Dictionary = out.get("inventaire", {}) if typeof(out.get("inventaire")) == TYPE_DICTIONARY else {}
+		for k in INVENTAIRE_DEPART:
+			inv[k] = maxi(int(inv.get(k, 0)), int(INVENTAIRE_DEPART[k]))
+		out["inventaire"] = inv
+		v = 3
 	out["version"] = SAVE_VERSION
 	return out
 

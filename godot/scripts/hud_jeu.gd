@@ -142,7 +142,7 @@ func texte_aide(ctx: String, manette: bool) -> String:
 		match ctx:
 			"pied":
 				l = ["Stick gauche : marcher", "Stick droit : caméra", "A (tapoter) : courir", "X : sauter / escalader",
-					"R3 : s'accroupir", "Y : monter dans un véhicule", "Croix droite : parler / acheter", "Select : carte   Croix bas : vue"]
+					"R3 : s'accroupir", "Y : monter dans un véhicule", "Croix droite : parler / acheter", "Select : carte   Croix bas : vue", "Croix gauche : inventaire (téléphone, torche)"]
 			"zem":
 				l = ["RT : accélérer   LT : freiner", "Stick gauche : tourner", "RB : frein arrière", "L3 : klaxon",
 					"Y : descendre", "Croix droite : chercher un client"]
@@ -154,7 +154,7 @@ func texte_aide(ctx: String, manette: bool) -> String:
 			"pied":
 				l = ["Z Q S D : marcher", "Souris : caméra", "Maj (tapoter) : courir   Alt : marche lente",
 					"Espace : sauter / escalader", "C : s'accroupir", "E : monter dans un véhicule", "T : parler / acheter",
-					"M : carte   V : vue"]
+					"M : carte   V : vue", "I : inventaire   P : téléphone   L : torche"]
 			"zem":
 				l = ["Z : accélérer   S : freiner", "Q D : tourner", "Espace : frein arrière", "H : klaxon",
 					"E : descendre", "T : chercher un client (à l'arrêt)"]
@@ -220,7 +220,8 @@ func _process(delta: float) -> void:
 		_aide_t += delta
 		if _aide_t > aide_duree:
 			_aide_on = false
-	_aide.visible = _aide_on and Partie.get("en_jeu") != false
+	var inv := get_node_or_null("../Inventaire")
+	_aide.visible = _aide_on and Partie.get("en_jeu") != false and not (inv and inv.get("ouvert"))
 	if _aide.visible:
 		var ctx := contexte() + ("_m" if _manette else "")
 		if ctx != _ctx:

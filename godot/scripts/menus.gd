@@ -11,13 +11,14 @@ const COMMANDES := """A PIED
 ZQSD bouger · Shift sprint (tapoter) · Alt / Ctrl marcher · C s'accroupir
 Espace sauter / escalader · F ou clic gauche frapper · E monter dans un véhicule
 T parler / acheter · M carte · V vue · Échap pause
+I inventaire · P téléphone · L torche · F12 mode photo
 
 EN VÉHICULE
 Z accélérer · S freiner / reculer · Q D tourner · Espace frein à main · H klaxon · E descendre
 
 MANETTE
 Stick gauche bouger · stick droit caméra · A sprint · X sauter · B frapper · Y véhicule
-Croix droite parler · Select carte · Start pause · L3 marcher · R3 s'accroupir"""
+Croix droite parler · croix gauche inventaire · Select carte · Start pause · L3 marcher · R3 s'accroupir"""
 
 var _root: Control
 var _box: VBoxContainer

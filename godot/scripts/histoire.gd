@@ -34,6 +34,7 @@ var _boulot := {}                # course de zem en cours (petits boulots)
 @export var etal_decalage := 4.0        # m, vendeuse de pain a cote du portail de la maison
 var _marker_pos := Vector3.INF
 var _obj_text := ""
+var messages: Array = []        # dernieres repliques entendues [qui, texte] (application Messages du telephone)
 var _dist_t := 0.0
 
 
@@ -558,6 +559,9 @@ func _dialog_step(delta: float) -> void:
 		var who := _speaker(l[0])
 		if is_instance_valid(who):
 			Bulle.say(who, l[1], duree_replique, 2.1, Color(1, 0.95, 0.75))
+			messages.append([l[0], l[1]])
+			if messages.size() > 20:
+				messages.pop_front()
 			# celui qui parle fait les gestes de la conversation (clip Idle_Talking)
 			var an: Node = who.get("anim") if who == _player else who
 			if an and an.has_method("play_clips") and (who != _player or _player.get("vehicle") == null):
@@ -632,6 +636,10 @@ func _waypoint(p: Vector3) -> void:
 func _clear_waypoint() -> void:
 	if _hud and _hud.has_method("clear_waypoint"):
 		_hud.clear_waypoint()
+
+
+func objectif_actuel() -> String:
+	return _obj_text
 
 
 func _objective(t: String) -> void:
