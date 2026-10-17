@@ -34,7 +34,7 @@ var tenue := {}                # tenue du joueur (scripts/personnalisation.gd) :
 var perso := {}                # progression du personnage (scripts/stats.gd) : endurance, muscles, poids, competences
 
 var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false,
-	"violence_reduite": false}
+	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26}
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
 
 

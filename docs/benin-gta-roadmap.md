@@ -201,15 +201,15 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Jalon : prendre et tenir 3 stationnements change la vie du quartier (plus de zems de ta couleur, salutations)
 
 ### Phase 17 bis : Chargement par zones (v0.2)
-- [ ] Chargement et dechargement des tuiles de 500 m en arriere-plan, sans saccade
-- [ ] Sauvegarde de l'etat par zone (vehicules deplaces, stationnements tenus)
-- [ ] Interieurs charges a la demande
+- [ ] Chargement et dechargement des tuiles de 500 m en arriere-plan, sans saccade : reporte a la Phase 21 (la zone actuelle tient en un fichier deja decoupe en tuiles de 500 m, que Godot ignore hors champ ; 70 img/s en Haut mesures le 17/10/2026). Il faudra un fichier par tuile dans osm_import.py quand Cotonou s'etendra
+- [x] Sauvegarde de l'etat (vehicules gares aux proprietes, stationnements tenus, tenue, statistiques) ; par zone quand le chargement par tuiles existera
+- [x] Interieurs : personnages fabriques une fois au chargement puis montres / caches selon la distance (plus d'a-coup a l'entree, tests/perf_entree.gd)
 - [ ] Jalon : 70 img/s en Haut avec la zone cargo et les evenements prevus, avant de commencer l'acte 2
 
 ### Phase 18 : Acte 2 "Sous les ailes" (v0.3)
 - [ ] Ecriture complete de l'acte 2 dans docs/histoire.md (15 a 20 missions), validee par Olympe avant production
 - [ ] Zone cargo de l'aeroport en interieur et exterieur (hangars, entrepots, controles, chariots, camions)
-- [ ] Systeme de cinematiques (cameras scriptees, animations, sous-titres actives par defaut, taille reglable, passage possible)
+- [x] Systeme de cinematiques (scripts/cinematique.gd) : bandes noires, plan par-dessus l'epaule pendant les dialogues de l'histoire, plans scriptes (jouer), sous-titres avec le nom actives par defaut et taille reglable dans les options, Espace / Entree / A pour passer, interface cachee ; capture_cinematique
 - [ ] Animations faciales simples (clignements, regard ; bouche synchronisee en Phase 19 avec les voix)
 - [ ] Types de missions varies : infiltration, filature, escorte, course, defense, mission en avion au sol
 - [ ] Commissaire Adjovi et le Patron mis en scene, revelations de Tonton Codjo

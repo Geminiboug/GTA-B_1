@@ -563,15 +563,39 @@ func _say_lines(lines: Array) -> void:
 	_dialog_t = 0.0
 
 
+const NOMS_PERSOS := {"joueur": "Sena", "tante": "Tante Mireille", "codjo": "Vieux Codjo", "commandant": "Cdt Hounkpè",
+	"patronne": "Maman Fifi", "client": "Le client", "vendeuse": "La vendeuse"}
+var _dernier_pnj: Node3D = null
+
+
+func _cine() -> Node:
+	return get_node_or_null("../Cinematique")
+
+
 func _dialog_step(delta: float) -> void:
 	if _dialog.is_empty():
+		if _dialog_t > 0.0:
+			_dialog_t -= delta
+			if _dialog_t <= 0.0 and _cine() and _cine().en_cours:
+				_cine().fin()
 		return
 	_dialog_t -= delta
 	if _dialog_t <= 0.0:
 		var l: Array = _dialog.pop_front()
 		var who := _speaker(l[0])
+		# cinematique de dialogue (a pied, a l'arret) : plan par-dessus l'epaule, sous-titre avec le nom
+		var ci := _cine()
+		if ci and is_instance_valid(who):
+			if who != _player:
+				_dernier_pnj = who
+			var autre: Node3D = _player if who != _player else _dernier_pnj
+			var arret: bool = _player.get("vehicle") == null and Vector2(_player.velocity.x, _player.velocity.z).length() < 0.6
+			if arret and autre and is_instance_valid(autre) and autre != who:
+				ci.cadrer(who, autre)
+			ci.sous_titre(tr(NOMS_PERSOS.get(l[0], String(l[0]).capitalize())), tr(l[1]), duree_replique)
 		if is_instance_valid(who):
-			Bulle.say(who, l[1], duree_replique, 2.1, Color(1, 0.95, 0.75))
+			if not (ci and ci.en_cours):
+				Bulle.say(who, l[1], duree_replique, 2.1, Color(1, 0.95, 0.75))
 			messages.append([l[0], l[1]])
 			if messages.size() > 20:
 				messages.pop_front()
