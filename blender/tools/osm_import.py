@@ -56,6 +56,12 @@ SEA_EXTRA = 400.0
 BEACH_W = 90.0
 PROMENADE_W = 8.0
 BIKE_W = 3.0
+# Pente de la plage (phase 12) : le haut de plage est plat, l'estran descend sur les FORESHORE derniers metres jusqu'a
+# FORESHORE_DROP sous le niveau de la terre au trait de cote (l'eau est a -0.3), puis le fond continue a descendre
+# sous la mer (profil des plages sableuses du golfe de Guinee : estran court et raide, houle forte).
+FORESHORE = 40.0
+FORESHORE_DROP = 0.8
+SEABED_SLOPE = 0.035
 
 # ---------- Lecture OSM ----------
 root = ET.parse(OSM).getroot()
@@ -387,6 +393,17 @@ if LITTORAL:
         elif f["properties"]["name"] == "limite_plage":
             beach_inner = line
 
+def offset_line(pts, d):
+    """Decale une polyligne de d metres vers la gauche (cote terre pour un trait de cote OSM)."""
+    out = []
+    for i in range(len(pts)):
+        a, c = pts[max(i - 1, 0)], pts[min(i + 1, len(pts) - 1)]
+        dx, dy = c[0] - a[0], c[1] - a[1]
+        l = math.hypot(dx, dy) or 1
+        out.append((pts[i][0] - dy / l * d, pts[i][1] + dx / l * d))
+    return out
+
+
 land_poly = [(XMIN, YMIN), (XMAX, YMIN), (XMAX, YMAX), (XMIN, YMAX)]
 sea_poly = None
 if coast:
@@ -398,7 +415,7 @@ if coast:
         sea_y = -FAR if s[0] < e[0] else FAR
         # la mer deborde de SEA_EXTRA metres au sud du cadre pour voir l'ocean depuis la plage
         sea_poly = clip_poly(clean(coast + [(e[0], sea_y), (s[0], sea_y)]), ymin=YMIN - SEA_EXTRA)
-        land_poly = clip_poly(clean(coast + [(e[0], -sea_y), (s[0], -sea_y)]))
+        land_poly = clip_poly(clean(offset_line(coast, FORESHORE) + [(e[0], -sea_y), (s[0], -sea_y)]))
     else:
         piece = max(clip_line(coast), key=len)
         ps, pe = piece[0], piece[-1]
@@ -414,17 +431,6 @@ if sea_poly:
     make_obj("fond_marin", fv, ff, "mat_sable", "Sol")
 
 # --- Front de mer : plage continue, promenade, piste cyclable ---
-def offset_line(pts, d):
-    """Decale une polyligne de d metres vers la gauche (cote terre pour un trait de cote OSM)."""
-    out = []
-    for i in range(len(pts)):
-        a, c = pts[max(i - 1, 0)], pts[min(i + 1, len(pts) - 1)]
-        dx, dy = c[0] - a[0], c[1] - a[1]
-        l = math.hypot(dx, dy) or 1
-        out.append((pts[i][0] - dy / l * d, pts[i][1] + dx / l * d))
-    return out
-
-
 def coast_y_at(x, line=None):
     """Ordonnee d'une ligne orientee ouest -> est (par defaut le trait de cote) a l'abscisse x."""
     line = line or coast
@@ -449,7 +455,31 @@ def on_waterfront(x, y):
 if coast:
     # limite de plage mesuree si disponible, sinon largeur estimee
     beach_edge = beach_inner or offset_line(coast, BEACH_W)
-    band = clip_poly(clean(coast + beach_edge[::-1]), ymin=YMIN - SEA_EXTRA)
+    band = clip_poly(clean(offset_line(coast, FORESHORE) + beach_edge[::-1]), ymin=YMIN - SEA_EXTRA)
+    # estran en pente (avec collision) : du haut de l'estran (z 0) au trait de cote, puis sous l'eau
+    rows = [FORESHORE, 30.0, 20.0, 12.0, 6.0, 0.0, -10.0, -25.0, -45.0]
+    def shore_z(d):
+        if d >= 0.0:
+            return -FORESHORE_DROP * (1.0 - d / FORESHORE) ** 1.4
+        return -FORESHORE_DROP + d * SEABED_SLOPE
+    pts = [q for q in coast if XMIN - 60.0 <= q[0] <= XMAX + 60.0]
+    lines = [offset_line(pts, d) for d in rows]
+    sv, sfc = [], []
+    for r, d in enumerate(rows):
+        for q in lines[r]:
+            sv.append((q[0], q[1], shore_z(d)))
+    n = len(pts)
+    for r in range(len(rows) - 1):
+        for i in range(n - 1):
+            a, b = r * n + i, r * n + i + 1
+            c, e2 = (r + 1) * n + i + 1, (r + 1) * n + i
+            sfc.append((a, e2, c, b))
+    if sfc:
+        a0, b0, c0 = sv[sfc[0][0]], sv[sfc[0][1]], sv[sfc[0][2]]
+        nz = (b0[0] - a0[0]) * (c0[1] - a0[1]) - (b0[1] - a0[1]) * (c0[0] - a0[0])
+        if nz < 0:
+            sfc = [f[::-1] for f in sfc]   # normales vers le haut
+    make_obj("plage_estran-col", sv, sfc, "mat_sable", "Sol")
     if len(band) > 2:
         make_obj("plage_front_de_mer", *flat(ccw(band), 0.004), "mat_sable", "Zones")
     for name, d, w, mat, z in (("promenade", BEACH_W + PROMENADE_W / 2, PROMENADE_W, "mat_paves", 0.016),

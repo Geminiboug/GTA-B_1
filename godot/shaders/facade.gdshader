@@ -2,6 +2,8 @@
 // Murs : etages de 3 m ; fenetres vitrees avec grille OU persiennes en bois peintes ; rez-de-chaussee avec
 //        fenetres, portes et rideaux metalliques de boutique ; bandeaux de dalle ; peinture ecaillee ;
 //        environ 1 batiment sur 5 en parpaings bruts non enduits ; salissure et humidite en bas.
+// Usure (phase 12) : coulures sous les appuis de fenetre, rouille qui coule des grilles, affiches dechirees et
+//        fanees collees en grappes sur les murs nus (murs d'enceinte surtout).
 // Murs d'enceinte (plain_wall) : enduit ou parpaings, portails metalliques peints tous les ~20 m.
 // Toits : toles ondulees (rouillees ou non) ou dalle beton avec taches.
 // Nuit : fenetres eclairees au hasard (variables globales gtb_night et gtb_power).
@@ -129,6 +131,7 @@ void fragment() {
 			base = mix(base, vec3(0.6, 0.58, 0.55), slab * (raw ? 1.0 : 0.3));
 		}
 		albedo = base;
+		bool opening = false;   // porte, vitrine, fenetre ou portail dessine : pas d'affiche dessus
 
 		if (style == 1) {
 			// terminal : mur-rideau vitre, meneaux tous les 1,5 m, traverses a chaque niveau, socle beton
@@ -160,6 +163,7 @@ void fragment() {
 			float gu = u / 21.0 + bid * 3.0;
 			float gx = fract(gu);
 			if (gx < 0.14 && y < 2.05) {
+				opening = true;
 				vec3 gate = paint_pick(hash(vec2(floor(gu), 4.2)));
 				float ribs = 0.5 + 0.5 * sin(u * 26.0);
 				albedo = gate * (0.8 + 0.25 * ribs);
@@ -178,6 +182,7 @@ void fragment() {
 			if (has_door || has_shop) {
 				float door = step(has_shop ? 0.1 : 0.32, wx) * step(wx, has_shop ? 0.9 : 0.68) * step(fy, has_shop ? 0.78 : 0.72);
 				if (door > 0.5) {
+					opening = true;
 					if (has_shop) {
 						float slats = 0.5 + 0.5 * sin(y * 40.0);
 						albedo = mix(vec3(0.45, 0.47, 0.5), vec3(0.3, 0.32, 0.34), slats) * (0.8 + 0.4 * hash(vec2(col_id, 5.0)));
@@ -195,10 +200,19 @@ void fragment() {
 				float frame_x = step(0.27, wx) * step(wx, 0.73);
 				float frame_y = step(0.29, fy) * step(fy, 0.79);
 				if (frame_x * frame_y > 0.5) {
+					opening = true;
 					albedo = raw ? vec3(0.55, 0.54, 0.5) : vec3(0.85, 0.85, 0.82);
 				}
+				float win_kind = hash(vec2(col_id, fl * 7.0 + bid * 17.0));
+				if (frame_x > 0.5 && fy < 0.29 && fy > 0.07) {
+					// coulure sous l'appui : plus marquee juste sous la fenetre, en filets irreguliers
+					float k = (fy - 0.07) / 0.22;
+					float drip = smoothstep(0.35, 0.75, noise(vec2(u * 9.0, fl * 3.1))) * k * k;
+					vec3 stain = win_kind >= 0.35 ? vec3(0.5, 0.27, 0.12) : vec3(0.32, 0.3, 0.28);   // rouille sous les grilles
+					albedo = mix(albedo, albedo * stain * 1.6, drip * (raw ? 0.35 : 0.55));
+				}
 				if (in_x * in_y > 0.5) {
-					float win = hash(vec2(col_id, fl * 7.0 + bid * 17.0));
+					float win = win_kind;
 					if (win < 0.35) {
 						// persiennes (lames horizontales)
 						vec3 sh = paint_pick(hash(vec2(col_id + 3.0, bid * 5.0)));
@@ -215,6 +229,28 @@ void fragment() {
 						emit = lamp * lit * night_light * 2.2 * (1.0 - clamp(grid, 0.0, 1.0) * 0.7);
 					}
 				}
+			}
+		}
+		// affiches dechirees : grappes sur les murs nus entre 1,1 et 2,2 m (murs d'enceinte surtout)
+		if (!opening && style == 0 && y > 1.1 && y < 2.25) {
+			float pu = u / 0.62;
+			float pid = floor(pu);
+			float cluster = hash(vec2(floor(u / 6.0), bid * 9.0 + 2.0));
+			float row = floor((y - 1.1) / 0.55);
+			float here = hash(vec2(pid, row + bid * 5.0));
+			if (cluster < (plain_wall ? 0.45 : 0.15) && here < 0.7) {
+				vec2 q = vec2(fract(pu), fract((y - 1.1) / 0.55));
+				float inside = step(0.04, q.x) * step(q.x, 0.96) * step(0.03, q.y) * step(q.y, 0.97);
+				float torn = smoothstep(0.42, 0.5, fbm(vec2(u, y) * 3.0 + pid * 7.0) + 0.25 * hash(vec2(pid, row)));
+				vec3 paper = mix(vec3(0.92, 0.88, 0.8), paint_pick(hash(vec2(pid, row + 4.0))) * 1.3 + 0.15, step(0.45, hash(vec2(pid * 3.0, row))));
+				// titre en gros caracteres, lignes de texte, photo
+				float title = step(0.72, q.y) * step(q.y, 0.88) * step(0.4, noise(vec2(q.x * 14.0, pid)));
+				float lines = step(0.25, q.y) * step(q.y, 0.62) * step(0.5, fract(q.y * 14.0)) * step(0.35, noise(vec2(q.x * 30.0, q.y * 14.0 + pid)));
+				vec3 ink = paint_pick(hash(vec2(pid, row + 8.0))) * 0.6;
+				paper = mix(paper, ink, clamp(title + lines * 0.7, 0.0, 1.0));
+				paper = mix(paper, vec3(0.86, 0.84, 0.78), 0.35 + 0.3 * hash(vec2(pid, 1.0)));   // fanee au soleil
+				albedo = mix(albedo, paper, inside * (1.0 - torn));
+				albedo = mix(albedo, vec3(0.9, 0.88, 0.82), inside * torn * step(0.5, noise(vec2(u, y) * 20.0)) * 0.5);   // restes de papier
 			}
 		}
 		// salissure et remontee d'humidite en bas du mur

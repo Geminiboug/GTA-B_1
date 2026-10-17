@@ -81,6 +81,14 @@ void fragment() {
 		// debris (coquillages, plastique)
 		col = mix(col, vec3(0.85, 0.82, 0.76), step(0.97, noise(p * 5.0)) * fine * 0.4);
 		rough = 1.0;
+		// estran (plage_estran, sous le niveau du haut de plage) : sable mouille plus sombre et luisant sous la ligne
+		// du ressac, qui monte et descend ; liseré d'ecume a sa limite
+		float swash = -0.22 + 0.06 * sin(TIME * 0.45 + p.x * 0.02) + 0.02 * noise(p * 0.3 + TIME * 0.1);
+		float wetness = smoothstep(swash + 0.1, swash - 0.02, wpos.y);
+		col = mix(col, col * vec3(0.6, 0.58, 0.55), wetness);
+		rough = mix(rough, 0.22, wetness);
+		float foam = smoothstep(0.007, 0.0, abs(wpos.y - swash)) * smoothstep(0.35, 0.7, noise(p * 1.2 + TIME * 0.3));
+		col = mix(col, vec3(0.95, 0.95, 0.93), foam * 0.45);
 	} else if (mode == 2) {
 		float g = noise(p * 8.0) * fine;
 		float patches = fbm(p * 0.08);

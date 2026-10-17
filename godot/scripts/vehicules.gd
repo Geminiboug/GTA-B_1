@@ -7,12 +7,22 @@ const MODELS := {"veh_berline": "res://assets/models/veh_berline.glb", "veh_4x4"
 const ZEM_SCENE := "res://scenes/zem.tscn"
 const CAR_SCRIPT := preload("res://scripts/voiture.gd")
 const CAM_SCRIPT := preload("res://scripts/zem_camera.gd")
-# reglages par modele : vitesse max (m/s), acceleration, adherence, roulis
+# reglages par modele (ordres de grandeur des vehicules d'occasion courants a Cotonou) : vitesse max (m/s), adherence,
+# roulis, masse (kg), moteur (couple max en N.m, regime du couple max, regime max), boite (rapports, pont), traction
+# (part du poids sur les roues motrices), surface de trainee (m2)
 const TUNING := {
-	"veh_berline": {"max_speed": 46.0, "engine_accel": 4.3, "grip": 0.95, "roll_factor": 0.011},
-	"veh_4x4": {"max_speed": 42.0, "engine_accel": 4.2, "grip": 0.85, "roll_factor": 0.016},
-	"veh_minibus": {"max_speed": 33.0, "engine_accel": 3.0, "grip": 0.78, "roll_factor": 0.02},
-	"veh_pickup": {"max_speed": 40.0, "engine_accel": 3.8, "grip": 0.82, "roll_factor": 0.015},
+	"veh_berline": {"max_speed": 46.0, "grip": 0.95, "roll_factor": 0.011, "masse": 1150.0, "couple_max": 140.0,
+		"regime_couple": 4000.0, "regime_max": 6200.0, "rapports": [3.45, 1.94, 1.31, 1.03, 0.84], "pont": 4.1,
+		"part_motrice": 0.6, "trainee": 0.62},
+	"veh_4x4": {"max_speed": 42.0, "grip": 0.85, "roll_factor": 0.016, "masse": 1950.0, "couple_max": 300.0,
+		"regime_couple": 2200.0, "regime_max": 4300.0, "rapports": [4.3, 2.4, 1.48, 1.0, 0.79], "pont": 3.9,
+		"part_motrice": 1.0, "trainee": 1.05},
+	"veh_minibus": {"max_speed": 33.0, "grip": 0.78, "roll_factor": 0.02, "masse": 1800.0, "couple_max": 210.0,
+		"regime_couple": 2400.0, "regime_max": 4500.0, "rapports": [4.5, 2.5, 1.5, 1.0, 0.82], "pont": 4.3,
+		"part_motrice": 0.55, "trainee": 1.25},
+	"veh_pickup": {"max_speed": 40.0, "grip": 0.82, "roll_factor": 0.015, "masse": 1650.0, "couple_max": 240.0,
+		"regime_couple": 2300.0, "regime_max": 4500.0, "rapports": [4.3, 2.35, 1.45, 1.0, 0.82], "pont": 4.1,
+		"part_motrice": 0.45, "trainee": 0.95},
 }
 
 static var _merged := {}

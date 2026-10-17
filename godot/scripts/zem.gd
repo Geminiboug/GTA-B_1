@@ -3,7 +3,7 @@ extends CharacterBody3D
 ## Clavier : Z gaz, S frein puis marche arriere, Q / D direction, Espace frein arriere, H klaxon.
 ## Manette : RT gaz, LT frein, stick gauche direction, RB frein arriere, L3 klaxon, Y descendre.
 ## Physique simplifiee d'une 125 cc : ~80 km/h max, rayon de braquage qui grandit avec la vitesse,
-## inclinaison dans les virages, inertie, roues et guidon animes.
+## inclinaison dans les virages, inertie, roues et guidon animes, plongee de fourche au freinage.
 
 signal rider_changed(has_rider: bool)
 
@@ -26,6 +26,9 @@ var _steer := 0.0
 var _lean := 0.0
 var _yaw := 0.0
 var _last_safe := Vector3.ZERO
+var _pitch := 0.0          # plongee de la fourche au freinage, cabrage a l'acceleration (visuel)
+var _prev_speed := 0.0
+@export var pitch_factor := 0.012
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var visual: Node3D = $Visual
@@ -118,7 +121,11 @@ func _physics_process(delta: float) -> void:
 	# angle d'equilibre d'une moto en virage : tan(lean) = v * lacet / g
 	var target_lean: float = clamp(atan(speed * yaw_rate / gravity), -max_lean, max_lean)
 	_lean = lerp(_lean, target_lean, 1.0 - exp(-6.0 * delta))
-	visual.rotation.z = _lean
+	# transfert de masse : la fourche plonge au freinage, l'arriere s'ecrase a l'acceleration
+	var a_long := (speed - _prev_speed) / maxf(delta, 0.001)
+	_prev_speed = speed
+	_pitch = lerpf(_pitch, clampf(a_long * pitch_factor, -0.07, 0.04), 1.0 - exp(-8.0 * delta))
+	visual.rotation = Vector3(_pitch, 0.0, _lean)
 	if steer_pivot:
 		steer_pivot.rotation.y = _steer
 	var spin := speed / wheel_radius * delta
