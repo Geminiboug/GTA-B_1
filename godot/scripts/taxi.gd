@@ -157,7 +157,7 @@ func _show() -> void:
 	_list.add_child(t)
 	for i in DESTINATIONS.size():
 		var l := Label.new()
-		l.text = "%d.  %s   %s" % [i + 1, DESTINATIONS[i][0], Partie.fcfa(prix(i))]
+		l.text = "%d.  %s   %s" % [i + 1, tr(DESTINATIONS[i][0]), Partie.fcfa(prix(i))]
 		l.add_theme_font_size_override("font_size", 20)
 		_list.add_child(l)
 	var h := Label.new()

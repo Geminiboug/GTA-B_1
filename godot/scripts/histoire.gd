@@ -324,6 +324,8 @@ func _enter_step() -> void:
 				Partie.chapitre = e["chapitre"]
 			if e.has("annonce") and _hj():
 				_hj().annonce(e["annonce"][0], e["annonce"][1], 6.0)
+			if e.get("chapitre", "") == "fin_acte1":
+				get_tree().create_timer(6.5).timeout.connect(func() -> void: get_tree().call_group("menus", "fin_demo"))
 			_drop_passenger()
 			step += 1
 			_enter_step()
@@ -652,7 +654,7 @@ func _process(delta: float) -> void:
 	var pv: Node3D = _player.get("vehicle")
 	var pp: Vector3 = pv.global_position if pv else _player.global_position
 	var d := Vector2(pp.x - _marker_pos.x, pp.z - _marker_pos.z).length()
-	_hj().objectif("%s   (%d m)" % [_obj_text, int(d)] if d > 4.0 else _obj_text)
+	_hj().objectif("%s   (%d m)" % [tr(_obj_text), int(d)] if d > 4.0 else _obj_text)
 
 
 func _night() -> void:

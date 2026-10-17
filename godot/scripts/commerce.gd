@@ -147,14 +147,14 @@ func _refresh() -> void:
 	for c in _list.get_children():
 		c.free()
 	var title := Label.new()
-	title.text = "Acheter à %s   (%s en poche)" % [NOMS.get(_open, ""), Partie.fcfa(Partie.argent)]
+	title.text = tr("Acheter à %s   (%s en poche)") % [tr(NOMS.get(_open, "")), Partie.fcfa(Partie.argent)]
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
 	_list.add_child(title)
 	var items: Array = ARTICLES[_open]
 	for i in items.size():
 		var l := Label.new()
-		l.text = "%s%d.  %s   %s" % ["> " if i == _sel else "   ", i + 1, items[i][0], Partie.fcfa(int(items[i][1]))]
+		l.text = "%s%d.  %s   %s" % ["> " if i == _sel else "   ", i + 1, tr(items[i][0]), Partie.fcfa(int(items[i][1]))]
 		l.add_theme_font_size_override("font_size", 20)
 		l.add_theme_color_override("font_color", Color(1, 1, 1) if i == _sel else Color(0.8, 0.8, 0.8))
 		_list.add_child(l)

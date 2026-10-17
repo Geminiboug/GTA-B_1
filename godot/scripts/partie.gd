@@ -69,7 +69,7 @@ func gagner(n: int, raison := "") -> void:
 	argent_change.emit(argent, n)
 	journal.argent(n, raison)
 	if raison != "":
-		notification.emit("+%s : %s" % [fcfa(n), raison])
+		notification.emit("+%s : %s" % [fcfa(n), tr(raison)])
 
 
 func payer(n: int, raison := "") -> bool:
@@ -81,7 +81,7 @@ func payer(n: int, raison := "") -> bool:
 	argent_change.emit(argent, -n)
 	journal.argent(-n, raison)
 	if raison != "":
-		notification.emit("-%s : %s" % [fcfa(n), raison])
+		notification.emit("-%s : %s" % [fcfa(n), tr(raison)])
 	return true
 
 
@@ -92,7 +92,7 @@ func prelever(n: int, raison := "") -> void:
 	argent_change.emit(argent, -m)
 	journal.argent(-m, raison)
 	if raison != "":
-		notification.emit("-%s : %s" % [fcfa(m), raison])
+		notification.emit("-%s : %s" % [fcfa(m), tr(raison)])
 
 
 func ajouter(article: String, n := 1) -> void:

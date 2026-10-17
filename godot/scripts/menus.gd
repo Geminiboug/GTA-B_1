@@ -5,6 +5,7 @@ extends CanvasLayer
 ## Les tests (scene lancee par un script, current_scene nul) demarrent directement en jeu, sans ecran titre.
 
 @export var titre_au_lancement := true
+@export var formulaire_retours := ""   # lien du formulaire de retours des joueurs (ecran de fin de demo), vide = pas de bouton
 
 const COMMANDES := """A PIED
 ZQSD bouger · Shift sprint (tapoter) · Alt / Ctrl marcher · C s'accroupir
@@ -142,6 +143,7 @@ func _show_title() -> void:
 		Partie.charger(get_parent())
 		get_tree().call_group("histoire", "reprendre"), Partie.existe_sauvegarde())
 	_button("Options", _show_options)
+	_button("Crédits", _show_credits)
 	_button("Quitter", func() -> void: get_tree().quit())
 	first.grab_focus.call_deferred()
 
@@ -160,6 +162,51 @@ func _show_pause() -> void:
 		get_tree().call_group("histoire", "reprendre"), Partie.existe_sauvegarde())
 	_button("Options", _show_options)
 	_button("Commandes", _show_controls)
+	_button("Crédits", _show_credits)
+	_button("Quitter vers l'écran titre", func() -> void:
+		_mode = "titre"
+		_show_title())
+	first.grab_focus.call_deferred()
+
+
+func _show_credits() -> void:
+	_page = "credits"
+	_clear("Crédits")
+	var sc := ScrollContainer.new()
+	sc.custom_minimum_size = Vector2(760, 440)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_box.add_child(sc)
+	var l := Label.new()
+	var f := FileAccess.open("res://assets/data/credits.txt", FileAccess.READ)
+	l.text = f.get_as_text() if f else "GTB"
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(740, 0)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 17)
+	sc.add_child(l)
+	_button("Retour", _back).grab_focus.call_deferred()
+
+
+func fin_demo() -> void:
+	## Fin de l'acte 1 (fin de la demo) : "A suivre", avis des joueurs, puis jeu libre ou retour au titre.
+	## Pas dans les tests (scene lancee par un script) : le jeu ne se met pas en pause.
+	if get_tree().current_scene != get_parent():
+		return
+	_open("pause")
+	_mode = "fin"
+	_page = "fin"
+	_clear("À suivre")
+	var l := Label.new()
+	l.text = "Merci d'avoir joué à la démo de GTB !
+L'acte 2, « Sous les ailes », arrive bientôt.
+Tu peux continuer à te balader dans le quartier."
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 20)
+	_box.add_child(l)
+	var first := _button("Continuer à jouer", _close)
+	if formulaire_retours != "":
+		_button("Donner mon avis", func() -> void: OS.shell_open(formulaire_retours))
+	_button("Crédits", _show_credits)
 	_button("Quitter vers l'écran titre", func() -> void:
 		_mode = "titre"
 		_show_title())
@@ -179,6 +226,8 @@ func _show_controls() -> void:
 func _back() -> void:
 	if _mode == "titre":
 		_show_title()
+	elif _mode == "fin":
+		fin_demo()
 	else:
 		_show_pause()
 

@@ -1,0 +1,30 @@
+GTB · Gbê Town Bénin
+Le Dernier Vol
+
+Création, direction, terrain : Olympe
+Code, modèles et sons générés par script avec l'aide de Claude (Anthropic)
+
+Personnages, lieux, sociétés et marques de ce jeu sont fictifs.
+Toute ressemblance avec des personnes réelles serait fortuite.
+
+DONNÉES CARTOGRAPHIQUES
+© les contributeurs d'OpenStreetMap, licence Open Database License (ODbL)
+openstreetmap.org/copyright
+
+Bâtiments : Overture Maps Foundation (licence ODbL), incluant des données
+OpenStreetMap, Google Open Buildings (CC BY 4.0 / ODbL) et
+Microsoft Global ML Building Footprints (ODbL)
+
+Hauteurs des bâtiments : Google Open Buildings 2.5D Temporal Dataset (2023),
+licence CC BY 4.0
+
+Littoral : contient des données Copernicus Sentinel-2 modifiées (2026)
+
+PERSONNAGES ET ANIMATIONS
+Universal Animation Library 1 et 2, Universal Base Characters : Quaternius (CC0 1.0)
+
+MOTEUR ET OUTILS
+Godot Engine (licence MIT), © Juan Linietsky, Ariel Manzur et les contributeurs de Godot
+Blender (modélisation par script)
+
+Merci aux testeurs et au quartier.

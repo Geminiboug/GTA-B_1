@@ -1,0 +1,1714 @@
+# GTB (Gbe Town Benin) : textes du jeu, genere par godot/tools/extraire_textes.py
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: fr\n"
+
+#: scripts/avion.gd:12
+msgid "Air Gbé"
+msgstr ""
+
+#: scripts/avion.gd:13
+msgid "Atlantique Express"
+msgstr ""
+
+#: scripts/avion.gd:14
+msgid "Sahel Airways"
+msgstr ""
+
+#: scripts/avion.gd:15
+msgid "Golfe Aviation"
+msgstr ""
+
+#: scripts/avion.gd:17
+msgid "Air Lagune"
+msgstr ""
+
+#: scripts/commerce.gd:11
+msgid "Eau en sachet (pure water)"
+msgstr ""
+
+#: scripts/commerce.gd:11
+msgid "Arachides grillées"
+msgstr ""
+
+#: scripts/commerce.gd:11
+msgid "Ananas"
+msgstr ""
+
+#: scripts/commerce.gd:11 scripts/histoire.gd:157 scripts/histoire.gd:158 scripts/histoire.gd:159
+msgid "Pain"
+msgstr ""
+
+#: scripts/commerce.gd:12
+msgid "Pâte rouge et poulet"
+msgstr ""
+
+#: scripts/commerce.gd:12
+msgid "Riz sauce arachide"
+msgstr ""
+
+#: scripts/commerce.gd:12
+msgid "Akassa et poisson frit"
+msgstr ""
+
+#: scripts/commerce.gd:12
+msgid "Bière locale"
+msgstr ""
+
+#: scripts/commerce.gd:13
+msgid "Essence (1 litre)"
+msgstr ""
+
+#: scripts/commerce.gd:14
+msgid "Crédit téléphone"
+msgstr ""
+
+#: scripts/commerce.gd:14
+msgid "Carte SIM"
+msgstr ""
+
+#: scripts/commerce.gd:15 scripts/histoire.gd:164 scripts/histoire.gd:165 scripts/histoire.gd:166
+msgid "Sac de riz (5 kg)"
+msgstr ""
+
+#: scripts/commerce.gd:15 scripts/histoire.gd:184 scripts/histoire.gd:187 scripts/histoire.gd:215 scripts/histoire.gd:217 scripts/histoire.gd:218
+msgid "Huile (1 litre)"
+msgstr ""
+
+#: scripts/commerce.gd:15 scripts/histoire.gd:185 scripts/histoire.gd:186 scripts/histoire.gd:187
+msgid "Boîte de tomate"
+msgstr ""
+
+#: scripts/commerce.gd:15 scripts/histoire.gd:216 scripts/histoire.gd:218
+msgid "Eau minérale (1,5 l)"
+msgstr ""
+
+#: scripts/commerce.gd:16
+msgid "Café"
+msgstr ""
+
+#: scripts/commerce.gd:16
+msgid "Sandwich"
+msgstr ""
+
+#: scripts/commerce.gd:16
+msgid "Jus de bissap"
+msgstr ""
+
+#: scripts/commerce.gd:18 scripts/commerce.gd:92
+msgid "l'étal"
+msgstr ""
+
+#: scripts/commerce.gd:18
+msgid "le maquis"
+msgstr ""
+
+#: scripts/commerce.gd:18
+msgid "le vendeur d'essence"
+msgstr ""
+
+#: scripts/commerce.gd:18
+msgid "la cabine"
+msgstr ""
+
+#: scripts/commerce.gd:19
+msgid "la caisse"
+msgstr ""
+
+#: scripts/commerce.gd:19
+msgid "le café"
+msgstr ""
+
+#: scripts/commerce.gd:92
+msgid "T : acheter à %s"
+msgstr ""
+
+#: scripts/commerce.gd:133
+msgid "Interact"
+msgstr ""
+
+#: scripts/commerce.gd:133
+msgid "Consume"
+msgstr ""
+
+#: scripts/commerce.gd:135
+msgid "Merci !"
+msgstr ""
+
+#: scripts/commerce.gd:135
+msgid "Akpé !"
+msgstr ""
+
+#: scripts/commerce.gd:150
+msgid "Acheter à %s   (%s en poche)"
+msgstr ""
+
+#: scripts/commerce.gd:157
+msgid "%s%d.  %s   %s"
+msgstr ""
+
+#: scripts/commerce.gd:162
+msgid "1-%d ou Entrée : acheter    T : fermer"
+msgstr ""
+
+#: scripts/day_night.gd:147
+msgid "  (delestage)"
+msgstr ""
+
+#: scripts/dialogues.gd:7
+msgid "mon frère"
+msgstr ""
+
+#: scripts/dialogues.gd:7
+msgid "grand frère"
+msgstr ""
+
+#: scripts/dialogues.gd:7
+msgid "le vieux"
+msgstr ""
+
+#: scripts/dialogues.gd:8
+msgid "ma sœur"
+msgstr ""
+
+#: scripts/dialogues.gd:8
+msgid "ma copine"
+msgstr ""
+
+#: scripts/dialogues.gd:8
+msgid "grande sœur"
+msgstr ""
+
+#: scripts/dialogues.gd:8
+msgid "la go"
+msgstr ""
+
+#: scripts/dialogues.gd:12
+msgid "Bonjour {appel} !"
+msgstr ""
+
+#: scripts/dialogues.gd:12
+msgid "A fon ganji à ?"
+msgstr ""
+
+#: scripts/dialogues.gd:12
+msgid "Bonne journée {appel}."
+msgstr ""
+
+#: scripts/dialogues.gd:12
+msgid "Bonjour, ça va un peu ?"
+msgstr ""
+
+#: scripts/dialogues.gd:13
+msgid "Bonsoir {appel} !"
+msgstr ""
+
+#: scripts/dialogues.gd:13
+msgid "Bonsoir, ça va ?"
+msgstr ""
+
+#: scripts/dialogues.gd:13
+msgid "On dit quoi {appel} ?"
+msgstr ""
+
+#: scripts/dialogues.gd:13
+msgid "Bonne arrivée !"
+msgstr ""
+
+#: scripts/dialogues.gd:13
+msgid "Mi kwabo !"
+msgstr ""
+
+#: scripts/dialogues.gd:14
+msgid "{appel}, viens acheter !"
+msgstr ""
+
+#: scripts/dialogues.gd:14
+msgid "Eau glacée ! Pure water !"
+msgstr ""
+
+#: scripts/dialogues.gd:14
+msgid "C'est frais, viens voir !"
+msgstr ""
+
+#: scripts/dialogues.gd:14
+msgid "Ma copine, approche !"
+msgstr ""
+
+#: scripts/dialogues.gd:15
+msgid "Je te fais un bon prix !"
+msgstr ""
+
+#: scripts/dialogues.gd:15
+msgid "Arachides grillées !"
+msgstr ""
+
+#: scripts/dialogues.gd:15
+msgid "Ananas bien sucré !"
+msgstr ""
+
+#: scripts/dialogues.gd:15
+msgid "Pain chaud, pain chaud !"
+msgstr ""
+
+#: scripts/dialogues.gd:16
+msgid "Zem ? On va où ?"
+msgstr ""
+
+#: scripts/dialogues.gd:16
+msgid "{appel}, je te dépose ?"
+msgstr ""
+
+#: scripts/dialogues.gd:16
+msgid "Montez, je connais la route !"
+msgstr ""
+
+#: scripts/dialogues.gd:17
+msgid "Eh ! Tu ne vois pas devant toi ?"
+msgstr ""
+
+#: scripts/dialogues.gd:17
+msgid "Doucement {appel} !"
+msgstr ""
+
+#: scripts/dialogues.gd:17
+msgid "Pardon hein !"
+msgstr ""
+
+#: scripts/dialogues.gd:17
+msgid "Tu es aveugle ou quoi ?"
+msgstr ""
+
+#: scripts/dialogues.gd:18 scripts/dialogues.gd:28
+msgid "Eh Dieu !"
+msgstr ""
+
+#: scripts/dialogues.gd:18
+msgid "Regarde où tu marches !"
+msgstr ""
+
+#: scripts/dialogues.gd:18
+msgid "Ça va pas non ?"
+msgstr ""
+
+#: scripts/dialogues.gd:19
+msgid "Mes affaires ! Tu vas payer !"
+msgstr ""
+
+#: scripts/dialogues.gd:19
+msgid "Eh ! Ma marchandise !"
+msgstr ""
+
+#: scripts/dialogues.gd:19
+msgid "Regarde ce que tu as fait !"
+msgstr ""
+
+#: scripts/dialogues.gd:20
+msgid "Tu me frappes pourquoi ?!"
+msgstr ""
+
+#: scripts/dialogues.gd:20
+msgid "Eh ! Tu es malade ?"
+msgstr ""
+
+#: scripts/dialogues.gd:20 scripts/dialogues.gd:28
+msgid "Au secours !"
+msgstr ""
+
+#: scripts/dialogues.gd:20
+msgid "Laisse-moi tranquille !"
+msgstr ""
+
+#: scripts/dialogues.gd:21
+msgid "Eh ! Laisse-le !"
+msgstr ""
+
+#: scripts/dialogues.gd:21
+msgid "Qu'est-ce qui ne va pas chez toi ?"
+msgstr ""
+
+#: scripts/dialogues.gd:21
+msgid "Séparez-les !"
+msgstr ""
+
+#: scripts/dialogues.gd:21 scripts/dialogues.gd:23
+msgid "Eh Seigneur !"
+msgstr ""
+
+#: scripts/dialogues.gd:22
+msgid "Ahi ! Ma jambe !"
+msgstr ""
+
+#: scripts/dialogues.gd:22
+msgid "Tu es fou ? Tu ne sais pas conduire ?"
+msgstr ""
+
+#: scripts/dialogues.gd:22
+msgid "Il faut payer mes soins !"
+msgstr ""
+
+#: scripts/dialogues.gd:22
+msgid "Eh Dieu, j'ai mal !"
+msgstr ""
+
+#: scripts/dialogues.gd:23
+msgid "Il a renversé quelqu'un !"
+msgstr ""
+
+#: scripts/dialogues.gd:23
+msgid "Arrêtez-le !"
+msgstr ""
+
+#: scripts/dialogues.gd:23
+msgid "Appelez quelqu'un !"
+msgstr ""
+
+#: scripts/dialogues.gd:23
+msgid "Il faut payer !"
+msgstr ""
+
+#: scripts/dialogues.gd:24
+msgid "Eh ! Tu veux me tuer ?"
+msgstr ""
+
+#: scripts/dialogues.gd:24
+msgid "Doucement chauffeur !"
+msgstr ""
+
+#: scripts/dialogues.gd:24
+msgid "Tu roules comme un fou !"
+msgstr ""
+
+#: scripts/dialogues.gd:24
+msgid "Eh ! Freine !"
+msgstr ""
+
+#: scripts/dialogues.gd:25
+msgid "Mon véhicule ! Voleur !"
+msgstr ""
+
+#: scripts/dialogues.gd:25
+msgid "Au voleur ! Attrapez-le !"
+msgstr ""
+
+#: scripts/dialogues.gd:25
+msgid "Descends de là ! C'est à moi !"
+msgstr ""
+
+#: scripts/dialogues.gd:25
+msgid "Eh ! On vole ma voiture !"
+msgstr ""
+
+#: scripts/dialogues.gd:26
+msgid "Avance !"
+msgstr ""
+
+#: scripts/dialogues.gd:26
+msgid "Eh, bouge de là !"
+msgstr ""
+
+#: scripts/dialogues.gd:26
+msgid "Tu attends quoi ?"
+msgstr ""
+
+#: scripts/dialogues.gd:26
+msgid "Doucement, on va où ?"
+msgstr ""
+
+#: scripts/dialogues.gd:27
+msgid "Eh ! Tu es fou ?"
+msgstr ""
+
+#: scripts/dialogues.gd:27
+msgid "Tu as vu ce que tu as fait ?"
+msgstr ""
+
+#: scripts/dialogues.gd:27
+msgid "Il faut payer la réparation !"
+msgstr ""
+
+#: scripts/dialogues.gd:27
+msgid "Tu ne sais pas conduire ?"
+msgstr ""
+
+#: scripts/dialogues.gd:28
+msgid "Ahi ! Courez !"
+msgstr ""
+
+#: scripts/dialogues.gd:29
+msgid "Eh ! On ne se bat pas ici !"
+msgstr ""
+
+#: scripts/dialogues.gd:29
+msgid "Sortez du magasin !"
+msgstr ""
+
+#: scripts/dialogues.gd:29
+msgid "Sécurité ! Arrêtez ça !"
+msgstr ""
+
+#: scripts/dialogues.gd:29
+msgid "Doucement, monsieur !"
+msgstr ""
+
+#: scripts/dialogues.gd:30
+msgid "Pardon {appel}."
+msgstr ""
+
+#: scripts/dialogues.gd:30
+msgid "Excusez-moi."
+msgstr ""
+
+#: scripts/dialogues.gd:30
+msgid "Eh, doucement !"
+msgstr ""
+
+#: scripts/dialogues.gd:38
+msgid "{appel}"
+msgstr ""
+
+#: scripts/histoire.gd:152
+msgid "Bonne arrivée"
+msgstr ""
+
+#: scripts/histoire.gd:153 scripts/histoire.gd:182
+msgid "Parle à tante Mireille"
+msgstr ""
+
+#: scripts/histoire.gd:154
+msgid "Ah, %s ! Bonne arrivée à la maison !"
+msgstr ""
+
+#: scripts/histoire.gd:154
+msgid "mon fils"
+msgstr ""
+
+#: scripts/histoire.gd:154
+msgid "ma fille"
+msgstr ""
+
+#: scripts/histoire.gd:155
+msgid "Va m'acheter du pain chez la vendeuse, au bout de la rue. Tiens, prends de quoi payer."
+msgstr ""
+
+#: scripts/histoire.gd:156
+msgid "J'y vais, tantie."
+msgstr ""
+
+#: scripts/histoire.gd:157
+msgid "Suis la flèche jaune jusqu'à l'étal, puis T pour acheter du pain"
+msgstr ""
+
+#: scripts/histoire.gd:158
+msgid "Rapporte le pain à tante Mireille"
+msgstr ""
+
+#: scripts/histoire.gd:159
+msgid "Donne le pain (T)"
+msgstr ""
+
+#: scripts/histoire.gd:160
+msgid "Merci ! Ton père aurait été fier de te voir revenu."
+msgstr ""
+
+#: scripts/histoire.gd:161
+msgid "Son vieux zem est devant la maison. Il roule encore, prends-le."
+msgstr ""
+
+#: scripts/histoire.gd:162
+msgid "Le zem de papa"
+msgstr ""
+
+#: scripts/histoire.gd:163
+msgid "Monte sur le zem de ton père (E)"
+msgstr ""
+
+#: scripts/histoire.gd:164
+msgid "Achète un sac de riz à l'Ararat Hypermarket"
+msgstr ""
+
+#: scripts/histoire.gd:165
+msgid "Rapporte le riz à la maison"
+msgstr ""
+
+#: scripts/histoire.gd:166
+msgid "Donne le riz (T)"
+msgstr ""
+
+#: scripts/histoire.gd:167
+msgid "Bien ! Va voir Vieux Codjo au maquis du coin, il cherche quelqu'un pour des livraisons."
+msgstr ""
+
+#: scripts/histoire.gd:168
+msgid "Livraison en zem"
+msgstr ""
+
+#: scripts/histoire.gd:169 scripts/histoire.gd:176
+msgid "Parle à Vieux Codjo"
+msgstr ""
+
+#: scripts/histoire.gd:170
+msgid "C'est toi l'enfant de Basile ? Ton père réparait tout ce qui roule et tout ce qui vole."
+msgstr ""
+
+#: scripts/histoire.gd:171
+msgid "Tiens ce colis. Livre-le à l'étal là-bas, en moins de trois minutes. Le client n'attend pas !"
+msgstr ""
+
+#: scripts/histoire.gd:172 scripts/histoire.gd:173 scripts/histoire.gd:174 scripts/histoire.gd:377
+msgid "Colis"
+msgstr ""
+
+#: scripts/histoire.gd:173
+msgid "Livre le colis"
+msgstr ""
+
+#: scripts/histoire.gd:175
+msgid "Course client"
+msgstr ""
+
+#: scripts/histoire.gd:177
+msgid "Un voyageur attend devant l'aérogare. Il veut aller à Sweet Dream Beach. Fais vite !"
+msgstr ""
+
+#: scripts/histoire.gd:178
+msgid "Va chercher le client devant l'aérogare (en zem)"
+msgstr ""
+
+#: scripts/histoire.gd:179
+msgid "Dépose le client à Sweet Dream Beach"
+msgstr ""
+
+#: scripts/histoire.gd:180
+msgid "Merci, %s ! Bonne route."
+msgstr ""
+
+#: scripts/histoire.gd:181
+msgid "Au marché"
+msgstr ""
+
+#: scripts/histoire.gd:183
+msgid "Il me faut de l'huile et une boîte de tomate pour la sauce. Va à l'Ararat."
+msgstr ""
+
+#: scripts/histoire.gd:184
+msgid "Achète de l'huile"
+msgstr ""
+
+#: scripts/histoire.gd:185
+msgid "Achète une boîte de tomate"
+msgstr ""
+
+#: scripts/histoire.gd:186
+msgid "Rentre à la maison"
+msgstr ""
+
+#: scripts/histoire.gd:187 scripts/histoire.gd:218
+msgid "Donne les courses (T)"
+msgstr ""
+
+#: scripts/histoire.gd:188
+msgid "Merci. Écoute... j'ai gardé quelque chose de ton père."
+msgstr ""
+
+#: scripts/histoire.gd:189
+msgid "Son carnet. Il a écrit un mot la veille du dernier vol : « Épave, cabine, rangée 12 »."
+msgstr ""
+
+#: scripts/histoire.gd:190
+msgid "L'épave de la plage ? Papa y était ?"
+msgstr ""
+
+#: scripts/histoire.gd:191
+msgid "Je ne sais pas. Mais sois prudent. La nuit, la police patrouille sur la plage."
+msgstr ""
+
+#: scripts/histoire.gd:191
+msgid "Carnet de Basile"
+msgstr ""
+
+#: scripts/histoire.gd:192 scripts/hud_carte.gd:39 scripts/taxi.gd:17
+msgid "L'Épave Volante"
+msgstr ""
+
+#: scripts/histoire.gd:193
+msgid "Le soir tombe..."
+msgstr ""
+
+#: scripts/histoire.gd:194
+msgid "Va à l'épave, sur la plage"
+msgstr ""
+
+#: scripts/histoire.gd:195
+msgid "Fouille la cabine, rangée 12 (T)"
+msgstr ""
+
+#: scripts/histoire.gd:196
+msgid "Une plaque d'avion arrachée... et un nom gravé : « Cdt Hounkpè »."
+msgstr ""
+
+#: scripts/histoire.gd:197
+msgid "Plaque du cargo"
+msgstr ""
+
+#: scripts/histoire.gd:198
+msgid "Une patrouille ! Échappe à la police"
+msgstr ""
+
+#: scripts/histoire.gd:199
+msgid "Le Commandant"
+msgstr ""
+
+#: scripts/histoire.gd:200
+msgid "Parle au Commandant Hounkpè"
+msgstr ""
+
+#: scripts/histoire.gd:201
+msgid "Dossou... Tu as les yeux de Basile."
+msgstr ""
+
+#: scripts/histoire.gd:202
+msgid "Ce cargo ne transportait pas que du coton. Ton père avait pris des photos du chargement."
+msgstr ""
+
+#: scripts/histoire.gd:203
+msgid "Il les a cachées au bord du tarmac, près des postes de stationnement. Va voir, de nuit."
+msgstr ""
+
+#: scripts/histoire.gd:204
+msgid "Le hangar"
+msgstr ""
+
+#: scripts/histoire.gd:205
+msgid "La nuit tombe sur l'aéroport..."
+msgstr ""
+
+#: scripts/histoire.gd:206
+msgid "Fouille les trois postes du tarmac (T)"
+msgstr ""
+
+#: scripts/histoire.gd:207
+msgid "Des photos de caisses... et le logo d'une société inconnue."
+msgstr ""
+
+#: scripts/histoire.gd:208
+msgid "L'alerte est donnée ! Échappe à la police"
+msgstr ""
+
+#: scripts/histoire.gd:209
+msgid "FIN DE L'ACTE 1"
+msgstr ""
+
+#: scripts/histoire.gd:209
+msgid "Quelqu'un, à l'aéroport, savait. À suivre."
+msgstr ""
+
+#: scripts/histoire.gd:211
+msgid "Ravitaillement"
+msgstr ""
+
+#: scripts/histoire.gd:212
+msgid "Parle à Maman Fifi, la patronne du maquis"
+msgstr ""
+
+#: scripts/histoire.gd:213
+msgid "C'est toi le petit de Codjo ? Le maquis ouvre ce soir et je n'ai plus d'huile ni d'eau !"
+msgstr ""
+
+#: scripts/histoire.gd:214
+msgid "File à l'Ararat et reviens vite, je te paierai bien."
+msgstr ""
+
+#: scripts/histoire.gd:215
+msgid "Achète de l'huile à l'Ararat"
+msgstr ""
+
+#: scripts/histoire.gd:216
+msgid "Achète de l'eau minérale"
+msgstr ""
+
+#: scripts/histoire.gd:217
+msgid "Rapporte les courses au maquis de Haie Verte"
+msgstr ""
+
+#: scripts/histoire.gd:219
+msgid "Ah, tu es rapide ! Reviens quand tu veux, il y a toujours du travail ici."
+msgstr ""
+
+#: scripts/histoire.gd:220
+msgid "Le grand tour"
+msgstr ""
+
+#: scripts/histoire.gd:221
+msgid "Parle à Maman Fifi"
+msgstr ""
+
+#: scripts/histoire.gd:222
+msgid "Deux clients arrivent par l'avion du soir. Va les chercher à l'aérogare, l'un après l'autre."
+msgstr ""
+
+#: scripts/histoire.gd:223
+msgid "Premier client : devant l'aérogare (en zem)"
+msgstr ""
+
+#: scripts/histoire.gd:224
+msgid "Dépose-le à Haie Verte"
+msgstr ""
+
+#: scripts/histoire.gd:225
+msgid "Merci ! Bonne soirée."
+msgstr ""
+
+#: scripts/histoire.gd:226
+msgid "Second client : retourne à l'aérogare"
+msgstr ""
+
+#: scripts/histoire.gd:227
+msgid "Dépose-le au maquis de Maman Fifi"
+msgstr ""
+
+#: scripts/histoire.gd:228
+msgid "On m'a dit que c'était le meilleur maquis du quartier !"
+msgstr ""
+
+#: scripts/histoire.gd:239
+msgid "LE DERNIER VOL"
+msgstr ""
+
+#: scripts/histoire.gd:239
+msgid "Cotonou, près de l'aéroport"
+msgstr ""
+
+#: scripts/histoire.gd:255 scripts/histoire.gd:515
+msgid "Petits boulots : sur le zem, T pour chercher un client"
+msgstr ""
+
+#: scripts/histoire.gd:262
+msgid "Nouvelle mission : « %s » (va dans le cercle jaune)"
+msgstr ""
+
+#: scripts/histoire.gd:353
+msgid "MISSION RÉUSSIE"
+msgstr ""
+
+#: scripts/histoire.gd:366
+msgid "MISSION ÉCHOUÉE"
+msgstr ""
+
+#: scripts/histoire.gd:392
+msgid "%s   %d:%02d"
+msgstr ""
+
+#: scripts/histoire.gd:394
+msgid "Trop tard !"
+msgstr ""
+
+#: scripts/histoire.gd:412
+msgid "T : parler"
+msgstr ""
+
+#: scripts/histoire.gd:421
+msgid "Tu as perdu %s."
+msgstr ""
+
+#: scripts/histoire.gd:435
+msgid "Arrête-toi près du client"
+msgstr ""
+
+#: scripts/histoire.gd:447
+msgid "T : fouiller"
+msgstr ""
+
+#: scripts/histoire.gd:450
+msgid "Trouvé ! (%d restant)"
+msgstr ""
+
+#: scripts/histoire.gd:450
+msgid "Trouvé !"
+msgstr ""
+
+#: scripts/histoire.gd:472
+msgid "T : chercher un client"
+msgstr ""
+
+#: scripts/histoire.gd:481
+msgid "Va chercher le client"
+msgstr ""
+
+#: scripts/histoire.gd:490
+msgid "Dépose le client"
+msgstr ""
+
+#: scripts/histoire.gd:498
+msgid "Course de zem"
+msgstr ""
+
+#: scripts/histoire.gd:503
+msgid "Le client est descendu sans payer."
+msgstr ""
+
+#: scripts/histoire.gd:657
+msgid "%s   (%d m)"
+msgstr ""
+
+#: scripts/histoire.gd:683
+msgid "Plus tard, dans la nuit..."
+msgstr ""
+
+#: scripts/hud_carte.gd:37
+msgid "Aéroport Int. Cardinal Cotodji"
+msgstr ""
+
+#: scripts/hud_carte.gd:38 scripts/lieux.gd:19 scripts/taxi.gd:15
+msgid "Ararat Hypermarket"
+msgstr ""
+
+#: scripts/hud_carte.gd:40 scripts/taxi.gd:16
+msgid "Sweet Dream Beach"
+msgstr ""
+
+#: scripts/hud_carte.gd:41 scripts/taxi.gd:18
+msgid "Haie Verte"
+msgstr ""
+
+#: scripts/hud_carte.gd:42 scripts/taxi.gd:19
+msgid "Cadjéhoué"
+msgstr ""
+
+#: scripts/hud_carte.gd:43
+msgid "Maquis La Plaja"
+msgstr ""
+
+#: scripts/hud_carte.gd:44
+msgid "Plage"
+msgstr ""
+
+#: scripts/hud_carte.gd:461 scripts/hud_carte.gd:753
+msgid "Destination : %s"
+msgstr ""
+
+#: scripts/hud_carte.gd:462 scripts/hud_jeu.gd:165 scripts/lieux.gd:359
+msgid "\n"
+msgstr ""
+
+#: scripts/hud_carte.gd:492
+msgid "%d m"
+msgstr ""
+
+#: scripts/hud_carte.gd:492
+msgid "%.1f km"
+msgstr ""
+
+#: scripts/hud_carte.gd:729 scripts/hud_carte.gd:730 scripts/lieux.gd:19
+msgid "Chez vous"
+msgstr ""
+
+#: scripts/hud_carte.gd:749
+msgid "Clic gauche / Entrée / A : destination     Clic droit / P / X : marqueur     Molette / gâchettes : zoom     Glisser / ZQSD : déplacer     M / Échap : fermer"
+msgstr ""
+
+#: scripts/hud_jeu.gd:144
+msgid "Stick gauche : marcher"
+msgstr ""
+
+#: scripts/hud_jeu.gd:144
+msgid "Stick droit : caméra"
+msgstr ""
+
+#: scripts/hud_jeu.gd:144
+msgid "A (tapoter) : courir"
+msgstr ""
+
+#: scripts/hud_jeu.gd:144
+msgid "X : sauter / escalader"
+msgstr ""
+
+#: scripts/hud_jeu.gd:145
+msgid "R3 : s'accroupir"
+msgstr ""
+
+#: scripts/hud_jeu.gd:145
+msgid "Y : monter dans un véhicule"
+msgstr ""
+
+#: scripts/hud_jeu.gd:145
+msgid "Croix droite : parler / acheter"
+msgstr ""
+
+#: scripts/hud_jeu.gd:145
+msgid "Select : carte   Croix bas : vue"
+msgstr ""
+
+#: scripts/hud_jeu.gd:147
+msgid "RT : accélérer   LT : freiner"
+msgstr ""
+
+#: scripts/hud_jeu.gd:147 scripts/hud_jeu.gd:150
+msgid "Stick gauche : tourner"
+msgstr ""
+
+#: scripts/hud_jeu.gd:147
+msgid "RB : frein arrière"
+msgstr ""
+
+#: scripts/hud_jeu.gd:147
+msgid "L3 : klaxon"
+msgstr ""
+
+#: scripts/hud_jeu.gd:148 scripts/hud_jeu.gd:151
+msgid "Y : descendre"
+msgstr ""
+
+#: scripts/hud_jeu.gd:148
+msgid "Croix droite : chercher un client"
+msgstr ""
+
+#: scripts/hud_jeu.gd:150
+msgid "RT : accélérer   LT : freiner / reculer"
+msgstr ""
+
+#: scripts/hud_jeu.gd:150
+msgid "RB : frein à main"
+msgstr ""
+
+#: scripts/hud_jeu.gd:155
+msgid "Z Q S D : marcher"
+msgstr ""
+
+#: scripts/hud_jeu.gd:155
+msgid "Souris : caméra"
+msgstr ""
+
+#: scripts/hud_jeu.gd:155
+msgid "Maj (tapoter) : courir   Alt : marche lente"
+msgstr ""
+
+#: scripts/hud_jeu.gd:156
+msgid "Espace : sauter / escalader"
+msgstr ""
+
+#: scripts/hud_jeu.gd:156
+msgid "C : s'accroupir"
+msgstr ""
+
+#: scripts/hud_jeu.gd:156
+msgid "E : monter dans un véhicule"
+msgstr ""
+
+#: scripts/hud_jeu.gd:156
+msgid "T : parler / acheter"
+msgstr ""
+
+#: scripts/hud_jeu.gd:157
+msgid "M : carte   V : vue"
+msgstr ""
+
+#: scripts/hud_jeu.gd:159
+msgid "Z : accélérer   S : freiner"
+msgstr ""
+
+#: scripts/hud_jeu.gd:159 scripts/hud_jeu.gd:162
+msgid "Q D : tourner"
+msgstr ""
+
+#: scripts/hud_jeu.gd:159
+msgid "Espace : frein arrière"
+msgstr ""
+
+#: scripts/hud_jeu.gd:159 scripts/hud_jeu.gd:162
+msgid "H : klaxon"
+msgstr ""
+
+#: scripts/hud_jeu.gd:160 scripts/hud_jeu.gd:163
+msgid "E : descendre"
+msgstr ""
+
+#: scripts/hud_jeu.gd:160
+msgid "T : chercher un client (à l'arrêt)"
+msgstr ""
+
+#: scripts/hud_jeu.gd:162
+msgid "Z : accélérer   S : freiner / reculer"
+msgstr ""
+
+#: scripts/hud_jeu.gd:162
+msgid "Espace : frein à main"
+msgstr ""
+
+#: scripts/hud_jeu.gd:164
+msgid "Croix haut"
+msgstr ""
+
+#: scripts/hud_jeu.gd:164
+msgid " : cacher l'aide"
+msgstr ""
+
+#: scripts/lieux.gd:19
+msgid "Aéroport International Cardinal Cotodji"
+msgstr ""
+
+#: scripts/lieux.gd:23
+msgid "Épicerie"
+msgstr ""
+
+#: scripts/lieux.gd:23
+msgid "Boissons"
+msgstr ""
+
+#: scripts/lieux.gd:23
+msgid "Hygiène et beauté"
+msgstr ""
+
+#: scripts/lieux.gd:23
+msgid "Entretien"
+msgstr ""
+
+#: scripts/lieux.gd:24
+msgid "Produits laitiers"
+msgstr ""
+
+#: scripts/lieux.gd:24
+msgid "Conserves"
+msgstr ""
+
+#: scripts/lieux.gd:24
+msgid "Bébé"
+msgstr ""
+
+#: scripts/lieux.gd:24
+msgid "Riz et céréales"
+msgstr ""
+
+#: scripts/lieux.gd:24
+msgid "Huiles"
+msgstr ""
+
+#: scripts/lieux.gd:25
+msgid "Sucre et café"
+msgstr ""
+
+#: scripts/lieux.gd:25
+msgid "Thé et infusions"
+msgstr ""
+
+#: scripts/lieux.gd:25
+msgid "Biscuits"
+msgstr ""
+
+#: scripts/lieux.gd:25
+msgid "Boulangerie"
+msgstr ""
+
+#: scripts/lieux.gd:26
+msgid "Fruits et légumes"
+msgstr ""
+
+#: scripts/lieux.gd:26
+msgid "Gros conditionnement"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "AIR GBÉ"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "ATLANTIQUE EXPRESS"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "SAHEL AIRWAYS"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "GOLFE AVIATION"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "TRANS-OUEST"
+msgstr ""
+
+#: scripts/lieux.gd:27
+msgid "AIR LAGUNE"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Air Gbé 214"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Paris"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Atlantique Express 33"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Abidjan"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Sahel Airways 508"
+msgstr ""
+
+#: scripts/lieux.gd:28
+msgid "Ouagadougou"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Golfe Aviation 72"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Lagos"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Air Gbé 118"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Bruxelles"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Trans-Ouest 401"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Dakar"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Air Lagune 9"
+msgstr ""
+
+#: scripts/lieux.gd:29
+msgid "Lomé"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Atlantique Express 61"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Accra"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Air Gbé 300"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Casablanca"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Sahel Airways 17"
+msgstr ""
+
+#: scripts/lieux.gd:30
+msgid "Douala"
+msgstr ""
+
+#: scripts/lieux.gd:262 scripts/props.gd:29
+msgid "ARARAT HYPERMARKET"
+msgstr ""
+
+#: scripts/lieux.gd:265
+msgid "Tout sous un même toit"
+msgstr ""
+
+#: scripts/lieux.gd:270
+msgid "Caisse %d"
+msgstr ""
+
+#: scripts/lieux.gd:276
+msgid "AÉROPORT INTERNATIONAL CARDINAL COTODJI"
+msgstr ""
+
+#: scripts/lieux.gd:280
+msgid "%s · Comptoir %d"
+msgstr ""
+
+#: scripts/lieux.gd:287
+msgid "EMBARQUEMENT\nPassagers munis d'une carte d'embarquement uniquement"
+msgstr ""
+
+#: scripts/lieux.gd:291
+msgid "CAFÉ DU LITTORAL"
+msgstr ""
+
+#: scripts/lieux.gd:294
+msgid "LIBRAIRIE · PRESSE"
+msgstr ""
+
+#: scripts/lieux.gd:341
+msgid "DÉPARTS"
+msgstr ""
+
+#: scripts/lieux.gd:341
+msgid "Destination"
+msgstr ""
+
+#: scripts/lieux.gd:341
+msgid "Heure"
+msgstr ""
+
+#: scripts/lieux.gd:341
+msgid "Porte"
+msgstr ""
+
+#: scripts/lieux.gd:341
+msgid "État"
+msgstr ""
+
+#: scripts/lieux.gd:344
+msgid "À l'heure"
+msgstr ""
+
+#: scripts/lieux.gd:349
+msgid "Embarquement"
+msgstr ""
+
+#: scripts/lieux.gd:351
+msgid "Retardé"
+msgstr ""
+
+#: scripts/lieux.gd:415
+msgid "E : dormir jusqu'au matin et sauvegarder"
+msgstr ""
+
+#: scripts/lieux.gd:448
+msgid "Une nouvelle journée commence"
+msgstr ""
+
+#: scripts/menus.gd:56
+msgid "v%s"
+msgstr ""
+
+#: scripts/menus.gd:136
+msgid "Gbê Town Bénin · Le Dernier Vol"
+msgstr ""
+
+#: scripts/menus.gd:140
+msgid "Nouvelle partie"
+msgstr ""
+
+#: scripts/menus.gd:141
+msgid "Continuer"
+msgstr ""
+
+#: scripts/menus.gd:145 scripts/menus.gd:163 scripts/menus.gd:237
+msgid "Options"
+msgstr ""
+
+#: scripts/menus.gd:146 scripts/menus.gd:165 scripts/menus.gd:174 scripts/menus.gd:209
+msgid "Crédits"
+msgstr ""
+
+#: scripts/menus.gd:147
+msgid "Quitter"
+msgstr ""
+
+#: scripts/menus.gd:153
+msgid "Pause"
+msgstr ""
+
+#: scripts/menus.gd:154
+msgid "Reprendre"
+msgstr ""
+
+#: scripts/menus.gd:156
+msgid "Sauvegarder"
+msgstr ""
+
+#: scripts/menus.gd:156
+msgid "Sauvegarder (impossible : recherché)"
+msgstr ""
+
+#: scripts/menus.gd:159
+msgid "Charger la dernière sauvegarde"
+msgstr ""
+
+#: scripts/menus.gd:164 scripts/menus.gd:218
+msgid "Commandes"
+msgstr ""
+
+#: scripts/menus.gd:166 scripts/menus.gd:210
+msgid "Quitter vers l'écran titre"
+msgstr ""
+
+#: scripts/menus.gd:187 scripts/menus.gd:223
+msgid "Retour"
+msgstr ""
+
+#: scripts/menus.gd:198
+msgid "À suivre"
+msgstr ""
+
+#: scripts/menus.gd:206
+msgid "Continuer à jouer"
+msgstr ""
+
+#: scripts/menus.gd:208
+msgid "Donner mon avis"
+msgstr ""
+
+#: scripts/menus.gd:239
+msgid "Volume"
+msgstr ""
+
+#: scripts/menus.gd:240
+msgid "Sensibilité de la souris"
+msgstr ""
+
+#: scripts/menus.gd:241
+msgid "Effets de caméra (recentrage, secousses)"
+msgstr ""
+
+#: scripts/menus.gd:242
+msgid "Plein écran"
+msgstr ""
+
+#: scripts/menus.gd:245
+msgid "Qualité graphique"
+msgstr ""
+
+#: scripts/menus.gd:256
+msgid "Appliquer et revenir"
+msgstr ""
+
+#: scripts/mode_photo.gd:27
+msgid "MODE PHOTO   Entrée capture · ZQSD / souris bouger · Espace / Ctrl hauteur · molette zoom · F12 sortir"
+msgstr ""
+
+#: scripts/partie.gd:64
+msgid " F"
+msgstr ""
+
+#: scripts/partie.gd:72
+msgid "+%s : %s"
+msgstr ""
+
+#: scripts/partie.gd:78
+msgid "Pas assez d'argent (%s)"
+msgstr ""
+
+#: scripts/partie.gd:84 scripts/partie.gd:95
+msgid "-%s : %s"
+msgstr ""
+
+#: scripts/partie.gd:200
+msgid "\t"
+msgstr ""
+
+#: scripts/partie.gd:201
+msgid "Partie sauvegardée"
+msgstr ""
+
+#: scripts/partie.gd:240
+msgid "Partie chargée"
+msgstr ""
+
+#: scripts/police.gd:72
+msgid "Quelqu'un a appelé la police. Elle arrive dans environ %d min."
+msgstr ""
+
+#: scripts/police.gd:154
+msgid "Tu as semé la police"
+msgstr ""
+
+#: scripts/police.gd:376
+msgid "Halte ! Police !"
+msgstr ""
+
+#: scripts/police.gd:376
+msgid "Arrêtez-vous !"
+msgstr ""
+
+#: scripts/police.gd:376
+msgid "Ne bougez plus !"
+msgstr ""
+
+#: scripts/police.gd:433
+msgid "Contravention : excès de vitesse"
+msgstr ""
+
+#: scripts/police.gd:435
+msgid "Excès de vitesse !"
+msgstr ""
+
+#: scripts/police.gd:447
+msgid "ARRÊTÉ"
+msgstr ""
+
+#: scripts/police.gd:447
+msgid "Amende : %s"
+msgstr ""
+
+#: scripts/police.gd:451
+msgid "Amende"
+msgstr ""
+
+#: scripts/police.gd:454
+msgid "Commissariat de Gbê Town"
+msgstr ""
+
+#: scripts/police.gd:464
+msgid "ÉVANOUI"
+msgstr ""
+
+#: scripts/police.gd:464
+msgid "Frais de soins : %s"
+msgstr ""
+
+#: scripts/police.gd:468
+msgid "Soins"
+msgstr ""
+
+#: scripts/police.gd:472
+msgid "Réveil à la maison"
+msgstr ""
+
+#: scripts/props.gd:14
+msgid "BOUTIQUE LA GRACE DE DIEU"
+msgstr ""
+
+#: scripts/props.gd:14
+msgid "COIFFURE DIEU EST GRAND"
+msgstr ""
+
+#: scripts/props.gd:14
+msgid "QUINCAILLERIE LE BON BERGER"
+msgstr ""
+
+#: scripts/props.gd:15
+msgid "ATELIER DE COUTURE MAMAN CHERIE"
+msgstr ""
+
+#: scripts/props.gd:15
+msgid "ALIMENTATION GENERALE"
+msgstr ""
+
+#: scripts/props.gd:15
+msgid "SOUDURE ET FERRONNERIE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "PRESSING LA PROPRETE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "MAQUIS CHEZ TANTIE ROSE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "BAR LA DETENTE"
+msgstr ""
+
+#: scripts/props.gd:16
+msgid "ECOLE PRIVEE LES ETOILES"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "CENTRE DE SANTE ESPOIR"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "ELECTRICITE BATIMENT"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "MENUISERIE LE CHARPENTIER"
+msgstr ""
+
+#: scripts/props.gd:17
+msgid "SALON DE BEAUTE GBE"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "DEPOT DE BOISSONS"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "PHOTO STUDIO SOURIRE"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "CYBER CAFE LE NAVIGATEUR"
+msgstr ""
+
+#: scripts/props.gd:18
+msgid "RESTAURANT CHEZ MAMI"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "GARAGE AUTO L'AMITIE"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "IMPRIMERIE LE SCRIBE"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "TAILLEUR LE GRAND BOUBOU"
+msgstr ""
+
+#: scripts/props.gd:19
+msgid "VENTE DE PAGNES"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "AGENCE IMMOBILIERE LE TOIT"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "PHARMACIE DU LITTORAL"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "BOULANGERIE LE BON PAIN"
+msgstr ""
+
+#: scripts/props.gd:20
+msgid "QUINCAILLERIE LA PERSEVERANCE"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "COIFFURE MIXTE LE PRESTIGE"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "CABINET MEDICAL LA GUERISON"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "SECRETARIAT PUBLIC"
+msgstr ""
+
+#: scripts/props.gd:21
+msgid "AUTO-ECOLE LE VOLANT"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "DEFENSE D'URINER ICI"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "CE TERRAIN N'EST PAS A VENDRE"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "A VENDRE"
+msgstr ""
+
+#: scripts/props.gd:23
+msgid "INTERDIT DE DEPOSER LES ORDURES"
+msgstr ""
+
+#: scripts/props.gd:24
+msgid "STATIONNEMENT INTERDIT"
+msgstr ""
+
+#: scripts/props.gd:24
+msgid "A LOUER"
+msgstr ""
+
+#: scripts/props.gd:24
+msgid "DIEU EST FIDELE"
+msgstr ""
+
+#: scripts/props.gd:26
+msgid "GBE COLA"
+msgstr ""
+
+#: scripts/props.gd:26
+msgid "La fraicheur du pays"
+msgstr ""
+
+#: scripts/props.gd:27
+msgid "ZEM : PORTEZ VOTRE CASQUE"
+msgstr ""
+
+#: scripts/props.gd:27
+msgid "Securite routiere - c'est la vie"
+msgstr ""
+
+#: scripts/props.gd:28
+msgid "BANQUE OCEANIQUE"
+msgstr ""
+
+#: scripts/props.gd:28
+msgid "Votre avenir commence ici"
+msgstr ""
+
+#: scripts/props.gd:29
+msgid "Tout sous un meme toit"
+msgstr ""
+
+#: scripts/props.gd:30
+msgid "RADIO LITTORAL 98.6"
+msgstr ""
+
+#: scripts/props.gd:30
+msgid "La voix de Gbê Town"
+msgstr ""
+
+#: scripts/props.gd:31
+msgid "SAVON KOTO"
+msgstr ""
+
+#: scripts/props.gd:31
+msgid "Propre comme jamais"
+msgstr ""
+
+#: scripts/props.gd:32
+msgid "CIMENT SOLIDE"
+msgstr ""
+
+#: scripts/props.gd:32
+msgid "Batissez pour vos enfants"
+msgstr ""
+
+#: scripts/props.gd:483
+msgid "TRANSFERT D'ARGENT - CREDIT"
+msgstr ""
+
+#: scripts/taxi.gd:13
+msgid "Maison"
+msgstr ""
+
+#: scripts/taxi.gd:14
+msgid "Aéroport (aérogare)"
+msgstr ""
+
+#: scripts/taxi.gd:105
+msgid "T : prendre un zem (déplacement rapide)"
+msgstr ""
+
+#: scripts/taxi.gd:121
+msgid "Aucun zem ne veut te prendre : la police te cherche"
+msgstr ""
+
+#: scripts/taxi.gd:124
+msgid "Zem vers %s"
+msgstr ""
+
+#: scripts/taxi.gd:154
+msgid "Zem : où on va ?   (%s en poche)"
+msgstr ""
+
+#: scripts/taxi.gd:160
+msgid "%d.  %s   %s"
+msgstr ""
+
+#: scripts/taxi.gd:164
+msgid "1-%d : partir    T : fermer"
+msgstr ""
+
+#: scripts/traffic.gd:190
+msgid "GT %04d"
+msgstr ""
+
