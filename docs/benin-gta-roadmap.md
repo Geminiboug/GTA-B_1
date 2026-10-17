@@ -193,11 +193,11 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Jalon : deux joueurs n'ont pas le meme Sena ni le meme zem
 
 ### Phase 17 : Territoires des zems (v0.2)
-- [ ] Carte des stationnements de zems (carrefours, marches, aeroport) avec un proprietaire par stationnement
-- [ ] Respect du quartier : gagne par les courses, les missions, les services rendus ; perdu par les fautes
-- [ ] Bande de Sena : recruter des zemidjans (avec Pipo), les faire suivre, les equiper
-- [ ] Syndicats rivaux fictifs qui disputent les stationnements : affrontements, courses, negociations
-- [ ] Revenus passifs des stationnements tenus, attaques a defendre
+- [x] Carte des stationnements de zems (6 : aeroport, carrefours, marche, Route des Filets) avec un proprietaire par stationnement, pancarte et carre de couleur sur la mini-carte ; scripts/territoires.gd, test_territoires
+- [x] Respect du quartier : gagne par les courses, les missions, les stationnements pris ; perdu par les amendes (scripts/stats.gd)
+- [x] Bande de Sena : recruter jusqu'a 3 zemidjans (B, a un stationnement tenu, selon le respect), ils suivent (G : suivre / attendre) et se battent ; les equiper reste a faire
+- [x] Syndicats rivaux fictifs (Syndicat des Zems Unis, Lions du Littoral) : defi (trois zemidjans a mettre a terre en 90 s), negociation payante avec assez de respect ; courses entre zems a faire
+- [x] Revenus passifs (1 500 F par stationnement et par heure de jeu), attaques a defendre en 3 minutes
 - [ ] Jalon : prendre et tenir 3 stationnements change la vie du quartier (plus de zems de ta couleur, salutations)
 
 ### Phase 17 bis : Chargement par zones (v0.2)

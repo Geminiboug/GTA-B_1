@@ -42,7 +42,8 @@ func _physics_process(_d: float) -> bool:
 	if frame == 40:
 		for w in te._defi["rivaux"]:
 			w["pv"] = 0.0
-			w["state"] = "down"
+			peds._knock_down(w, Vector2.ZERO, "flee")
+			w["lie"] = 5.0
 	if frame == 45:
 		_check(te.proprio("cadjehoun") == "joueur" and te._defi.is_empty(), "defi gagne : Carrefour de Cadjehoue a toi")
 		var a0: int = P.argent
