@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3]
+[gd_scene load_steps=43 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -38,6 +38,7 @@
 [ext_resource type="Script" path="res://scripts/tactile.gd" id="56_tact"]
 [ext_resource type="Script" path="res://scripts/cinematique.gd" id="57_cine"]
 [ext_resource type="Script" path="res://scripts/activites.gd" id="58_activ"]
+[ext_resource type="Script" path="res://scripts/succes.gd" id="59_succes"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -189,3 +190,6 @@ script = ExtResource("57_cine")
 
 [node name="Activites" type="Node3D" parent="."]
 script = ExtResource("58_activ")
+
+[node name="Succes" type="Node" parent="."]
+script = ExtResource("59_succes")

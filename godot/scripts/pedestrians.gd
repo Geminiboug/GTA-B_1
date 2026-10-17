@@ -1144,7 +1144,7 @@ func tir(origin: Vector3, dir: Vector3, degats: float, portee: float) -> Vector3
 			bt = t
 			best = w
 	var at := origin + dir * minf(bt, portee)
-	_panique(Vector2(at.x, at.z), 45.0)
+	_panique(Vector2(origin.x, origin.z), 45.0)       # le bruit part du tireur
 	if best.is_empty():
 		return Vector3.INF
 	best["pv"] = float(best.get("pv", 100.0)) - degats

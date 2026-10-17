@@ -256,8 +256,8 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 
 ### Phase 24 : Finition et sortie v1.0
 - [ ] Traduction anglaise (a partir du fichier de traduction de la Phase 13), puis fon pour les menus et une partie des dialogues
-- [ ] Accessibilite : taille du texte, aide a la visee, daltonisme, reaffectation complete des touches
-- [ ] Succes, mode photo complet, sauvegardes multiples
+- [ ] Accessibilite : taille de l'interface (0,8 a 1,6), aide a la visee a la souris (et verrouillage a la manette), reaffectation des touches du clavier, sous-titres reglables : faits (test_finition) ; daltonisme a faire
+- [ ] Succes (13, gardes pour tout le jeu, page dans le menu) et 3 emplacements de sauvegarde (resume chapitre / missions / argent / date) : faits ; mode photo complet a faire
 - [ ] Optimisation finale sur 3 configurations (PC modeste, moyen, Olympe)
 - [ ] Bêta publique, correction des retours, version 1.0
 - [ ] Trailer de lancement, page de vente, presse et createurs de contenu

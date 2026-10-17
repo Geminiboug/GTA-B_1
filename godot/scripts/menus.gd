@@ -143,8 +143,9 @@ func _show_title() -> void:
 	var first := _button("Nouvelle partie", _nouvelle_partie)
 	_button("Continuer", func() -> void:
 		_close()
-		Partie.charger(get_parent())
+		Partie.charger_emplacement(get_parent(), Partie.dernier_emplacement())
 		get_tree().call_group("histoire", "reprendre"), Partie.existe_sauvegarde())
+	_button("Charger une partie", func() -> void: _show_emplacements(false), Partie.existe_sauvegarde())
 	_button("Options", _show_options)
 	_button("Crédits", _show_credits)
 	_button("Quitter", func() -> void: get_tree().quit())
@@ -156,15 +157,11 @@ func _show_pause() -> void:
 	_clear("Pause")
 	var first := _button("Reprendre", _close)
 	var can_save: bool = Partie.recherche == 0
-	_button("Sauvegarder" if can_save else "Sauvegarder (impossible : recherché)", func() -> void:
-		Partie.sauver(get_parent())
-		_close(), can_save)
-	_button("Charger la dernière sauvegarde", func() -> void:
-		_close()
-		Partie.charger(get_parent())
-		get_tree().call_group("histoire", "reprendre"), Partie.existe_sauvegarde())
+	_button("Sauvegarder" if can_save else "Sauvegarder (impossible : recherché)", func() -> void: _show_emplacements(true), can_save)
+	_button("Charger une partie", func() -> void: _show_emplacements(false), Partie.existe_sauvegarde())
 	_button("Options", _show_options)
 	_button("Statistiques", _show_stats)
+	_button("Succès", _show_succes)
 	_button("Commandes", _show_controls)
 	_button("Crédits", _show_credits)
 	_button("Quitter vers l'écran titre", func() -> void:
@@ -249,6 +246,9 @@ func _show_options() -> void:
 	_check("Plein écran", o["plein_ecran"], func(v: bool) -> void: o["plein_ecran"] = v)
 	_check("Sous-titres", o.get("sous_titres", true), func(v: bool) -> void: o["sous_titres"] = v)
 	_slider("Taille des sous-titres", o.get("taille_sous_titres", 26), 18, 44, func(v: float) -> void: o["taille_sous_titres"] = int(v))
+	_slider("Taille de l'interface", o.get("taille_interface", 1.0), 0.8, 1.6, func(v: float) -> void: o["taille_interface"] = v)
+	_check("Aide à la visée (souris)", o.get("aide_visee", true), func(v: bool) -> void: o["aide_visee"] = v)
+	_button("Touches du clavier", _show_touches)
 	_check("Violence réduite (armes moins puissantes)", o.get("violence_reduite", false), func(v: bool) -> void: o["violence_reduite"] = v)
 	var row := HBoxContainer.new()
 	var l := Label.new()
@@ -293,6 +293,93 @@ func _check(text: String, value: bool, cb: Callable) -> void:
 	c.add_theme_font_size_override("font_size", 20)
 	c.toggled.connect(cb)
 	_box.add_child(c)
+
+
+var _attente_touche := ""
+
+
+func _show_touches() -> void:
+	## Reaffectation des touches : cliquer sur une action puis appuyer sur la nouvelle touche (Echap annule).
+	_page = "touches"
+	_clear(tr("Touches du clavier"))
+	for e in Partie.TOUCHES_REGLABLES:
+		var nom := ""
+		for ev in InputMap.action_get_events(e[0]) if InputMap.has_action(e[0]) else []:
+			if ev is InputEventKey:
+				nom = OS.get_keycode_string((ev as InputEventKey).physical_keycode if (ev as InputEventKey).physical_keycode != 0 else (ev as InputEventKey).keycode)
+				break
+		var action: String = e[0]
+		_button("%s : %s" % [tr(e[1]), "…" if _attente_touche == action else nom], func() -> void:
+			_attente_touche = action
+			_show_touches())
+	_button("Touches par défaut", func() -> void:
+		Partie.options["touches"] = {}
+		Partie.sauver_options()
+		for e in Partie.TOUCHES_REGLABLES:
+			var defaut = ProjectSettings.get_setting("input/" + String(e[0]))
+			if defaut is Dictionary and InputMap.has_action(e[0]):
+				InputMap.action_erase_events(e[0])
+				for ev in defaut["events"]:
+					InputMap.action_add_event(e[0], ev)
+		_show_touches())
+	_button("Revenir", _show_options)
+
+
+func _input(event: InputEvent) -> void:
+	if _attente_touche == "" or not (event is InputEventKey) or not event.pressed:
+		return
+	get_viewport().set_input_as_handled()
+	var k := event as InputEventKey
+	if k.keycode != KEY_ESCAPE:
+		var t: Dictionary = Partie.options.get("touches", {})
+		t[_attente_touche] = k.physical_keycode if k.physical_keycode != 0 else k.keycode
+		Partie.options["touches"] = t
+		Partie.sauver_options()
+	_attente_touche = ""
+	_show_touches()
+
+
+func _show_succes() -> void:
+	_page = "succes"
+	var sc := get_parent().get_node_or_null("Succes") if get_parent() else null
+	_clear(tr("Succès"))
+	if sc:
+		var n := 0
+		for e in sc.LISTE:
+			var l := Label.new()
+			var ok: bool = sc.obtenus.has(e[0])
+			n += 1 if ok else 0
+			l.text = ("✓  " if ok else "·  ") + tr(e[1]) + "  —  " + tr(e[2])
+			l.add_theme_font_size_override("font_size", 18)
+			l.add_theme_color_override("font_color", Color(1, 0.85, 0.3) if ok else Color(0.7, 0.7, 0.7))
+			_box.add_child(l)
+		var tot := Label.new()
+		tot.text = tr("%d / %d succès") % [n, sc.LISTE.size()]
+		tot.add_theme_font_size_override("font_size", 20)
+		_box.add_child(tot)
+	_button("Revenir", _back).grab_focus.call_deferred()
+
+
+func _show_emplacements(sauver: bool) -> void:
+	## Trois emplacements de sauvegarde, avec chapitre, missions, argent et date.
+	_page = "emplacements"
+	_clear(tr("Sauvegarder") if sauver else tr("Charger une partie"))
+	var first: Button = null
+	for i in range(1, Partie.EMPLACEMENTS + 1):
+		var occupe := FileAccess.file_exists(Partie.chemin_emplacement(i))
+		var b := _button("%d.  %s" % [i, Partie.resume_emplacement(i)], func() -> void:
+			if sauver:
+				Partie.sauver_emplacement(get_parent(), i)
+				_close()
+			else:
+				_close()
+				Partie.charger_emplacement(get_parent(), i)
+				get_tree().call_group("histoire", "reprendre"), sauver or occupe)
+		if first == null and not b.disabled:
+			first = b
+	_button("Revenir", _back)
+	if first:
+		first.grab_focus.call_deferred()
 
 
 func _show_stats() -> void:

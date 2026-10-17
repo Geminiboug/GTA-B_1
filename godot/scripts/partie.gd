@@ -35,7 +35,12 @@ var perso := {}                # progression du personnage (scripts/stats.gd) : 
 
 var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camera": true, "qualite": 2, "plein_ecran": false,
 	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26, "vol_vehicules": 1.0, "vol_ambiance": 1.0,
-	"vol_effets": 1.0}
+	"vol_effets": 1.0, "taille_interface": 1.0, "aide_visee": true, "touches": {}}
+# actions reaffectables au clavier (menu Options > Touches)
+const TOUCHES_REGLABLES := [["move_forward", "Avancer"], ["move_back", "Reculer"], ["move_left", "Gauche"],
+	["move_right", "Droite"], ["jump", "Sauter"], ["sprint", "Courir"], ["crouch", "S'accroupir"], ["interact", "Monter / descendre"],
+	["parler", "Parler / acheter"], ["attaque", "Frapper / tirer"], ["map", "Carte"], ["horn", "Klaxon"],
+	["handbrake", "Frein à main"], ["accelerate", "Accélérer"], ["brake", "Freiner"]]
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
 
 
@@ -217,7 +222,61 @@ static func version_jeu() -> String:
 
 
 func existe_sauvegarde() -> bool:
-	return FileAccess.file_exists(save_path)
+	return FileAccess.file_exists(save_path) or not emplacements_occupes().is_empty()
+
+
+# ------------------------------------------------------------------ emplacements (phase 24) : 3 sauvegardes
+const EMPLACEMENTS := 3
+
+
+func chemin_emplacement(i: int) -> String:
+	## Emplacement 1 = l'ancien fichier (les sauvegardes existantes restent lisibles) ; 2 et 3 a cote.
+	var base := save_path.get_basename()          # "user://sauvegarde" (ou un fichier de test)
+	if base.length() > 2 and base[-2] == "_" and base[-1].is_valid_int():
+		base = base.left(-2)                       # emplacement en cours : on retrouve la base
+	return base + ".json" if i == 1 else base + "_%d.json" % i
+
+
+func emplacements_occupes() -> Array:
+	var out: Array = []
+	for i in range(1, EMPLACEMENTS + 1):
+		if FileAccess.file_exists(chemin_emplacement(i)):
+			out.append(i)
+	return out
+
+
+func resume_emplacement(i: int) -> String:
+	## "Chapitre - argent - date" pour les menus, ou "Vide".
+	var p := chemin_emplacement(i)
+	if not FileAccess.file_exists(p):
+		return tr("Vide")
+	var raw = JSON.parse_string(FileAccess.get_file_as_string(p))
+	if typeof(raw) != TYPE_DICTIONARY:
+		return tr("Illisible")
+	return "%s · %d missions · %s · %s" % [String(raw.get("chapitre", "prologue")).capitalize(), (raw.get("missions", []) as Array).size(),
+		fcfa(int(raw.get("argent", 0))), String(raw.get("date", "")).replace("T", " ").left(16)]
+
+
+func dernier_emplacement() -> int:
+	var best := 1
+	var bt := -1
+	for i in emplacements_occupes():
+		var t := FileAccess.get_modified_time(chemin_emplacement(i))
+		if t > bt:
+			bt = t
+			best = i
+	return best
+
+
+func sauver_emplacement(scene: Node, i: int) -> bool:
+	## L'emplacement choisi devient l'emplacement en cours (le lit et les proprietes y sauvegardent ensuite).
+	save_path = chemin_emplacement(i)
+	return sauver(scene)
+
+
+func charger_emplacement(scene: Node, i: int) -> bool:
+	save_path = chemin_emplacement(i)
+	return charger(scene)
 
 
 static func convertir_sauvegarde(d: Dictionary) -> Dictionary:
@@ -345,6 +404,18 @@ func appliquer_options() -> void:
 			AudioServer.set_bus_volume_db(i, linear_to_db(maxf(float(options.get(e[1], 1.0)), 0.0001)))
 	if not Engine.is_editor_hint() and DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if options["plein_ecran"] else DisplayServer.WINDOW_MODE_WINDOWED)
+	# accessibilite : taille de toute l'interface
+	get_tree().root.content_scale_factor = clampf(float(options.get("taille_interface", 1.0)), 0.8, 1.6)
+	# touches reaffectees (clavier seulement ; la manette garde ses boutons)
+	var t: Dictionary = options.get("touches", {})
+	for a in t:
+		if InputMap.has_action(a):
+			for ev in InputMap.action_get_events(a):
+				if ev is InputEventKey:
+					InputMap.action_erase_event(a, ev)
+			var k := InputEventKey.new()
+			k.physical_keycode = int(t[a])
+			InputMap.action_add_event(a, k)
 	var scene := get_tree().current_scene
 	if scene == null:
 		return
@@ -355,4 +426,5 @@ func appliquer_options() -> void:
 	var armes := scene.get_node_or_null("Armes")
 	if armes:
 		armes.set("violence_reduite", bool(options.get("violence_reduite", false)))
+		armes.set("aide_visee", bool(options.get("aide_visee", true)))
 	Qualite.appliquer(scene, int(options["qualite"]))

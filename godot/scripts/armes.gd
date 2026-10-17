@@ -35,7 +35,8 @@ const CLIPS_BLANCHE := ["Sword_Regular_A", "Sword_Regular_B", "Sword_Regular_C"]
 var arme := ""                    # arme en main ("" : mains nues)
 var chargeur := {}                # arme -> balles dans le chargeur
 var violence_reduite := false
-var precision := 1.0              # competence de tir (scripts/stats.gd) : multiplie la dispersion     # option : les passants touches tombent et s'enfuient, rien de plus
+var precision := 1.0
+var aide_visee := true            # accessibilite : a la souris aussi, la visee se pose sur un passant tout pres du reticule              # competence de tir (scripts/stats.gd) : multiplie la dispersion     # option : les passants touches tombent et s'enfuient, rien de plus
 var cible: Dictionary = {}        # passant verrouille (manette)
 var _player: CharacterBody3D
 var _peds: Node
@@ -143,6 +144,8 @@ func _physics_process(delta: float) -> void:
 		an.set("visee_pitch", clampf(cam_pivot.rotation.x / 0.6, -1.0, 1.0) if cam_pivot else 0.0)   # camera vers le haut : rotation.x > 0
 	if vise and _manette:
 		_verrou()
+	elif vise and aide_visee:
+		_aimantation()
 	elif not vise:
 		cible = {}
 	if not libre:
@@ -245,6 +248,33 @@ func _recharger() -> void:
 	if an and an.has_method("play_clips"):
 		an.play_clips([["Pistol_Reload", 0.0]], true)
 	_recharger_silencieux()
+
+
+func _aimantation() -> void:
+	## Aide a la visee (souris) : le passant le plus proche a moins de 3 degres du reticule devient la cible.
+	if _peds == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var centre := get_viewport().get_visible_rect().size * 0.5
+	var o := cam.project_ray_origin(centre)
+	var dv := cam.project_ray_normal(centre)
+	# cible deja posee et encore pres du reticule (moins de 8 degres) : on la garde
+	if not cible.is_empty() and cible.get("state", "") != "down" and dv.angle_to((cible["pos"] as Vector3) + Vector3(0, 1.1, 0) - o) < 0.14:
+		return
+	cible = {}
+	var best := 0.052
+	for w in _peds.get("_walkers"):
+		if w.get("state", "") == "down":
+			continue
+		var rel: Vector3 = (w["pos"] as Vector3) + Vector3(0, 1.1, 0) - o
+		if rel.length() > verrou_portee:
+			continue
+		var a := dv.angle_to(rel)
+		if a < best:
+			best = a
+			cible = w
 
 
 func _verrou() -> void:
