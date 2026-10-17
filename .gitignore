@@ -25,3 +25,6 @@ builds/
 
 # Packs telecharges (lourds) : regenerer les modeles a partir du zip dans refs/ (voir docs/PIPELINE.md)
 refs/ubc/
+
+# Captures Mixamo brutes : usage dans le jeu autorise, pas leur redistribution (seul le GLB du jeu est versionne)
+refs/mixamo/
