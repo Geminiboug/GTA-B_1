@@ -87,9 +87,55 @@ func _ready() -> void:
 	set_genre(genre)        # modele construit par PnjUtil.make (squelette standard tourne vers -Z)
 	# on heurte aussi les passants (couche 5), pas seulement le decor
 	collision_mask = 1 | (1 << 4)
+	# garde (phase 14) : clic droit, manette LB
+	if not InputMap.has_action("garde"):
+		InputMap.add_action("garde")
+		var mb := InputEventMouseButton.new()
+		mb.button_index = MOUSE_BUTTON_RIGHT
+		InputMap.action_add_event("garde", mb)
+		var jb := InputEventJoypadButton.new()
+		jb.button_index = JOY_BUTTON_LEFT_SHOULDER
+		InputMap.action_add_event("garde", jb)
 
 
 var _punch_cd := 0.0
+# ---------- Corps a corps (phase 14) : enchainement direct / croise / crochet, garde, roulade ----------
+const COUPS := ["Punch_Jab", "Punch_Cross", "Punch_Cross"]   # 3e coup : croise appuye qui fait tomber (Melee_Hook part au sol)
+@export var combo_fenetre := 0.9        # s pour enchainer le coup suivant
+@export var roulade_vitesse := 5.2      # m/s pendant la roulade (esquive)
+@export var roulade_duree := 0.6
+@export var garde_reduction := 0.85     # part des degats paree en garde, face a l'adversaire
+var combo := 0
+var garde := false
+var _combo_t := 0.0
+var _roll_t := 0.0
+var _roll_dir := Vector2.ZERO
+
+
+func _combat_ok() -> bool:
+	## Souris capturee (pas un clic dans un menu) ; toujours vrai sans fenetre (tests).
+	return Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or DisplayServer.get_name() == "headless"
+
+
+func hurt(dmg: float, from: Vector3) -> void:
+	## Coup recu d'un passant (scripts/pedestrians.gd) : pare en garde s'il vient de face, esquive en roulade.
+	if _roll_t > 0.0 or vehicle != null:
+		return
+	var to := from - global_position
+	to.y = 0.0
+	var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
+	if garde and to.length() > 0.01 and to.normalized().dot(fwd) > 0.3:
+		Partie.blesser(dmg * (1.0 - garde_reduction))
+		shake(0.15)
+		if anim and anim.has_method("play_clips"):
+			anim.play_clips([["Shield_OneShot", 0.0]], true)
+		return
+	Partie.blesser(dmg)
+	shake(0.5)
+	if to.length() > 0.01:
+		velocity += -to.normalized() * 1.5
+	if anim and anim.has_method("play_clips"):
+		anim.play_clips([["Hit_Head" if randf() < 0.5 else "Hit_Chest", 0.0]], true)
 
 
 # ---------- Apparence : homme ou femme (F4 a pied pour changer) ----------
@@ -429,16 +475,29 @@ func _physics_process(delta: float) -> void:
 		_climb_step(delta)
 		return
 	# un geste (achat, conversation...) s'arrete des qu'on repart
-	if anim and anim.has_method("stop_clips") and anim.playing_clip() and Input.get_vector("move_left", "move_right", "move_forward", "move_back").length() > 0.2:
+	if anim and anim.has_method("stop_clips") and anim.playing_clip() and _combo_t <= 0.0 and not garde and _roll_t <= 0.0 and Input.get_vector("move_left", "move_right", "move_forward", "move_back").length() > 0.2:
 		anim.stop_clips()
 	if Input.is_action_just_pressed("crouch") and is_on_floor():
 		_set_crouch(not crouched)
 	_cam_offset.y = move_toward(_cam_offset.y, 1.15 if crouched else 1.6, 2.0 * delta)
 	# coup de poing / bousculade (F, clic gauche, manette B) : les passants reagissent (scripts/pedestrians.gd)
 	_punch_cd = maxf(0.0, _punch_cd - delta)
-	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_punch_cd = 0.6
-		if anim and anim.has_method("punch"):
+	_combo_t = maxf(0.0, _combo_t - delta)
+	_roll_t = maxf(0.0, _roll_t - delta)
+	var was_guard := garde
+	garde = Input.is_action_pressed("garde") and is_on_floor() and _roll_t <= 0.0 and _combat_ok()
+	if garde and anim and anim.has_method("play_clips") and (not was_guard or not anim.playing_clip()):
+		anim.play_clips([["Idle_Shield_Loop", 0.3]], true)
+	elif was_guard and not garde and anim and anim.has_method("stop_clips"):
+		anim.stop_clips()
+	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and not garde and _roll_t <= 0.0 and _combat_ok():
+		_punch_cd = 0.38
+		combo = (combo + 1) % COUPS.size() if _combo_t > 0.0 else 0
+		_combo_t = combo_fenetre
+		var coup := combo
+		if anim and anim.has_method("play_clips"):
+			anim.play_clips([[COUPS[coup], 0.0]], true)
+		elif anim and anim.has_method("punch"):
 			anim.punch()
 		# passants de la rue et clients des interieurs (magasin, aerogare : scripts/pnj_interieur.gd)
 		var targets := get_tree().get_nodes_in_group("pnj_interieur")
@@ -446,10 +505,10 @@ func _physics_process(delta: float) -> void:
 		if peds:
 			targets.append(peds)
 		var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
-		get_tree().create_timer(0.18).timeout.connect(func() -> void:
+		get_tree().create_timer(0.18 + 0.06 * coup).timeout.connect(func() -> void:
 			for tg in targets:
 				if is_instance_valid(tg):
-					tg.player_attack(global_position, fwd))
+					tg.player_attack(global_position, fwd, coup))
 	# filet de securite : si on passe sous la carte, retour au dernier endroit sur
 	if global_position.y < -20.0:
 		global_position = _last_safe + Vector3.UP * 1.0
@@ -461,6 +520,15 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 		_fall_speed = max(_fall_speed, -velocity.y)
+	elif garde and Input.is_action_just_pressed("jump"):
+		# esquive : roulade dans la direction voulue (sinon en arriere), invulnerable pendant la roulade
+		var iv := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		var rd := Basis(Vector3.UP, cam_pivot.rotation.y) * Vector3(iv.x, 0, iv.y)
+		_roll_dir = Vector2(rd.x, rd.z).normalized() if rd.length() > 0.2 else -Vector2(-sin(_facing), -cos(_facing))
+		_roll_t = roulade_duree
+		garde = false
+		if anim and anim.has_method("play_clips"):
+			anim.play_clips([["Roll", 0.0]], true)
 	elif Input.is_action_just_pressed("jump"):
 		# saut contextuel facon GTA V : accroupi on se releve, devant un rebord on l'escalade, sinon on saute
 		if crouched:
@@ -494,6 +562,8 @@ func _physics_process(delta: float) -> void:
 		target_speed = walk_speed
 	if crouched:
 		target_speed = crouch_speed
+	if garde:
+		target_speed = minf(target_speed, walk_speed)   # en garde on se deplace au pas
 	# stick : l'inclinaison regle l'allure (marche lente -> marche -> trot)
 	var tilt := minf(dir.length(), 1.0)
 	if tilt < 0.98 and sprint_level <= 0.0:
@@ -524,6 +594,9 @@ func _physics_process(delta: float) -> void:
 		var air_goal := Vector2(dir.x, dir.z) * target_speed
 		hvel = hvel.move_toward(air_goal, air_accel * delta) if dir.length() > 0.01 else hvel
 
+	if _roll_t > 0.0:
+		hvel = _roll_dir * roulade_vitesse * (0.4 + 0.6 * _roll_t / roulade_duree)
+		_facing = atan2(-_roll_dir.x, -_roll_dir.y)
 	velocity.x = hvel.x
 	velocity.z = hvel.y
 	body.rotation.y = _facing

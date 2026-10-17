@@ -88,6 +88,10 @@ func _new_walker(genre: String, at := Vector2.INF, variant := "", look := {}) ->
 		w["speed"] *= 0.75                      # personne agee : pas plus lent et dos voute
 		ch.set("posture", 0.16)
 	w["rain_shy"] = _rng.randf() < 0.7          # se protege de la pluie
+	# caractere face a une agression (phase 14) : se bat, fuit, ou appelle la police au telephone
+	var c := _rng.randf()
+	w["caractere"] = "bagarreur" if c < 0.35 else ("telephone" if c < 0.55 else "peureux")
+	w["pv"] = 100.0
 	if at != Vector2.INF:
 		w["pos"] = Vector3(at.x, GROUND_Y, at.y)
 		_resnap(w)
@@ -769,6 +773,55 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 					"flee":
 						_speak(w, "fuite", true)
 						w["flee_from"] = p2
+					"fight":
+						_speak(w, "bagarre", true)
+					"phone":
+						w["flee_from"] = p2
+		"fight":
+			# il se met en garde face au joueur et rend les coups (Punch_Jab / Punch_Cross)
+			var d := p2 - me2
+			face = d
+			if (_player and _player.get("vehicle") != null) or d.length() > 14.0 or t > 30.0:
+				_set_state(w, "angry")
+			elif d.length() > 1.05:
+				speed = 4.0
+				me2 = _step_towards(me2, d.normalized(), speed * delta)
+			else:
+				w["punch_cd"] = w.get("punch_cd", 0.5) - delta
+				if w["punch_cd"] <= 0.0:
+					w["punch_cd"] = _rng.randf_range(0.9, 1.6)
+					if ch.has_method("play_clips"):
+						ch.play_clips([[["Punch_Jab", "Punch_Cross"][_rng.randi() % 2], 0.0]], true)
+					w["swing"] = 0.3
+			if w.has("swing"):
+				w["swing"] -= delta
+				if w["swing"] <= 0.0:
+					w.erase("swing")
+					var to_p := p2 - me2
+					var fwd := Vector2(-sin(w["yaw"]), -cos(w["yaw"]))
+					if to_p.length() < 1.5 and to_p.normalized().dot(fwd) > 0.3 and _player and _player.has_method("hurt"):
+						_player.hurt(_rng.randf_range(6.0, 11.0), me)
+			if t > 1.5 and w["talk_cd"] <= 0.0 and _rng.randf() < 0.01:
+				_speak(w, "bagarre")
+		"phone":
+			# il s'eloigne, sort son telephone et appelle la police (Idle_TalkingPhone_Loop)
+			var from: Vector2 = w.get("flee_from", p2)
+			var d := me2 - from
+			if t < 2.5:
+				speed = 3.6
+				face = d
+				me2 = _step_towards(me2, d.normalized(), speed * delta)
+			else:
+				face = -d
+				if not w.get("called", false):
+					w["called"] = true
+					if ch.has_method("play_clips"):
+						ch.play_clips([["Idle_TalkingPhone_Loop", 5.5]], true)
+					_speak(w, "appel_police", true)
+					get_tree().call_group("police", "crime", "agression", me)
+				if t > 9.0:
+					w.erase("called")
+					_set_state(w, "resume")
 		"stagger":
 			var push: Vector2 = w["push"]
 			me2 += push * delta * maxf(0.0, 1.0 - t / 0.5)
@@ -1021,33 +1074,49 @@ func _incident(at: Vector2, line: String, radius: float) -> void:
 			_set_state(w, "flee")
 
 
-func player_attack(origin: Vector3, dir: Vector3) -> bool:
-	## Coup de poing / bousculade du joueur (touche F, clic gauche, manette B). Renvoie vrai si quelqu'un est touche.
+func player_attack(origin: Vector3, dir: Vector3, coup := 0) -> bool:
+	## Coup du joueur (touche F, clic gauche, manette B) ; coup 0 direct, 1 croise, 2 crochet (scripts/player.gd).
+	## Renvoie vrai si quelqu'un est touche. Chaque passant a des points de vie et un caractere : le bagarreur se
+	## met en garde et rend les coups, le peureux fuit, un autre appelle la police au telephone. Un passant a terre
+	## peut encore etre frappe ; a zero point de vie il reste K.-O. un moment, puis se releve et s'enfuit.
 	var best: Dictionary = {}
-	var bd := 1.5
+	var bd := 1.6
 	for w in _walkers:
-		if w["state"] == "down":
-			continue
 		var rel: Vector3 = w["pos"] - origin
 		rel.y = 0.0
-		var d := rel.length()
-		if d < bd and rel.normalized().dot(dir) > 0.4:
-			bd = d
+		var dd := rel.length()
+		if dd < bd and rel.normalized().dot(dir) > 0.4:
+			bd = dd
 			best = w
 	if best.is_empty():
 		return false
+	var dmg: float = [25.0, 30.0, 50.0][clampi(coup, 0, 2)]
+	best["pv"] = float(best.get("pv", 100.0)) - dmg
 	var push := Vector2(dir.x, dir.z) * 3.5
-	if _rng.randf() < 0.6:
-		_knock_down(best, push, "chase" if _rng.randf() < 0.4 else "flee")
+	var car: String = best.get("caractere", "peureux")
+	var after := "fight" if car == "bagarreur" else ("phone" if car == "telephone" else "flee")
+	best["line_after"] = "frappe"
+	if best["state"] == "down":
+		# coup au sol : il reste a terre plus longtemps
+		best["lie"] = float(best.get("lie", 1.0)) + 1.0
+		_speak(best, "ko")
+	elif best["pv"] <= 0.0:
+		_knock_down(best, push * 1.3, "flee")
+		best["lie"] = _rng.randf_range(4.0, 6.0)
+		_speak(best, "ko", true)
+	elif coup >= 2 or (best["state"] != "fight" and _rng.randf() < 0.35):
+		_knock_down(best, push, after)
+		_speak(best, "frappe", true)
 	else:
+		var was_fighting: bool = best["state"] == "fight"
 		_set_state(best, "stagger")
 		if (best["node"] as Node).has_method("play_clips"):
-			best["node"].play_clips([["Hit_Chest", 0.0]])
+			best["node"].play_clips([["Hit_Head" if coup == 1 else "Hit_Chest", 0.0]])
 		best["push"] = push * 0.6
-		best["after"] = "chase" if _rng.randf() < 0.5 else "angry"
-	best["line_after"] = "frappe"
+		best["after"] = after
+		if not was_fighting:
+			_speak(best, "frappe", true)
 	get_tree().call_group("police", "crime", "agression", best["pos"])
-	_speak(best, "frappe", true)
 	var me: Vector3 = best["pos"]
 	_incident(Vector2(me.x, me.z), "temoin_bagarre", 22.0)
 	return true

@@ -20,6 +20,8 @@ signal rider_changed(has_rider: bool)
 @export var wheel_radius := 0.30
 
 var has_rider := false
+var ai := false                  # pilote automatique (motos de police, scripts/police.gd)
+var ai_input := Vector3.ZERO     # (gaz, frein, direction) comme voiture.gd
 var speed := 0.0          # vitesse longitudinale (m/s, negative = marche arriere)
 var throttle := 0.0       # 0..1, lu par le son
 var _steer := 0.0
@@ -62,6 +64,10 @@ func _physics_process(delta: float) -> void:
 		rear_brake = Input.is_action_pressed("handbrake")
 		if Input.is_action_just_pressed("horn") and audio:
 			audio.horn()
+	elif ai:
+		accel_in = ai_input.x
+		brake_in = ai_input.y
+		steer_in = ai_input.z
 
 	# --- Longitudinal ---
 	throttle = move_toward(throttle, accel_in, delta * 4.0)

@@ -28,6 +28,9 @@ const LIGNES := {
 	"fuite": ["Ahi ! Courez !", "Eh Dieu !", "Au secours !"],
 	"vigile": ["Eh ! On ne se bat pas ici !", "Sortez du magasin !", "Sécurité ! Arrêtez ça !", "Doucement, monsieur !"],
 	"croise": ["Pardon {appel}.", "Excusez-moi.", "Eh, doucement !"],
+	"bagarre": ["Viens ! Tu vas voir !", "Tu me cherches, {appel} ?", "On va régler ça ici !", "Approche si tu es fort !"],
+	"appel_police": ["Allô, la police ? On m'agresse !", "Venez vite, il y a un fou qui frappe les gens !", "Allô ? Il m'a frappé, venez !"],
+	"ko": ["Ahi... ma tête...", "Pitié, pitié !", "Arrête, arrête !"],
 }
 
 

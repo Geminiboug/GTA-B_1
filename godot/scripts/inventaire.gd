@@ -282,6 +282,12 @@ func _process(delta: float) -> void:
 	var pitch := clampf(pivot.rotation.x + 0.12, -0.9, 0.5) if pivot else -0.1
 	var basis := Basis.from_euler(Vector3(pitch, yaw, 0))
 	_spot.global_transform = Transform3D(basis, _player.global_position + Vector3(0, 1.15, 0) + basis * Vector3(0.22, 0, -0.35))
+	# a l'arret, la torche est levee devant soi (clip Idle_Torch_Loop)
+	var an: Node = _player.get("anim")
+	var still: bool = not in_car and Vector2(_player.velocity.x, _player.velocity.z).length() < 0.2 and not _player.get("garde")
+	if an and an.has_method("play_clips"):
+		if still and not an.playing_clip():
+			an.play_clips([["Idle_Torch_Loop", 2.0]], true)
 	_lamp_check -= delta
 	if _lamp_check <= 0.0:
 		_lamp_check = 1.0

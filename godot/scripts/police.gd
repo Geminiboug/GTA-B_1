@@ -13,6 +13,9 @@ extends Node3D
 ## - semer la police : hors de vue de tout agent pendant perte_vue s, le niveau retombe a zero ;
 ## - exces de vitesse sous les yeux d'une patrouille (sans etre recherche) : contravention ;
 ## - malaise (sante a zero) : reveil a la maison, frais de soins.
+## - niveaux (phase 14) : 1 agent a pied ; 2 agent + patrouille ; 3 deux patrouilles + barrage (deux voitures en
+##   travers de la rue devant le joueur, agents a cote) ; 4 unite speciale (4x4 bleu nuit, plus rapides) ; 5 motos de
+##   police (zem en pilote automatique) qui passent partout.
 
 @export var player_path: NodePath = ^"../Player"
 @export var perte_vue := 14.0            # s hors de vue pour semer la police (+ 4 s par niveau)
@@ -27,6 +30,10 @@ extends Node3D
 @export var rattrapage := false          # patrouille avancee hors champ quand elle traine (desactive : on la voit venir)
 
 const DELITS := {"vol": 1, "agression": 1, "renverse": 1, "choc_police": 1, "evasion": 1}
+const COMPOSITION := [[], ["pied"], ["pied", "berline"], ["berline", "berline"], ["berline", "special", "special"],
+	["special", "special", "moto", "moto"]]
+const ZEM_SCENE := preload("res://scenes/zem.tscn")
+@export var barrage_distance := 150.0    # m devant le joueur
 
 var units: Array = []                     # {car, route, route_t, officer, state}
 var _player: Node3D
@@ -42,6 +49,7 @@ var _patrol: Dictionary = {}              # patrouille de routine (recherche 0)
 var appel_t := 0.0                        # s avant le depart des patrouilles (> 0 : appel en cours)
 var _arrivee := false                     # une patrouille est arrivee pres du joueur (on peut alors la semer)
 var _spawn_cd := 0.0
+@export var arrestation := true   # faux : jamais d arrestation (tests)
 
 
 func _ready() -> void:
@@ -104,6 +112,31 @@ func _on_level(n: int) -> void:
 			_release(u)
 		units.clear()
 		Partie.police_voit = false
+	elif n >= 3 and not units.any(func(u: Dictionary) -> bool: return u.get("kind") == "barrage"):
+		_barrage.call_deferred()
+
+
+func _barrage() -> void:
+	## Deux voitures en travers de la rue, a barrage_distance m devant le joueur, et deux agents qui attendent.
+	if _player == null or Partie.recherche < 3:
+		return
+	var pv: Node3D = _player.get("vehicle")
+	var ppos: Vector3 = pv.global_position if pv else _player.global_position
+	var yaw := float(pv.get("_yaw")) if pv else float(_player.get("_facing"))
+	var pp := Vector2(ppos.x, ppos.z)
+	var near := _carte.nearest_on_network(pp + Vector2(-sin(yaw), -cos(yaw)) * barrage_distance)
+	if near.is_empty() or near.get("edge", -1) < 0:
+		return
+	var q: Vector2 = near["point"]
+	var path := _carte.route(pp, q, false)
+	var road := (path[-1] - path[-2]).normalized() if path.size() >= 2 else Vector2(-sin(yaw), -cos(yaw))
+	var side := Vector2(-road.y, road.x)
+	for k in [-1.0, 1.0]:
+		var at: Vector2 = q + side * 2.4 * k
+		var car := _make_car(Vector3(at.x, 0.0, at.y), atan2(-side.x, -side.y) + (0.25 * k))
+		car.set("ai_input", Vector3(0, 1, 0))
+		var o := _make_officer(Vector3(at.x, 0.0, at.y) + Vector3(road.x, 0, road.y) * -3.0)
+		units.append({"car": car, "kind": "barrage", "route": PackedVector2Array(), "officer": o, "state": "barrage", "stuck": 0.0})
 
 
 # ------------------------------------------------------------------ boucle
@@ -121,19 +154,30 @@ func _physics_process(delta: float) -> void:
 		appel_t -= delta
 		Partie.police_voit = false
 		return
-	# nombre de patrouilles selon le niveau (une toutes les 4 s, depuis le commissariat)
-	var want := mini(Partie.recherche, 4)
+	# unites selon le niveau (COMPOSITION, une toutes les 4 s) : agent a pied, patrouilles, unite speciale, motos
 	_spawn_cd = maxf(0.0, _spawn_cd - delta)
-	if units.size() < want and _spawn_cd <= 0.0:
-		_spawn_cd = 4.0
-		_spawn_unit(ppos)
+	if _spawn_cd <= 0.0:
+		var want: Array = COMPOSITION[clampi(Partie.recherche, 0, COMPOSITION.size() - 1)].duplicate()
+		for u in units:
+			want.erase(u.get("kind", "berline"))
+		if not want.is_empty():
+			_spawn_cd = 4.0
+			_spawn_unit(ppos, want[0])
 	_route_t -= delta
 	var seen := false
 	for u in units.duplicate():
-		if not is_instance_valid(u["car"]):
+		var kind: String = u.get("kind", "berline")
+		if kind == "pied":
+			if not (u.get("officer") and is_instance_valid(u["officer"])):
+				units.erase(u)
+				continue
+		elif not is_instance_valid(u["car"]):
 			units.erase(u)
 			continue
-		if _drive(u, ppos, pv, delta):
+		elif kind == "barrage":
+			_lights(u["car"])
+			seen = seen or _sees(u, ppos)
+		elif _drive(u, ppos, pv, delta):
 			seen = seen or _sees(u, ppos)
 		if u.get("officer") and is_instance_valid(u["officer"]):
 			_run_officer(u, ppos, pv, delta)
@@ -178,8 +222,11 @@ func _sees(u: Dictionary, ppos: Vector3) -> bool:
 
 
 # ------------------------------------------------------------------ patrouilles
-func _make_car(at: Vector3, yaw: float) -> Node3D:
-	var car := Vehicules.create("veh_berline", Color(0.93, 0.94, 0.95))
+func _make_car(at: Vector3, yaw: float, kind := "berline") -> Node3D:
+	if kind == "moto":
+		return _make_moto(at, yaw)
+	var car := Vehicules.create("veh_4x4" if kind == "special" else "veh_berline",
+		Color(0.08, 0.1, 0.2) if kind == "special" else Color(0.93, 0.94, 0.95))
 	car.name = "Police"
 	add_child(car)
 	car.global_transform = Transform3D(Basis(Vector3.UP, yaw), at + Vector3.UP * 0.3)
@@ -214,27 +261,86 @@ func _make_car(at: Vector3, yaw: float) -> Node3D:
 		lab.text = "POLICE"
 		lab.font_size = 64
 		lab.pixel_size = 0.004
-		lab.modulate = Color(0.05, 0.15, 0.6)
+		lab.modulate = Color(0.9, 0.9, 0.95) if kind == "special" else Color(0.05, 0.15, 0.6)
 		lab.outline_size = 0
-		lab.position = Vector3(0.93 * s, 0.85, 0.0)
+		lab.position = Vector3((1.0 if kind == "special" else 0.93) * s, 1.1 if kind == "special" else 0.85, 0.0)
 		lab.rotation = Vector3(0, PI / 2.0 * s, 0)
 		car.add_child(lab)
+	if kind == "special":
+		bar.position = Vector3(0, 1.95, 0.3)
 	return car
 
 
-func _spawn_unit(ppos: Vector3) -> void:
+func _make_moto(at: Vector3, yaw: float) -> Node3D:
+	## Moto de police : zem bleu nuit en pilote automatique, agent en selle, gyrophare sur le porte-bagages.
+	var z := ZEM_SCENE.instantiate() as Node3D
+	z.name = "PoliceMoto"
+	add_child(z)
+	z.global_transform = Transform3D(Basis(Vector3.UP, yaw), at + Vector3.UP * 0.3)
+	z.set("_yaw", yaw)
+	z.set("ai", true)
+	z.set("max_speed", 25.0)
+	z.add_to_group("police_car")
+	var paint := StandardMaterial3D.new()
+	paint.albedo_color = Color(0.08, 0.12, 0.3)
+	paint.roughness = 0.35
+	for mi in z.find_children("*", "MeshInstance3D", true, false):
+		for si in (mi as MeshInstance3D).mesh.get_surface_count():
+			var m: Material = (mi as MeshInstance3D).mesh.surface_get_material(si)
+			if m and m.resource_name == "veh_peinture_rouge":
+				(mi as MeshInstance3D).set_surface_override_material(si, paint)
+	var visual := z.get_node("Visual") as Node3D
+	var rider := PnjUtil.make("homme")
+	rider.name = "Agent"
+	visual.add_child(rider)
+	PnjUtil.apply(rider, PnjUtil.uniform_look("police", "homme", _rng))
+	PnjUtil.pose_seated(rider)
+	rider.position = Vector3(0, -0.05, 0.12)
+	var bar := Node3D.new()
+	bar.name = "Gyrophare"
+	visual.add_child(bar)
+	bar.position = Vector3(0, 1.0, 0.85)
+	for i in 2:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.1, 0.06, 0.06)
+		mi.mesh = bm
+		var m := StandardMaterial3D.new()
+		m.albedo_color = Color(0.9, 0.05, 0.05) if i == 0 else Color(0.05, 0.2, 1.0)
+		m.emission_enabled = true
+		m.emission = m.albedo_color
+		mi.material_override = m
+		mi.position = Vector3(-0.06 + 0.12 * i, 0, 0)
+		bar.add_child(mi)
+		var l := OmniLight3D.new()
+		l.light_color = m.albedo_color
+		l.omni_range = 6.0
+		l.light_energy = 0.0
+		bar.add_child(l)
+	return z
+
+
+func _spawn_unit(ppos: Vector3, kind := "berline") -> void:
 	## Depart du commissariat (sur la rue la plus proche), tournee vers le joueur ; si le joueur est tout pres du
 	## commissariat, a 140-260 m le long d'une rue reliee au joueur.
 	var pp := Vector2(ppos.x, ppos.z)
 	var cs := Vector2(commissariat.x, commissariat.z)
+	if kind == "pied":
+		# agent en patrouille a pied, a 60-90 m sur une rue reliee au joueur : il arrive en courant
+		var a := _rng.randf() * TAU
+		var near := _carte.nearest_on_network(pp + Vector2(cos(a), sin(a)) * _rng.randf_range(60.0, 90.0))
+		var q: Vector2 = near.get("point", pp + Vector2(70, 0))
+		units.append({"car": null, "kind": "pied", "route": PackedVector2Array(), "state": "chase", "stuck": 0.0,
+			"officer": _make_officer(Vector3(q.x, 0.0, q.y))})
+		return
 	if pp.distance_to(cs) > apparition.x:
 		var near := _carte.nearest_on_network(cs)
 		var path := _carte.route(pp, near.get("point", cs), false)
 		if path.size() >= 2:
 			var q: Vector2 = path[-1]
 			var back := (path[-2] - path[-1]).normalized()
-			var car0 := _make_car(Vector3(q.x, 0.0, q.y), atan2(-back.x, -back.y))
-			units.append({"car": car0, "route": PackedVector2Array(), "officer": null, "state": "chase", "stuck": 0.0})
+			var car0 := _make_car(Vector3(q.x, 0.0, q.y), atan2(-back.x, -back.y), kind)
+			units.append({"car": car0, "kind": kind, "route": PackedVector2Array(), "officer": null, "state": "chase", "stuck": 0.0})
 			return
 	for attempt in 8:
 		var a := _rng.randf() * TAU
@@ -251,8 +357,8 @@ func _spawn_unit(ppos: Vector3) -> void:
 			if acc + seg >= want:
 				var q := path[i].lerp(path[i + 1], (want - acc) / seg)
 				var back := (path[i] - path[i + 1]).normalized()
-				var car := _make_car(Vector3(q.x, 0.0, q.y), atan2(-back.x, -back.y))
-				units.append({"car": car, "route": PackedVector2Array(), "officer": null, "state": "chase", "stuck": 0.0})
+				var car := _make_car(Vector3(q.x, 0.0, q.y), atan2(-back.x, -back.y), kind)
+				units.append({"car": car, "kind": kind, "route": PackedVector2Array(), "officer": null, "state": "chase", "stuck": 0.0})
 				return
 			acc += seg
 
@@ -306,7 +412,7 @@ func _drive(u: Dictionary, ppos: Vector3, pv: Node3D, delta: float) -> bool:
 	var to := (aim - cp).normalized()
 	var ang := atan2(fwd.cross(to), fwd.dot(to))       # + : a gauche
 	var speed: float = float(car.get("speed"))
-	var goal := vitesse_poursuite + 2.0 * Partie.recherche
+	var goal := vitesse_poursuite + 2.0 * Partie.recherche + (5.0 if u.get("kind") == "special" else 0.0)
 	if d < 18.0:
 		goal = 3.0 if pv == null else maxf(absf(float(pv.get("speed"))) + 2.0, 6.0)
 	# virage : on ralentit selon l'angle a prendre (5 m/s pour un angle droit)
@@ -346,6 +452,13 @@ func _drive(u: Dictionary, ppos: Vector3, pv: Node3D, delta: float) -> bool:
 	# a l'arret pres du joueur (ou coincee a moins de 80 m) : un agent descend et finit a pied
 	if (stop or (d < 80.0 and float(u["stuck_total"]) > 2.0)) and (u.get("officer") == null or not is_instance_valid(u["officer"])):
 		u["officer"] = _make_officer(car.global_position - car.global_transform.basis.x * 1.2)
+		var rider := car.find_child("Agent", true, false) as Node3D
+		if rider:
+			rider.visible = false            # l'agent de la moto descend
+	elif u.get("officer") == null or not is_instance_valid(u["officer"]):
+		var rider := car.find_child("Agent", true, false) as Node3D
+		if rider:
+			rider.visible = true
 	return true
 
 
@@ -355,7 +468,7 @@ func _on_screen(p: Vector3) -> bool:
 
 
 func _lights(car: Node3D) -> void:
-	var bar := car.get_node_or_null("Gyrophare")
+	var bar := car.find_child("Gyrophare", true, false)
 	if bar == null:
 		return
 	var on := int(Time.get_ticks_msec() / 260) % 2
@@ -383,12 +496,14 @@ func _run_officer(u: Dictionary, ppos: Vector3, _pv: Node3D, delta: float) -> vo
 	to.y = 0.0
 	var d := to.length()
 	var sp := 0.0 if d < 1.1 else agent_vitesse
+	if u.get("kind") == "barrage" and d > 35.0:
+		sp = 0.0                              # les agents du barrage attendent pres des voitures
 	if d > 0.01:
 		o.global_position += to / d * minf(sp * delta, maxf(d - 1.0, 0.0))
 		o.rotation.y = atan2(-to.x, -to.z)          # le modele regarde -Z (comme les pietons)
 	o.set("speed", sp)
-	# trop loin (le joueur a file) : il remonte en voiture
-	if d > 45.0:
+	# trop loin (le joueur a file) : il remonte en voiture (l'agent a pied et ceux du barrage restent)
+	if d > 45.0 and not u.get("kind") in ["pied", "barrage"]:
 		o.queue_free()
 		u["officer"] = null
 
@@ -396,7 +511,7 @@ func _run_officer(u: Dictionary, ppos: Vector3, _pv: Node3D, delta: float) -> vo
 func _release(u: Dictionary) -> void:
 	if u.get("officer") and is_instance_valid(u["officer"]):
 		(u["officer"] as Node).queue_free()
-	var car: Node3D = u["car"]
+	var car = u["car"]
 	if is_instance_valid(car) and not car.get("has_rider"):
 		car.queue_free()
 
@@ -437,6 +552,8 @@ func _routine(delta: float, pv: Node3D, ppos: Vector3) -> void:
 
 # ------------------------------------------------------------------ arrestation, malaise
 func _arrest() -> void:
+	if not arrestation:
+		return
 	var lvl := Partie.recherche
 	_busy = true
 	_arrest_t = 0.0

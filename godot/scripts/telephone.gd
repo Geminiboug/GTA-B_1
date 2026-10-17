@@ -121,6 +121,14 @@ func ouvrir(on: bool) -> void:
 	if ouvert and inv and inv.get("ouvert"):
 		inv.ouvrir(false)
 	_panel.visible = ouvert
+	# le joueur tient le telephone (clip Idle_TalkingPhone_Loop) tant qu'il est ouvert, a pied et immobile
+	var pl := get_node_or_null("../Player")
+	var an: Node = pl.get("anim") if pl else null
+	if an and an.has_method("play_clips") and pl.get("vehicle") == null:
+		if ouvert:
+			an.play_clips([["Idle_TalkingPhone_Loop", 60.0]], true)
+		elif an.has_method("stop_clips"):
+			an.stop_clips()
 	_app = ""
 	_sel = 0
 	if ouvert:
