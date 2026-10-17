@@ -150,6 +150,11 @@ func buy(kind: String, i: int) -> bool:
 		return false
 	# nourriture : mangee sur place (sante), sauf si une mission demande de la rapporter (Partie.drapeaux["garder"])
 	var mange := int(it[2]) > 0 and not (Partie.drapeaux.get("garder", []) as Array).has(String(it[0]))
+	if kind == "paris":
+		var ac := get_node_or_null("../Activites")
+		if ac:
+			ac.parier(i)
+		return true
 	if String(it[0]) == "Séance de musculation":
 		var st2 := get_node_or_null("../Stats")
 		if st2:

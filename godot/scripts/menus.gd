@@ -319,6 +319,12 @@ func _show_stats() -> void:
 		n.add_theme_font_size_override("font_size", 20)
 		row.add_child(n)
 		_box.add_child(row)
+	var ac := get_parent().get_node_or_null("Activites") if get_parent() else null
+	if ac:
+		var cp := Label.new()
+		cp.text = tr("Progression du jeu : %d %%    Fresques : %d / %d") % [roundi(ac.completion()), ac.fresques_trouvees().size(), ac.NB_FRESQUES]
+		cp.add_theme_font_size_override("font_size", 20)
+		_box.add_child(cp)
 	var info := Label.new()
 	var corps := {"mince": "mince", "": "normale", "fort": "costaud"}
 	var c: String = st.morpho() if st else ""

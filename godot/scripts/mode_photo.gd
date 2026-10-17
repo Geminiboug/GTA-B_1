@@ -101,8 +101,12 @@ func sortir() -> void:
 	get_tree().paused = _was_paused
 
 
+signal photo_prise(camera: Camera3D)
+
+
 func capture() -> String:
 	## Capture sans le bandeau d'aide, dans user://captures/gtb_<date>.png ; renvoie le chemin.
+	photo_prise.emit(get_viewport().get_camera_3d())
 	_hint.visible = false
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()

@@ -221,17 +221,17 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Phrases des PNJ (vendeuses qui interpellent, clients du zem, disputes, insultes, remarques) en francais de Cotonou, fon et mina
 - [ ] Radios dans les vehicules : 3 a 5 stations fictives (musique beninoise et africaine, talk-show, infos du quartier qui commentent les actions du joueur), musique originale ou sous contrat
 - [ ] Remplacement des sons synthetises les plus visibles par des enregistrements terrain (zem, klaxons, marche, ambiance)
-- [ ] Mixage : volumes par categorie, attenuation selon la distance, reverberation en interieur
+- [x] Mixage : bus Vehicules / Ambiance / Effets / Voix reglables dans les options, sources rangees automatiquement, reverberation dans l'Ararat et l'aerogare ; test_mixage
 - [ ] Jalon : fermer les yeux 30 s dans le quartier, on se croit a Cotonou
 
 ### Phase 20 : Activites secondaires (v0.5)
 - [ ] Ecole de pilotage a l'aeroport (rouler, decoller, atterrir, puis avion pilotable)
 - [ ] Missions de metier : ambulance, pompier, vigile, livreur, chauffeur de minibus
-- [ ] Courses de zems de nuit, courses de voitures
-- [ ] Paris sur les matchs de foot au maquis (clubs fictifs)
+- [x] Courses de zems de nuit (20 h - 5 h, Route des Filets, 8 points de passage, 2 rivaux pilotes, 10 000 F au 1er) ; courses de voitures a faire ; scripts/activites.gd, test_activites
+- [x] Paris sur les matchs de foot au maquis (clubs fictifs, cote 3 contre 1, resultat a l'heure de jeu suivante)
 - [ ] Evenements de quartier : funerailles avec fanfare, mariages, fetes, coupures de courant qui ouvrent des opportunites
-- [ ] Collectibles : enseignes peintes a photographier, objets caches, sauts acrobatiques
-- [ ] Taux de completion (pourcentage) dans le menu
+- [x] Collectibles : 15 enseignes peintes (noms fictifs) a photographier avec le telephone ou F12, 1 000 F chacune, 25 000 F la collection ; objets caches et sauts acrobatiques a faire
+- [x] Taux de completion (pourcentage) dans le menu Statistiques : missions, stationnements, proprietes, fresques, courses
 - [ ] Jalon : un joueur peut passer 5 h sans toucher a l'histoire
 
 ### Phase 21 : Extension de Cotonou (v0.5)
