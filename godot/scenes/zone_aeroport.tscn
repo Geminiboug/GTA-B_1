@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3]
+[gd_scene load_steps=40 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -35,6 +35,7 @@
 [ext_resource type="Script" path="res://scripts/stats.gd" id="53_stats"]
 [ext_resource type="Script" path="res://scripts/personnalisation.gd" id="54_perso"]
 [ext_resource type="Script" path="res://scripts/territoires.gd" id="55_terr"]
+[ext_resource type="Script" path="res://scripts/tactile.gd" id="56_tact"]
 
 [sub_resource type="ShaderMaterial" id="1_sky_mat"]
 shader = ExtResource("6_sky")
@@ -177,3 +178,6 @@ script = ExtResource("54_perso")
 
 [node name="Territoires" type="Node3D" parent="."]
 script = ExtResource("55_terr")
+
+[node name="Tactile" type="CanvasLayer" parent="."]
+script = ExtResource("56_tact")

@@ -291,7 +291,8 @@ func _process(delta: float) -> void:
 		if _aide_t > aide_duree:
 			_aide_on = false
 	var inv := get_node_or_null("../Inventaire")
-	_aide.visible = _aide_on and Partie.get("en_jeu") != false and not (inv and inv.get("ouvert"))
+	var tact := get_node_or_null("../Tactile")
+	_aide.visible = _aide_on and Partie.get("en_jeu") != false and not (inv and inv.get("ouvert")) and not (tact and tact.get("actif"))
 	if _aide.visible:
 		var ctx := contexte() + ("_m" if _manette else "")
 		if ctx != _ctx:

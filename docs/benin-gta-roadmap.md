@@ -162,8 +162,8 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Tous les textes du jeu (menus, HUD, dialogues, missions) sortis du code dans un fichier de traduction (base de la traduction de la Phase 24) : godot/i18n/gtb.pot (427 textes) genere par godot/tools/extraire_textes.py, francais comme cle, Label / Button / Label3D traduits par Godot ; quelques repliques composees a la volee (prenom, prix) seront a reprendre en Phase 24
 - [x] Credits complets en jeu (OSM ODbL, Overture, Open Buildings CC BY 4.0, Sentinel-2, Quaternius CC0, autres de docs/CREDITS.md) : bouton Credits (titre et pause), texte dans godot/assets/data/credits.txt
 - [x] Verification legale complete avec docs/LEGAL.md avant publication : docs/verification_legale.md, controle automatique tests/test_legal.gd (avis d'avocat recommande avant une sortie payante)
-- [ ] Export Linux (x86_64) verifie
-- [ ] Export Android : commandes tactiles (joystick virtuel, boutons d'action, camera au doigt), interface lisible sur petit ecran, prereglage "Mobile" (renderer Mobile, ombres et distance reduites), objectif 30 img/s sur un telephone de milieu de gamme
+- [x] Export Linux (x86_64) verifie : builds/linux/GTB.x86_64 lance dans Ubuntu (WSL), partie chargee sans erreur ; preset Web retire
+- [ ] Export Android : commandes tactiles faites (scripts/tactile.gd : joystick virtuel, camera au doigt, boutons a pied / en vehicule, carte, sac, telephone, pause ; qualite Basse au premier lancement ; aide clavier masquee ; capture_tactile), preset Android et orientation paysage prets ; reste : installer le SDK Android et un JDK 17 (Olympe), exporter l'APK, mesurer 30 img/s sur un telephone de milieu de gamme
 - [ ] Jalon : demo publiee, 20 premiers retours de joueurs recus et tries
 
 ### Phase 14 : Combat et armes (v0.2)

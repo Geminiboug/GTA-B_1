@@ -130,7 +130,7 @@ var _roll_dir := Vector2.ZERO
 
 func _combat_ok() -> bool:
 	## Souris capturee (pas un clic dans un menu) ; toujours vrai sans fenetre (tests).
-	return Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or DisplayServer.get_name() == "headless"
+	return Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or DisplayServer.get_name() == "headless" or DisplayServer.is_touchscreen_available()
 
 
 func hurt(dmg: float, from: Vector3) -> void:
