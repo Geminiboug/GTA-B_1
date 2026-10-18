@@ -614,7 +614,9 @@ func _pick_passenger(pv: Node3D) -> void:
 		_client_walker.queue_free()
 		_client_walker = null
 	var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
-	pv.add_child(pas)
+	# rattache a la partie qui s'incline et plonge (Visual) : le passager penche avec la moto dans les virages
+	var support: Node = pv.get_node_or_null("Visual")
+	(support if support else pv).add_child(pas)
 	PnjUtil.dress_random(pas, _rng)
 	PnjUtil.pose_passenger(pas)
 	pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)

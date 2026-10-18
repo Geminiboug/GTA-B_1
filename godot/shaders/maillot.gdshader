@@ -1,5 +1,6 @@
 shader_type spatial;
 render_mode cull_disabled;   // tissu vu des deux cotes (interieur des manches, aisselles)
+#include "res://shaders/tissu.gdshaderinc"
 // Maillot de foot de club fictif : rayures verticales ou bande horizontale sur la poitrine, col et manches unis.
 // Coordonnees du modele (le maillot suit le corps anime : les motifs bougent avec lui).
 uniform vec3 c1 : source_color = vec3(0.1, 0.5, 0.25);
@@ -28,7 +29,12 @@ void fragment() {
 	if (abs(p.x) / echelle > 0.24) {
 		col = c1;
 	}
-	ALBEDO = col;
+	vec3 n = NORMAL;
+	float k = tissu_relief(p, 2, VERTEX, n);   // maille polyester : plis et fine trame
+	NORMAL = n;
+	ALBEDO = col * k;
 	ROUGHNESS = 0.55;
 	SPECULAR = 0.35;
+	RIM = 0.25;
+	RIM_TINT = 0.4;
 }

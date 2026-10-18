@@ -17,8 +17,17 @@ const T2_S := 191.0            # taxiway parallele (T2) a 191 m de l'axe, cote a
 const NOSE_GEAR := 12.6        # du train principal au train avant (m)
 const GROUND_Y := 0.017
 
-@export var first_delay := 45.0
-@export var min_gap := 40.0          # s reelles mini entre deux mouvements (piste degagee)
+@export var first_delay := 20.0
+@export var min_gap := 20.0          # s reelles mini entre deux mouvements (piste degagee)
+## Densite du trafic par rapport a la frequence reelle (une journee de jeu ne dure que 48 min : a frequence reelle, on
+## ne voyait presque jamais d'avion ; signalement d'Olympe du 18/10/2026).
+@export var densite := 2.5
+## Survols : avions de passage au-dessus de la zone (montee vers d'autres aeroports, attente, approche lointaine),
+## visibles de partout (plage, quartiers), de jour comme de nuit (feux), sans passer par la piste.
+@export var survol_intervalle := Vector2(70.0, 200.0)   # s reelles entre deux survols
+@export var survol_altitude := Vector2(450.0, 1800.0)    # m
+var _survols: Array = []       # {plane, pos, head, h, v}
+var _t_survol := 25.0
 # Frequence reelle de Cotonou-Cadjehoun : ~35 mouvements commerciaux par jour (donnees ASECNA / ACI, ordre de
 # grandeur), concentres de 6 h a 1 h avec une pointe le soir (vols long-courriers d'Europe et d'Afrique de l'Est).
 # Mouvements par heure de jeu, heure par heure (0 h a 23 h) ; une heure de jeu dure minutes_per_game_day / 24.
@@ -250,8 +259,45 @@ func _place(p: Node3D, pos: Vector2, heading: Vector2, h: float, pitch: float, r
 	p.global_transform = Transform3D(b, Vector3(pos.x, GROUND_Y + h, pos.y))
 
 
+# ------------------------------------------------------------------ survols
+func _maj_survols(delta: float) -> void:
+	_t_survol -= delta
+	if _t_survol <= 0.0:
+		_t_survol = _rng.randf_range(survol_intervalle.x, survol_intervalle.y)
+		lancer_survol()
+	for sv in _survols.duplicate():
+		sv["pos"] = (sv["pos"] as Vector2) + (sv["head"] as Vector2) * float(sv["v"]) * delta
+		sv["h"] = float(sv["h"]) + float(sv["vs"]) * delta
+		_place(sv["plane"], sv["pos"], sv["head"], sv["h"], float(sv["vs"]) / float(sv["v"]))
+		if (sv["pos"] as Vector2).distance_to(sv["centre"]) > 9000.0:
+			_survols.erase(sv)
+			planes.erase(sv["plane"])
+			(sv["plane"] as Node).queue_free()
+
+
+func lancer_survol() -> void:
+	## Un avion traverse le ciel en ligne droite, a quelques km du joueur (ou du centre de la carte).
+	var pl := get_node_or_null("../Player") as Node3D
+	var c := Vector2(pl.global_position.x, pl.global_position.z) if pl else _a + _u * RUNWAY_LENGTH * 0.5
+	c += Vector2.from_angle(_rng.randf() * TAU) * _rng.randf_range(0.0, 1500.0)
+	var head := Vector2.from_angle(_rng.randf() * TAU)
+	var p := _new_plane()
+	p.set("on_ground", false)
+	p.set("gear", 0.0)
+	p.set("flaps", 0.0)
+	p.set("n1", 0.75)
+	p.set("lights", {"nav": true, "beacon": true, "strobe": true, "landing": false, "taxi": false})
+	var h := _rng.randf_range(survol_altitude.x, survol_altitude.y)
+	var v := _rng.randf_range(110.0, 170.0)
+	# leger palier, montee ou descente (avion qui part ou qui arrive ailleurs)
+	var vs := _rng.randf_range(-4.0, 8.0)
+	_survols.append({"plane": p, "pos": c - head * 8000.0, "head": head, "h": h, "v": v, "vs": vs, "centre": c})
+	_place(p, c - head * 8000.0, head, h, vs / v)
+
+
 # ------------------------------------------------------------------ planification
 func _process(delta: float) -> void:
+	_maj_survols(delta)
 	if mv.is_empty():
 		_timer -= delta
 		if _timer <= 0.0:
@@ -779,7 +825,7 @@ func _next_gap() -> float:
 	## (loi exponentielle : les vols n'arrivent pas a intervalles reguliers).
 	var hour: float = _day.get("hour") if _day else 12.0
 	var game_hour_s: float = (_day.get("minutes_per_game_day") if _day else 48.0) * 60.0 / 24.0
-	var rate: float = movements_per_hour[int(hour) % 24]
+	var rate: float = movements_per_hour[int(hour) % 24] * densite
 	if rate <= 0.01:
 		return game_hour_s * 0.5          # nuit sans vol : on revient voir plus tard
 	return maxf(min_gap, -log(maxf(_rng.randf(), 0.05)) * game_hour_s / rate)

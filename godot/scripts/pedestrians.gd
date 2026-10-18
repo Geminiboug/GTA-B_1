@@ -285,6 +285,8 @@ func _physics_process(delta: float) -> void:
 			if (_tick + k) % 4 != 0:
 				continue
 			dt = delta * 4.0
+		if w["state"] == "walk" and not w.get("far", false) and (_tick + k) % 30 == 0:
+			_vie_quartier(w, k)
 		if w["state"] == "walk":
 			_walk(w, dt, ppos)
 		else:
@@ -293,6 +295,12 @@ func _physics_process(delta: float) -> void:
 
 
 var _meteo: Node = null
+## Vie de quartier : gestes captes (Quaternius, Mixamo) des passants qui s'arretent ou discutent.
+const PAUSES := [["Idle_FoldArms", 3.0], ["MX_Idle_Regarde", 1.0], ["Idle_TalkingPhone_Loop", 5.0], ["Yes", 1.5],
+	["MX_Idle_Content", 1.0]]
+const CAUSETTE := [["Idle_Talking", 2.5], ["Yes", 0.6], ["Idle_No", 0.6], ["Idle_Talking", 1.5], ["Idle_FoldArms", 1.0]]
+@export var pause_chance := 0.012      # par controle (~2/s) : un passant s'arrete toutes les ~40 s
+@export var causette_chance := 0.03    # chance de chercher quelqu'un a qui parler
 
 
 func _rain_now() -> float:
@@ -919,6 +927,28 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 					_speak(w, "temoin_accident")
 			if t > w.get("gather_time", 12.0):
 				_set_state(w, "resume")
+		"pause":
+			# arret d'un moment : bras croises, regard alentour, coup de fil... puis il repart
+			if t > w.get("pause_time", 5.0):
+				_set_state(w, "resume")
+		"causette":
+			# deux passants qui se connaissent s'arretent et discutent (paroles, oui, non), face a face
+			var other: Dictionary = w.get("partner", {})
+			if not other.is_empty() and other.get("state") == "causette":
+				var op: Vector3 = other["pos"]
+				face = Vector2(op.x, op.z) - me2
+				if face.length() > 1.3:
+					# on se rejoint avant de parler
+					speed = 1.2
+					me2 = _step_towards(me2, face.normalized(), minf(speed * delta, face.length() - 1.2))
+					w["state_t"] = minf(t, 0.2)
+			if speed == 0.0 and ch.has_method("play_clips") and not ch.playing_clip() and t > 0.3:
+				ch.play_clips([CAUSETTE[_rng.randi() % CAUSETTE.size()]], true)
+			if t > w.get("pause_time", 8.0) or other.is_empty() or other.get("state") != "causette":
+				if ch.has_method("stop_clips"):
+					ch.stop_clips()
+				w.erase("partner")
+				_set_state(w, "resume")
 		"resume":
 			_resnap(w)
 			_set_state(w, "walk")
@@ -936,6 +966,34 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 		ch.add_to_group("obstacles_route")   # les vehicules s'arretent devant un pieton sur la chaussee
 	elif not on_road and ch.is_in_group("obstacles_route"):
 		ch.remove_from_group("obstacles_route")
+
+
+func _vie_quartier(w: Dictionary, k: int) -> void:
+	## Vie de quartier (proche du joueur, ~2 fois par seconde et par passant) : arret d'un moment avec un geste, ou
+	## causette avec un autre passant croise a moins de 6 m (ils se rejoignent).
+	var ch: Node3D = w["node"]
+	if not ch.has_method("play_clips") or ch.playing_clip() or w.get("cross", false):
+		return
+	var r := _rng.randf()
+	if r < pause_chance:
+		_set_state(w, "pause")
+		w["pause_time"] = _rng.randf_range(4.0, 9.0)
+		ch.play_clips([PAUSES[_rng.randi() % PAUSES.size()]], true)
+		return
+	if r > causette_chance:
+		return
+	var me: Vector3 = w["pos"]
+	for j in _walkers.size():
+		var o: Dictionary = _walkers[j]
+		if j == k or o["state"] != "walk" or o.get("far", false) or o.get("cross", false):
+			continue
+		if (o["pos"] as Vector3).distance_to(me) < 6.0:
+			var duree := _rng.randf_range(6.0, 12.0)
+			for x in [[w, o], [o, w]]:
+				_set_state(x[0], "causette")
+				x[0]["partner"] = x[1]
+				x[0]["pause_time"] = duree
+			return
 
 
 func _step_towards(from: Vector2, dir: Vector2, dist: float) -> Vector2:

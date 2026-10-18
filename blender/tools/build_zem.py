@@ -422,13 +422,21 @@ for s in (-1, 1):
 CH.tube(CHROME, [(-0.13, 0.04, 0.33), (-0.17, 0.1, 0.36), (-0.2, 0.17, 0.37)], 0.008, 6)        # selecteur
 CH.tube(CHROME, [(0.13, -0.02, 0.27), (0.2, 0.1, 0.28), (0.21, 0.16, 0.29)], 0.009, 6)           # pedale de frein
 CH.tube(CHROME, [(0.17, -0.05, 0.4), (0.21, -0.1, 0.48), (0.23, -0.18, 0.5)], 0.01, 6)           # kick
-CH.tube(FRAME, [(-0.1, -0.1, 0.26), (-0.12, -0.15, 0.12), (-0.12, -0.12, 0.02)], 0.012, 6)      # bequille centrale
-CH.tube(FRAME, [(0.1, -0.1, 0.26), (0.12, -0.15, 0.12), (0.12, -0.12, 0.02)], 0.012, 6)
-CH.tube(FRAME, [(-0.12, -0.12, 0.02), (0.12, -0.12, 0.02)], 0.012, 6)
-CH.tube(FRAME, [(-0.1, 0.05, 0.26), (-0.22, 0.12, 0.12)], 0.009, 6)                              # bequille laterale
+CH.tube(FRAME, [(-0.1, 0.05, 0.26), (-0.2, -0.1, 0.25)], 0.009, 6)                               # bequille laterale repliee
 for s in (-1, 1):                                                                                   # pare-moteur tubulaire
     CH.tube(CHROME, [(0, 0.5, 0.74), (s * 0.12, 0.47, 0.62), (s * 0.28, 0.33, 0.48), (s * 0.27, 0.22, 0.34), (s * 0.12, 0.2, 0.22)], 0.014, 8)
 CH.obj(chassis)
+
+# --- bequille centrale : objet a part, pivot sous le cadre ; zem.gd la replie (-80 deg autour de X) quand on roule ---
+BQ_PIV = (0.0, -0.1, 0.26)
+bq_piv = empty("piv_bequille", BQ_PIV, chassis)
+BQ = Mesh("zem_bequille")
+def _bq(pts):
+    return [(x - BQ_PIV[0], y - BQ_PIV[1], z - BQ_PIV[2]) for (x, y, z) in pts]
+BQ.tube(FRAME, _bq([(-0.1, -0.1, 0.26), (-0.12, -0.15, 0.12), (-0.12, -0.12, 0.02)]), 0.012, 6)
+BQ.tube(FRAME, _bq([(0.1, -0.1, 0.26), (0.12, -0.15, 0.12), (0.12, -0.12, 0.02)]), 0.012, 6)
+BQ.tube(FRAME, _bq([(-0.12, -0.12, 0.02), (0.12, -0.12, 0.02)]), 0.012, 6)
+BQ.obj(bq_piv)
 
 # --- roue arriere ---
 rr = empty("piv_roue_ar", (0, REAR_Y, WHEEL_R), chassis)

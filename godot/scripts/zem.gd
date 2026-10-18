@@ -18,6 +18,10 @@ signal rider_changed(has_rider: bool)
 @export var steer_speed := 3.0         # rad/s pour tourner le guidon
 @export var max_lean := 0.6            # rad (~35 degres)
 @export var wheel_radius := 0.30
+## Bequille centrale (piv_bequille, blender/tools/build_zem.py) : posee a l'arret sans conducteur, repliee des qu'on
+## roule (le conducteur la releve en partant), redescendue quand on descend de la moto a l'arret.
+const BEQUILLE_REPLIEE := -1.4          # rad autour de X
+@export var bequille_vitesse := 7.0     # rad/s
 
 var has_rider := false
 var ai := false                  # pilote automatique (motos de police, scripts/police.gd)
@@ -40,6 +44,7 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var wheel_r: Node3D = visual.find_child("piv_roue_ar", true, false)
 @onready var seat: Node3D = visual.find_child("pt_conducteur", true, false)
 @onready var audio: Node = get_node_or_null("Audio")
+@onready var bequille: Node3D = visual.find_child("piv_bequille", true, false)
 
 
 func _ready() -> void:
@@ -145,6 +150,9 @@ func _physics_process(delta: float) -> void:
 		wheel_f.rotation.x -= spin
 	if wheel_r:
 		wheel_r.rotation.x -= spin
+	if bequille:
+		var posee := not has_rider and not ai and absf(speed) < 0.3
+		bequille.rotation.x = move_toward(bequille.rotation.x, 0.0 if posee else BEQUILLE_REPLIEE, bequille_vitesse * delta)
 
 
 func seat_transform() -> Transform3D:

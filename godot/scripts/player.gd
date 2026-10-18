@@ -125,6 +125,13 @@ var visee := false
 @export var visee_epaule := 0.55
 var _combo_t := 0.0
 var _roll_t := 0.0
+## Animations de vie (clips Mixamo et Quaternius) : arret apres une course, gestes d'attente quand on reste immobile.
+@export var attente_geste := Vector2(9.0, 20.0)   # s immobile avant un geste d'attente (tire au hasard)
+const GESTES_ATTENTE := [[["MX_Idle_Regarde", 0.0]], [["Idle_FoldArms", 2.5]], [["MX_Idle_Content", 0.0]],
+	[["MX_Idle_Appui", 0.0]], [["Yes", 0.0]]]
+var _immobile_t := 0.0
+var _prochain_geste := 12.0
+var _vitesse_prec := 0.0
 var _roll_dir := Vector2.ZERO
 
 
@@ -454,12 +461,15 @@ func enter_vehicle(v: Node3D) -> void:
 	v.get_node("CamRig").activate(true)
 	if anim:
 		anim.seated = true
-	# le joueur suit la selle : pas d'interpolation propre pour eviter un decalage d'une image
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# le joueur suit la selle : mis a jour apres le vehicule a chaque tic physique (priorite), et interpole comme
+	# lui entre deux tics ; sans interpolation, le corps sautait d'un cran par rapport a la moto (gigotement)
+	process_physics_priority = 10
+	reset_physics_interpolation()
 
 
 func exit_vehicle() -> void:
 	var v := vehicle
+	process_physics_priority = 0
 	_skirt_visible(true)
 	_clear_ik()
 	vehicle = null
@@ -655,6 +665,7 @@ func _physics_process(delta: float) -> void:
 		_facing = atan2(-_roll_dir.x, -_roll_dir.y)
 	velocity.x = hvel.x
 	velocity.z = hvel.y
+	_animations_vie(delta, dir, hvel.length())
 	body.rotation.y = _facing
 	move_and_slide()
 	_step_up(hvel)
@@ -823,3 +834,24 @@ func _clear_ik() -> void:
 	if anim and "ik_targets" in anim:
 		for k in anim.ik_targets:
 			anim.ik_targets[k] = Vector3.INF
+
+
+func _animations_vie(delta: float, dir: Vector3, hspeed: float) -> void:
+	## Arret marque apres une course (MX_Arret) et gestes d'attente (regarder autour, bras croises...) quand le joueur
+	## reste immobile ; tout mouvement les interrompt (stop_clips plus haut).
+	if anim == null or not anim.has_method("play_clips") or not is_on_floor() or crouched or visee or garde 			or _roll_t > 0.0 or not menus.is_empty():
+		_immobile_t = 0.0
+		_vitesse_prec = hspeed
+		return
+	var lache := dir.length() < 0.01
+	if lache and _vitesse_prec > 3.5 and not anim.playing_clip():
+		anim.play_clips([["MX_Arret", 0.0]], true)    # on freine sur un ou deux pas, en place (le corps ralentit seul)
+	if lache and hspeed < 0.1:
+		_immobile_t += delta
+		if _immobile_t > _prochain_geste and not anim.playing_clip():
+			anim.play_clips(GESTES_ATTENTE[randi() % GESTES_ATTENTE.size()], true)
+			_immobile_t = 0.0
+			_prochain_geste = randf_range(attente_geste.x, attente_geste.y)
+	else:
+		_immobile_t = 0.0
+	_vitesse_prec = hspeed

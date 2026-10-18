@@ -3,6 +3,7 @@
 // Couleurs ecrites en sRGB, converties en lineaire a la fin. Choisies par scripts/pnj_util.gd.
 shader_type spatial;
 render_mode cull_disabled;   // tissu vu des deux cotes (interieur des manches, aisselles)
+#include "res://shaders/tissu.gdshaderinc"
 
 uniform vec3 col_a = vec3(0.85, 0.25, 0.1);   // fond
 uniform vec3 col_b = vec3(0.95, 0.75, 0.1);   // motif principal
@@ -44,7 +45,12 @@ void fragment() {
 		col = mix(col, col_b, chk);
 		col = mix(col, col_c, step(max(abs(cell.x), abs(cell.y)), 0.18));
 	}
-	ALBEDO = pow(clamp(col, 0.0, 1.0), vec3(2.2));
+	vec3 n = NORMAL;
+	float k = tissu_relief(opos, 0, VERTEX, n);   // plis et trame du coton imprime
+	NORMAL = n;
+	ALBEDO = pow(clamp(col, 0.0, 1.0), vec3(2.2)) * k;
 	ROUGHNESS = 0.82;
 	SPECULAR = 0.25;
+	RIM = 0.3;
+	RIM_TINT = 0.55;
 }

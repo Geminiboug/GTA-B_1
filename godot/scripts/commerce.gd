@@ -104,7 +104,7 @@ func _physics_process(delta: float) -> void:
 		_near = nearest(_player.global_position)
 	if _open == "" and not _near.is_empty():
 		if _hud and _hud.has_method("show_hint"):
-			_hud.show_hint("T : acheter à %s" % NOMS.get(_near["kind"], "l'étal"))
+			_hud.show_hint(tr("T : ouvrir l'armoire") if _near["kind"] == "armoire" else "T : acheter à %s" % NOMS.get(_near["kind"], "l'étal"))
 		if Input.is_action_just_pressed("parler"):
 			_show(_near["kind"])
 	elif _open != "":
@@ -142,7 +142,11 @@ func buy(kind: String, i: int) -> bool:
 			return false
 		if not perso.achat(kind, i):
 			return false
-		Partie.payer(int(it[1]), it[0])
+		var an0: Node = _player.get("anim") if _player else null
+		if kind == "armoire" and an0 and an0.has_method("play_clips"):
+			an0.play_clips([["Chest_Open", 0.0]], true)     # on ouvre l'armoire et on se change
+		if int(it[1]) > 0:
+			Partie.payer(int(it[1]), it[0])
 		if _open != "":
 			_refresh()
 		return true
@@ -181,6 +185,9 @@ func buy(kind: String, i: int) -> bool:
 
 
 func _show(kind: String) -> void:
+	var perso := get_node_or_null("../Personnalisation")
+	if perso and perso.has_method("preparer"):
+		perso.preparer(kind)              # listes qui changent (armoire : garde-robe du moment)
 	_open = kind
 	if _player:
 		_player.menus["commerce"] = true
@@ -193,19 +200,19 @@ func _refresh() -> void:
 	for c in _list.get_children():
 		c.free()
 	var title := Label.new()
-	title.text = tr("Acheter à %s   (%s en poche)") % [tr(NOMS.get(_open, "")), Partie.fcfa(Partie.argent)]
+	title.text = tr("Armoire : choisis ce que tu portes") if _open == "armoire" else tr("Acheter à %s   (%s en poche)") % [tr(NOMS.get(_open, "")), Partie.fcfa(Partie.argent)]
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
 	_list.add_child(title)
 	var items: Array = ARTICLES[_open]
 	for i in items.size():
 		var l := Label.new()
-		l.text = "%s%d.  %s   %s" % ["> " if i == _sel else "   ", i + 1, tr(items[i][0]), Partie.fcfa(int(items[i][1]))]
+		l.text = "%s%d.  %s   %s" % ["> " if i == _sel else "   ", i + 1, tr(items[i][0]), "" if _open == "armoire" else Partie.fcfa(int(items[i][1]))]
 		l.add_theme_font_size_override("font_size", 20)
 		l.add_theme_color_override("font_color", Color(1, 1, 1) if i == _sel else Color(0.8, 0.8, 0.8))
 		_list.add_child(l)
 	var help := Label.new()
-	help.text = "1-%d ou Entrée : acheter    T : fermer" % items.size()
+	help.text = ("1-%d ou Entrée : mettre    T : fermer" if _open == "armoire" else "1-%d ou Entrée : acheter    T : fermer") % items.size()
 	help.add_theme_font_size_override("font_size", 16)
 	help.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	_list.add_child(help)

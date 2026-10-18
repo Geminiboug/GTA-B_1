@@ -113,6 +113,7 @@ static var _trace_n := 0
 const TRACES_MAX := 700
 const VITRE_CASSEE := preload("res://shaders/vitre_cassee.gdshader")
 const SALETE := preload("res://shaders/salete_auto.gdshader")
+const CLIGNOTANT := preload("res://shaders/clignotant.gdshader")
 static var _verre: StandardMaterial3D      # vitres teintees qui refletent le ciel (communes a toutes les voitures)
 var usure := Vector2(-1.0, -1.0)          # (poussiere, rouille) 0..1 ; negatif : tire au hasard a la creation
 # degats visibles : tole enfoncee au point de choc, vitres etoilees, phares casses, feu moteur
@@ -123,7 +124,11 @@ var _phares_casses := [false, false]
 var _feu: GPUParticles3D
 var _feu_lum: OmniLight3D
 var _recul: SpotLight3D                # feux de recul : eclairent le sol derriere en marche arriere
-var _clign_mat: StandardMaterial3D     # clignotants (warnings quand la voiture est en panne)
+var _clign_mat: ShaderMaterial         # clignotants : gauche / droite (shaders/clignotant.gdshader), warnings en panne
+var moteur := false              # contact mis : le moteur tourne (demarreur quand on s'installe, coupe en descendant)
+var _demarreur_t := 0.0
+var _clign_cote := 0             # -1 gauche, 1 droite, 0 eteints (clignotant automatique en tournant)
+var _clign_on := false
 var _clign_t := 0.0
 var _horn: AudioStreamPlayer3D
 var _screech: AudioStreamPlayer3D
@@ -201,10 +206,8 @@ func setup(model: Node3D, model_id: String, color: Color) -> void:
 					mi.set_surface_override_material(s, _tail_mat)
 				"mat_clignotant":
 					if _clign_mat == null:
-						_clign_mat = (m as BaseMaterial3D).duplicate() as StandardMaterial3D
-						_clign_mat.emission_enabled = true
-						_clign_mat.emission = Color(1.0, 0.55, 0.05)
-						_clign_mat.emission_energy_multiplier = 0.0
+						_clign_mat = ShaderMaterial.new()
+						_clign_mat.shader = CLIGNOTANT
 					mi.set_surface_override_material(s, _clign_mat)
 
 
@@ -450,6 +453,16 @@ func _trace(_delta: float) -> void:
 func set_rider(value: bool) -> void:
 	has_rider = value
 	rider_changed.emit(value)
+	# contact : demarreur en s'installant, moteur coupe en descendant
+	if value and not moteur and health > 0.0:
+		_demarreur_t = 0.9
+		if _fx == null:
+			return
+		_fx.stream = _son("demarreur", func() -> AudioStream: return AudioSynth.demarreur())
+		_fx.volume_db = -6.0
+		_fx.play()
+	elif not value:
+		moteur = false
 
 
 func seat_transform() -> Transform3D:
@@ -718,8 +731,15 @@ func _physics_process(delta: float) -> void:
 		brake_in = ai_input.y
 		steer_in = ai_input.z
 		hand = false
-	if health <= 0.0:
+	if ai:
+		moteur = true
+	if _demarreur_t > 0.0:
+		_demarreur_t -= delta
+		if _demarreur_t <= 0.0:
+			moteur = true
+	if health <= 0.0 or not moteur:
 		acc_in = 0.0
+	_clignotants(steer_in)
 	_sonde_surface(delta)
 	var fwd := Vector2(-sin(_yaw), -cos(_yaw))
 	var right := Vector2(cos(_yaw), -sin(_yaw))
@@ -939,6 +959,17 @@ func _hauteur_obstacle(contact: Vector3, n: Vector3) -> float:
 	return (h1["position"] as Vector3).y - (h2["position"] as Vector3).y
 
 
+func _clignotants(steer_in: float) -> void:
+	## Clignotant automatique : en ville, on tourne (volant tenu d'un cote, sous ~50 km/h) ; s'eteint en sortant du
+	## virage, comme le volant qui revient au centre.
+	if not has_rider:
+		_clign_cote = 0
+	elif absf(steer_in) > 0.5 and absf(speed) < 14.0 and absf(speed) > 0.5:
+		_clign_cote = -1 if steer_in > 0.0 else 1
+	elif absf(_steer) < 0.05:
+		_clign_cote = 0
+
+
 func _update_visual(delta: float, slip: float) -> void:
 	_suspension(delta)
 	for st in _steer_nodes:
@@ -953,11 +984,21 @@ func _update_visual(delta: float, slip: float) -> void:
 	if _feu_lum:
 		_feu_lum.light_energy = 1.6 + randf() * 0.9
 	_recul.light_energy = 2.5 if rapport < 0 and absf(speed) > 0.05 and has_rider else 0.0
-	# warnings : la voiture abimee (moteur qui fume) clignote a 1,5 Hz
+	# clignotants (1,5 Hz) : warnings si la voiture est abimee, sinon le cote ou l'on tourne
 	if _clign_mat:
 		_clign_t += delta
-		var on := health < 40.0 and fmod(_clign_t * 1.5, 1.0) < 0.5
-		_clign_mat.emission_energy_multiplier = 3.0 if on else 0.0
+		var phase := fmod(_clign_t * 1.5, 1.0) < 0.5
+		var warn := health < 40.0
+		var g := 1.0 if phase and (warn or _clign_cote < 0) else 0.0
+		var d := 1.0 if phase and (warn or _clign_cote > 0) else 0.0
+		_clign_mat.set_shader_parameter("gauche", g)
+		_clign_mat.set_shader_parameter("droite", d)
+		var on := g + d > 0.0
+		if on != _clign_on and has_rider and (warn or _clign_cote != 0) and not _fx.playing:
+			_fx.stream = _son("tic", func() -> AudioStream: return AudioSynth.tic_clignotant())
+			_fx.volume_db = -14.0
+			_fx.play()
+		_clign_on = on
 	if (slip > 3.0 and absf(speed) > 4.0) or patine:
 		_screech.volume_db = linear_to_db(clampf((slip - 3.0) / 6.0, 0.05, 1.0)) - 4.0
 	else:
@@ -1016,7 +1057,9 @@ func _update_sound(delta: float, _slip: float) -> void:
 	_engine_off.pitch_scale = pitch
 	var load := clampf(throttle, 0.0, 1.0)
 	var vol := -11.0 + 7.0 * clampf(rpm / regime_max, 0.0, 1.0)
-	if health <= 0.0:
+	if not moteur and _demarreur_t <= 0.0:
+		rpm = lerpf(rpm, 0.0, 1.0 - exp(-4.0 * delta))
+	if health <= 0.0 or (not moteur and _demarreur_t <= 0.0):
 		_engine.volume_db = -80.0
 		_engine_off.volume_db = -80.0
 	else:

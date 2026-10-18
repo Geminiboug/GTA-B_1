@@ -432,6 +432,34 @@ static func petarade() -> AudioStreamWAV:
 	return _wav(out, false)
 
 
+static func demarreur() -> AudioStreamWAV:
+	## Demarreur (0,9 s) : le moteur electrique entraine le moteur par a-coups (compressions), puis il prend.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 88
+	var n := int(RATE * 0.9)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for i in n:
+		var t := float(i) / RATE
+		var compressions := 0.55 + 0.45 * sin(TAU * 11.0 * t)
+		var whine := sin(TAU * 230.0 * t) * 0.25 + sin(TAU * 460.0 * t) * 0.08
+		var bruit := (rng.randf() * 2.0 - 1.0) * 0.12
+		var prise := smoothstep(0.62, 0.9, t)
+		out[i] = ((whine + bruit) * compressions * (1.0 - prise) + sin(TAU * 55.0 * t) * prise * 0.5) * 0.7
+	return _wav(out, false)
+
+
+static func tic_clignotant() -> AudioStreamWAV:
+	## Relais de clignotant : tic sec.
+	var n := int(RATE * 0.05)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	for i in n:
+		var t := float(i) / RATE
+		out[i] = sin(TAU * 1900.0 * t) * exp(-t * 180.0) * 0.4
+	return _wav(out, false)
+
+
 static func passage_rapport() -> AudioStreamWAV:
 	## Petit clonc mecanique du passage de rapport (boite automatique qui passe).
 	var n := int(RATE * 0.12)

@@ -51,7 +51,7 @@ func _physics_process(d: float) -> bool:
 	t += d
 	var kmh: float = float(car.get("speed")) * 3.6
 	if phase == "bordure":
-		if t > 2.0:
+		if t > 4.0:
 			v_min = minf(v_min, kmh)
 		var p: Vector3 = car.global_position
 		if t > 9.0:

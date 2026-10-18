@@ -10,6 +10,7 @@ const VARIANTS := {"homme": "homme", "homme_fort": "homme", "femme": "femme", "f
 const HAIR_PARTS := ["chr_cheveux", "chr_cheveux_age", "chr_afro", "chr_chignon", "chr_tresse", "chr_vanille", "chr_meches"]
 const WAX := preload("res://shaders/wax.gdshader")
 const MAILLOT := preload("res://shaders/maillot.gdshader")
+const TISSU := preload("res://shaders/tissu.gdshader")
 const CHEVEUX := preload("res://shaders/cheveux.gdshader")
 # clubs fictifs (aucun club reel) : [couleur 1, couleur 2, motif]
 const CLUBS := [
@@ -115,15 +116,22 @@ static func uniform_look(kind: String, genre: String, rng: RandomNumberGenerator
 	return look
 
 
-static func plain(c: Color) -> Material:
-	var key := "p|" + c.to_html()
+static func plain(c: Color, armure := 0, use := 0.0) -> Material:
+	## Tissu uni (shaders/tissu.gdshader) : couleur, plis, trame (0 toile de coton, 1 serge de jean, 2 maille), usure.
+	var key := "p|%s|%d|%.2f" % [c.to_html(), armure, use]
 	if not _mat_cache.has(key):
-		var m := StandardMaterial3D.new()
-		m.albedo_color = c
-		m.roughness = 0.85
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED   # tissu vu des deux cotes (interieur des manches, aisselles)
+		var m := ShaderMaterial.new()
+		m.shader = TISSU
+		m.set_shader_parameter("couleur", c)
+		m.set_shader_parameter("armure", armure)
+		m.set_shader_parameter("use", use)
 		_mat_cache[key] = m
 	return _mat_cache[key]
+
+
+static func jean(c: Color) -> Material:
+	## Jean : serge diagonale, delave aux cuisses et aux genoux.
+	return plain(c, 1, 0.6)
 
 
 static func wax(palette: Array, motif: int) -> Material:
@@ -316,7 +324,8 @@ static func random_look(ch: Node, rng: RandomNumberGenerator, kind := "") -> Dic
 	var pal: Array = WAX_PALETTES[rng.randi() % WAX_PALETTES.size()]
 	var cloth := wax(pal, rng.randi() % 4)
 	var shirt := plain(SHIRTS[rng.randi() % SHIRTS.size()])
-	var pants := plain(PANTS[rng.randi() % PANTS.size()])
+	var pc: Color = PANTS[rng.randi() % PANTS.size()]
+	var pants := jean(pc) if pc.b > pc.r + 0.08 and rng.randf() < 0.7 else plain(pc)   # bleus : souvent des jeans
 	var look := {"skin": skin, "top": shirt, "legs": pants, "cloth": cloth, "show": [],
 		"cap": plain(SHIRTS[rng.randi() % SHIRTS.size()].darkened(0.2))}
 	var show: Array = look["show"]

@@ -29,7 +29,7 @@ const MX_IDLES := ["MX_Idle_Respire", "MX_Idle_Neutre", "MX_Idle_Appui", "MX_Idl
 const MX_MARCHES := ["MX_Marche", "MX_Marche_Standard"]
 
 @export var walk_to_jog := Vector2(1.9, 3.0)     # m/s : passage progressif marche -> trot
-@export var jog_to_sprint := Vector2(5.6, 6.6)   # m/s : passage trot -> sprint
+@export var jog_to_sprint := Vector2(6.25, 6.75) # m/s : passage course -> sprint ; hors de l allure tenue (5,9 m/s) : le melange de deux cycles de durees differentes dephasait les pieds (a-coups reguliers)
 @export var lean_per_turn := 0.05                # inclinaison (rad) par (rad/s x m/s) dans les virages
 @export var stance_width := 0.26                 # m entre les chevilles au repos
 @export var stance_stagger := 0.08               # m d'un pied devant l'autre au repos

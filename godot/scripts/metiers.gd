@@ -213,6 +213,9 @@ func _ramasser() -> void:
 			deja.append(c["id"])
 			Partie.drapeaux["cauris"] = deja
 			(c["node"] as Node3D).visible = false
+			var an: Node = _player.get("anim")
+			if an and an.has_method("play_clips"):
+				an.play_clips([["PickUp_Table", 0.0]], true)   # on se baisse pour ramasser le sac
 			Partie.gagner(500, "Cauris trouvés")
 			Partie.notifier(tr("Sac de cauris : %d / %d") % [deja.size(), NB_CAURIS])
 			if deja.size() == NB_CAURIS:

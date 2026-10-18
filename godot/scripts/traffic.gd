@@ -18,6 +18,7 @@ extends Node3D
 @export var steer_gain := 2.2          # reactivite du volant (1/s)
 
 const ZEM_SCENE := preload("res://assets/models/veh_zem.glb")
+const ZEM := preload("res://scripts/zem.gd")
 const SALETE := preload("res://shaders/salete_auto.gdshader")
 const VOITURE := preload("res://scripts/voiture.gd")
 const LAMP_MAT := preload("res://shaders/lampe_material.tres")
@@ -79,6 +80,9 @@ func _build_meshes() -> Dictionary:
 		add_child(asm)
 		var z := ZEM_SCENE.instantiate()
 		asm.add_child(z)
+		var bq := z.find_child("piv_bequille", true, false) as Node3D
+		if bq:
+			bq.rotation.x = ZEM.BEQUILLE_REPLIEE   # moto qui roule : bequille relevee
 		_lamp_surfaces(z, "veh_phare")
 		var driver := PnjUtil.make("homme")
 		asm.add_child(driver)

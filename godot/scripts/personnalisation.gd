@@ -3,6 +3,8 @@ extends Node3D
 ## - Tenues : tailleur Chez Dossou (boubou en wax sur mesure), friperie (t-shirts, jean), boutique de maillots de clubs
 ##   fictifs, chaussures (sandales, baskets) ; coiffeur Salon Élégance (coupes, afro, tresses, rase).
 ##   La tenue choisie (Partie.tenue) est gardee dans la sauvegarde, avec la garde-robe (tout ce qui a ete achete).
+## - Armoire (a cote du lit de la maison, et dans les proprietes achetees) : T pour remettre gratuitement n'importe
+##   quel vetement deja achete, ou la tenue de depart.
 ## - Garage de Tonton Codjo : reparation, peinture d'une nouvelle couleur, klaxon deux tons pour le vehicule gare devant.
 ## - Proprietes (Agence Immo Gbekpo) : chambre ou appartement achetes, planques et points de sauvegarde (E pour
 ##   dormir) ; le vehicule gare devant y reste d'une partie a l'autre.
@@ -36,6 +38,7 @@ var _player: CharacterBody3D
 var _points := {}                 # cle -> position (boutiques, proprietes)
 var _hud: Node
 var _sleep_cd := 0.0
+var _armoire: Array = []          # [boutique d'origine, article] dans l'ordre affiche par l'armoire
 
 
 func _ready() -> void:
@@ -70,6 +73,8 @@ func _ready() -> void:
 		com.ARTICLES["agence"] = a
 		for k in BOUTIQUES:
 			com.NOMS[k] = BOUTIQUES[k]["nom"]
+		com.NOMS["armoire"] = "l'armoire"
+		com.ARTICLES["armoire"] = []
 	Partie.chantier_differe(_placer)   # etape de la mise en place etalee pendant le chargement
 	if _player and _player.has_signal("modele_change"):
 		_player.connect("modele_change", _habiller_si_besoin)
@@ -98,6 +103,15 @@ func _placer() -> void:
 		_enseigne(k, p, String(tout[k][1]))
 		if com and not String(k).begins_with("prop_"):
 			com.spots.append({"pos": p, "kind": k})
+	# armoires : a cote du lit de la maison, et devant les proprietes achetees
+	var lieux := get_node_or_null("../Lieux")
+	var lit: Node3D = lieux.get("bed") if lieux else null
+	if com and lit:
+		com.spots.append({"pos": lit.global_position + lit.global_transform.basis.x * 1.4, "kind": "armoire"})
+	if com:
+		for k in PROPRIETES:
+			if _possede(k):
+				com.spots.append({"pos": _points["prop_" + k] + Vector3(0, 0, 2.0), "kind": "armoire"})
 	_garer_vehicules_sauves()
 
 
@@ -139,12 +153,67 @@ func _possede(k: String) -> bool:
 
 # ------------------------------------------------------------------ achats (appele par scripts/commerce.gd)
 func gere(kind: String) -> bool:
-	return BOUTIQUES.has(kind)
+	return BOUTIQUES.has(kind) or kind == "armoire"
+
+
+func preparer(kind: String) -> void:
+	## Appele par commerce.gd a l'ouverture : l'armoire liste la garde-robe du moment (gratuit).
+	if kind != "armoire":
+		return
+	var com := get_node("../Commerce")
+	_armoire = [["", "Tenue de départ"]]
+	for nom in Partie.drapeaux.get("garde_robe", []):
+		for k in ["tailleur", "friperie", "maillots", "coiffeur"]:
+			for it in com.ARTICLES.get(k, []):
+				if it[0] == nom:
+					_armoire.append([k, nom])
+	var items: Array = []
+	for e in _armoire:
+		items.append([e[1], 0, 0])
+	com.ARTICLES["armoire"] = items
 
 
 func achat(kind: String, i: int) -> bool:
 	## Applique l'article i de la boutique ; renvoie faux s'il n'a pas pu etre applique (rien n'est alors facture).
 	var nom: String = (get_node("../Commerce").ARTICLES[kind] as Array)[i][0]
+	if kind == "armoire":
+		# on remet un vetement deja achete : meme effet qu'a la boutique, sans payer
+		var e: Array = _armoire[i]
+		if e[0] == "":
+			Partie.tenue.clear()
+		else:
+			var liste: Array = get_node("../Commerce").ARTICLES[e[0]]
+			for j in liste.size():
+				if liste[j][0] == e[1]:
+					_appliquer(e[0], j, e[1])
+		habiller()
+		_semer_police()
+		return true
+	match kind:
+		"garage":
+			return _garage(i)
+		"agence":
+			return _acheter_propriete(PROPRIETES.keys()[i])
+	_appliquer(kind, i, nom)
+	var gr: Array = Partie.drapeaux.get("garde_robe", [])
+	if not gr.has(nom):
+		gr.append(nom)
+	Partie.drapeaux["garde_robe"] = gr
+	habiller()
+	if kind != "coiffeur":
+		_semer_police()
+	return true
+
+
+func _semer_police() -> void:
+	# nouvelle tenue sans policier en vue : une etoile de moins
+	if Partie.recherche > 0 and not Partie.police_voit:
+		Partie.set_recherche(Partie.recherche - 1)
+		Partie.notifier(tr("Nouvelle tenue : la police ne te reconnaît plus aussi bien."))
+
+
+func _appliquer(kind: String, i: int, nom: String) -> void:
+	## Effet d'un article de vetement ou de coiffure sur Partie.tenue.
 	var t: Dictionary = Partie.tenue
 	match kind:
 		"tailleur":
@@ -157,6 +226,7 @@ func achat(kind: String, i: int) -> bool:
 				t["haut"] = [c.r, c.g, c.b]
 			elif nom == "Jean délavé":
 				t["bas"] = [0.32, 0.42, 0.58]
+				t["jean"] = true
 			else:
 				t["chaussures"] = "chr_semelle" if nom == "Sandales" else "chr_chaussures"
 		"maillots":
@@ -164,20 +234,6 @@ func achat(kind: String, i: int) -> bool:
 			t["club"] = i
 		"coiffeur":
 			t["coiffure"] = COIFFURES[nom]
-		"garage":
-			return _garage(i)
-		"agence":
-			return _acheter_propriete(PROPRIETES.keys()[i])
-	var gr: Array = Partie.drapeaux.get("garde_robe", [])
-	if not gr.has(nom):
-		gr.append(nom)
-	Partie.drapeaux["garde_robe"] = gr
-	habiller()
-	# nouvelle tenue sans policier en vue : une etoile de moins
-	if Partie.recherche > 0 and not Partie.police_voit and kind != "coiffeur":
-		Partie.set_recherche(Partie.recherche - 1)
-		Partie.notifier(tr("Nouvelle tenue : la police ne te reconnaît plus aussi bien."))
-	return true
 
 
 func habiller() -> void:
@@ -199,7 +255,7 @@ func look(genre: String) -> Dictionary:
 	var t: Dictionary = Partie.tenue
 	var skin: Color = PnjUtil.SKINS[0]
 	var bas_c: Array = t.get("bas", [0.2, 0.3, 0.48])
-	var bas := PnjUtil.plain(Color(bas_c[0], bas_c[1], bas_c[2]))
+	var bas := PnjUtil.jean(Color(bas_c[0], bas_c[1], bas_c[2])) if t.get("jean", false) else PnjUtil.plain(Color(bas_c[0], bas_c[1], bas_c[2]))
 	var haut_c: Array = t.get("haut", [0.1, 0.5, 0.55])
 	var haut := PnjUtil.plain(Color(haut_c[0], haut_c[1], haut_c[2]))
 	var cheveux: String = t.get("coiffure", "chr_cheveux" if genre == "homme" else "chr_tresse")
@@ -294,6 +350,9 @@ func _acheter_propriete(k: String) -> bool:
 	var lab := get_node_or_null("Enseigne_prop_%s/Nom" % k) as Label3D
 	if lab:
 		lab.text = PROPRIETES[k]["nom"] + "  ✓"
+	var com := get_node_or_null("../Commerce")
+	if com and _points.has("prop_" + k):
+		com.spots.append({"pos": _points["prop_" + k] + Vector3(0, 0, 2.0), "kind": "armoire"})
 	Partie.notifier(tr("%s est à toi : E devant la porte pour dormir et sauvegarder.") % tr(PROPRIETES[k]["nom"]))
 	return true
 
