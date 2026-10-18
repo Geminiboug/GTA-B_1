@@ -50,6 +50,14 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 @export var rigidite_avant := 11.0       # rigidite de derive / charge (par rad) : plus haut = plus vif
 @export var rigidite_arriere := 12.5     # un peu plus a l'arriere : la voiture sous-vire, stable
 @export var abs_actif := true            # freinage a la limite d'adherence sans bloquer les roues
+## Direction asservie a la vitesse : au-dela de quelques m/s, le braquage est limite a ce que les pneus peuvent
+## transmettre (marge braquage_marge) : au clavier (tout ou rien), on tourne au maximum sans saturer les pneus.
+@export var braquage_marge := 1.35
+## Controle de stabilite (ESP) : 0 = aucun, 1 = la derive de la caisse est corrigee des qu'elle depasse esp_seuil
+## (sauf frein a main : on peut toujours faire deraper volontairement).
+@export_range(0.0, 1.0) var esp := 1.0
+@export var marche_max := 0.22           # m : bordures et trottoirs franchis par les roues (pas un choc)
+@export var esp_seuil := 0.1             # rad de derive de la caisse avant correction
 @export_group("")
 
 var kind := "voiture"
@@ -784,6 +792,10 @@ func _physics_process(delta: float) -> void:
 	# lacet). Sous-virage si l'avant sature (entree trop rapide), survirage si l'arriere decroche (frein a main, lever
 	# de pied en appui, terre ou sable), contre-braquage possible. A basse vitesse : geometrie pure (manoeuvres).
 	var steer_limit := max_steer / (1.0 + absf(nl) * 0.045)
+	if absf(nl) > 4.0:
+		# braquage utile max : virage a la limite d'adherence (R = v2 / mu.g) + derive des pneus, avec une marge
+		var utile := _wheelbase * mu * G / (nl * nl) + mu * G * masse / maxf(rigidite_avant * masse * G, 1.0)
+		steer_limit = minf(steer_limit, utile * braquage_marge)
 	var steer_goal := steer_in * steer_limit
 	# volant qui revient seul au centre plus vite qu'il ne braque
 	var rate := steer_speed * (1.6 if absf(steer_goal) < absf(_steer) else 1.0)
@@ -831,6 +843,15 @@ func _physics_process(delta: float) -> void:
 		var dr := (la * ff * cos(_steer) - lb * fr) / iz
 		vy += dvy * h
 		r += dr * h
+		# ESP : freinage selectif simule, la derive de la caisse et le lacet sont ramenes vers la trajectoire
+		if esp > 0.0 and not hand_on:
+			var beta := atan2(vy, absf(vx))
+			if absf(beta) > esp_seuil:
+				var exces := (absf(beta) - esp_seuil) * signf(beta)
+				vy -= exces * absf(vx) * esp * 6.0 * h
+			var r_max := mu * G / maxf(absf(vx), 1.0) * 1.1
+			if absf(r) > r_max:
+				r = move_toward(r, signf(r) * r_max, absf(r) * esp * 8.0 * h)
 	_yaw_rate = r
 	var nlat := -vy
 	derive = atan2(vy, maxf(absf(vx), 1.0))
@@ -852,10 +873,18 @@ func _physics_process(delta: float) -> void:
 		velocity.y = -0.5
 	move_and_slide()
 	_crash_cd = maxf(0.0, _crash_cd - delta)
+	var marche := false
 	for i in get_slide_collision_count():
 		var c := get_slide_collision(i)
 		var n := c.get_normal()
 		if absf(n.y) > 0.6:
+			continue
+		# bordure, trottoir : obstacle bas que les roues franchissent ; la caisse monte, pas de choc ni de degats
+		var haut := _hauteur_obstacle(c.get_position(), n)
+		if haut < marche_max and absf(speed) > 0.5:
+			if not marche:
+				global_position.y += haut + 0.03
+				marche = true
 			continue
 		var n2 := Vector2(n.x, n.z).normalized()
 		var impact := -before.dot(n2)
@@ -882,7 +911,9 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < -0.5:
 		_vel *= exp(-1.6 * delta)
 	var rv := get_real_velocity()
-	if Vector2(rv.x, rv.z).length() < _vel.length():
+	if marche:
+		_vel = before * 0.96                     # la bordure secoue un peu, sans arreter la voiture
+	elif Vector2(rv.x, rv.z).length() < _vel.length():
 		_vel = Vector2(rv.x, rv.z)
 	speed = _vel.dot(Vector2(-sin(_yaw), -cos(_yaw)))
 	_a_long = lerpf(_a_long, (speed - v_long) / delta, 1.0 - exp(-6.0 * delta))
@@ -890,6 +921,22 @@ func _physics_process(delta: float) -> void:
 	_update_visual(delta, absf(nlat))
 	_update_sound(delta, absf(nlat))
 	_effets(delta)
+
+
+func _hauteur_obstacle(contact: Vector3, n: Vector3) -> float:
+	## Hauteur du dessus de l'obstacle au-dessus du sol sous la voiture (rayons verticaux, pas le point de contact
+	## renvoye par le moteur, qui est au milieu de la zone de contact).
+	var space := get_world_3d().direct_space_state
+	var dans := contact - Vector3(n.x, 0.0, n.z).normalized() * 0.08
+	var q := PhysicsRayQueryParameters3D.create(dans + Vector3.UP * 2.0, dans - Vector3.UP * 2.0)
+	q.exclude = [get_rid()]
+	var h1 := space.intersect_ray(q)
+	var q2 := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.0, global_position - Vector3.UP * 3.0)
+	q2.exclude = [get_rid()]
+	var h2 := space.intersect_ray(q2)
+	if h1.is_empty() or h2.is_empty():
+		return INF
+	return (h1["position"] as Vector3).y - (h2["position"] as Vector3).y
 
 
 func _update_visual(delta: float, slip: float) -> void:

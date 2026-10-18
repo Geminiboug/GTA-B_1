@@ -45,7 +45,7 @@ func _ready() -> void:
 	var ph := get_node_or_null("../ModePhoto")
 	if ph and ph.has_signal("photo_prise"):
 		ph.photo_prise.connect(_photo)
-	_placer.call_deferred()
+	Partie.chantier_differe(_placer)   # etape de la mise en place etalee pendant le chargement
 
 
 func _placer() -> void:

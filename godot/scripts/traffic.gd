@@ -55,15 +55,18 @@ func _ready() -> void:
 	add_to_group("circulation")
 	_player = get_node_or_null(player_path)
 	_carte = Carte.zone()
-	_snd_moto = AudioSynth.moto_loop()
-	_snd_car = AudioSynth.voiture_loop()
-	_horn_moto = AudioSynth.klaxon(415.0, 520.0, 0.35)
-	_horn_car = AudioSynth.klaxon(350.0, 440.0, 0.5)
+	# sons synthetises : etapes de la mise en place etalee (avant les vehicules qui les utilisent)
+	Partie.chantier(func() -> void: _snd_moto = AudioSynth.moto_loop())
+	Partie.chantier(func() -> void: _snd_car = AudioSynth.voiture_loop())
+	Partie.chantier(func() -> void:
+		_horn_moto = AudioSynth.klaxon(415.0, 520.0, 0.35)
+		_horn_car = AudioSynth.klaxon(350.0, 440.0, 0.5))
 	var meshes: Dictionary = await _build_meshes()
+	# etale sur plusieurs images pendant l'ecran de chargement (Partie.chantier)
 	for i in zem_count:
-		_spawn("zem_passager" if _rng.randf() < 0.35 else "zem", meshes)
+		Partie.chantier(_spawn.bind("zem_passager" if _rng.randf() < 0.35 else "zem", meshes))
 	for i in car_count:
-		_spawn("voiture", meshes)
+		Partie.chantier(_spawn.bind("voiture", meshes))
 	print("Circulation : %d zems, %d voitures, %d troncons, %d carrefours" % [zem_count, car_count, _carte.edges.size(), _carte.nodes.size()])
 
 

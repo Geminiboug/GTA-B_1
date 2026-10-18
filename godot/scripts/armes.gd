@@ -68,7 +68,7 @@ func _ready() -> void:
 	_son.unit_size = 14.0
 	_son.max_distance = 260.0
 	add_child(_son)
-	_vendeurs.call_deferred()
+	Partie.chantier_differe(_vendeurs)   # etape de la mise en place etalee pendant le chargement
 
 
 func _input(event: InputEvent) -> void:

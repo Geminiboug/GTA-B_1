@@ -249,7 +249,7 @@ func _show_options() -> void:
 	_slider("Taille de l'interface", o.get("taille_interface", 1.0), 0.8, 1.6, func(v: float) -> void: o["taille_interface"] = v)
 	_check("Aide à la visée (souris)", o.get("aide_visee", true), func(v: bool) -> void: o["aide_visee"] = v)
 	_button("Touches du clavier", _show_touches)
-	_check("Couleurs adaptées au daltonisme (au prochain lancement)", o.get("daltonisme", false), func(v: bool) -> void: o["daltonisme"] = v)
+	_check("Couleurs adaptées au daltonisme", o.get("daltonisme", false), func(v: bool) -> void: o["daltonisme"] = v)
 	_check("Violence réduite (armes moins puissantes)", o.get("violence_reduite", false), func(v: bool) -> void: o["violence_reduite"] = v)
 	var rl := HBoxContainer.new()
 	var ll := Label.new()
@@ -262,7 +262,10 @@ func _show_options() -> void:
 	for n in ["Automatique", "Français", "English"]:
 		ol.add_item(n)
 	ol.selected = maxi(codes.find(String(o.get("langue", "auto"))), 0)
-	ol.item_selected.connect(func(i: int) -> void: o["langue"] = codes[i])
+	ol.item_selected.connect(func(i: int) -> void:
+		o["langue"] = codes[i]
+		_apercu()
+		_show_options.call_deferred())   # la page se redessine dans la nouvelle langue
 	rl.add_child(ol)
 	_box.add_child(rl)
 	var row := HBoxContainer.new()
@@ -275,12 +278,20 @@ func _show_options() -> void:
 	for n in Qualite.NOMS:
 		ob.add_item(n)
 	ob.selected = int(o["qualite"])
-	ob.item_selected.connect(func(i: int) -> void: o["qualite"] = i)
+	ob.item_selected.connect(func(i: int) -> void:
+		o["qualite"] = i
+		_apercu())
 	row.add_child(ob)
 	_box.add_child(row)
 	_button("Appliquer et revenir", func() -> void:
 		Partie.sauver_options()
 		_back()).grab_focus.call_deferred()
+
+
+func _apercu() -> void:
+	## Chaque reglage s'applique tout de suite (son, image, couleurs) ; "Appliquer" l'enregistre.
+	if _page == "options":
+		Partie.appliquer_options()
 
 
 func _slider(text: String, value: float, lo: float, hi: float, cb: Callable) -> void:
@@ -297,6 +308,7 @@ func _slider(text: String, value: float, lo: float, hi: float, cb: Callable) -> 
 	s.value = value
 	s.custom_minimum_size = Vector2(200, 0)
 	s.value_changed.connect(cb)
+	s.value_changed.connect(func(_v: float) -> void: _apercu())
 	row.add_child(s)
 	_box.add_child(row)
 
@@ -307,6 +319,7 @@ func _check(text: String, value: bool, cb: Callable) -> void:
 	c.button_pressed = value
 	c.add_theme_font_size_override("font_size", 20)
 	c.toggled.connect(cb)
+	c.toggled.connect(func(_v: bool) -> void: _apercu())
 	_box.add_child(c)
 
 

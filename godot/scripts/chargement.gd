@@ -2,9 +2,10 @@ extends Node
 ## Ecran de chargement (scene de demarrage) : charge la zone en tache de fond et montre un carrousel de vraies captures
 ## du jeu (fondu enchaine, leger zoom), le logo GTB, le nom du lieu, une astuce et la progression.
 ## Etapes : 1) chargement de la scene (ResourceLoader en fond) : vraie progression en % ;
-## 2) construction des noeuds de la zone (instanciation dans un fil de travail) : pas de % connu, barre animee ;
-## 3) entree dans la zone (change_scene_to_node, la zone devient current_scene comme avant), puis fondu de sortie.
-## L'interface vit dans un CanvasLayer rattache a la racine pendant le passage, pour rester visible jusqu'au fondu.
+## 2) entree dans la zone (change_scene_to_node : la zone devient current_scene comme avant) ;
+## 3) mise en place etalee : les scripts lourds (pietons, circulation, concessions) ont confie leurs etapes a
+##    Partie.chantier ; l'ecran les execute quelques ms par image (le carrousel continue), % = etapes faites ;
+## 4) fondu de sortie. Ce noeud n'est plus la scene courante des l'etape 2 : il survit au changement de scene.
 
 const ZEM := Color("#F2BB2C")
 const TITRE := Color("#FFD140")
@@ -38,11 +39,11 @@ const ASTUCES := [
 @export var duree_diapo := 5.5           # s par image
 @export var duree_fondu := 1.2           # s de fondu enchaine
 @export var zoom_diapo := 0.06           # zoom lent sur chaque image (6 %)
-@export var instancier_en_fond := false  # true : construit la zone dans un fil de travail (bien plus lent : chaque appel graphique attend une image)
-@export var sous_fils := false        # sous-fils du ResourceLoader (plus lent sur certains disques)
+@export var sous_fils := false           # sous-fils du ResourceLoader (plus lent sur certains disques)
+@export var budget_ms := 12.0            # temps de mise en place par image (le reste pour l'affichage)
 
-var etape := "chargement"                # chargement, construction, entree, fini, erreur
-var progression := 0.0                   # 0..1 (etape chargement), -1 = inconnue
+var etape := "chargement"                # chargement, mise_en_place, fini, erreur
+var progression := 0.0                   # 0..1, -1 = inconnue
 var _ui: CanvasLayer
 var _cadre: Control
 var _img: Array[TextureRect] = []
@@ -57,12 +58,14 @@ var _barre: Control
 var _roue: Control
 var _paquet: PackedScene
 var _zone: Node
-var _tache := -1
+var _faits := 0
+var _vide := 0
 var _rng := RandomNumberGenerator.new()
 var _t0 := Time.get_ticks_msec()
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS   # l ecran titre met le jeu en pause pendant la mise en place
 	_rng.randomize()
 	_construire_ui()
 	_montrer(0, true)
@@ -84,50 +87,57 @@ func _process(delta: float) -> void:
 				if _paquet == null:
 					_echec()
 					return
-				etape = "construction"
 				print("Chargement : scene chargee en %d ms" % (Time.get_ticks_msec() - _t0))
-				progression = -1.0
 				_etat.text = tr("Mise en place du quartier…")
-				if instancier_en_fond:
-					_tache = WorkerThreadPool.add_task(_instancier)
+				progression = 0.0
+				_entrer.call_deferred()
+				etape = "entree"
 			elif st == ResourceLoader.THREAD_LOAD_FAILED or st == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 				_echec()
-		"construction":
-			if not instancier_en_fond:
-				_instancier()
-				_entrer.call_deferred()
-				etape = "entree"
-			elif WorkerThreadPool.is_task_completed(_tache):
-				WorkerThreadPool.wait_for_task_completion(_tache)
-				etape = "entree"
-				_entrer.call_deferred()
+		"mise_en_place":
+			_mise_en_place()
 	_maj_barre()
-
-
-func _instancier() -> void:
-	_zone = _paquet.instantiate()
 
 
 func _entrer() -> void:
 	## La zone devient la scene courante (les scripts qui testent current_scene a leur _ready gardent leur comportement).
+	_zone = _paquet.instantiate()
 	if _zone == null:
 		_echec()
 		return
-	_ui.reparent(get_tree().root)
-	set_process(false)
-	var arbre := get_tree()   # ce noeud quitte l arbre des le changement de scene
+	Partie.chantiers.clear()
+	Partie.chantier_actif = true
+	var arbre := get_tree()
+	arbre.current_scene = null          # ce noeud n'est plus la scene courante : le changement de scene ne le libere pas
+	# le monde 3D n'est pas dessine sous l'ecran opaque : pas de rendu ni de compilation de shaders a chaque image
+	get_viewport().disable_3d = true
 	arbre.change_scene_to_node(_zone)
-	etape = "fini"
-	# ce noeud est libere par le changement de scene : le journal passe par une fonction statique du script
-	arbre.process_frame.connect(Callable(get_script(), "journal").bind(_t0), CONNECT_ONE_SHOT)
-	# l'ecran reste affiche pendant les premieres images de la zone (souvent les plus lourdes), puis fondu ;
-	# le tween appartient a l'interface, qui survit a ce noeud (libere par le changement de scene)
-	var ui := _ui
-	var tw := ui.create_tween().set_parallel()
-	for c in ui.get_children():
-		if c is CanvasItem:
-			tw.tween_property(c, "modulate:a", 0.0, 0.6).set_delay(0.4)
-	tw.chain().tween_callback(ui.queue_free)
+	etape = "mise_en_place"
+
+
+func _mise_en_place() -> void:
+	## Execute les etapes confiees a Partie.chantier, budget_ms par image ; progression = etapes faites / total connu.
+	var t := Time.get_ticks_usec()
+	while not Partie.chantiers.is_empty() and Time.get_ticks_usec() - t < budget_ms * 1000.0:
+		var c: Callable = Partie.chantiers.pop_front()
+		if c.is_valid():
+			c.call()
+		_faits += 1
+	var total := _faits + Partie.chantiers.size()
+	progression = float(_faits) / float(maxi(total, 1))
+	# quelques images sans nouvelle etape (des scripts attendent une image avant de confier les leurs) : termine
+	_vide = _vide + 1 if Partie.chantiers.is_empty() else 0
+	if _vide == 20:
+		get_viewport().disable_3d = false   # premiere image du monde (la plus lourde) encore sous l'ecran
+	if _vide >= 24:
+		Partie.chantier_actif = false
+		etape = "fini"
+		print("Chargement : zone en place en %d ms (%d etapes)" % [Time.get_ticks_msec() - _t0, _faits])
+		var tw := create_tween().set_parallel()
+		for c in _ui.get_children():
+			if c is CanvasItem:
+				tw.tween_property(c, "modulate:a", 0.0, 0.6)
+		tw.chain().tween_callback(queue_free)
 
 
 func _echec() -> void:
@@ -214,7 +224,6 @@ func _construire_ui() -> void:
 	_ui = CanvasLayer.new()
 	_ui.name = "EcranChargement"
 	_ui.layer = 100
-	_ui.process_mode = Node.PROCESS_MODE_ALWAYS   # le fondu continue quand l ecran titre met le jeu en pause
 	add_child(_ui)
 	# cadre a l'echelle de la hauteur d'ecran (maquette en 720 p) : meme mise en page sur PC et telephone
 	_cadre = Control.new()
@@ -358,8 +367,3 @@ func _dessiner_barre() -> void:
 		var w := s.x * 0.25
 		var x := (sin(t * 2.2) * 0.5 + 0.5) * (s.x - w)
 		_barre.draw_rect(Rect2(Vector2(x, 0), Vector2(w, s.y)), ZEM)
-
-
-static func journal(t0: int) -> void:
-	## premiere image apres l'entree de la zone dans l'arbre : temps total jusqu'au jeu
-	print("Chargement : zone en place en %d ms" % (Time.get_ticks_msec() - t0))

@@ -41,7 +41,7 @@ func _ready() -> void:
 		"amendes": int(Partie.stats.get("amendes", 0)), "missions": Partie.missions_faites.size(),
 		"zem_km": float(Partie.stats.get("distance_zem", 0.0)) / 1000.0, "pos": Vector3.INF}
 	appliquer.call_deferred()
-	_batir_salle.call_deferred()
+	Partie.chantier_differe(_batir_salle)   # etape de la mise en place etalee pendant le chargement
 
 
 func ajouter(cle: String, n: float) -> void:

@@ -38,7 +38,7 @@ func _ready() -> void:
 	for p in _carte.data.get("promenade", []):
 		_promenade.append(Vector2(float(p[0]), float(p[1])))
 	for i in walker_count:
-		_spawn_walker()
+		Partie.chantier(_spawn_walker)   # etale sur plusieurs images pendant l'ecran de chargement
 	var traffic := get_node_or_null("../Circulation")
 	if traffic and traffic.has_signal("driver_ejected"):
 		traffic.driver_ejected.connect(_on_driver_ejected)

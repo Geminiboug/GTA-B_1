@@ -57,7 +57,7 @@ func _ready() -> void:
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fade)
-	_collect.call_deferred()
+	Partie.chantier_differe(_collect)   # etape de la mise en place etalee pendant le chargement
 
 
 func _collect() -> void:

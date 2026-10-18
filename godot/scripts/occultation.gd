@@ -11,8 +11,7 @@ var count := 0
 
 
 func _ready() -> void:
-	var f := FileAccess.open("res://assets/data/zone_aeroport.json", FileAccess.READ)
-	var data: Dictionary = JSON.parse_string(f.get_as_text())
+	var data: Dictionary = Carte.zone().data   # lu une seule fois pour tout le jeu
 	for b in data["buildings"]:
 		var style := String(b.get("style", ""))
 		var h := float(b.get("h", 0.0))

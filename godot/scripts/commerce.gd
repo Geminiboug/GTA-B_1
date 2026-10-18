@@ -59,7 +59,7 @@ func _ready() -> void:
 	add_child(_panel)
 	_list = VBoxContainer.new()
 	_panel.add_child(_list)
-	_collect.call_deferred()
+	Partie.chantier_differe(_collect)   # etape de la mise en place etalee pendant le chargement
 
 
 func _collect() -> void:

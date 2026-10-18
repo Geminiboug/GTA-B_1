@@ -73,19 +73,24 @@ func _ready() -> void:
 	_signs.name = "Enseignes"
 	add_child(_signs)
 	# attendre que les collisions de la carte soient enregistrees avant les requetes physiques
+	await Partie.file_videe()   # pendant le chargement : apres les etapes deja confiees (realisme)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	# avions aux postes : geres par air_traffic.gd (gares, departs, arrivees)
-	_place_billboards()  # en premier : ils ont besoin de place
-	_place_poles_and_lamps()
-	_place_promenade_lamps(data.get("promenade", []))
-	_place_roadside()
-	_place_shop_signs(data["buildings"])
-	_place_wall_texts(data.get("walls", []))
-	_build()
-	placed = true
-	placement_done.emit()
-	print("Props : ", counts)
+	# etapes de la mise en place etalee pendant le chargement (Partie.chantier)
+	Partie.chantier(_place_billboards)  # en premier : ils ont besoin de place
+	Partie.chantier(_place_poles_and_lamps)
+	Partie.chantier(_place_promenade_lamps.bind(data.get("promenade", [])))
+	Partie.chantier(_place_roadside)
+	var bats: Array = data["buildings"]
+	for debut in range(0, bats.size(), 250):   # par paquets (~60 ms) : meme resultat, meme ordre
+		Partie.chantier(_place_shop_signs.bind(bats.slice(debut, debut + 250)))
+	Partie.chantier(_place_wall_texts.bind(data.get("walls", [])))
+	Partie.chantier(_build)
+	Partie.chantier(func() -> void:
+		placed = true
+		placement_done.emit()
+		print("Props : ", counts))
 
 
 # ---------------------------------------------------------------- chargement

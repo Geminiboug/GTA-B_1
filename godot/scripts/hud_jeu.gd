@@ -31,11 +31,22 @@ var _aide_t := 0.0
 var _manette := false
 var _ctx := ""
 var _player: Node
+var _fill_sante: StyleBoxFlat
+
+
+func options_changees() -> void:
+	## Options appliquees depuis le menu : couleurs du mode daltonien sans relancer le jeu.
+	var dalt: bool = bool(Partie.options.get("daltonisme", false))
+	if _argent:
+		_argent.add_theme_color_override("font_color", Color(0.4, 0.85, 1.0) if dalt else Color(0.55, 0.95, 0.55))
+	if _fill_sante:
+		_fill_sante.bg_color = Color(0.3, 0.65, 1.0) if dalt else Color(0.35, 0.8, 0.35)
 
 
 func _ready() -> void:
 	layer = 5
 	add_to_group("hud_jeu")
+	add_to_group("options")
 	var dalt: bool = bool(Partie.options.get("daltonisme", false))
 	_argent = _label(30, Color(0.4, 0.85, 1.0) if dalt else Color(0.55, 0.95, 0.55))
 	_argent.anchor_left = 1.0
@@ -124,6 +135,7 @@ func _ready() -> void:
 	_sante.offset_right = 258
 	_sante.offset_bottom = 268
 	var fill := StyleBoxFlat.new()
+	_fill_sante = fill
 	fill.bg_color = Color(0.3, 0.65, 1.0) if dalt else Color(0.35, 0.8, 0.35)   # daltonisme : pas de vert
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(0, 0, 0, 0.6)

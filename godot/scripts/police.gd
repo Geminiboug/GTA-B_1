@@ -63,7 +63,7 @@ func _ready() -> void:
 	_carte = Carte.zone()
 	Partie.recherche_change.connect(_on_level)
 	Partie.evanoui.connect(_malaise)
-	_batir_hopital.call_deferred()
+	Partie.chantier_differe(_batir_hopital)   # etape de la mise en place etalee pendant le chargement
 
 
 func crime(kind: String, _where: Vector3) -> void:

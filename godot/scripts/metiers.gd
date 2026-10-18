@@ -29,7 +29,7 @@ func _ready() -> void:
 	_rng.seed = 229
 	_player = get_node_or_null(player_path)
 	_hud = get_node_or_null("../HUD")
-	_placer_cauris.call_deferred()
+	Partie.chantier_differe(_placer_cauris)   # etape de la mise en place etalee pendant le chargement
 
 
 # ------------------------------------------------------------------ minibus

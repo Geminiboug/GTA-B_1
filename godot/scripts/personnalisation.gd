@@ -70,7 +70,7 @@ func _ready() -> void:
 		com.ARTICLES["agence"] = a
 		for k in BOUTIQUES:
 			com.NOMS[k] = BOUTIQUES[k]["nom"]
-	_placer.call_deferred()
+	Partie.chantier_differe(_placer)   # etape de la mise en place etalee pendant le chargement
 	if _player and _player.has_signal("modele_change"):
 		_player.connect("modele_change", _habiller_si_besoin)
 

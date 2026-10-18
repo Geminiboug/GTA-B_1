@@ -34,11 +34,12 @@ func _ready() -> void:
 	_coast = _pts(data.get("coast", []))
 	_inner = _pts(data.get("beach_inner", []))
 	_find_runway(data)
-	_build_ground()
-	_extend_roads(data)
-	_extend_runway()
-	_extend_taxiways()
-	_build_city()
+	# etapes de la mise en place etalee pendant le chargement (Partie.chantier)
+	Partie.chantier(_build_ground)
+	Partie.chantier(_extend_roads.bind(data))
+	Partie.chantier(_extend_runway)
+	Partie.chantier(_extend_taxiways)
+	Partie.chantier(_build_city)
 
 
 func _pts(arr: Array) -> Array:

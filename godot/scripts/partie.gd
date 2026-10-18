@@ -42,6 +42,11 @@ const TOUCHES_REGLABLES := [["move_forward", "Avancer"], ["move_back", "Reculer"
 	["parler", "Parler / acheter"], ["attaque", "Frapper / tirer"], ["map", "Carte"], ["horn", "Klaxon"],
 	["handbrake", "Frein à main"], ["accelerate", "Accélérer"], ["brake", "Freiner"]]
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
+## Mise en place etalee (ecran de chargement) : pendant le chargement, les scripts lourds confient leurs etapes a
+## chantier() au lieu de tout construire dans _ready ; l'ecran de chargement les execute quelques ms par image.
+## Hors chargement (tests, scene lancee directement), chantier() execute l'etape tout de suite.
+var chantier_actif := false
+var chantiers: Array[Callable] = []
 
 
 # mixage (phase 19) : un bus par categorie, regle dans les options ; reverberation des grands interieurs (Lieux)
@@ -87,6 +92,31 @@ func _ranger_son(n: Node) -> void:
 		if nom in BUS_SONS[b]:
 			bus = b
 	n.set("bus", bus)
+
+
+func chantier(etape: Callable) -> void:
+	if chantier_actif:
+		chantiers.append(etape)
+	else:
+		etape.call()
+
+
+func chantier_differe(etape: Callable) -> void:
+	## Comme call_deferred hors chargement ; pendant le chargement, une etape de la mise en place etalee.
+	if chantier_actif:
+		chantiers.append(etape)
+	else:
+		etape.call_deferred()
+
+
+func file_videe() -> void:
+	## A attendre (await) : rend la main quand toutes les etapes deja confiees sont faites (tout de suite hors chargement).
+	if not chantier_actif:
+		return
+	var fait := [false]
+	chantiers.append(func() -> void: fait[0] = true)
+	while not fait[0]:
+		await get_tree().process_frame
 
 
 func _ready() -> void:
@@ -412,6 +442,8 @@ func appliquer_options() -> void:
 	# accessibilite : taille de toute l'interface
 	get_tree().root.content_scale_factor = clampf(float(options.get("taille_interface", 1.0)), 0.8, 1.6)
 	# touches reaffectees (clavier seulement ; la manette garde ses boutons)
+	# noeuds qui ont fige un reglage a leur creation (couleurs du daltonisme...) : mise a jour immediate
+	get_tree().call_group("options", "options_changees")
 	var t: Dictionary = options.get("touches", {})
 	for a in t:
 		if InputMap.has_action(a):

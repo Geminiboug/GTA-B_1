@@ -34,11 +34,15 @@ func _ready() -> void:
 	var avoid := Node3D.new()
 	avoid.name = "SurfacesEvitement"
 	add_child(avoid)
-	for mi in zone.find_children("*", "MeshInstance3D", true, false):
-		_apply(mi)
-		_add_avoid(mi, avoid)
-		_sol_plage(mi)
-	_build_sea()
+	# par paquets de meshes : etapes de la mise en place etalee pendant le chargement (Partie.chantier)
+	var meshes := zone.find_children("*", "MeshInstance3D", true, false)
+	for debut in range(0, meshes.size(), 40):
+		Partie.chantier(func() -> void:
+			for mi in meshes.slice(debut, debut + 40):
+				_apply(mi)
+				_add_avoid(mi, avoid)
+				_sol_plage(mi))
+	Partie.chantier(_build_sea)
 
 
 func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:

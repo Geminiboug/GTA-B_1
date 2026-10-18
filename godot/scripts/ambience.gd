@@ -16,6 +16,10 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
+	Partie.chantier(_construire)   # sons synthetises : etape de la mise en place etalee pendant le chargement
+
+
+func _construire() -> void:
 	var data: Dictionary = Carte.zone().data
 	var waves := AudioSynth.vagues_loop()
 	var coast: Array = data.get("coast", [])

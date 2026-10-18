@@ -51,6 +51,7 @@ var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	add_to_group("options")
 	_rng.randomize()
 	_player = get_node_or_null(player_path)
 	_peds = get_node_or_null("../Pietons")
@@ -62,7 +63,7 @@ func _ready() -> void:
 		k.physical_keycode = KEY_G
 		InputMap.action_add_event("bande", k)
 	_attaque_t = attaque_toutes
-	_placer.call_deferred()
+	Partie.chantier_differe(_placer)   # etape de la mise en place etalee pendant le chargement
 
 
 func proprio(id: String) -> String:
@@ -132,6 +133,13 @@ func _placer() -> void:
 			z.position = Vector3(1.2 + i * 0.9, 0, 1.5)
 			z.rotation.y = PI * 0.5
 			root.add_child(z)
+		_pancarte(s["id"])
+
+
+func options_changees() -> void:
+	## Mode daltonien change dans le menu : couleur du syndicat rouge et pancartes, sans relancer le jeu.
+	SYNDICATS["szu"]["couleur"] = Color(1.0, 0.55, 0.0) if Partie.options.get("daltonisme", false) else Color(0.85, 0.2, 0.15)
+	for s in STATIONNEMENTS:
 		_pancarte(s["id"])
 
 

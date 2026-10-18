@@ -37,6 +37,7 @@ func _ready() -> void:
 	if zone == null:
 		return
 	# les surfaces a eviter sont creees par realism.gd (noeud Realisme) ; attendre qu'elles soient enregistrees
+	await Partie.file_videe()   # pendant le chargement : apres les etapes du realisme
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	_trunks = StaticBody3D.new()
@@ -47,10 +48,10 @@ func _ready() -> void:
 		var pts: Array = a["pts"]
 		for k in pts.size() - 1:
 			_airside.append([Vector2(float(pts[k][0]), float(pts[k][1])), Vector2(float(pts[k + 1][0]), float(pts[k + 1][1])), half])
-	_scatter_beach_palms(zone)
-	_scatter_inland()
-	_build_multimeshes()
-	print("Vegetation : %d cocotiers, %d arbres, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()])
+	Partie.chantier(_scatter_beach_palms.bind(zone))
+	Partie.chantier(_scatter_inland)
+	Partie.chantier(_build_multimeshes)
+	Partie.chantier(func() -> void: print("Vegetation : %d cocotiers, %d arbres, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()]))
 
 
 func _build_avoid_shapes(zone: Node) -> void:

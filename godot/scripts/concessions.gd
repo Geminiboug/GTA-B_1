@@ -25,6 +25,9 @@ var _carte: Carte
 var _rng := RandomNumberGenerator.new()
 
 
+const PAQUET := 20    # batiments par etape de construction (~40 ms)
+
+
 func _ready() -> void:
 	_rng.seed = 2610
 	_carte = Carte.zone()
@@ -32,8 +35,7 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	var f := FileAccess.open("res://assets/data/zone_aeroport.json", FileAccess.READ)
-	var data: Dictionary = JSON.parse_string(f.get_as_text())
+	var data: Dictionary = Carte.zone().data   # lu une seule fois pour tout le jeu
 	var avoid: Array = []
 	for b in data["buildings"]:
 		if String(b.get("style", "")).begins_with("lieu_") or b.get("style") in ["terminal", "hangar"]:
@@ -41,7 +43,17 @@ func _build() -> void:
 	var osm_walls: Array = data.get("walls", [])
 	var walls: Array = []          # [a, b, couleur]
 	var gates: Array = []          # [centre, yaw, couleur]
-	for b in data["buildings"]:
+	# par paquets de batiments : etale sur plusieurs images pendant l'ecran de chargement (Partie.chantier)
+	var bats: Array = data["buildings"]
+	for debut in range(0, bats.size(), PAQUET):
+		Partie.chantier(_paquet.bind(bats, debut, avoid, osm_walls, walls, gates))
+	Partie.chantier(func() -> void:
+		count = _rects.size()
+		_meshes(walls, gates))
+
+
+func _paquet(bats: Array, debut: int, avoid: Array, osm_walls: Array, walls: Array, gates: Array) -> void:
+	for b in bats.slice(debut, debut + PAQUET):
 		if float(b.get("h", 99)) > 7.5 or String(b.get("style", "")).begins_with("lieu_") or b.get("style") in ["terminal", "hangar", null]:
 			continue
 		var pts: Array = b["pts"]
@@ -61,8 +73,6 @@ func _build() -> void:
 		var col: Color = MURS[_rng.randi() % MURS.size()]
 		var gcol: Color = PORTAILS[_rng.randi() % PORTAILS.size()]
 		_ring(rect, col, gcol, walls, gates)
-	count = _rects.size()
-	_meshes(walls, gates)
 
 
 func _centroid(pts: Array) -> Vector2:
