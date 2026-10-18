@@ -33,14 +33,14 @@ func _physics_process(_delta: float) -> bool:
 	if frame < 30:
 		return false
 	var s = shots[idx]
-	var local := frame - 30 - idx * 60
+	var local := frame - 30 - idx * 160
 	if local == 0:
 		player.global_position = s[1]
 		player.velocity = Vector3.ZERO
 		player.reset_physics_interpolation()
 		player.cam_pivot.rotation = Vector3(s[2].x, s[2].y, 0)
 		player.spring_arm.spring_length = s[3]
-	elif local == 50:
+	elif local == 150:   # apres la reception (le joueur est pose a 1 m du sol)
 		root.get_viewport().get_texture().get_image().save_png(out_dir.path_join("real_%s.png" % s[0]))
 		print("capture ", s[0])
 		idx += 1

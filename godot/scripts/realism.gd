@@ -77,6 +77,19 @@ func _orig_color(mi: MeshInstance3D, fallback: Color) -> Color:
 	return (orig as BaseMaterial3D).albedo_color if orig is BaseMaterial3D else fallback
 
 
+func _teinte_cotonou(c: Color, n: String) -> Color:
+	## Palette des facades d'apres les photos des rues de Cotonou (refs/rues/) : surtout enduit gris, creme, beige ou
+	## blanc ; les facades peintes de couleurs vives existent mais restent minoritaires et fanees par le soleil.
+	if c.s < 0.22:
+		return c
+	var h := absi(hash(n))
+	if h % 10 < 6:
+		var enduits := [Color(0.88, 0.85, 0.78), Color(0.78, 0.78, 0.76), Color(0.84, 0.78, 0.66), Color(0.92, 0.91, 0.88),
+			Color(0.7, 0.7, 0.68)]
+		return enduits[(h / 10) % enduits.size()]
+	return c.lerp(Color(c.v, c.v, c.v), 0.3)
+
+
 func _facade(color: Color, plain: bool, roof: int, style := 0) -> ShaderMaterial:
 	var key := "%s|%s|%d|%d" % [color.to_html(), plain, roof, style]
 	if not _facade_cache.has(key):
@@ -98,9 +111,9 @@ func _apply(mi: MeshInstance3D) -> void:
 	elif n.begins_with("bld_hangar"):
 		mat = _facade(Color(0.72, 0.74, 0.76), false, 1, 2)
 	elif n.begins_with("bld_"):
-		mat = _facade(_orig_color(mi, Color(0.85, 0.82, 0.76)), false, 0)
+		mat = _facade(_teinte_cotonou(_orig_color(mi, Color(0.85, 0.82, 0.76)), n), false, 0)
 	elif n.begins_with("pignon_"):
-		mat = _facade(_orig_color(mi, Color(0.85, 0.82, 0.76)), true, 0)
+		mat = _facade(_teinte_cotonou(_orig_color(mi, Color(0.85, 0.82, 0.76)), n), true, 0)
 	elif n.begins_with("mur_") or n.begins_with("parapet") or n.begins_with("poteau_attente"):
 		# murs d'enceinte, parapets, poteaux : enduit ou parpaings, sans fenetres
 		mat = _facade(Color(0.74, 0.7, 0.64), true, 0)

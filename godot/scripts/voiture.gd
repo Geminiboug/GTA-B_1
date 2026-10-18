@@ -238,7 +238,7 @@ func _ready() -> void:
 	_recul.position = Vector3(0, 0.8, _wheelbase * 0.5 + 0.9)
 	_recul.rotation = Vector3(-0.35, PI, 0)
 	_visual.add_child(_recul)
-	_poussiere = _particules(Color(0.62, 0.42, 0.28, 0.32), 48, 1.6, Vector3(0, 0.25, 1.8), 1.4)
+	_poussiere = _particules(Color(0.66, 0.6, 0.5, 0.32), 48, 1.6, Vector3(0, 0.25, 1.8), 1.4)
 	_fumee_pneus = _particules(Color(0.85, 0.85, 0.85, 0.4), 40, 1.3, Vector3(0, 0.2, 1.4), 1.0)
 	for side in [-0.6, 0.6]:
 		var l := SpotLight3D.new()
@@ -395,7 +395,7 @@ func _effets(delta: float) -> void:
 	if _poussiere.emitting:
 		_poussiere.amount_ratio = clampf(v / 20.0, 0.2, 1.0)
 		var sable := surface == "plage"
-		var col := Color(0.86, 0.78, 0.6, 0.3) if sable else Color(0.62, 0.42, 0.28, 0.32)
+		var col := Color(0.86, 0.78, 0.6, 0.3) if sable else Color(0.66, 0.6, 0.5, 0.32)
 		((_poussiere.draw_pass_1 as QuadMesh).material as StandardMaterial3D).albedo_color = col
 	var glisse := (absf(derive) > 0.14 and v > 5.0) or patine or (braking and v > 8.0 and not abs_actif)
 	_fumee_pneus.emitting = glisse and not terreux

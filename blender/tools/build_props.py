@@ -91,14 +91,17 @@ def finish(b, spacing=6.0):
     X[0] += spacing
 
 
-# ---------------- Poteau electrique en bois (reseau basse tension) ----------------
+# ---------------- Poteau electrique en beton (reseau basse tension de Cotonou : section carree effilee, refs/rues/) ----
 def poteau(name, transfo):
     b = Builder(name)
-    b.cyl("mat_bois", (0, 0, 0), 0.13, 9.0, segs=8, r2=0.1)
-    b.box("mat_bois", (0, 0, 8.4), (1.9, 0.1, 0.12))
+    b.cyl("mat_beton", (0, 0, 0), 0.17, 9.0, segs=4, r2=0.1, rot=(0, 0, math.radians(45)))
+    b.box("mat_metal_peint", (0, 0, 8.4), (1.9, 0.1, 0.1))
     for x in (-0.75, 0.0, 0.75):
-        b.cyl("mat_blanc_plastique", (x, 0, 8.46), 0.04, 0.12, segs=6)
+        b.cyl("mat_blanc_plastique", (x, 0, 8.45), 0.04, 0.12, segs=6)
     b.box("mat_metal_peint", (0.35, 0, 8.0), (0.06, 0.06, 0.6), rot=(0, math.radians(35), 0))
+    # boitiers et fils de branchement accroches au poteau (desordre des raccordements)
+    b.box("mat_blanc_plastique", (0, 0.16, 3.1), (0.22, 0.12, 0.3))
+    b.box("mat_metal_peint", (0, -0.15, 2.4), (0.2, 0.1, 0.26))
     if transfo:
         b.box("mat_metal_peint", (0, 0.42, 6.4), (0.55, 0.45, 0.85))
         b.box("mat_metal_peint", (0, 0.2, 6.4), (0.1, 0.4, 0.1))
@@ -110,13 +113,18 @@ def poteau(name, transfo):
 poteau("prop_poteau", False)
 poteau("prop_poteau_transfo", True)
 
-# ---------------- Lampadaire (bras vers +Y = vers la route) ----------------
+# ---------------- Lampadaire solaire (grands axes et promenade de Cotonou, refs/rues/) : mat blanc, panneau incline
+# au sommet, tete LED sur un bras court vers la route (+Y), batterie sous le panneau ----------------
 b = Builder("prop_lampadaire")
-b.cyl("mat_metal_peint", (0, 0, 0), 0.11, 8.5, segs=8, r2=0.07)
+b.cyl("mat_peinture_blanc", (0, 0, 0), 0.1, 9.0, segs=8, r2=0.06)
 b.box("mat_beton", (0, 0, 0.25), (0.45, 0.45, 0.5))
-b.box("mat_metal_peint", (0, 0.85, 8.35), (0.07, 1.8, 0.07), rot=(math.radians(-6), 0, 0))
-b.box("mat_metal_peint", (0, 1.75, 8.25), (0.32, 0.65, 0.12))
-b.box("mat_lampe", (0, 1.75, 8.18), (0.26, 0.55, 0.03))
+b.box("mat_metal_peint", (0, 0, 9.05), (0.06, 0.06, 0.25))
+b.box("mat_vitre", (0, -0.05, 9.25), (0.75, 1.15, 0.04), rot=(math.radians(15), 0, 0))     # panneau solaire
+b.box("mat_chrome", (0, -0.05, 9.23), (0.79, 1.19, 0.02), rot=(math.radians(15), 0, 0))
+b.box("mat_metal_peint", (0, 0.1, 8.75), (0.28, 0.2, 0.38))                                 # batterie
+b.box("mat_peinture_blanc", (0, 0.45, 8.3), (0.06, 0.8, 0.06), rot=(math.radians(-10), 0, 0))
+b.box("mat_metal_peint", (0, 0.9, 8.25), (0.26, 0.5, 0.08))
+b.box("mat_lampe", (0, 0.9, 8.2), (0.2, 0.42, 0.02))
 finish(b)
 
 # ---------------- Etal de kpayo (essence vendue en bouteilles) ----------------

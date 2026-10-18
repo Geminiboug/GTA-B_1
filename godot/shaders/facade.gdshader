@@ -125,6 +125,14 @@ void fragment() {
 		if (raw) {
 			base = cement_blocks(vec2(u, y));
 		}
+		// soubassement peint d'une autre couleur (photos des rues de Cotonou : bas bleu ou vert, haut blanc ou creme),
+		// environ 2 batiments sur 5, entre 0,9 et 1,4 m ; trait de separation net, salissure par-dessus (plus bas)
+		float bande = mix(0.9, 1.4, hash(cell + 31.0));
+		if (!raw && hash(cell + 23.1) < 0.4 && y < bande) {
+			float h2 = hash(cell + 29.0);
+			vec3 sous = h2 < 0.35 ? vec3(0.16, 0.33, 0.62) : (h2 < 0.6 ? vec3(0.2, 0.45, 0.3) : (h2 < 0.8 ? vec3(0.5, 0.36, 0.24) : vec3(0.42, 0.42, 0.44)));
+			base = sous * (0.9 + 0.15 * fbm(vec2(u, y) * 0.6));
+		}
 		// bandeau de dalle a chaque etage
 		if (!plain_wall) {
 			float slab = smoothstep(0.0, 0.02, fy) * (1.0 - smoothstep(0.06, 0.08, fy));

@@ -7,7 +7,7 @@ render_mode blend_mix, depth_draw_never, cull_back;
 uniform float poussiere = 0.5;          // 0..1
 uniform float rouille = 0.0;            // 0..1
 uniform float haut_caisse = 1.0;        // m : hauteur de la ceinture (la poussiere monte jusqu'a mi-hauteur)
-uniform vec3 couleur_poussiere : source_color = vec3(0.62, 0.38, 0.24);
+uniform vec3 couleur_poussiere : source_color = vec3(0.6, 0.53, 0.43);   // poussiere de sable gris-beige (sols de Cotonou)
 uniform vec3 couleur_rouille : source_color = vec3(0.35, 0.16, 0.07);
 
 varying vec3 p_obj;

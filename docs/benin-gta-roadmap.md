@@ -1,6 +1,6 @@
 # GTB (Gbê Town Bénin) : Roadmap et prompt de passation
 
-Derniere mise a jour : 16/10/2026
+Derniere mise a jour : 18/10/2026
 Phase en cours : Phase 11, validation et playtest (phases 0 a 10 faites techniquement, acte 1 jouable de bout en bout)
 
 ## 1. Vision
@@ -152,7 +152,9 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Sols reels : bitume use, paves, laterite rouge, sable, caniveaux, flaques qui suivent le relief
 - [x] Usure : coulures, rouille, peinture ecaillee, affiches dechirees (dans shaders/facade.gdshader plutot que des decals : aucun cout par objet) ; a completer avec les photos d'Olympe
 - [x] Pente reelle de la plage : estran de 40 m en pente concave jusqu'a -0,8 m puis fond qui descend sous l'eau (osm_import.py, plage_estran), sable mouille et ressac (shaders/sol.gdshader)
-- [ ] Jalon : un Cotonois reconnait le quartier sur une capture, sans indice
+- [x] Audit visuel compare aux photos de refs/ (docs/audit_cotonou.md, captures avant / apres dans docs/images/phase12/) ; corrections faites : sol en sable gris-beige (plus de laterite rouge partout), poteaux en beton, lampadaires solaires, facades moins saturees, soubassements peints, citernes noires et fers d'attente sur les toits
+- [ ] Suite de l'audit : kit d'objets de rue, paves et bordures rouge et blanc des axes secondaires, acroteres a creneaux, arbres locaux (badamier, neem), persiennes, climatiseurs et paraboles
+- [ ] Jalon : un Cotonois reconnait le quartier sur une capture, sans indice (test a l'aveugle avec 2 ou 3 Cotonois, voir docs/audit_cotonou.md)
 
 ### Phase 13 : Demo publique "Acte 1" (v0.1)
 - [ ] Trailer de 60 a 90 s (captures OBS par Olympe, montage CapCut), sans nom ni marque reels
@@ -336,6 +338,7 @@ Option plus tard : multijoueur (balade et courses de zems entre amis, puis missi
 - 17/10/2026 : inventaire du joueur (scripts/inventaire.gd) avec torche et smartphone (scripts/telephone.gd) au depart, sauvegarde version 3 ; test_inventaire.
 - 17/10/2026 : Phase 13 (partie code) : credits en jeu, ecran de fin de demo, mode photo F12, fichier de traduction i18n/gtb.pot ; test_demo. Verification legale : docs/verification_legale.md et test_legal (aucun nom reel ni marque visible).
 - 17/10/2026 : version web verifiee dans Chrome (index.html?test lance une partie et ecrit les images/s dans la console) : chargement complet, son des flux synthetises corrige (audio web en mode flux), mais 7 a 10 img/s. Retrait de la v0.1 propose a Olympe.
+- 18/10/2026 : export Android (APK de debug, docs/android.md). Ecran de chargement (scenes/chargement.tscn) : carrousel de captures, vraie progression, mise en place de la zone etalee sur plusieurs images (Partie.chantier) ; test_chargement. Options appliquees en direct (test_options_direct). Tenue de route : braquage limite a l'adherence, ESP, bordures franchies sans degats (test_tenue_route, test_bordure). Voitures : contact et demarreur, clignotants automatiques. Zem : bequille animee, passager qui penche, conducteur sans gigotement (test_zem_bequille). Sprint sans a-coups. Armoire (test_armoire). Trafic aerien plus dense et survols (test_survols). Tissus des vetements (shaders/tissu.gdshader). Animations de vie : arret apres une course, gestes d'attente, passants qui s'arretent et discutent (test_vie). Audit Cotonou (docs/audit_cotonou.md).
 
 ## 6. PROMPT DE PASSATION (a copier tel quel dans un autre Claude ou agent IA)
 

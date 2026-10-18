@@ -1,6 +1,6 @@
 extends Node3D
 ## Ce qu'on voit au-dela de la carte jouable (le joueur n'y va pas, les murs invisibles l'arretent) :
-## - sol jusqu'a 6 km : laterite cote terre, sable entre la promenade et l'eau, ocean au sud ;
+## - sol jusqu'a 6 km : sable gris-beige des quartiers cote terre, sable entre la promenade et l'eau, ocean au sud ;
 ## - quartiers de Cotonou qui continuent (maisons basses a toit de tole, immeubles de 2 a 4 niveaux, arbres) ;
 ## - routes qui sortent de la carte prolongees tout droit ;
 ## - suite de la piste de l'aeroport (2 400 m au total, seuil 24 au nord-est) avec son marquage et sa bande d'herbe.

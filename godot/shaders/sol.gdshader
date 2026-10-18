@@ -1,5 +1,6 @@
-// GTB : sols proceduraux en coordonnees monde (terre rouge, sable, bitume, beton).
-// mode 0 = terre rouge de Cotonou (laterite) : plaques plus sombres, zones sableuses, petits cailloux, traces.
+// GTB : sols proceduraux en coordonnees monde (sable des quartiers, sable de plage, bitume, beton).
+// mode 0 = sol des quartiers de Cotonou : sable gris-beige du cordon littoral (photos de Fidjrosse et d'Avotrou,
+//          refs/rues/), plaques tassees plus sombres, rares remblais de laterite ocre, petits cailloux, traces.
 // mode 1 = sable de plage : rides de vent, sable plus fonce et humide (marques), debris.
 // mode 2 = bitume : grain, reparations, usure plus claire au centre, nids de poule.
 // mode 3 = beton / paves : joints et taches.
@@ -60,11 +61,13 @@ void fragment() {
 		float large = fbm(p * 0.03);
 		float mid = fbm(p * 0.25);
 		float grain = noise(p * 6.0) * fine;
-		vec3 laterite = vec3(0.72, 0.42, 0.27);
-		vec3 dark = vec3(0.58, 0.33, 0.22);
-		vec3 sandy = vec3(0.78, 0.62, 0.45);
-		col = mix(laterite, dark, smoothstep(0.4, 0.7, large));
-		col = mix(col, sandy, smoothstep(0.55, 0.8, mid) * 0.7);
+		vec3 sable = vec3(0.70, 0.64, 0.55);
+		vec3 tasse = vec3(0.56, 0.51, 0.45);
+		vec3 clair = vec3(0.80, 0.74, 0.64);
+		vec3 remblai = vec3(0.66, 0.47, 0.34);   // laterite apportee en remblai, par plaques rares
+		col = mix(sable, tasse, smoothstep(0.45, 0.75, large));
+		col = mix(col, clair, smoothstep(0.55, 0.8, mid) * 0.6);
+		col = mix(col, remblai, smoothstep(0.78, 0.9, fbm(p * 0.015 + 21.0)) * 0.7);
 		// herbe seche par endroits
 		col = mix(col, vec3(0.55, 0.52, 0.32), smoothstep(0.68, 0.85, fbm(p * 0.12 + 40.0)) * 0.6);
 		// cailloux
@@ -96,8 +99,8 @@ void fragment() {
 		// rapiecages plus fonces et usure plus claire
 		col = mix(col, vec3(0.24, 0.24, 0.25), smoothstep(0.6, 0.65, patches) * 0.8);
 		col = mix(col, vec3(0.46, 0.45, 0.44), smoothstep(0.35, 0.2, patches) * 0.5);
-		// poussiere rouge apportee par les roues
-		col = mix(col, vec3(0.6, 0.42, 0.32), smoothstep(0.55, 0.85, fbm(p * 0.05 + 3.0)) * 0.35);
+		// poussiere de sable apportee par les roues
+		col = mix(col, vec3(0.62, 0.57, 0.49), smoothstep(0.55, 0.85, fbm(p * 0.05 + 3.0)) * 0.35);
 		rough = 0.8;
 	} else if (mode == 6) {
 		// dalles de beton du tarmac (5 x 5 m) : joints, taches d'huile et de kerosene, traces de pneus
@@ -116,38 +119,39 @@ void fragment() {
 		vec2 f = fract(q);
 		float joint = step(f.x, 0.08) + step(f.y, 0.14);
 		float pick = hash(floor(q));
-		vec3 paver = mix(vec3(0.5, 0.48, 0.46), vec3(0.58, 0.38, 0.28), step(0.6, pick)) * (0.85 + 0.2 * hash(floor(q) + 7.0));
+		vec3 paver = mix(vec3(0.55, 0.53, 0.5), vec3(0.6, 0.52, 0.44), step(0.6, pick)) * (0.85 + 0.2 * hash(floor(q) + 7.0));
 		col = mix(paver, vec3(0.62, 0.5, 0.36), clamp(joint, 0.0, 1.0) * fine);
 		// usure, taches d'huile, sable apporte par le vent
 		col = mix(col, col * 0.6, smoothstep(0.65, 0.85, fbm(p * 0.25)) * 0.5);
 		col = mix(col, vec3(0.7, 0.58, 0.42), smoothstep(0.55, 0.8, fbm(p * 0.07 + 5.0)) * 0.55);
 		rough = 0.85;
 	} else if (mode == 5) {
-		// piste en sable et laterite tassee : ornieres, flaques sechees, cailloux
+		// piste en sable tasse (rare remblai de laterite) : ornieres, flaques sechees, cailloux
 		float large = fbm(p * 0.06);
-		vec3 sand = vec3(0.66, 0.55, 0.43);
-		col = mix(sand, vec3(0.6, 0.42, 0.3), smoothstep(0.35, 0.7, large));
+		vec3 sand = vec3(0.67, 0.61, 0.52);
+		col = mix(sand, vec3(0.55, 0.49, 0.42), smoothstep(0.35, 0.7, large));
+		col = mix(col, vec3(0.62, 0.46, 0.34), smoothstep(0.8, 0.9, fbm(p * 0.02 + 13.0)) * 0.6);
 		col *= 0.9 + 0.15 * noise(p * 4.0) * fine;
 		// zones tassees plus sombres (passage des roues)
 		col = mix(col, col * 0.78, smoothstep(0.55, 0.75, fbm(p * 0.35 + 2.0)) * 0.6);
 		// flaques sechees craquelees
 		float puddle = smoothstep(0.72, 0.78, fbm(p * 0.12 + 9.0));
-		col = mix(col, vec3(0.45, 0.33, 0.24), puddle * 0.7);
+		col = mix(col, vec3(0.44, 0.40, 0.35), puddle * 0.7);
 		rough = 1.0;
 	} else if (mode == 7) {
-		// peinture routiere : usee par endroits (le bitume reapparait), salie de poussiere rouge
+		// peinture routiere : usee par endroits (le bitume reapparait), salie de poussiere de sable
 		col = tint * (0.92 + 0.08 * noise(p * 3.0));
 		float wear = smoothstep(0.5, 0.8, fbm(p * 1.3 + 7.0));
 		col = mix(col, vec3(0.36, 0.35, 0.35), wear * 0.55);
-		col = mix(col, vec3(0.62, 0.45, 0.35), smoothstep(0.6, 0.9, fbm(p * 0.05 + 3.0)) * 0.25);
+		col = mix(col, vec3(0.66, 0.6, 0.5), smoothstep(0.6, 0.9, fbm(p * 0.05 + 3.0)) * 0.25);
 		rough = 0.7;
 	} else if (mode == 8) {
-		// herbe tropicale : touffes vertes, plaques jaunies, terre rouge visible
+		// herbe tropicale : touffes vertes, plaques jaunies, sable visible
 		float large = fbm(p * 0.05);
 		float tuft = noise(p * 2.5) * fine;
 		col = mix(vec3(0.33, 0.45, 0.17), vec3(0.5, 0.52, 0.24), smoothstep(0.35, 0.7, large));
 		col *= 0.85 + 0.25 * tuft;
-		col = mix(col, vec3(0.62, 0.4, 0.27), smoothstep(0.66, 0.82, fbm(p * 0.18 + 5.0)) * 0.6);
+		col = mix(col, vec3(0.66, 0.6, 0.5), smoothstep(0.66, 0.82, fbm(p * 0.18 + 5.0)) * 0.6);
 		rough = 1.0;
 	} else if (mode == 10) {
 		// carrelage interieur 60 x 60 cm : joints clairs, legeres variations, brillant

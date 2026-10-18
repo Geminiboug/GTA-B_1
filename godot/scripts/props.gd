@@ -56,7 +56,7 @@ var shops: Array = []                        # commerces ou acheter (scripts/com
 var placed := false
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
-const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "veh_berline": 300.0,
+const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "veh_berline": 300.0,
 	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
 
 
@@ -86,6 +86,7 @@ func _ready() -> void:
 	for debut in range(0, bats.size(), 250):   # par paquets (~60 ms) : meme resultat, meme ordre
 		Partie.chantier(_place_shop_signs.bind(bats.slice(debut, debut + 250)))
 	Partie.chantier(_place_wall_texts.bind(data.get("walls", [])))
+	Partie.chantier(_place_toits.bind(data["buildings"]))
 	Partie.chantier(_build)
 	Partie.chantier(func() -> void:
 		placed = true
@@ -106,6 +107,8 @@ func _load_meshes() -> void:
 	if _meshes.has("prop_lampadaire"):
 		_meshes["prop_lampadaire"] = _night_lamp(_meshes["prop_lampadaire"])
 	_meshes["zem_gare"] = _merge_scene(zem_scene)
+	_meshes["toit_citerne"] = _mesh_citerne()
+	_meshes["toit_fers"] = _mesh_fers()
 
 
 func _tintable(mesh: Mesh, mat_name: String) -> Mesh:
@@ -705,3 +708,80 @@ func take_parked(i: int) -> Node3D:
 	v.transform = Transform3D(Basis(Vector3.UP, yaw), xf.origin + Vector3(0, 0.12, 0))
 	get_parent().add_child(v)
 	return v
+
+
+# ---------------------------------------------------------------- toits de Cotonou (photos refs/rues/)
+func _mesh_citerne() -> Mesh:
+	## Citerne d'eau en plastique noir sur le toit (tres frequente sur les maisons a toit plat), sur un socle de briques.
+	var st := SurfaceTool.new()
+	var cuve := CylinderMesh.new()
+	cuve.top_radius = 0.55
+	cuve.bottom_radius = 0.58
+	cuve.height = 1.2
+	cuve.radial_segments = 12
+	var noir := StandardMaterial3D.new()
+	noir.albedo_color = Color(0.07, 0.07, 0.08)
+	noir.roughness = 0.55
+	st.append_from(cuve, 0, Transform3D(Basis.IDENTITY, Vector3(0, 0.95, 0)))
+	var couvercle := CylinderMesh.new()
+	couvercle.top_radius = 0.2
+	couvercle.bottom_radius = 0.22
+	couvercle.height = 0.08
+	couvercle.radial_segments = 10
+	st.append_from(couvercle, 0, Transform3D(Basis.IDENTITY, Vector3(0, 1.59, 0)))
+	var m := st.commit()
+	m.surface_set_material(0, noir)
+	var socle := BoxMesh.new()
+	socle.size = Vector3(1.3, 0.35, 1.3)
+	var st2 := SurfaceTool.new()
+	st2.append_from(socle, 0, Transform3D(Basis.IDENTITY, Vector3(0, 0.175, 0)))
+	st2.commit(m)
+	var gris := StandardMaterial3D.new()
+	gris.albedo_color = Color(0.55, 0.53, 0.5)
+	gris.roughness = 0.95
+	m.surface_set_material(1, gris)
+	return m
+
+
+func _mesh_fers() -> Mesh:
+	## Fers d'attente : quatre barres d'armature qui depassent d'un poteau de beton (etage pas encore construit).
+	var st := SurfaceTool.new()
+	var poteau := BoxMesh.new()
+	poteau.size = Vector3(0.22, 0.25, 0.22)
+	st.append_from(poteau, 0, Transform3D(Basis.IDENTITY, Vector3(0, 0.125, 0)))
+	var fer := BoxMesh.new()
+	fer.size = Vector3(0.016, 1.1, 0.016)
+	for d in [Vector2(-0.07, -0.07), Vector2(0.07, -0.07), Vector2(-0.07, 0.07), Vector2(0.07, 0.07)]:
+		st.append_from(fer, 0, Transform3D(Basis(Vector3(d.x, 0, d.y).normalized(), 0.05), Vector3(d.x, 0.75, d.y)))
+	var m := st.commit()
+	var rouille := StandardMaterial3D.new()
+	rouille.albedo_color = Color(0.36, 0.22, 0.14)
+	rouille.roughness = 0.9
+	m.surface_set_material(0, rouille)
+	return m
+
+
+func _place_toits(buildings: Array) -> void:
+	## Sur les toits plats : citerne noire sur environ un toit sur deux ; fers d'attente aux angles des maisons a
+	## etage (construction qui continue quand l'argent revient).
+	for bld in buildings:
+		if String(bld.get("roof", "")) != "plat":
+			continue
+		var h := float(bld.get("h", 0.0))
+		if h < 2.8 or h > 14.0:
+			continue
+		var pts: Array = bld["pts"]
+		if pts.size() < 4:
+			continue
+		var c := Vector2.ZERO
+		for q in pts:
+			c += _v2(q)
+		c /= pts.size()
+		if _rng.randf() < 0.5:
+			var coin := _v2(pts[_rng.randi() % pts.size()])
+			var p := c.lerp(coin, _rng.randf_range(0.3, 0.6))
+			_add("toit_citerne", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(p.x, h, p.y)))
+		if h > 5.0 and _rng.randf() < 0.3:
+			for i in range(0, mini(pts.size(), 4)):
+				var q := _v2(pts[i]).lerp(c, 0.12 / maxf(_v2(pts[i]).distance_to(c), 0.5))
+				_add("toit_fers", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(q.x, h, q.y)))
