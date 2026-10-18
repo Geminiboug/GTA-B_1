@@ -15,13 +15,16 @@ extends Node3D
 @export var inland_palm_chance := 0.03
 @export var beach_palm_spacing := 13.0
 @export var seed_value := 2026
+## Essences des arbres a terre (audit Cotonou) : badamier (arbre d'ombre des rues et des cours), neem, manguier.
+@export var part_badamier := 0.4
+@export var part_neem := 0.3
 
 const ROAD_LAYER := 1 << 9   # couche 10 : surfaces "a eviter", jamais vues par le joueur ni les vehicules
 const AVOID := ["route_", "accotement", "zone_parking", "aeroport_", "promenade", "piste_cyclable", "plage", "zone_plage", "zone_piscine", "zone_eau", "abri_toit"]
 
 var _rng := RandomNumberGenerator.new()
 var _meshes := {}
-var _xforms := {"veg_cocotier": [], "veg_arbre": [], "veg_buisson": []}
+var _xforms := {"veg_cocotier": [], "veg_arbre": [], "veg_buisson": [], "veg_badamier": [], "veg_neem": []}
 var _trunks: StaticBody3D
 var _temp_bodies: Array[Node] = []
 var _airside: Array = []      # [a, b, demi-largeur] : axes de piste et de taxiways (Vector2 x, z)
@@ -51,7 +54,7 @@ func _ready() -> void:
 	Partie.chantier(_scatter_beach_palms.bind(zone))
 	Partie.chantier(_scatter_inland)
 	Partie.chantier(_build_multimeshes)
-	Partie.chantier(func() -> void: print("Vegetation : %d cocotiers, %d arbres, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()]))
+	Partie.chantier(func() -> void: print("Vegetation : %d cocotiers, %d badamiers, %d neems, %d manguiers, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_badamier"].size(), _xforms["veg_neem"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()]))
 
 
 func _build_avoid_shapes(zone: Node) -> void:
@@ -154,7 +157,7 @@ func _scatter_inland() -> void:
 			if roll < tree_chance:
 				var y := _free_spot(p, 2.2)
 				if not is_nan(y):
-					_add("veg_arbre", p, y, Vector2(0.75, 1.3))
+					_add(_essence(p), p, y, Vector2(0.75, 1.3))
 			elif roll < tree_chance + inland_palm_chance:
 				var y := _free_spot(p, 1.0)
 				if not is_nan(y):
@@ -165,6 +168,12 @@ func _scatter_inland() -> void:
 					_add("veg_buisson", p, y, Vector2(0.7, 1.4))
 			z += grid_step
 		x += grid_step
+
+
+func _essence(p: Vector3) -> String:
+	## Tirage par la position (pas par le generateur : le reste de la vegetation ne bouge pas).
+	var u := float(absi(hash(Vector2i(roundi(p.x * 10.0), roundi(p.z * 10.0)))) % 1000) / 1000.0
+	return "veg_badamier" if u < part_badamier else ("veg_neem" if u < part_badamier + part_neem else "veg_arbre")
 
 
 func _on_airside(p: Vector2) -> bool:

@@ -129,6 +129,12 @@ var _roll_t := 0.0
 @export var attente_geste := Vector2(9.0, 20.0)   # s immobile avant un geste d'attente (tire au hasard)
 const GESTES_ATTENTE := [[["MX_Idle_Regarde", 0.0]], [["Idle_FoldArms", 2.5]], [["MX_Idle_Content", 0.0]],
 	[["MX_Idle_Appui", 0.0]], [["Yes", 0.0]]]
+## Virages sur place : a l'arret, une direction demandee a plus de virage_seuil degres joue un pas tourne capte
+## (MX_Tourne_G90 / D90, MX_DemiTour_Marche) ; le corps tourne en suivant la rotation du bassin du clip.
+@export var virage_seuil := 60.0       # degres
+@export var virage_vitesse := 1.6      # vitesse de lecture des clips de virage (les captures sont lentes pour un jeu)
+@export var virage_sortie := 0.8       # part de la rotation du clip apres laquelle on peut repartir
+var _virage := {}
 var _immobile_t := 0.0
 var _prochain_geste := 12.0
 var _vitesse_prec := 0.0
@@ -534,7 +540,7 @@ func _physics_process(delta: float) -> void:
 		_climb_step(delta)
 		return
 	# un geste (achat, conversation...) s'arrete des qu'on repart
-	if anim and anim.has_method("stop_clips") and anim.playing_clip() and _combo_t <= 0.0 and not garde and _roll_t <= 0.0 and _move_input().length() > 0.2:
+	if anim and anim.has_method("stop_clips") and anim.playing_clip() and _combo_t <= 0.0 and not garde and _roll_t <= 0.0 and _move_input().length() > 0.2 and _virage.is_empty():
 		anim.stop_clips()
 	if Input.is_action_just_pressed("crouch") and is_on_floor():
 		_set_crouch(not crouched)
@@ -639,6 +645,8 @@ func _physics_process(delta: float) -> void:
 		_land_t = maxf(0.0, _land_t - delta)
 		if _land_t > 0.0:
 			hvel = hvel.move_toward(Vector2.ZERO, ground_decel * delta)
+		elif _maj_virage(dir):
+			hvel = Vector2.ZERO           # pas tourne sur place : le clip fait les pieds, le corps suit son bassin
 		elif dir.length() > 0.01:
 			# le corps tourne vers la direction voulue, moins vite quand on va vite
 			var want := atan2(-dir.x, -dir.z)
@@ -834,6 +842,40 @@ func _clear_ik() -> void:
 	if anim and "ik_targets" in anim:
 		for k in anim.ik_targets:
 			anim.ik_targets[k] = Vector3.INF
+
+
+func _maj_virage(dir: Vector3) -> bool:
+	## Vrai pendant un pas tourne sur place (lance ici quand le joueur, a l'arret, demande une direction tres differente).
+	if anim == null or not anim.has_method("clip_position"):
+		return false
+	if _virage.is_empty():
+		if dir.length() < 0.2 or Vector2(velocity.x, velocity.z).length() > 0.3 or crouched or visee or garde \
+				or _roll_t > 0.0 or _land_t > 0.0 or not menus.is_empty() or (anim.playing_clip() and _move_input().length() <= 0.2):
+			return false
+		var diff := angle_difference(_facing, atan2(-dir.x, -dir.z))
+		if absf(diff) < deg_to_rad(virage_seuil):
+			return false
+		var nom := "MX_DemiTour_Marche" if absf(diff) > deg_to_rad(135.0) else ("MX_Tourne_G90" if diff > 0.0 else "MX_Tourne_D90")
+		var duree: float = anim.clip_length(nom)
+		var total: float = anim.lacet(nom, duree)
+		if duree <= 0.0 or absf(total) < 0.5:
+			return false
+		if signf(diff) != signf(total):
+			diff += signf(total) * TAU       # demi-tour : on tourne du cote ou tourne la capture
+		anim.stop_clips()
+		anim.play_clips([[nom, 0.0]], true, virage_vitesse)
+		_virage = {"nom": nom, "depart": _facing, "angle": diff, "total": total, "duree": duree}
+	var t: float = anim.clip_position(_virage["nom"])
+	if t < 0.0:
+		_virage.clear()
+		return false
+	var fait := clampf(anim.lacet(_virage["nom"], t) / float(_virage["total"]), 0.0, 1.0)
+	_facing = wrapf(float(_virage["depart"]) + float(_virage["angle"]) * fait, -PI, PI)
+	if fait >= virage_sortie and dir.length() > 0.2:
+		anim.stop_clips()             # la fin du clip est un temps de pose : on repart, le reste du virage se fait en marchant
+		_virage.clear()
+		return false
+	return true
 
 
 func _animations_vie(delta: float, dir: Vector3, hspeed: float) -> void:

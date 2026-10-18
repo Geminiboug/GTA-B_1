@@ -307,16 +307,34 @@ func _rect(start: Vector2, dir: Vector2, length: float, width: float) -> Array:
 
 
 # ------------------------------------------------------------------ quartiers lointains
+var _city := {}
+
+
 func _build_city() -> void:
-	var walls: Array = []     # [Transform3D, Color]
-	var roofs: Array = []
-	var trees: Array = []
-	var palms: Array = []
+	## Ville lointaine calculee par bandes de rangees (etapes de la mise en place : pas de saccade au chargement),
+	## dans le meme ordre qu'avant (meme tirage, meme ville).
+	_city = {"walls": [], "roofs": [], "trees": [], "palms": []}
+	var r0 := _b.grow(city_depth)
+	var rangees := int(ceil((r0.end.y - r0.position.y) / city_step))
+	for k in range(0, rangees, 6):
+		Partie.chantier(_city_rangees.bind(k, mini(k + 6, rangees)))
+	Partie.chantier(_city_plage)
+	Partie.chantier(_city_maisons)
+	Partie.chantier(_city_arbres)
+
+
+func _city_rangees(k0: int, k1: int) -> void:
 	var wall_cols := [Color(0.86, 0.8, 0.68), Color(0.9, 0.86, 0.78), Color(0.78, 0.62, 0.45), Color(0.93, 0.92, 0.88),
 		Color(0.72, 0.74, 0.7), Color(0.85, 0.72, 0.55), Color(0.8, 0.84, 0.86), Color(0.7, 0.55, 0.42)]
+	var walls: Array = _city["walls"]
+	var roofs: Array = _city["roofs"]
+	var trees: Array = _city["trees"]
+	var palms: Array = _city["palms"]
 	var r0 := _b.grow(city_depth)
-	var z := r0.position.y
-	while z < r0.end.y:
+	for k in range(k0, k1):
+		var z := r0.position.y + k * city_step
+		if z >= r0.end.y:
+			break
 		var x := r0.position.x
 		while x < r0.end.x:
 			var p := Vector2(x + _rng.randf_range(-6.0, 6.0), z + _rng.randf_range(-6.0, 6.0))
@@ -344,24 +362,34 @@ func _build_city() -> void:
 				trees.append(Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * _rng.randf_range(0.8, 1.4)), Vector3(p.x, 0, p.y)))
 			elif roll < 0.84:
 				palms.append(Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * _rng.randf_range(0.8, 1.15)), Vector3(p.x, 0, p.y)))
-		z += city_step
+
+
+func _city_plage() -> void:
 	# cocotiers le long de la plage lointaine
+	var palms: Array = _city["palms"]
 	var xx := -2600.0
 	while xx < 2600.0:
 		if xx < _b.position.x - 10.0 or xx > _b.end.x + 10.0:
 			var pz := _line_z(_inner, xx, 300.0) + _rng.randf_range(8.0, 30.0)
 			palms.append(Transform3D(Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3.ONE * _rng.randf_range(0.85, 1.2)), Vector3(xx, 0, pz)))
 		xx += _rng.randf_range(10.0, 22.0)
-	_multimesh_box(walls, "MaisonsLointaines", 0.85)
-	_multimesh_box(roofs, "ToitsLointains", 0.6)
+
+
+func _city_maisons() -> void:
+	_multimesh_box(_city["walls"], "MaisonsLointaines", 0.85)
+	_multimesh_box(_city["roofs"], "ToitsLointains", 0.6)
+
+
+func _city_arbres() -> void:
 	var veg := (load("res://assets/models/vegetation.glb") as PackedScene).instantiate()
 	var meshes := {}
 	for mi in veg.find_children("*", "MeshInstance3D", true, false):
 		meshes[String(mi.name)] = (mi as MeshInstance3D).mesh
 	veg.free()
-	_multimesh_tiles(meshes.get("veg_arbre"), trees, "ArbresLointains", Color(0.2, 0.33, 0.14))
-	_multimesh_tiles(meshes.get("veg_cocotier"), palms, "CocotiersLointains", Color(0.3, 0.4, 0.18))
-	print("Horizon : %d maisons, %d arbres, %d cocotiers au-dela de la carte" % [walls.size(), trees.size(), palms.size()])
+	_multimesh_tiles(meshes.get("veg_arbre"), _city["trees"], "ArbresLointains", Color(0.2, 0.33, 0.14))
+	_multimesh_tiles(meshes.get("veg_cocotier"), _city["palms"], "CocotiersLointains", Color(0.3, 0.4, 0.18))
+	print("Horizon : %d maisons, %d arbres, %d cocotiers au-dela de la carte" % [_city["walls"].size(), _city["trees"].size(), _city["palms"].size()])
+	_city = {}
 
 
 func _dist_outside(p: Vector2) -> float:

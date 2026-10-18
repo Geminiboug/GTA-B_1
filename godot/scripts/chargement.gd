@@ -41,6 +41,7 @@ const ASTUCES := [
 @export var zoom_diapo := 0.06           # zoom lent sur chaque image (6 %)
 @export var sous_fils := false           # sous-fils du ResourceLoader (plus lent sur certains disques)
 @export var budget_ms := 12.0            # temps de mise en place par image (le reste pour l'affichage)
+@export var etape_lente_ms := 120.0      # une etape plus longue est signalee dans le journal (saccade visible)
 
 var etape := "chargement"                # chargement, mise_en_place, fini, erreur
 var progression := 0.0                   # 0..1, -1 = inconnue
@@ -120,8 +121,12 @@ func _mise_en_place() -> void:
 	var t := Time.get_ticks_usec()
 	while not Partie.chantiers.is_empty() and Time.get_ticks_usec() - t < budget_ms * 1000.0:
 		var c: Callable = Partie.chantiers.pop_front()
+		var t1 := Time.get_ticks_usec()
 		if c.is_valid():
 			c.call()
+		var duree := (Time.get_ticks_usec() - t1) / 1000.0
+		if duree > etape_lente_ms:
+			print("Chargement : etape lente %.0f ms (%s.%s)" % [duree, c.get_object().get("name") if c.get_object() else "?", c.get_method()])
 		_faits += 1
 	var total := _faits + Partie.chantiers.size()
 	progression = float(_faits) / float(maxi(total, 1))

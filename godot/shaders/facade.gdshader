@@ -221,13 +221,26 @@ void fragment() {
 				}
 				if (in_x * in_y > 0.5) {
 					float win = win_kind;
-					if (win < 0.35) {
-						// persiennes (lames horizontales)
+					if (win < 0.3) {
+						// persiennes metalliques peintes (lames horizontales), un peu ecaillees
 						vec3 sh = paint_pick(hash(vec2(col_id + 3.0, bid * 5.0)));
 						albedo = sh * (0.7 + 0.3 * step(0.4, fract(y * 18.0)));
-						rough = 0.8;
+						albedo = mix(albedo, vec3(0.45, 0.3, 0.2), step(0.8, noise(vec2(u * 12.0, y * 30.0))) * 0.5);
+						metal = 0.3;
+						rough = 0.6;
+					} else if (win < 0.55) {
+						// fenetre naco : lames de verre inclinees dans un chassis alu, grille de securite devant
+						float lame = fract(y * 9.0);
+						vec3 verre = mix(vec3(0.1, 0.12, 0.14), vec3(0.42, 0.47, 0.5), smoothstep(0.3, 0.9, lame));
+						float barre = step(0.9, fract(u * 3.0));
+						albedo = mix(verre, vec3(0.62, 0.63, 0.64), step(0.88, lame) * 0.7 + barre * 0.6);
+						rough = 0.2;
+						metal = 0.2;
 					} else {
-						float grid = step(0.85, fract(u * 4.0)) + step(0.85, fract(y * 4.0));
+						// vitre et grille en fer forge : losanges (decorative) ou carreaux (simple)
+						float grid = hash(vec2(col_id, bid * 3.0)) < 0.5
+							? step(0.88, fract((u + y) * 3.0)) + step(0.88, fract((u - y) * 3.0))
+							: step(0.85, fract(u * 4.0)) + step(0.85, fract(y * 4.0));
 						vec3 glass = vec3(0.07, 0.09, 0.11) + vec3(0.25, 0.3, 0.35) * pow(1.0 - abs(dot(n, normalize(CAMERA_POSITION_WORLD - wpos))), 3.0);
 						albedo = mix(glass, vec3(0.2, 0.2, 0.2), clamp(grid, 0.0, 1.0) * 0.8);
 						rough = 0.15;

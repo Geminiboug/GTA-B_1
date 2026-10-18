@@ -214,3 +214,4 @@ gtb_wet={
 [internationalization]
 
 locale/translations=PackedStringArray("res://i18n/en.po")
+locale/fallback="fr"

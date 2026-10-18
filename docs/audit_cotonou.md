@@ -31,12 +31,12 @@ Jalon : un Cotonois doit reconnaître le quartier sur une capture, sans indice.
 | Façades entières en couleurs vives (1 sur 6 bleue, 1 sur 6 verte, 1 sur 6 ocre) | Toutes les photos de rue : surtout enduit gris, crème, beige, blanc ; couleur minoritaire et fanée | Trop saturé, aspect « jouet » | 6 façades colorées sur 10 passées en enduit, les autres fanées | `scripts/realism.gd` (`_teinte_cotonou`) | faible | fort | aucun | **fait** |
 | Murs d'une seule couleur | Scène de rue au feu, Avotrou : soubassement peint (bas bleu ou vert, haut blanc) | Détail très typique absent | Soubassement de 0,9 à 1,4 m sur 2 bâtiments sur 5 | `shaders/facade.gdshader` | faible | moyen | aucun | **fait** |
 | Toits plats nus | Calvaire, Avotrou : citernes noires, fers d'attente, antennes | Silhouette des toits trop propre | Citerne noire sur 1 toit plat sur 2, fers d'attente sur les maisons à étage | `scripts/props.gd` (`_place_toits`, MultiMesh) | faible | moyen | faible (instancié) | **fait** |
-| Acrotères droits | Calvaire : acrotères à créneaux arrondis, balustres | Silhouette | Créneaux et balustres sur les parapets | `osm_import.py` (régénérer la zone) | moyen | moyen | faible | à faire |
-| Grands axes en bitume avec beaucoup de marquage | Voie de Fidjrossè : pavés autobloquants gris-beige, bordures peintes rouge et blanc, peu de marquage | Revêtement des axes secondaires et bordures | Axes secondaires et tertiaires en pavés, bordures rouge et blanc aux terre-pleins | `osm_import.py` (régénérer la zone) | moyen | fort | aucun | à faire |
-| Ligne axiale jaune sur certaines routes | Aucune photo ne montre de ligne jaune | Hypothèse non vérifiée : le marquage serait blanc au Bénin | Vérifier sur d'autres photos avant de changer | `osm_import.py` | faible | faible | aucun | à vérifier |
-| Arbres en boules low poly | Photos : cocotiers, badamiers (branches en étages horizontaux), manguiers, neems | Arbres génériques | Badamier et neem modélisés | `build_vegetation.py` | moyen | moyen | faible | à faire |
-| Rues de quartier vides et propres | Avotrou, scène de rue : parasols, tables, bancs, bouteilles de gaz, tas de sable, flaques | Peu de vie au sol | Kit d'objets de rue placé devant les boutiques et les portails | `props.gd` + `build_props.py` | moyen | fort | moyen | à faire |
-| Fenêtres carrées noires régulières | Photos : persiennes métalliques, grilles décoratives, climatiseurs, paraboles | Façades en grille | Persiennes et grilles plus fréquentes, climatiseurs et paraboles | `facade.gdshader`, `props.gd` | moyen | moyen | faible | à faire |
+| Acrotères droits | Calvaire : acrotères à créneaux arrondis, balustres | Silhouette | Créneaux (muret de 0,6 m, merlons tous les 1,3 m) sur environ une maison à étage sur huit ; balustres pas faits | `osm_import.py` (`roof_details`), zone régénérée (+2,9 Mo) | moyen | moyen | faible | **fait** |
+| Grands axes en bitume avec beaucoup de marquage | Voie de Fidjrossè : pavés autobloquants gris-beige, bordures peintes rouge et blanc, peu de marquage | Revêtement des axes secondaires et bordures | Axes tertiaires pavés à 60 %, secondaires à 30 % (sans marquage, bas-côtés sableux gardés) ; bordures des terre-pleins peintes rouge et blanc par bandes de 1 m | `osm_import.py` (`road_surface`), `shaders/sol.gdshader` (`bordure_peinte`), `realism.gd` | moyen | fort | aucun | **fait** |
+| Ligne axiale jaune sur certaines routes | Aucune photo ne montre de ligne jaune | Vérifié dans le code : le marquage des routes est déjà blanc partout, le jaune ne sert qu'aux voies de circulation de l'aéroport | Rien à changer ; Olympe confirme sur place (docs/a_faire_olympe.md) | `osm_import.py` | faible | faible | aucun | **vérifié** |
+| Arbres en boules low poly | Photos : cocotiers, badamiers (branches en étages horizontaux), manguiers, neems | Arbres génériques | Badamier (étages horizontaux, quelques feuilles rougies) et neem (houppier ovale) modélisés ; à terre : 40 % badamiers, 30 % neems, 30 % manguiers | `build_vegetation.py`, `vegetation.gd` | moyen | moyen | faible | **fait** |
+| Rues de quartier vides et propres | Avotrou, scène de rue : parasols, tables, bancs, bouteilles de gaz, tas de sable, flaques | Peu de vie au sol | Kit devant les façades à enseigne (parasols teintés, bancs, bouteilles de gaz, bidons jaunes, casiers) et chantiers le long des murs (tas de sable, parpaings) ; flaques pas faites | `props.gd` (`_place_kit`, `_place_chantiers`), instancié | moyen | fort | faible | **fait** |
+| Fenêtres carrées noires régulières | Photos : persiennes métalliques, grilles décoratives, climatiseurs, paraboles | Façades en grille | Persiennes métalliques, fenêtres naco (lames de verre), grilles en losanges ou en carreaux ; paraboles sur 3 toits plats sur 10 ; climatiseurs déjà présents sur les façades à étage | `facade.gdshader`, `props.gd` (`_mesh_parabole`) | moyen | moyen | faible | **fait** |
 
 ## 3. Zone pilote
 
@@ -72,9 +72,8 @@ Les changements les plus visibles :
   - le marquage routier réel.
 
   Le plus simple est que Olympe prenne ces photos sur place. À distance, on peut chercher des photos sous licence libre sur Mapillary (vérifier la licence de chaque image).
-- **Prochaines corrections**, par rentabilité :
-  1. kit d'objets de rue ;
-  2. pavés et bordures des axes secondaires ;
-  3. acrotères à créneaux ;
-  4. arbres locaux ;
-  5. persiennes, climatiseurs et paraboles.
+- **Corrections de la deuxième passe (18/10/2026)** : kit d'objets de rue, pavés et bordures des axes secondaires,
+  acrotères à créneaux, arbres locaux, persiennes, naco et paraboles. Captures de contrôle : `tests/capture_kit_rue.gd`.
+- **Défaut trouvé en passant** : les murs d'enceinte sont des polylignes avec un point tous les 0,5 m ; le code ne
+  regardait que leur premier segment, si bien qu'aucune inscription murale n'était posée. Corrigé (tronçons de 8 m).
+- **Pas encore fait** : flaques qui suivent le relief, balustres, textures tirées de photos (attend les relevés d'Olympe).

@@ -144,7 +144,13 @@ func _apply(mi: MeshInstance3D) -> void:
 		mat = _ground(7, Color(0.93, 0.93, 0.9))
 	elif n.begins_with("piste_cyclable"):
 		mat = _ground(7, Color(0.27, 0.5, 0.32))
-	elif n.begins_with("zone_herbe") or n.begins_with("zone_humide") or n.begins_with("terre_plein"):
+	elif n.begins_with("terre_plein"):
+		# bordures des terre-pleins peintes rouge et blanc (Voie de Fidjrosse, refs/rues/), herbe dessus
+		if not _ground_mats.has("terre_plein"):
+			_ground_mats["terre_plein"] = _ground(8).duplicate()
+			(_ground_mats["terre_plein"] as ShaderMaterial).set_shader_parameter("bordure_peinte", true)
+		mat = _ground_mats["terre_plein"]
+	elif n.begins_with("zone_herbe") or n.begins_with("zone_humide"):
 		mat = _ground(8)
 	elif n.begins_with("zone_piscine"):
 		mat = _ground(9, Color(0.3, 0.68, 0.78))

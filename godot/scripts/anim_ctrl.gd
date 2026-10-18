@@ -37,6 +37,7 @@ const MX_MARCHES := ["MX_Marche", "MX_Marche_Standard"]
 @export var foulee_air := 0.2                    # vitesse de lecture de la foulee en l'air (jambes presque figees)
 @export var reception_lourde := 6.0              # m/s de chute : au-dela, reception complete (Jump_Land)
 @export var reception_courte := 0.15             # s de reception apres un petit saut sur place
+@export var fondu_clip := 0.22                   # s de fondu de la fin d'un clip ponctuel vers l'arbre (pas d'a-coup)
 @export var buste_marche := 0.04                 # rad : inclinaison du buste (bassin -> cou) en marchant
 @export var buste_trot := 0.12                   # rad en trottinant
 @export var buste_sprint := 0.24                 # rad en sprint
@@ -53,7 +54,11 @@ var on_floor := true
 var vertical_speed := 0.0
 var turn_rate := 0.0
 var accel := 0.0
-var seated := false
+var seated := false:
+	set(v):
+		if v and not seated and _clip != null:
+			stop_clips()          # on s'assoit tout de suite (sinon un arret marque ou un geste gardait le corps debout)
+		seated = v
 var crouch := false
 var femme := false
 var gesture := 0.0
@@ -72,6 +77,7 @@ var ik_targets := {"LeftHand": Vector3.INF, "RightHand": Vector3.INF, "LeftFoot"
 
 static var _libs := {}            # bibliotheques chargees une fois pour tous les personnages
 static var _natural := {}         # vitesse naturelle des clips (hauteurs de hanche par seconde)
+static var _lacet := {}           # virages captes : [[t, rotation du bassin (rad)], ...] retiree du clip
 
 var _skel: Skeleton3D
 var _player: AnimationPlayer
@@ -116,6 +122,44 @@ static func _sur_place(n: String, a: Animation) -> void:
 	for k in a.track_get_key_count(t):
 		var u := a.track_get_key_time(t, k) / a.length
 		a.track_set_key_value(t, k, (a.track_get_key_value(t, k) as Vector3) - d * u)
+	if n.begins_with("MX_Tourne") or n.begins_with("MX_DemiTour"):
+		_sans_lacet(n, a)
+
+
+static func _sans_lacet(n: String, a: Animation) -> void:
+	## Virages captes : la rotation du bassin autour de la verticale est retiree du clip et gardee en courbe (lacet), le
+	## controleur tourne le corps en suivant cette courbe (comme le deplacement retire des autres clips).
+	var r := a.find_track(NodePath(HIPS_TRACK), Animation.TYPE_ROTATION_3D)
+	if r < 0 or a.track_get_key_count(r) < 2:
+		return
+	var courbe: Array = []
+	var prec := 0.0
+	var y0 := 0.0
+	for k in a.track_get_key_count(r):
+		var q: Quaternion = a.track_get_key_value(r, k)
+		var f := Basis(q).z
+		var y := atan2(f.x, f.z)
+		if k == 0:
+			y0 = y
+			prec = y
+		y = prec + angle_difference(prec, y)      # deroule (demi-tour : passage par 180 degres)
+		prec = y
+		courbe.append([a.track_get_key_time(r, k), y - y0])
+		a.track_set_key_value(r, k, Quaternion(Vector3.UP, -(y - y0)) * q)
+	_lacet[n] = courbe
+
+
+static func lacet(name: String, t: float) -> float:
+	## Rotation du corps (rad, positive = vers la gauche) captee par un clip de virage entre 0 et t.
+	_load_libs()
+	var c: Array = _lacet.get(name, [])
+	if c.is_empty():
+		return 0.0
+	for i in range(1, c.size()):
+		if c[i][0] >= t:
+			var u := inverse_lerp(float(c[i - 1][0]), float(c[i][0]), t)
+			return lerpf(float(c[i - 1][1]), float(c[i][1]), clampf(u, 0.0, 1.0))
+	return float(c[-1][1])
 
 
 static func clip(name: String) -> String:
@@ -354,7 +398,15 @@ func _physics_process(delta: float) -> void:
 	_lod_acc = 0.0
 	_t += delta
 	if _clip_step(delta):
+		_clip_actif = true
+		# la tete suit toujours le regard pendant un geste (arret marque, attente...), sans le buste
+		_look = _look.lerp(Vector2(clampf(look_yaw, -1.2, 1.2), clampf(look_pitch, -0.4, 0.6)), 1.0 - exp(-5.0 * delta))
+		if _clip.is_playing():     # os reecrits par le clip a chaque image (pas d'accumulation pendant une attente)
+			_turn_bone("Head", Vector3(-_look.y * 0.8, _look.x * 0.65, 0.0))
 		return
+	if _clip_actif:
+		_clip_actif = false
+		_instantane()
 	var mode := "sol"
 	if on_floor:
 		_air_moving = false
@@ -394,7 +446,21 @@ func _physics_process(delta: float) -> void:
 	_tree.set("parameters/visee_bs2/blend_position", visee_pitch)
 	_tree.set("parameters/visee_plein/blend_amount", visee * (1.0 - clampf(speed / 0.8, 0.0, 1.0)))
 	_tree.advance(delta)
+	if _fondu > 0.0:
+		_fondu = maxf(0.0, _fondu - delta)
+		var u := smoothstep(0.0, 1.0, 1.0 - _fondu / fondu_clip)
+		for i in mini(_fondu_poses.size(), _skel.get_bone_count()):
+			_skel.set_bone_pose_rotation(i, (_fondu_poses[i][0] as Quaternion).slerp(_skel.get_bone_pose_rotation(i), u))
+			_skel.set_bone_pose_position(i, (_fondu_poses[i][1] as Vector3).lerp(_skel.get_bone_pose_position(i), u))
 	_overlay(delta)
+
+
+func _instantane() -> void:
+	## Pose du squelette a la fin d'un clip ponctuel : l'arbre la rejoint en fondu_clip secondes.
+	_fondu_poses.clear()
+	for i in _skel.get_bone_count():
+		_fondu_poses.append([_skel.get_bone_pose_rotation(i), _skel.get_bone_pose_position(i)])
+	_fondu = fondu_clip
 
 
 func _overlay(delta: float) -> void:
@@ -523,6 +589,10 @@ var _rain := 0.0
 var _clip: AnimationPlayer
 var _seq: Array = []          # [[clip, attente apres (s)], ...]
 var _hold := 0.0
+var _vitesse_clips := 1.0   # vitesse de lecture des clips ponctuels (virages acceleres)
+var _clip_actif := false
+var _fondu := 0.0
+var _fondu_poses: Array = []
 
 
 func clip_length(name: String) -> float:
@@ -540,7 +610,7 @@ func root_offset(name: String, t: float) -> Vector3:
 	return (a.position_track_interpolate(tr, clampf(t, 0.0, a.length)) - a.position_track_interpolate(tr, 0.0)) * k
 
 
-func play_clips(seq: Array, in_place := false) -> void:
+func play_clips(seq: Array, in_place := false, vitesse := 1.0) -> void:
 	## Joue une suite de clips (ex. [["Death01", 1.2], ["LayToIdle", 0.0]]) a la place de l'arbre, puis reprend.
 	## in_place : le deplacement de la racine est retire (le controleur deplace lui-meme le corps, ex. escalade).
 	seq = seq.duplicate(true)
@@ -561,6 +631,7 @@ func play_clips(seq: Array, in_place := false) -> void:
 			_clip.add_animation_library(key, _libs[key])
 	_clip.root_motion_track = NodePath(ROOT_TRACK) if in_place else NodePath()
 	_seq = seq.duplicate(true)
+	_vitesse_clips = vitesse
 	_hold = 0.0
 	_next_clip()
 
@@ -577,6 +648,13 @@ func playing_clip() -> bool:
 	return not _seq.is_empty() or (_clip != null and _clip.is_playing()) or _hold > 0.0
 
 
+func clip_position(name: String) -> float:
+	## Temps de lecture du clip ponctuel `name` (s), -1 s'il ne joue pas.
+	if _clip == null or not _clip.is_playing() or not String(_clip.current_animation).ends_with("/" + name):
+		return -1.0
+	return _clip.current_animation_position
+
+
 func _next_clip() -> void:
 	if _seq.is_empty():
 		_clip.stop()
@@ -591,7 +669,7 @@ func _clip_step(delta: float) -> bool:
 	if _clip == null or (not _clip.is_playing() and _hold == 0.0 and _seq.is_empty()):
 		return false
 	if _clip.is_playing():
-		_clip.advance(delta)
+		_clip.advance(delta * _vitesse_clips)
 		return true
 	if _hold < 0.0:
 		_hold = -_hold

@@ -654,3 +654,24 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
 - Gestes : player.gd _start_pre / _pre_step (Interact, Push ; geste_portiere, geste_vol), knocked_out_of_vehicle
   (Hit_Knockback) ; pedestrians.gd _reclaim (Push, reprise apres 0,8 s) ; commerce.gd (Interact, Consume) ;
   histoire.gd (Idle_Talking) ; lieux.gd (Sitting_Enter) ; anim_ctrl.gd stop_clips (le geste s'arrete si on bouge).
+
+## Cotonou reel, deuxieme passe de l'audit (18/10/2026)
+- Import de la zone (commande verifiee : refait a l'identique le JSON et le .glb d'avant les changements) :
+  blender -b --python blender/tools/osm_import.py -- refs/osm/zone-gtb.osm blender/materials/lib_materiaux.blend
+  blender/zone/zone_aeroport_blockout.blend godot/assets/models/zone_aeroport.glb refs/overture/building.geojson
+  refs/sentinel2/littoral_20260124.geojson godot/assets/data/zone_aeroport.json refs/open_buildings/hauteurs_locales.npz
+  puis `godot --headless --path godot --import`. Lancer Blender par Start-Process -Wait (le lanceur rend la main tout de suite).
+- osm_import.py : road_surface (tertiaires paves a 60 %, secondaires a 30 %, sans marquage, bas-cotes gardes) ;
+  roof_details (creneaux sur environ une maison a etage sur huit, merlons sans face du dessous). Zone : 24,8 Mo.
+- sol.gdshader : bordure_peinte (biseaux des terre-pleins en bandes rouge et blanc de 1 m), active par realism.gd.
+- facade.gdshader : persiennes metalliques, fenetres naco, grilles en losanges ou en carreaux.
+- build_vegetation.py : veg_badamier, veg_neem ; vegetation.gd part_badamier / part_neem (tirage par la position).
+- props.gd : kit de rue genere dans Godot (_meshes_kit : rue_parasol, rue_banc, rue_gaz, rue_bidons, rue_casiers,
+  rue_sable, rue_parpaings ; teintes par instance KIT_TEINTES), poses devant les facades a enseigne (_place_kit,
+  kit_chance) et le long des murs (_place_chantiers, chantier_chance) ; paraboles (_mesh_parabole, parabole_chance) ;
+  tirage separe (_rng_kit) pour ne pas deplacer le reste du decor. _troncons_murs : murs en troncons droits de 8 m.
+- Captures : tests/capture_kit_rue.gd -- <dossier> (joueur masque, sinon il cache les petits objets).
+- Animations : anim_ctrl.gd _sans_lacet / lacet (rotation du bassin des virages captes retiree et rendue au
+  controleur), clip_position, play_clips(..., vitesse), fondu_clip ; player.gd virage_seuil / virage_vitesse /
+  virage_sortie (_maj_virage). tests/test_virage.gd.
+- Ecran de chargement : etape_lente_ms (etapes longues signalees dans le journal).

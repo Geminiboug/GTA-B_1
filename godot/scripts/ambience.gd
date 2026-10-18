@@ -16,12 +16,19 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
-	Partie.chantier(_construire)   # sons synthetises : etape de la mise en place etalee pendant le chargement
+	# sons synthetises : une etape de la mise en place par son (environ 100 ms chacun), puis les sources
+	Partie.chantier(func() -> void: _sons["vagues"] = AudioSynth.vagues_loop())
+	Partie.chantier(func() -> void: _sons["ville"] = AudioSynth.ville_loop())
+	Partie.chantier(func() -> void: _sons["grillons"] = AudioSynth.grillons_loop())
+	Partie.chantier(_construire)
+
+
+var _sons := {}
 
 
 func _construire() -> void:
 	var data: Dictionary = Carte.zone().data
-	var waves := AudioSynth.vagues_loop()
+	var waves: AudioStream = _sons["vagues"]
 	var coast: Array = data.get("coast", [])
 	var acc := 0.0
 	var count := 0
@@ -45,12 +52,12 @@ func _construire() -> void:
 			acc += wave_spacing
 		acc -= seg
 	_city = AudioStreamPlayer.new()
-	_city.stream = AudioSynth.ville_loop()
+	_city.stream = _sons["ville"]
 	_city.volume_db = -22.0
 	add_child(_city)
 	_city.play()
 	_crickets = AudioStreamPlayer.new()
-	_crickets.stream = AudioSynth.grillons_loop()
+	_crickets.stream = _sons["grillons"]
 	_crickets.volume_db = -80.0
 	add_child(_crickets)
 	_crickets.play()

@@ -36,6 +36,7 @@ Ce qui fait l'identite de GTB :
 - Musique des radios : compositions originales libres de droits + quelques artistes locaux sous contrat simple.
 - Ordre de l'extension : centre de Cotonou d'abord (grand marche fictif facon Dantokpa), bord de lagune ensuite.
 - Police : aucun policier a l'ecran tant que le joueur n'a rien fait et que personne n'a appele.
+- Agrandir la carte (validee le 18/10/2026) : d'abord le chargement par morceaux (Phase 17 bis), puis Fidjrosse a l'ouest (photos dans refs/, import deja pret), puis le centre avec le grand marche, relie par le boulevard cotier. Commence apres les taches en cours des Phases 11 et 12.
 
 ## 3. Ce dont tu as besoin
 
@@ -113,7 +114,7 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Rapport de crash : log d'erreurs ecrit sur disque et numero de version affiche dans le menu
 - [x] Numero de version dans le fichier de sauvegarde et conversion des anciennes sauvegardes (une sauvegarde de la demo doit se charger en v0.2 et apres)
 - [x] Test de fluidite automatique : perf_fps.gd lance par un script, echec sous 70 / 60 img/s
-- [ ] Retours d'Olympe du 17/10/2026 :
+- [x] Retours d'Olympe du 17/10/2026 :
   - [x] Torche tenue a l'envers dans la main (le faisceau etait bon) : modele retourne
   - [x] Police visible seulement apres une betise signalee : plus de patrouilles stationnees au niveau 0 (reglage police.patrouilles_sans_recherche)
   - [x] Prologue bloque au riz de l'Ararat (4 500 F pour 3 000 F en poche) : tante Mireille donne 5 000 F, puis 2 000 F pour la sauce ; Maman Fifi avance 2 000 F
@@ -127,7 +128,7 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
   - [x] Vetements plus fins : une subdivision de plus sur tous les tissus, plus d'allegement du pantalon (build_character.py) ; niveaux de detail de Godot pour la foule
   - [x] Mouvements naturels : 22 captures Mixamo fournies par Olympe (attentes, marches homme / femme, course, sprint, virages, parler, telephoner, saluer, deux disputes) reunies par blender/tools/build_mixamo.py, retargetees (bonemap_mixamo.tres), mises sur place au chargement avec leur vitesse naturelle mesuree ; attente et demarche propres a chaque PNJ ; tests/mesure_foulee.gd
   - [x] Chute d'images en entrant dans l'Ararat et l'aerogare : les clients et voyageurs etaient fabriques a l'entree (pics de 140 ms) ; ils sont fabriques une fois au chargement puis seulement montres / caches ; tests/perf_entree.gd
-  - [ ] Virages sur place et demarrages / arrets avec les clips captes (MX_Tourne_*, MX_Depart, MX_Arret)
+  - [x] Virages sur place et demarrages / arrets avec les clips captes : a l'arret, une direction a plus de 60 degres joue MX_Tourne_G90 / D90 ou MX_DemiTour_Marche (le corps suit la rotation du bassin captee, test_virage) ; arret marque MX_Arret apres une course ; fondu de 0,22 s a la fin de chaque clip ponctuel. MX_Depart non utilise (clip de 3 s, trop long pour la maniabilite : l'arbre d'animation gere le demarrage)
 - [ ] Jalon : 3 testeurs finissent l'acte 1 sans aide, sans bug bloquant, et ont envie de continuer
 
 ### Demande d'Olympe du 17/10/2026 : inventaire et vehicules realistes
@@ -137,13 +138,13 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Zem refait en detail (moteur a ailettes, echappement, fourche, selle biplace, porte-bagages, clignotants, roues) : blender/tools/build_zem.py, plongee de fourche au freinage
 - [x] Voitures, 4x4, minibus, pick-up refaits (carrosserie nette, montants, jours de portes, optiques, roues et freins) : plis vifs, phares qui s'allument la nuit, peinture vernie ; tests/capture_modeles.gd
 - [x] Conduite plus realiste : suspension par roue, pneus (adherence selon la charge), boite de vitesses reelle : couple selon le regime, 5 rapports, masse et trainee par modele (Vehicules.TUNING) ; test_conduite (berline 0-80 en 8 s, pointe 166 km/h, plongee 6 degres au freinage)
-- [ ] Deuxieme passe (retour d'Olympe du 17/10/2026, voitures et minibus pas assez realistes) :
+- [x] Deuxieme passe (retour d'Olympe du 17/10/2026, voitures et minibus pas assez realistes) :
   - [x] Conduite : modele de pneus (derive, charge par essieu selon la hauteur du centre de gravite, inertie de lacet) : sous-virage, survirage au lever de pied ou au frein a main, contre-braquage ; adherence selon le revetement (goudron, paves, laterite, sable, eau) et la pluie ; ABS ; volant qui revient au centre ; reglages par modele (repartition, hauteur du centre de gravite, rigidite des pneus) ; test_tenue
   - [x] Son : moteur essence (berline) ou diesel qui claque (4x4, minibus, pick-up) par explosions de cylindres, en charge et a vide melanges selon l'accelerateur, accordes sur le regime ; roulement selon le revetement, vent, passages de rapport, petarades, portieres
   - [x] Effets : poussiere de laterite ou de sable, fumee et traces de pneus sur le goudron en glisse, fumees douces
   - [x] Degats : tole froissee au point de choc, pare-brise etoile, phares casses, feu moteur sous 15 %, reparer() pour le garage (phase 16) ; tests/capture_degats.gd
   - [x] Apparence : vitres teintees qui refletent le ciel, poussiere rouge en bas de caisse et rouille propres a chaque voiture (aussi dans la circulation), pick-up a plateau ouvert
-  - [ ] Detail des modeles : minibus facon taxi-brousse (porte coulissante, montants plus serres), interieurs, clignotants et feux de recul animes
+  - [x] Detail des modeles : minibus facon taxi-brousse (vitre par rangee de sieges, montants fins, porte coulissante), interieurs avec sieges, feux de recul, clignotants (18/10)
 
 ### Phase 12 : Cotonou reel (v0.1)
 - [ ] Releves photo d'Olympe (facades, sols, portails, enseignes, toits) classes dans refs/terrain/ par type
@@ -153,7 +154,7 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [x] Usure : coulures, rouille, peinture ecaillee, affiches dechirees (dans shaders/facade.gdshader plutot que des decals : aucun cout par objet) ; a completer avec les photos d'Olympe
 - [x] Pente reelle de la plage : estran de 40 m en pente concave jusqu'a -0,8 m puis fond qui descend sous l'eau (osm_import.py, plage_estran), sable mouille et ressac (shaders/sol.gdshader)
 - [x] Audit visuel compare aux photos de refs/ (docs/audit_cotonou.md, captures avant / apres dans docs/images/phase12/) ; corrections faites : sol en sable gris-beige (plus de laterite rouge partout), poteaux en beton, lampadaires solaires, facades moins saturees, soubassements peints, citernes noires et fers d'attente sur les toits
-- [ ] Suite de l'audit : kit d'objets de rue, paves et bordures rouge et blanc des axes secondaires, acroteres a creneaux, arbres locaux (badamier, neem), persiennes, climatiseurs et paraboles
+- [x] Suite de l'audit (18/10) : kit d'objets de rue devant les boutiques et chantiers le long des murs, axes tertiaires et secondaires en paves, bordures des terre-pleins peintes rouge et blanc, acroteres a creneaux, badamiers et neems, persiennes metalliques, fenetres naco, grilles en losanges, paraboles ; capture de controle tests/capture_kit_rue.gd. Reste : flaques qui suivent le relief, balustres
 - [ ] Jalon : un Cotonois reconnait le quartier sur une capture, sans indice (test a l'aveugle avec 2 ou 3 Cotonois, voir docs/audit_cotonou.md)
 
 ### Phase 13 : Demo publique "Acte 1" (v0.1)
@@ -339,6 +340,8 @@ Option plus tard : multijoueur (balade et courses de zems entre amis, puis missi
 - 17/10/2026 : Phase 13 (partie code) : credits en jeu, ecran de fin de demo, mode photo F12, fichier de traduction i18n/gtb.pot ; test_demo. Verification legale : docs/verification_legale.md et test_legal (aucun nom reel ni marque visible).
 - 17/10/2026 : version web verifiee dans Chrome (index.html?test lance une partie et ecrit les images/s dans la console) : chargement complet, son des flux synthetises corrige (audio web en mode flux), mais 7 a 10 img/s. Retrait de la v0.1 propose a Olympe.
 - 18/10/2026 : export Android (APK de debug, docs/android.md). Ecran de chargement (scenes/chargement.tscn) : carrousel de captures, vraie progression, mise en place de la zone etalee sur plusieurs images (Partie.chantier) ; test_chargement. Options appliquees en direct (test_options_direct). Tenue de route : braquage limite a l'adherence, ESP, bordures franchies sans degats (test_tenue_route, test_bordure). Voitures : contact et demarreur, clignotants automatiques. Zem : bequille animee, passager qui penche, conducteur sans gigotement (test_zem_bequille). Sprint sans a-coups. Armoire (test_armoire). Trafic aerien plus dense et survols (test_survols). Tissus des vetements (shaders/tissu.gdshader). Animations de vie : arret apres une course, gestes d'attente, passants qui s'arretent et discutent (test_vie). Audit Cotonou (docs/audit_cotonou.md).
+- 18/10/2026 (suite) : liste des taches d'Olympe regroupee dans docs/a_faire_olympe.md, modele docs/retours_olympe.md. Virages sur place (test_virage), fondu de sortie des clips, s'asseoir annule tout de suite un geste en cours (sinon le joueur restait debout dans la voiture jusqu'a 3 s apres un sprint). Suite de l'audit Cotonou (voir Phase 12) ; zone regeneree (paves, creneaux : 24,8 Mo au lieu de 22) et vegetation refaite. Defaut corrige : aucune inscription murale n'etait jamais posee (murs lus segment par segment de 0,5 m). Essai d'ourlets epais sur les vetements abandonne (bords irreguliers apres subdivision). Decision d'Olympe : agrandir la carte (section 2 bis).
+- 18/10/2026 (fin) : chargement sans grosse saccade (jeu exporte, disque local) : passants instancies dans des fils de travail, vendeurs assis, enseignes, ville lointaine et sons d'ambiance etales sur plusieurs etapes ; il reste 5 etapes de 120 a 210 ms (contre une vingtaine jusqu'a 970 ms) ; scene en 1,7 s, mise en place 20 s (14 s avant le nouveau decor, a reduire). chargement.gd signale les etapes de plus de etape_lente_ms. Langue de secours = francais (project.godot) : en francais, des textes s'affichaient en anglais (aide aux commandes). La tete suit la camera pendant un geste. Etape 1 du chargement par morceaux faite (osm_import.py, 9e argument : un .glb par tuile) ; scripts/monde.gd ecrit, pas encore branche.
 
 ## 6. PROMPT DE PASSATION (a copier tel quel dans un autre Claude ou agent IA)
 
@@ -379,12 +382,13 @@ ETAT ACTUEL (16/10/2026)
   - Phase 11 : journal de partie automatique (journal.gd), version 0.1.0 et log disque actif, migration sauvegardes v2,
     defauts visuels corriges (pagne sous vehicules, cheveux mouilles sous pluie, casquette policiere, traversees).
 - PHASE EN COURS : Phase 11, validation et playtest (voir la roadmap). Prochaines taches pour l'agent :
-  1. Fluidite : faite (tests/perf.sh au vert dans les trois qualites, outils tests/ab_gpu.gd et tests/profil_vue.gd).
-  2. Equilibrage : prix, amendes, chronos, vitesse et agressivite police, salaires zem.
-  3. Web retire de la cible (decision d'Olympe du 17/10/2026) ; demo sur Android, Windows et Linux.
-- Taches d'Olympe (ne pas les faire a sa place) : jouer 1 h et remplir docs/retours_olympe.md, valider les jalons 3 a 5,
-  faire jouer 2 ou 3 amis avec docs/playtest.md, releves photo pour la Phase 12, captures pour le trailer, decisions de
-  la section 2 bis de la roadmap.
+  1. Flaques qui suivent le relief, balustres des acroteres.
+  2. Chargement par morceaux (Phase 17 bis), puis extension : Fidjrosse, puis le centre et le grand marche (decision
+     d'Olympe du 18/10/2026).
+  3. Equilibrage apres les retours de jeu d'Olympe (prix, amendes, chronos, police, salaires zem).
+- Taches d'Olympe (ne pas les faire a sa place) : toutes regroupees dans docs/a_faire_olympe.md (jouer et remplir
+  docs/retours_olympe.md, jalons 3 a 5, playtest, test a l'aveugle, photos et sons de terrain, APK sur telephone, logo,
+  formulaire de retours, page itch.io). Ajouter dans ce fichier tout nouveau besoin d'Olympe.
 - Ensuite : Phase 12 (Cotonou reel), Phase 13 (demo publique), puis v0.2 (phases 14 a 17).
 - Personnages : base Quaternius Universal Base Characters (refs/ubc, non versionne) calee par blender/tools/ubc_body.py.
 - Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande ; modeles d'export dans

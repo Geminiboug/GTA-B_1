@@ -15,6 +15,7 @@ uniform int mode = 0;
 // couleurs ecrites en sRGB, converties en lineaire a la fin
 uniform vec3 tint = vec3(1.0);
 uniform float depth_pull = 0.05;
+uniform bool bordure_peinte = false;  // terre-plein : bordures peintes rouge et blanc (biseaux), herbe dessus
 
 varying vec3 wpos;
 
@@ -153,6 +154,15 @@ void fragment() {
 		col *= 0.85 + 0.25 * tuft;
 		col = mix(col, vec3(0.66, 0.6, 0.5), smoothstep(0.66, 0.82, fbm(p * 0.18 + 5.0)) * 0.6);
 		rough = 1.0;
+		vec3 nw = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz;
+		if (bordure_peinte && nw.y < 0.97) {
+			// bandes de 1 m le long de la bordure (direction prise de la normale du biseau), usees et poussiereuses
+			vec2 t = normalize(vec2(-nw.z, nw.x) + vec2(1e-4));
+			float bande = mod(floor(dot(p, t) / 1.0), 2.0);
+			col = mix(vec3(0.68, 0.14, 0.11), vec3(0.88, 0.87, 0.84), bande) * (0.9 + 0.1 * noise(p * 4.0));
+			col = mix(col, vec3(0.66, 0.6, 0.5), smoothstep(0.45, 0.85, fbm(p * 1.7 + 11.0)) * 0.45);
+			rough = 0.85;
+		}
 	} else if (mode == 10) {
 		// carrelage interieur 60 x 60 cm : joints clairs, legeres variations, brillant
 		vec2 q = p / 0.6;

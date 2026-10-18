@@ -35,6 +35,7 @@ func _start() -> void:
 	scene.get_node("Debug").teleport(2)
 	player.velocity = Vector3.ZERO
 	player.cam_pivot.rotation.y = PI / 2
+	player._facing = PI / 2      # deja tourne vers la course : on mesure la foulee, pas le pas tourne (test_virage)
 	player.sprint_level = 0.0
 	player.stamina = 1.0
 	t0 = frame

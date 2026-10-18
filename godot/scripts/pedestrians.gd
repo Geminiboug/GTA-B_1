@@ -37,8 +37,14 @@ func _ready() -> void:
 	_carte = Carte.zone()
 	for p in _carte.data.get("promenade", []):
 		_promenade.append(Vector2(float(p[0]), float(p[1])))
+	# le modele de chaque passant est instancie dans un fil de travail (le plus long, ~100 ms) ; l'etape de la mise en
+	# place n'a plus qu'a l'habiller et le poser (pas de saccade de l'ecran de chargement)
 	for i in walker_count:
-		Partie.chantier(_spawn_walker)   # etale sur plusieurs images pendant l'ecran de chargement
+		var genre := PnjUtil.random_genre(_rng)
+		var variante := PnjUtil.random_variant(_rng, genre, 0.12)
+		var pret := [null]
+		var tache := WorkerThreadPool.add_task(func() -> void: pret[0] = PnjUtil.make(variante))
+		Partie.chantier(_spawn_pret.bind(tache, pret, genre))
 	var traffic := get_node_or_null("../Circulation")
 	if traffic and traffic.has_signal("driver_ejected"):
 		traffic.driver_ejected.connect(_on_driver_ejected)
@@ -55,9 +61,14 @@ func _spawn_walker() -> void:
 	_new_walker(PnjUtil.random_genre(_rng))
 
 
-func _new_walker(genre: String, at := Vector2.INF, variant := "", look := {}) -> Dictionary:
+func _spawn_pret(tache: int, pret: Array, genre: String) -> void:
+	WorkerThreadPool.wait_for_task_completion(tache)
+	_new_walker(genre, Vector2.INF, "", {}, pret[0])
+
+
+func _new_walker(genre: String, at := Vector2.INF, variant := "", look := {}, pret: Node3D = null) -> Dictionary:
 	# quelques enfants (souvent en uniforme d'ecole), sinon des adultes de morphologies variees
-	var ch := PnjUtil.make(variant if variant != "" else PnjUtil.random_variant(_rng, genre, 0.12 if at == Vector2.INF else 0.0))
+	var ch := pret if pret else PnjUtil.make(variant if variant != "" else PnjUtil.random_variant(_rng, genre, 0.12 if at == Vector2.INF else 0.0))
 	var metas := {"genre": ch.get_meta("genre"), "age": ch.get_meta("age"), "variante": ch.get_meta("variante")}
 	ch.set_script(ANIM)
 	for m in metas:
@@ -559,6 +570,21 @@ func _hand_item(ch: Node3D, what: String) -> void:
 
 
 # ------------------------------------------------------------ vendeurs assis
+func _variante_vendeur(assemblies: Array) -> void:
+	var asm := Node3D.new()
+	add_child(asm)
+	# vendeuses surtout (marches et etals de Cotonou), quelques vendeurs
+	var genre := PnjUtil.random_genre(_rng, 0.75)
+	var ch := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
+	asm.add_child(ch)
+	PnjUtil.dress_random(ch, _rng)
+	ch.scale = Vector3.ONE
+	PnjUtil.pose_vendor(ch, _rng)
+	# assis sur un tabouret de ~0,42 m : articulation de la hanche a ~0,5 m du sol, pieds au sol
+	ch.position = Vector3(0, -0.38 + (0.04 if genre == "femme" else 0.0), 0)
+	assemblies.append(asm)
+
+
 func _seat_vendors(spots: Array) -> void:
 	if spots.is_empty():
 		return
@@ -568,25 +594,20 @@ func _seat_vendors(spots: Array) -> void:
 	var variants := 10
 	var meshes := []
 	var assemblies := []
+	# une variante par etape de la mise en place (environ 100 ms chacune : pas de saccade de l'ecran de chargement)
 	for v in variants:
-		var asm := Node3D.new()
-		add_child(asm)
-		# vendeuses surtout (marches et etals de Cotonou), quelques vendeurs
-		var genre := PnjUtil.random_genre(_rng, 0.75)
-		var ch := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
-		asm.add_child(ch)
-		PnjUtil.dress_random(ch, _rng)
-		ch.scale = Vector3.ONE
-		PnjUtil.pose_vendor(ch, _rng)
-		# assis sur un tabouret de ~0,42 m : articulation de la hanche a ~0,5 m du sol, pieds au sol
-		ch.position = Vector3(0, -0.38 + (0.04 if genre == "femme" else 0.0), 0)
-		assemblies.append(asm)
+		Partie.chantier(_variante_vendeur.bind(assemblies))
+	if Partie.chantier_actif:
+		while assemblies.size() < variants:
+			await get_tree().process_frame
 	# la pose du squelette n'est appliquee au maillage qu'a l'image suivante
 	await get_tree().process_frame
 	await get_tree().process_frame
 	for asm in assemblies:
 		meshes.append(PnjUtil.merge(asm))
 		asm.queue_free()
+		if Partie.chantier_actif:
+			await get_tree().process_frame     # une fusion par image
 	var groups := {}
 	for t in spots:
 		var o: Vector3 = (t as Transform3D).origin

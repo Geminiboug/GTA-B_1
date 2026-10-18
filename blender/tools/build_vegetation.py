@@ -2,7 +2,9 @@
 # Lancement : blender -b --python blender/tools/build_vegetation.py -- <sortie.blend> <sortie.glb>
 # Objets (un mesh chacun, origine au pied, Z = haut) :
 #   veg_cocotier  : tronc courbe annele, 9 palmes arquees, noix de coco
-#   veg_arbre     : neem / manguier, tronc + houppier en volumes irreguliers
+#   veg_arbre     : manguier, tronc + houppier dense en volumes irreguliers
+#   veg_badamier  : badamier (Terminalia catappa), branches en etages horizontaux, quelques feuilles rougies
+#   veg_neem      : neem, tronc qui fourche, houppier ovale serre vert olive
 #   veg_buisson   : touffe basse
 import bpy
 import bmesh
@@ -47,6 +49,10 @@ COCONUT = material("veg_noix", (0.35, 0.42, 0.12), 0.6)
 BARK = material("veg_ecorce", (0.30, 0.24, 0.18))
 LEAVES = material("veg_feuillage", (0.20, 0.36, 0.12), 0.8)
 LEAVES2 = material("veg_feuillage_clair", (0.30, 0.45, 0.16), 0.8)
+BADAMIER = material("veg_feuillage_badamier", (0.27, 0.46, 0.15), 0.75)
+BADAMIER_ROUGE = material("veg_feuillage_rougi", (0.5, 0.3, 0.14), 0.8)
+NEEM = material("veg_feuillage_neem", (0.22, 0.37, 0.13), 0.8)
+BARK_GRIS = material("veg_ecorce_grise", (0.36, 0.33, 0.29))
 
 
 def new_object(name):
@@ -177,6 +183,59 @@ def build_arbre():
     return ob
 
 
+# ---------------- Badamier (refs : arbres d'ombre des rues et des cours, branches en etages) ----------------
+def build_badamier():
+    ob = new_object("veg_badamier")
+    i_bark = add_material(ob, BARK_GRIS)
+    i_leaf = add_material(ob, BADAMIER)
+    i_red = add_material(ob, BADAMIER_ROUGE)
+    bm = bmesh.new()
+    trunk = [Vector((0, 0, 0)), Vector((0.05, 0, 2.5)), Vector((0.08, 0.04, 5.2)), Vector((0.1, 0.05, 6.6))]
+    tube(bm, trunk, [0.3, 0.24, 0.16, 0.08], 8, i_bark)
+    # etages : branches presque horizontales en verticille, feuillage en plateaux aplatis au bout
+    tiers = [(2.9, 3.8, 6), (4.0, 3.1, 6), (5.1, 2.3, 5), (6.1, 1.4, 4)]
+    for ti, (z, reach, nb) in enumerate(tiers):
+        off = random.uniform(0, math.tau)
+        for k in range(nb):
+            ang = off + k / nb * math.tau + random.uniform(-0.2, 0.2)
+            d = Vector((math.cos(ang), math.sin(ang), 0))
+            a = Vector((0.05, 0, z))
+            b = a + d * reach + Vector((0, 0, 0.35))
+            tube(bm, [a, a + d * reach * 0.5 + Vector((0, 0, 0.12)), b], [0.09 - ti * 0.015, 0.06 - ti * 0.01, 0.03], 5, i_bark)
+            for j in range(3):
+                c = a + d * reach * (0.4 + 0.3 * j) + Vector((0, 0, 0.4 + 0.05 * j))
+                mat = i_red if random.random() < 0.06 else i_leaf
+                blob(bm, c, random.uniform(1.15, 1.5) * (1.0 - ti * 0.12), mat, squash=0.3, subdiv=1)
+    blob(bm, Vector((0.1, 0.05, 6.8)), 0.8, i_leaf, squash=0.5, subdiv=1)
+    bm.to_mesh(ob.data)
+    bm.free()
+    return ob
+
+
+# ---------------- Neem (le long des rues, dans les cours) ----------------
+def build_neem():
+    ob = new_object("veg_neem")
+    i_bark = add_material(ob, BARK)
+    i_leaf = add_material(ob, NEEM)
+    i_leaf2 = add_material(ob, LEAVES)
+    bm = bmesh.new()
+    trunk = [Vector((0, 0, 0)), Vector((0.05, 0.02, 1.2)), Vector((0.1, 0.05, 2.2))]
+    tube(bm, trunk, [0.28, 0.24, 0.2], 8, i_bark)
+    for ang in (0.6, 2.7, 4.6):
+        d = Vector((math.cos(ang), math.sin(ang), 0))
+        b = [trunk[-1], trunk[-1] + d * 0.8 + Vector((0, 0, 1.6)), trunk[-1] + d * 1.3 + Vector((0, 0, 3.2))]
+        tube(bm, b, [0.14, 0.09, 0.04], 6, i_bark)
+    # houppier ovale, plus haut que large, feuillage fin et serre
+    for k in range(16):
+        u = random.uniform(0, math.tau)
+        v = random.uniform(-0.9, 0.9)
+        c = Vector((math.cos(u) * 1.9 * math.sqrt(1 - v * v), math.sin(u) * 1.9 * math.sqrt(1 - v * v), 5.2 + v * 1.7))
+        blob(bm, c, random.uniform(0.9, 1.3), i_leaf if k % 4 else i_leaf2, squash=0.85, subdiv=1)
+    bm.to_mesh(ob.data)
+    bm.free()
+    return ob
+
+
 # ---------------- Buisson ----------------
 def build_buisson():
     ob = new_object("veg_buisson")
@@ -190,7 +249,7 @@ def build_buisson():
     return ob
 
 
-objs = [build_cocotier(), build_arbre(), build_buisson()]
+objs = [build_cocotier(), build_arbre(), build_buisson(), build_badamier(), build_neem()]
 for i, ob in enumerate(objs):
     ob.location.x = i * 8  # juste pour la vue dans Blender ; Godot repositionne
     for p in ob.data.polygons:

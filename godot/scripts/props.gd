@@ -54,14 +54,27 @@ var parked: Array = []                      # voitures garees {model, xf, color}
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
 var shops: Array = []                        # commerces ou acheter (scripts/commerce.gd) : {pos, kind}
 var placed := false
+## Kit d'objets de rue devant les boutiques et le long des murs (audit Cotonou : parasols, bancs, bouteilles de gaz,
+## bidons, casiers, tas de sable et parpaings). Tirage separe : le reste du decor ne change pas.
+@export var kit_chance := 0.75         # part des devantures qui recoivent des objets
+@export var chantier_chance := 0.05    # part des troncons de mur de 8 m avec un tas de sable et des parpaings devant
+@export var mur_texte_chance := 0.12   # part des troncons de mur de 8 m avec une inscription peinte
+@export var parabole_chance := 0.3     # part des toits plats avec une antenne parabolique
+const KIT_TEINTES := {"rue_parasol": [Color(0.72, 0.2, 0.16), Color(0.86, 0.68, 0.18), Color(0.18, 0.36, 0.62),
+	Color(0.2, 0.48, 0.3), Color(0.85, 0.84, 0.8)], "rue_casiers": [Color(0.66, 0.12, 0.1), Color(0.12, 0.38, 0.2),
+	Color(0.85, 0.6, 0.1)]}
+var _rng_kit := RandomNumberGenerator.new()
+var _devantures: Array = []   # [milieu, normale vers la rue, longueur] de chaque facade a enseigne
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
-const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "veh_berline": 300.0,
-	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0}
+const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "toit_parabole": 220.0, "veh_berline": 300.0,
+	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0,
+	"rue_parasol": 160.0, "rue_sable": 140.0, "rue_parpaings": 140.0}
 
 
 func _ready() -> void:
 	_rng.seed = seed_value
+	_rng_kit.seed = seed_value * 7 + 3
 	_load_meshes()
 	_carte = Carte.zone()
 	var data: Dictionary = _carte.data
@@ -83,10 +96,12 @@ func _ready() -> void:
 	Partie.chantier(_place_promenade_lamps.bind(data.get("promenade", [])))
 	Partie.chantier(_place_roadside)
 	var bats: Array = data["buildings"]
-	for debut in range(0, bats.size(), 250):   # par paquets (~60 ms) : meme resultat, meme ordre
-		Partie.chantier(_place_shop_signs.bind(bats.slice(debut, debut + 250)))
+	for debut in range(0, bats.size(), 60):   # par paquets (~70 ms) : meme resultat, meme ordre
+		Partie.chantier(_place_shop_signs.bind(bats.slice(debut, debut + 60)))
+		Partie.chantier(_place_kit)     # devant les facades a enseigne de ce paquet
 	Partie.chantier(_place_wall_texts.bind(data.get("walls", [])))
 	Partie.chantier(_place_toits.bind(data["buildings"]))
+	Partie.chantier(_place_chantiers.bind(data.get("walls", [])))
 	Partie.chantier(_build)
 	Partie.chantier(func() -> void:
 		placed = true
@@ -109,6 +124,8 @@ func _load_meshes() -> void:
 	_meshes["zem_gare"] = _merge_scene(zem_scene)
 	_meshes["toit_citerne"] = _mesh_citerne()
 	_meshes["toit_fers"] = _mesh_fers()
+	_meshes["toit_parabole"] = _mesh_parabole()
+	_meshes.merge(_meshes_kit())
 
 
 func _tintable(mesh: Mesh, mat_name: String) -> Mesh:
@@ -569,6 +586,7 @@ func _place_shop_signs(buildings: Array) -> void:
 		var mid: Vector2 = best[0]
 		var n: Vector2 = best[1]
 		var width: float = min(float(best[2]) * 0.75, 5.0)
+		_devantures.append([mid, n, float(best[2])])
 		var pos := mid + n * 0.12
 		var xf := Transform3D(_facing(n), Vector3(pos.x, 2.75, pos.y))
 		var bg: Color = SIGN_COLORS[_rng.randi() % SIGN_COLORS.size()]
@@ -578,14 +596,30 @@ func _place_shop_signs(buildings: Array) -> void:
 		counts["enseigne"] = counts.get("enseigne", 0) + 1
 
 
-func _place_wall_texts(walls: Array) -> void:
+func _troncons_murs(walls: Array, longueur := 8.0) -> Array:
+	## Murs d'enceinte (polylignes, un point tous les 0,5 m) decoupes en troncons droits [a, b] d'environ `longueur` m.
+	var out := []
 	for wpts in walls:
-		if wpts.size() < 2 or _rng.randf() > 0.25:
+		var i := 0
+		while i < wpts.size() - 1:
+			var a := _v2(wpts[i])
+			var j := i + 1
+			while j < wpts.size() - 1 and _v2(wpts[j + 1]).distance_to(a) <= longueur:
+				j += 1
+			var b := _v2(wpts[j])
+			# droit si la corde fait presque la longueur parcourue (pas d'angle de mur au milieu)
+			if a.distance_to(b) >= 4.0 and a.distance_to(b) > 0.9 * (j - i) * _v2(wpts[i]).distance_to(_v2(wpts[i + 1])):
+				out.append([a, b])
+			i = j
+	return out
+
+
+func _place_wall_texts(walls: Array) -> void:
+	for seg in _troncons_murs(walls):
+		if _rng.randf() > mur_texte_chance:
 			continue
-		var a := _v2(wpts[0])
-		var b := _v2(wpts[1])
-		if a.distance_to(b) < 4.0:
-			continue
+		var a: Vector2 = seg[0]
+		var b: Vector2 = seg[1]
 		var t := (b - a).normalized()
 		var n := Vector2(-t.y, t.x) * (1.0 if _rng.randf() < 0.5 else -1.0)
 		var mid := a.lerp(b, 0.5) + n * 0.13
@@ -637,7 +671,7 @@ func _build() -> void:
 		var list: Array = ch["xf"]
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_colors = kind in CAR_KINDS
+		mm.use_colors = kind in CAR_KINDS or KIT_TEINTES.has(kind)
 		mm.mesh = _meshes[kind]
 		mm.instance_count = list.size()
 		for i in list.size():
@@ -761,6 +795,16 @@ func _mesh_fers() -> Mesh:
 	return m
 
 
+func _mesh_parabole() -> Mesh:
+	## Antenne parabolique sur un pied : coupelle blanche presque tournee vers le ciel (Cotonou est a 6 degres nord : satellites hauts dans le ciel).
+	var blanc := _mat(Color(0.86, 0.86, 0.84), 0.5)
+	var gris := _mat(Color(0.35, 0.36, 0.37), 0.6)
+	var incl := Basis(Vector3.RIGHT, deg_to_rad(-35.0))
+	return _assemble([[_boite(Vector3(0.35, 0.05, 0.35)), _at(0, 0.025, 0), 1], [_cyl(0.025, 0.85), _at(0, 0.45, 0), 1],
+		[_cyl(0.05, 0.14, 0.42, 12), Transform3D(incl, Vector3(0, 0.95, 0.04)), 0],
+		[_cyl(0.012, 0.42), Transform3D(incl * Basis(Vector3.RIGHT, deg_to_rad(-90.0)), Vector3(0, 1.02, -0.17)), 1]], [blanc, gris])
+
+
 func _place_toits(buildings: Array) -> void:
 	## Sur les toits plats : citerne noire sur environ un toit sur deux ; fers d'attente aux angles des maisons a
 	## etage (construction qui continue quand l'argent revient).
@@ -785,3 +829,166 @@ func _place_toits(buildings: Array) -> void:
 			for i in range(0, mini(pts.size(), 4)):
 				var q := _v2(pts[i]).lerp(c, 0.12 / maxf(_v2(pts[i]).distance_to(c), 0.5))
 				_add("toit_fers", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(q.x, h, q.y)))
+		if _rng_kit.randf() < parabole_chance:
+			# parabole pres d'un bord du toit, tournee vers le sud (satellites geostationnaires, presque a la verticale)
+			var bord := _v2(pts[_rng_kit.randi() % pts.size()])
+			var q2 := bord.lerp(c, 0.8 / maxf(bord.distance_to(c), 0.9))
+			_add("toit_parabole", Transform3D(Basis(Vector3.UP, PI + _rng_kit.randf_range(-0.5, 0.5)), Vector3(q2.x, h, q2.y)))
+
+
+# ---------------------------------------------------------------- kit d'objets de rue (audit Cotonou)
+func _mat(c: Color, rough := 0.8, teinte := false) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color.WHITE if teinte else c
+	m.vertex_color_use_as_albedo = teinte
+	m.roughness = rough
+	return m
+
+
+func _assemble(parts: Array, mats: Array) -> ArrayMesh:
+	## parts : [[PrimitiveMesh, Transform3D, indice du materiau], ...] -> une surface par materiau.
+	var am := ArrayMesh.new()
+	for k in mats.size():
+		var st := SurfaceTool.new()
+		var vide := true
+		for p in parts:
+			if int(p[2]) == k:
+				st.append_from(p[0], 0, p[1])
+				vide = false
+		if vide:
+			continue
+		st.commit(am)
+		am.surface_set_material(am.get_surface_count() - 1, mats[k])
+	return am
+
+
+func _boite(s: Vector3) -> BoxMesh:
+	var b := BoxMesh.new()
+	b.size = s
+	return b
+
+
+func _cyl(r: float, h: float, r_haut := -1.0, segs := 10) -> CylinderMesh:
+	var c := CylinderMesh.new()
+	c.bottom_radius = r
+	c.top_radius = r if r_haut < 0.0 else r_haut
+	c.height = h
+	c.radial_segments = segs
+	c.rings = 1
+	return c
+
+
+func _at(x: float, y: float, z: float, rot_y := 0.0) -> Transform3D:
+	return Transform3D(Basis(Vector3.UP, rot_y), Vector3(x, y, z))
+
+
+func _meshes_kit() -> Dictionary:
+	var bois := _mat(Color(0.42, 0.3, 0.2), 0.9)
+	var metal := _mat(Color(0.3, 0.31, 0.32), 0.6)
+	var beton := _mat(Color(0.58, 0.57, 0.54), 0.95)
+	var sable := _mat(Color(0.71, 0.65, 0.55), 1.0)
+	var m := {}
+	# parasol de vendeuse (toile teintee par instance, mat sur un pied en beton)
+	m["rue_parasol"] = _assemble([[_cyl(0.2, 0.14, 0.17), _at(0, 0.07, 0), 0], [_cyl(0.022, 2.15), _at(0, 1.12, 0), 1],
+		[_cyl(1.15, 0.42, 0.03, 8), _at(0, 2.02, 0), 2]], [beton, metal, _mat(Color.WHITE, 0.85, true)])
+	# banc de bois (planche sur deux pieds)
+	m["rue_banc"] = _assemble([[_boite(Vector3(1.7, 0.05, 0.3)), _at(0, 0.44, 0), 0], [_boite(Vector3(0.06, 0.42, 0.26)), _at(-0.7, 0.21, 0), 0],
+		[_boite(Vector3(0.06, 0.42, 0.26)), _at(0.7, 0.21, 0), 0]], [bois])
+	# bouteilles de gaz (revendeur) : trois bouteilles peintes, robinet
+	var gaz := []
+	for i in 3:
+		var x := (i - 1) * 0.34
+		gaz.append([_cyl(0.15, 0.5), _at(x, 0.25, 0), 0])
+		gaz.append([_cyl(0.1, 0.06, 0.06), _at(x, 0.53, 0), 0])
+		gaz.append([_cyl(0.03, 0.1), _at(x, 0.6, 0), 1])
+	m["rue_gaz"] = _assemble(gaz, [_mat(Color(0.25, 0.42, 0.6), 0.5), metal])
+	# bidons jaunes (essence, eau, huile) alignes
+	var bid := []
+	for i in 4:
+		bid.append([_boite(Vector3(0.18, 0.4, 0.3)), _at((i - 1.5) * 0.22, 0.2, 0, (i % 2) * 0.08 - 0.04), 0])
+		bid.append([_cyl(0.025, 0.05), _at((i - 1.5) * 0.22, 0.42, 0.08), 1])
+	m["rue_bidons"] = _assemble(bid, [_mat(Color(0.86, 0.72, 0.12), 0.55), _mat(Color(0.1, 0.1, 0.1), 0.6)])
+	# casiers de boissons empiles (teinte par instance)
+	var cas := []
+	for i in 3:
+		cas.append([_boite(Vector3(0.42, 0.28, 0.3)), _at(0, 0.14 + i * 0.29, 0, (i % 2) * 0.08), 0])
+	cas.append([_boite(Vector3(0.42, 0.28, 0.3)), _at(0.45, 0.14, 0.02), 0])
+	m["rue_casiers"] = _assemble(cas, [_mat(Color.WHITE, 0.6, true)])
+	# tas de sable de chantier (le meme sable gris-beige que le sol) et parpaings empiles
+	m["rue_sable"] = _assemble([[_cyl(1.3, 0.65, 0.15, 12), Transform3D(Basis.from_scale(Vector3(1.0, 1.0, 0.75)), Vector3(0, 0.32, 0)), 0]], [sable])
+	var pp := []
+	for rang in 4:
+		for i in 3:
+			pp.append([_boite(Vector3(0.39, 0.19, 0.19)), _at((i - 1) * 0.4, 0.1 + rang * 0.2, 0.0), 0])
+			pp.append([_boite(Vector3(0.39, 0.19, 0.19)), _at((i - 1) * 0.4, 0.1 + rang * 0.2, 0.21), 0])
+	m["rue_parpaings"] = _assemble(pp, [_mat(Color(0.55, 0.55, 0.53), 0.95)])
+	return m
+
+
+func _pose_kit(kind: String, p: Vector2, n: Vector2, rayon: float) -> bool:
+	## Pose un objet du kit en p (dos a la facade si n est donne), avec sa collision ; faux si la place est prise.
+	var y := _ground(p, rayon)
+	if is_nan(y) or not _is_free(p, rayon):
+		return false
+	_occupy(p, rayon)
+	var xf := Transform3D(_facing(n).rotated(Vector3.UP, _rng_kit.randf_range(-0.3, 0.3)), Vector3(p.x, y, p.y))
+	var teintes: Array = KIT_TEINTES.get(kind, [])
+	_add(kind, xf, teintes[_rng_kit.randi() % teintes.size()] if not teintes.is_empty() else Color.WHITE)
+	match kind:
+		"rue_parasol":
+			_cyl_col(xf.origin, 0.2, 2.0)
+		"rue_banc":
+			_box_col(xf, Vector3(1.7, 0.46, 0.3), 0.23)
+		"rue_gaz":
+			_box_col(xf, Vector3(1.0, 0.62, 0.32), 0.31)
+		"rue_bidons":
+			_box_col(xf, Vector3(0.9, 0.44, 0.3), 0.22)
+		"rue_casiers":
+			_box_col(xf, Vector3(0.9, 0.86, 0.32), 0.43)
+		"rue_sable":
+			_box_col(xf, Vector3(1.8, 0.3, 1.3), 0.15)
+		"rue_parpaings":
+			_box_col(xf, Vector3(1.2, 0.8, 0.42), 0.4)
+	return true
+
+
+var _kit_fait := 0
+
+
+func _place_kit() -> void:
+	## Devant les facades a enseigne : un parasol avec un banc, ou un revendeur (gaz, bidons, casiers), a 1 ou 2 m du mur.
+	var choix := [["rue_parasol", 0.45], ["rue_banc", 0.25], ["rue_gaz", 0.1], ["rue_bidons", 0.12], ["rue_casiers", 0.08]]
+	for i in range(_kit_fait, _devantures.size()):
+		if _rng_kit.randf() > kit_chance:
+			continue
+		var mid: Vector2 = _devantures[i][0]
+		var n: Vector2 = _devantures[i][1]
+		var t := Vector2(-n.y, n.x)
+		var L: float = _devantures[i][2]
+		var r := _rng_kit.randf()
+		var kind := "rue_casiers"
+		for c in choix:
+			r -= float(c[1])
+			if r <= 0.0:
+				kind = c[0]
+				break
+		var p := mid + n * _rng_kit.randf_range(0.9, 1.6) + t * _rng_kit.randf_range(-0.35, 0.35) * L
+		if _pose_kit(kind, p, n if kind != "rue_banc" else -n, 0.6) and kind == "rue_parasol" and _rng_kit.randf() < 0.6:
+			_pose_kit("rue_banc", p + t * 1.4 + n * 0.3, -n, 0.5)    # banc a l'ombre du parasol, cote facade
+	_kit_fait = _devantures.size()
+
+
+func _place_chantiers(walls: Array) -> void:
+	## Devant quelques murs : tas de sable et parpaings (on construit partout, petit a petit), cote rue.
+	for seg in _troncons_murs(walls):
+		if _rng_kit.randf() > chantier_chance:
+			continue
+		var a: Vector2 = seg[0]
+		var b: Vector2 = seg[1]
+		var t := (b - a).normalized()
+		var n := Vector2(-t.y, t.x)
+		var mid := a.lerp(b, _rng_kit.randf_range(0.3, 0.7))
+		if _road_dist(mid - n * 1.5) < _road_dist(mid + n * 1.5):
+			n = -n
+		if _pose_kit("rue_sable", mid + n * 1.6, t, 1.0):
+			_pose_kit("rue_parpaings", mid + n * 0.9 + t * 2.0, n, 0.7)

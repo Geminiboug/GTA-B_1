@@ -9,6 +9,7 @@
 # Repere : origine au centre de la zone, X = est, Y = nord, 1 unite = 1 metre.
 import bpy
 import math
+import os
 import sys
 import xml.etree.ElementTree as ET
 from mathutils import Vector
@@ -20,6 +21,7 @@ OVERTURE = args[4] if len(args) > 4 and args[4] != "-" else None  # optionnel : 
 LITTORAL = args[5] if len(args) > 5 and args[5] != "-" else None  # optionnel : trait de cote + limite de plage (GeoJSON Sentinel-2)
 OUT_JSON = args[6] if len(args) > 6 else None  # optionnel : donnees de la zone pour Godot (routes, batiments, ...)
 HEIGHTS = args[7] if len(args) > 7 and args[7] != "-" else None  # optionnel : grille Open Buildings 2.5D (ob25d_grille.py)
+TILES_DIR = args[8] if len(args) > 8 and args[8] != "-" else None  # optionnel : un .glb par tuile (chargement par morceaux)
 
 import json
 import zlib
@@ -561,13 +563,18 @@ def road_surface(hw, t, wid):
         return "paves"
     if s in ("sand", "unpaved", "dirt", "ground", "earth", "compacted", "gravel", "fine_gravel"):
         return "terre"
-    if hw in ("primary", "secondary", "tertiary", "trunk"):
+    r = stable_hash("route" + str(wid))
+    if hw in ("primary", "trunk"):
         return "bitume"
+    # axes secondaires et tertiaires : souvent en paves autobloquants (Voie de Fidjrosse, refs/rues/, audit Cotonou)
+    if hw == "secondary":
+        return "paves" if r < 30 else "bitume"
+    if hw == "tertiary":
+        return "paves" if r < 60 else "bitume"
     if hw in ("footway", "path", "pedestrian"):
         return "paves"
     if hw == "track":
         return "terre"
-    r = stable_hash("route" + str(wid))
     if hw in ("residential", "unclassified", "living_street"):
         return "paves" if r < 45 else ("terre" if r < 75 else "bitume")
     if hw == "service":
@@ -830,9 +837,10 @@ for r in road_pieces:
     road_data.append({"kind": hw, "surface": surf, "width": round(width, 2),
                       "oneway": r["oneway"], "name": NOM_FICTIF.get(t.get("name", ""), t.get("name", "")),
                       "pts": [[round(p[0], 2), round(-p[1], 2)] for p in piece]})
-    if surf == "bitume" and hw in ("primary", "secondary", "tertiary"):
+    if hw in ("primary", "secondary", "tertiary") and surf in ("bitume", "paves"):
         # bas-cotes sableux ou se garent les zems, plus larges que la chaussee
         line_batches.setdefault(("accotement", "mat_sable", 0.014, "Routes"), Batch()).add(*ribbon(piece, width + 5.0))
+    if surf == "bitume" and hw in ("primary", "secondary", "tertiary"):
         # marquage : axe en tirets, lignes de rive continues
         mz = z + MARK_DZ
         if not r["oneway"]:
@@ -1166,13 +1174,27 @@ def roof_details(det, poly, h, wid, kind):
     cx = sum(p[0] for p in poly) / n
     cy = sum(p[1] for p in poly) / n
     pc = ccw(poly)
-    # parapet de 0,9 m le long de chaque facade
+    # parapet de 0,9 m le long de chaque facade ; sur environ une maison a etage sur huit, acrotere a creneaux
+    # (muret de 0,6 m et merlons de 0,35 m tous les 1,3 m, carrefour du Calvaire de Fidjrosse, refs/rues/)
+    creneaux = kind not in ("hangar",) and h >= 5.9 and stable_hash(f"{wid}cr") < 12
     for i in range(n):
         a, b = pc[i], pc[(i + 1) % n]
         L = math.hypot(b[0] - a[0], b[1] - a[1])
         if L < 0.3:
             continue
-        box_at(det["parapet"], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, L + 0.2, 0.2, h, h + 0.9, math.atan2(b[1] - a[1], b[0] - a[0]))
+        ang = math.atan2(b[1] - a[1], b[0] - a[0])
+        if not creneaux or L < 2.5:
+            box_at(det["parapet"], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, L + 0.2, 0.2, h, h + 0.9, ang)
+            continue
+        box_at(det["parapet"], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, L + 0.2, 0.2, h, h + 0.6, ang)
+        m = max(int(L / 1.3), 1)
+        c, sn = math.cos(ang), math.sin(ang)
+        for k in range(m + 1):
+            u = k / m
+            mx, my = a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u
+            quad = [(mx + x * c - y * sn, my + x * sn + y * c) for x, y in ((-0.22, -0.12), (0.22, -0.12), (0.22, 0.12), (-0.22, 0.12))]
+            v, f = prism(quad, h + 0.6, h + 0.95)
+            det["parapet"].add(v, f[2:])     # merlon pose sur le muret : pas de face du dessous
     if kind in ("hangar",):
         return
     # fers en attente : poteaux beton entames + armatures rouillees (tres courant a Cotonou)
@@ -1661,6 +1683,33 @@ for m in MAT.values():
     m.use_fake_user = False
 bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
 bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format="GLB", export_apply=True, export_yup=True)
+if TILES_DIR:
+    # chargement par morceaux (docs/chargement_par_morceaux.md) : les objets decoupes en tuiles (suffixe _tX_Y) vont
+    # dans zone_tX_Y.glb, les autres (mer, plage d'un seul tenant...) dans zone_commun.glb, toujours charge ;
+    # index des tuiles dans tuiles.json (rectangle de chaque tuile en coordonnees Godot : x, z)
+    import re
+    os.makedirs(TILES_DIR, exist_ok=True)
+    groups = {}
+    for ob in bpy.context.scene.objects:
+        if ob.type != "MESH":
+            continue
+        m = re.search(r"_t(-?\d+)_(-?\d+)(-col|-colonly)?$", ob.name)
+        groups.setdefault((int(m.group(1)), int(m.group(2))) if m else None, []).append(ob)
+    index = []
+    for key, obs in groups.items():
+        bpy.ops.object.select_all(action="DESELECT")
+        for ob in obs:
+            ob.select_set(True)
+        nom = "zone_commun.glb" if key is None else "zone_t%d_%d.glb" % key
+        bpy.ops.export_scene.gltf(filepath=os.path.join(TILES_DIR, nom), export_format="GLB", export_apply=True,
+                                  export_yup=True, use_selection=True)
+        if key is not None:
+            tx, ty = key
+            index.append({"x": tx, "y": ty, "fichier": nom,
+                          "rect": [tx * TILE, -(ty + 1) * TILE, TILE, TILE]})   # Blender y nord -> Godot z = -y
+    json.dump({"taille": TILE, "commun": "zone_commun.glb", "tuiles": sorted(index, key=lambda t: (t["x"], t["y"]))},
+              open(os.path.join(TILES_DIR, "tuiles.json"), "w", encoding="utf-8"))
+    print("Tuiles :", len(index), "+ commun (%d objets)" % len(groups.get(None, [])))
 print("Hauteurs mesurees (Open Buildings 2.5D) : %d batiments" % nb_ob)
 print(f"Zone : {XMAX - XMIN:.0f} m x {YMAX - YMIN:.0f} m, batiments : {nb_bld} (retires de la chaussee : {nb_off}, "
       f"retrecis : {nb_fit}), routes : {len(line_batches)} types, chaussees separees : {len(twins)}, "
