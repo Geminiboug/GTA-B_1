@@ -42,7 +42,7 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 
 ## 4. Publication de la démo
 
-- [ ] **Logo et icône du jeu** : si tu fais un logo (palette donnée plus tôt), mets-le en PNG carré 1024 x 1024 dans `godot/assets/ui/`. Sinon dis-le-moi et je fais une icône provisoire.
+- [ ] **Logo et icône du jeu** : il y a une icône provisoire (`godot/icone.png`, « GTB » jaune sur fond nuit, faite par `godot/tools/faire_icone.gd`). Si tu fais un vrai logo (palette donnée plus tôt), mets-le en PNG carré 1024 x 1024 à la place.
 - [ ] **Formulaire de retours des joueurs** (Google Forms, par exemple) : envoie-moi le lien, je le branche sur l'écran de fin de démo.
 - [ ] **Compte itch.io** : crée le compte et la page (en brouillon). Je peux préparer les textes et les images à partir de [presentation.html](presentation.html).
 - [ ] **Captures pour le trailer** avec OBS (60 à 90 s au final, montage CapCut). Je peux te faire une liste de plans à filmer.

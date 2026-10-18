@@ -16,7 +16,8 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="GTB"
 config/description="Gbê Town Bénin"
-config/version="0.1.0"
+config/version="0.1.2"
+config/icon="res://icone.png"
 boot_splash/bg_color=Color(0.0902, 0.0784, 0.0588, 1)
 run/main_scene="res://scenes/chargement.tscn"
 config/features=PackedStringArray("4.7")
