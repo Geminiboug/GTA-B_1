@@ -4,7 +4,8 @@ extends Node3D
 ## (deja importes) : les autres sont generes autour des maisons de plain-pied ou R+1 (30 a 400 m2), seulement la ou il
 ## y a la place (ni sur la chaussee, ni dans un autre batiment ou une autre concession, ni pres d'un mur OSM).
 ## Murs en MultiMesh (couleur par instance), collisions en boites, murs marques sur la carte de marche des pietons.
-## Tirage deterministe (graine fixe) : memes concessions a chaque partie.
+## Tirage deterministe (une graine par batiment) : memes concessions a chaque partie. Pose tuile par tuile (monde.gd) :
+## murs, portails et collisions de chaque tuile partent avec elle.
 
 @export var marge := 2.4               # m entre la maison et le mur (cour)
 @export var marge_min := 1.4
@@ -19,41 +20,91 @@ const MURS := [Color(0.86, 0.82, 0.72), Color(0.8, 0.68, 0.5), Color(0.92, 0.9, 
 const PORTAILS := [Color(0.1, 0.25, 0.55), Color(0.12, 0.4, 0.22), Color(0.55, 0.12, 0.1), Color(0.2, 0.2, 0.22),
 	Color(0.75, 0.55, 0.15)]
 
+@export var monde_path: NodePath = ^"../zone_aeroport"
+
 var count := 0
-var _rects: Array = []          # rectangles acceptes : [centre, axe u, axe v, demi u, demi v]
+var _rects := {}                # Vector2i (case de 50 m) -> rectangles acceptes {c, u, v, hu, hv, tuile}
+var _murs_osm := {}             # Vector2i (case de 25 m) -> points des murs OSM
+var _par_tuile := {}            # Vector2i -> {noeuds, rects}
+var _avoid: Array = []
 var _carte: Carte
 var _rng := RandomNumberGenerator.new()
 
 
-const PAQUET := 20    # batiments par etape de construction (~40 ms)
+const PAQUET := 20    # batiments par etape de construction
 
 
 func _ready() -> void:
-	_rng.seed = 2610
 	_carte = Carte.zone()
-	_build()
-
-
-func _build() -> void:
-	var data: Dictionary = Carte.zone().data   # lu une seule fois pour tout le jeu
-	var avoid: Array = []
+	var data: Dictionary = _carte.data   # lu une seule fois pour tout le jeu
 	for b in data["buildings"]:
 		if String(b.get("style", "")).begins_with("lieu_") or b.get("style") in ["terminal", "hangar"]:
-			avoid.append(_centroid(b["pts"]))
-	var osm_walls: Array = data.get("walls", [])
-	var walls: Array = []          # [a, b, couleur]
-	var gates: Array = []          # [centre, yaw, couleur]
-	# par paquets de batiments : etale sur plusieurs images pendant l'ecran de chargement (Partie.chantier)
-	var bats: Array = data["buildings"]
-	for debut in range(0, bats.size(), PAQUET):
-		Partie.chantier(_paquet.bind(bats, debut, avoid, osm_walls, walls, gates))
-	Partie.chantier(func() -> void:
-		count = _rects.size()
-		_meshes(walls, gates))
+			_avoid.append(_centroid(b["pts"]))
+	for w in data.get("walls", []):
+		for q in w:
+			var c := Vector2i(floori(float(q[0]) / 25.0), floori(float(q[1]) / 25.0))
+			if not _murs_osm.has(c):
+				_murs_osm[c] = []
+			_murs_osm[c].append(Vector2(q[0], q[1]))
+	var monde := get_node_or_null(monde_path) as Monde
+	if monde == null:
+		_tuile(Vector2i.ZERO, Rect2(-1e6, -1e6, 2e6, 2e6), true)
+		return
+	var cles: Array = monde.tuiles.keys().filter(func(c: Vector2i) -> bool: return monde.tuiles[c]["noeud"] != null)
+	cles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x or (a.x == b.x and a.y < b.y))
+	for cle in cles:
+		_tuile(cle, monde.tuiles[cle]["rect"], true)
+	monde.tuile_chargee.connect(func(cle: Vector2i, _n: Node3D) -> void:
+		if not _par_tuile.has(cle):
+			_tuile(cle, monde.tuiles[cle]["rect"], false))
+	monde.tuile_dechargee.connect(liberer_tuile)
 
 
-func _paquet(bats: Array, debut: int, avoid: Array, osm_walls: Array, walls: Array, gates: Array) -> void:
-	for b in bats.slice(debut, debut + PAQUET):
+func _tuile(cle: Vector2i, rect: Rect2, au_chargement: bool) -> void:
+	## Concessions des maisons dont le centre est dans la tuile ; au chargement par paquets de PAQUET batiments, en
+	## cours de partie en travail de fond (paquets de 4).
+	var bats: Array = _carte.data["buildings"]
+	var lot: Array = []
+	for bi in bats.size():
+		if rect.has_point(_centroid(bats[bi]["pts"])):
+			lot.append(bi)
+	var ctx := {"noeuds": [], "rects": [], "walls": [], "gates": []}
+	_par_tuile[cle] = ctx
+	var n := PAQUET if au_chargement else 4
+	var etape := func(f: Callable) -> void:
+		var g := func() -> void:
+			if _par_tuile.get(cle) == ctx:
+				f.call()
+		if au_chargement:
+			Partie.chantier(g)
+		else:
+			Partie.tache(g)
+	for debut in range(0, lot.size(), n):
+		etape.call(_paquet.bind(lot.slice(debut, debut + n), ctx))
+	etape.call(func() -> void:
+		count += ctx["rects"].size()
+		_meshes(ctx, "%d_%d" % [cle.x, cle.y]))
+
+
+func liberer_tuile(cle: Vector2i) -> void:
+	var ctx: Dictionary = _par_tuile.get(cle, {})
+	_par_tuile.erase(cle)
+	for nd in ctx.get("noeuds", []):
+		if is_instance_valid(nd):
+			(nd as Node).queue_free()
+	for r in ctx.get("rects", []):
+		(_rects.get(_case(r["c"]), []) as Array).erase(r)
+	count -= ctx.get("rects", []).size()
+
+
+func _case(c: Vector2) -> Vector2i:
+	return Vector2i(floori(c.x / 50.0), floori(c.y / 50.0))
+
+
+func _paquet(lot: Array, ctx: Dictionary) -> void:
+	var bats: Array = _carte.data["buildings"]
+	for bi in lot:
+		var b: Dictionary = bats[bi]
 		if float(b.get("h", 99)) > 7.5 or String(b.get("style", "")).begins_with("lieu_") or b.get("style") in ["terminal", "hangar", null]:
 			continue
 		var pts: Array = b["pts"]
@@ -62,17 +113,19 @@ func _paquet(bats: Array, debut: int, avoid: Array, osm_walls: Array, walls: Arr
 			continue
 		var c := _centroid(pts)
 		var near_lieu := false
-		for a in avoid:
+		for a in _avoid:
 			if (a as Vector2).distance_to(c) < exclure_rayon:
 				near_lieu = true
-		if near_lieu or _near_osm_wall(c, osm_walls):
+		if near_lieu or _near_osm_wall(c):
 			continue
 		var rect := _fit(pts)
 		if rect.is_empty():
 			continue
+		ctx["rects"].append(rect)
+		_rng.seed = hash([2610, bi])
 		var col: Color = MURS[_rng.randi() % MURS.size()]
 		var gcol: Color = PORTAILS[_rng.randi() % PORTAILS.size()]
-		_ring(rect, col, gcol, walls, gates)
+		_ring(rect, col, gcol, ctx["walls"], ctx["gates"])
 
 
 func _centroid(pts: Array) -> Vector2:
@@ -91,11 +144,13 @@ func _area(pts: Array) -> float:
 	return absf(a) * 0.5
 
 
-func _near_osm_wall(c: Vector2, walls: Array) -> bool:
-	for w in walls:
-		for p in w:
-			if Vector2(p[0], p[1]).distance_to(c) < 25.0:
-				return true
+func _near_osm_wall(c: Vector2) -> bool:
+	var k := Vector2i(floori(c.x / 25.0), floori(c.y / 25.0))
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for q in _murs_osm.get(k + Vector2i(dx, dz), []):
+				if (q as Vector2).distance_to(c) < 25.0:
+					return true
 	return false
 
 
@@ -124,7 +179,10 @@ func _fit(pts: Array) -> Dictionary:
 	for m in [marge, (marge + marge_min) * 0.5, marge_min]:
 		var r := {"c": center, "u": u, "v": v, "hu": half.x + m, "hv": half.y + m}
 		if _free(r):
-			_rects.append(r)
+			var k := _case(center)
+			if not _rects.has(k):
+				_rects[k] = []
+			_rects[k].append(r)
 			return r
 	return {}
 
@@ -144,10 +202,13 @@ func _free(r: Dictionary) -> bool:
 			var p := a.lerp(b, float(k) / n)
 			if not _carte.in_bounds(p) or _carte.on_carriageway(p, 1.2) or _carte.in_building(p):
 				return false
-			for o in _rects:
-				var d: Vector2 = p - o["c"]
-				if absf(d.dot(o["u"])) < o["hu"] + 0.6 and absf(d.dot(o["v"])) < o["hv"] + 0.6:
-					return false
+			var kc := _case(p)
+			for dx in range(-1, 2):
+				for dz in range(-1, 2):
+					for o in _rects.get(kc + Vector2i(dx, dz), []):
+						var d: Vector2 = p - o["c"]
+						if absf(d.dot(o["u"])) < o["hu"] + 0.6 and absf(d.dot(o["v"])) < o["hv"] + 0.6:
+							return false
 	return true
 
 
@@ -176,7 +237,11 @@ func _ring(r: Dictionary, col: Color, gcol: Color, walls: Array, gates: Array) -
 		_carte._stamp_wall(a, b)
 
 
-func _meshes(walls: Array, gates: Array) -> void:
+func _meshes(ctx: Dictionary, nom: String) -> void:
+	var walls: Array = ctx["walls"]
+	var gates: Array = ctx["gates"]
+	if walls.is_empty():
+		return
 	var box := BoxMesh.new()
 	box.size = Vector3.ONE
 	var mat := StandardMaterial3D.new()
@@ -189,8 +254,9 @@ func _meshes(walls: Array, gates: Array) -> void:
 	mm.mesh = box
 	mm.instance_count = walls.size() + gates.size() * 2
 	var body := StaticBody3D.new()
-	body.name = "MursConcessions"
+	body.name = "MursConcessions_" + nom
 	add_child(body)
+	ctx["noeuds"].append(body)
 	var idx := 0
 	for w in walls:
 		var a: Vector2 = w[0]
@@ -230,10 +296,11 @@ func _meshes(walls: Array, gates: Array) -> void:
 		body.add_child(cs)
 	mm.visible_instance_count = idx
 	var mmi := MultiMeshInstance3D.new()
-	mmi.name = "Concessions"
+	mmi.name = "Concessions_" + nom
 	mmi.multimesh = mm
 	mmi.visibility_range_end = 450.0
 	add_child(mmi)
+	ctx["noeuds"].append(mmi)
 
 
 func _ground(p: Vector2) -> float:

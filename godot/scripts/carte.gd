@@ -26,6 +26,10 @@ var bld_mask := PackedByteArray()     # 1 dans un batiment ou un mur
 var nodes := PackedVector2Array()
 var node_edges: Array = []     # noeud -> [index d'arete]
 var edges: Array = []          # {a, b, pts (de a vers b), road, oneway, width, len, major, kind}
+const CASE_ARETES := 40.0
+var _cases_aretes := {}        # Vector2i -> [[arete, segment, distance depuis a au debut du segment]]
+var _cases_min := Vector2i.ZERO
+var _cases_max := Vector2i.ZERO
 
 
 static func zone() -> Carte:
@@ -52,6 +56,7 @@ func _load() -> void:
 			"surface": r["surface"], "name": r["name"], "car": kind in CAR_KINDS, "major": kind in MAJOR})
 	_snap_dead_ends()
 	_build_graph()
+	_index_aretes()
 	_build_masks()
 
 
@@ -319,18 +324,53 @@ func in_bounds(p: Vector2) -> bool:
 
 
 # ------------------------------------------------------------------ itineraire (GPS)
-func nearest_on_network(p: Vector2) -> Dictionary:
-	## Point de rue le plus proche : {edge, point, dist, along (distance depuis le noeud a)}.
-	var best := {"edge": -1, "dist": INF}
+func _index_aretes() -> void:
+	## Segments des aretes ranges par cases de CASE_ARETES m (nearest_on_network sans parcourir tout le reseau).
+	_cases_min = Vector2i(1 << 30, 1 << 30)
+	_cases_max = -_cases_min
 	for e in edges.size():
 		var pts: PackedVector2Array = edges[e]["pts"]
 		var along := 0.0
 		for i in pts.size() - 1:
-			var c := Geometry2D.get_closest_point_to_segment(p, pts[i], pts[i + 1])
-			var d := c.distance_to(p)
-			if d < best["dist"]:
-				best = {"edge": e, "point": c, "dist": d, "along": along + pts[i].distance_to(c)}
-			along += pts[i].distance_to(pts[i + 1])
+			var a := pts[i]
+			var b := pts[i + 1]
+			var c0 := Vector2i(floori(minf(a.x, b.x) / CASE_ARETES), floori(minf(a.y, b.y) / CASE_ARETES))
+			var c1 := Vector2i(floori(maxf(a.x, b.x) / CASE_ARETES), floori(maxf(a.y, b.y) / CASE_ARETES))
+			for cx in range(c0.x, c1.x + 1):
+				for cy in range(c0.y, c1.y + 1):
+					var k := Vector2i(cx, cy)
+					if not _cases_aretes.has(k):
+						_cases_aretes[k] = []
+					_cases_aretes[k].append([e, i, along])
+			_cases_min = Vector2i(mini(_cases_min.x, c0.x), mini(_cases_min.y, c0.y))
+			_cases_max = Vector2i(maxi(_cases_max.x, c1.x), maxi(_cases_max.y, c1.y))
+			along += a.distance_to(b)
+
+
+func nearest_on_network(p: Vector2) -> Dictionary:
+	## Point de rue le plus proche : {edge, point, dist, along (distance depuis le noeud a)}. Recherche par anneaux de
+	## cases autour du point ; a distance egale, la plus petite arete puis le premier segment (comme un parcours complet).
+	var best := {"edge": -1, "dist": INF}
+	var bs := -1
+	var k0 := Vector2i(floori(p.x / CASE_ARETES), floori(p.y / CASE_ARETES))
+	var r_max := maxi(maxi(absi(k0.x - _cases_min.x), absi(_cases_max.x - k0.x)), maxi(absi(k0.y - _cases_min.y), absi(_cases_max.y - k0.y)))
+	for r in r_max + 1:
+		for cx in range(k0.x - r, k0.x + r + 1):
+			for cy in range(k0.y - r, k0.y + r + 1):
+				if maxi(absi(cx - k0.x), absi(cy - k0.y)) != r:
+					continue
+				for s in _cases_aretes.get(Vector2i(cx, cy), []):
+					var e: int = s[0]
+					var i: int = s[1]
+					var pts: PackedVector2Array = edges[e]["pts"]
+					var c := Geometry2D.get_closest_point_to_segment(p, pts[i], pts[i + 1])
+					var d := c.distance_to(p)
+					if d < best["dist"] or (d == best["dist"] and (e < best["edge"] or (e == best["edge"] and i < bs))):
+						best = {"edge": e, "point": c, "dist": d, "along": float(s[2]) + pts[i].distance_to(c)}
+						bs = i
+		# les cases de l'anneau suivant sont toutes a plus de r cases du point
+		if best["edge"] >= 0 and best["dist"] <= r * CASE_ARETES:
+			break
 	return best
 
 

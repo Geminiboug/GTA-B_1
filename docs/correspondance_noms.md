@@ -38,6 +38,7 @@ Tout nom reel trouve est signale a Olympe avant d'etre renomme. Statut : **en je
 | Immatriculations d'avions TY-, TU-, XT-, 5N-, 6V-, 5V- (prefixes reels) | livrees des avions (avion.gd) | GB- (prefixe invente, aucun pays) | renomme |
 | Police Republicaine du Benin (corps reel) | patrouilles, agents (police.gd) | "Police de Gbê Town", inscription POLICE seule | renomme |
 | Personnages de l histoire | docs/histoire.md, histoire.gd | Senan Dossou, tante Mireille, Vieux Codjo, Cdt Hounkpe, Maman Fifi : inventes (aucune personne reelle) | invente |
+| Fidjrossè (quartier) et « Carrefour Plage de Fidjrossé » (donnees OSM, extension du 19/10/2026) | mini-carte (nom de rue), carte | Fidjrossa, « Carrefour Plage de Fidjrossa » | a valider |
 
 Les noms de rue viennent des tags `name` d'OpenStreetMap : le renommage se fera a l'import (osm_import.py, table
 de correspondance), pour que la carte, le GPS et les etiquettes restent coherents.

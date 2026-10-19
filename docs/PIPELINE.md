@@ -675,3 +675,25 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   controleur), clip_position, play_clips(..., vitesse), fondu_clip ; player.gd virage_seuil / virage_vitesse /
   virage_sortie (_maj_virage). tests/test_virage.gd.
 - Ecran de chargement : etape_lente_ms (etapes longues signalees dans le journal).
+
+## Extension a Fidjrosse et chargement par morceaux (19/10/2026)
+- Emprise : lon 2.350-2.3875, lat 6.343-6.361 (4,15 x 2 km). Origine inchangee (lat0, lon0 = 6.3498725, 2.3813795) :
+  tout ce qui existait garde ses coordonnees.
+- Donnees (WSL, ~/.venvs/geo) :
+  - OSM : curl "https://api.openstreetmap.org/api/0.6/map?bbox=2.350,6.343,2.3875,6.3610" -> refs/osm/zone-gtb-fidjrosse.osm
+    (Overpass a refuse la requete, 406) ;
+  - Overture : overturemaps download --bbox=2.348,6.341,2.392,6.364 -f geojson --type=building
+    -o refs/overture/building-fidjrosse.geojson (15 439 batiments) ;
+  - Open Buildings 2.5D : GTB_BBOX=2.348,6.341,2.392,6.364 ob25d_download.py (manifestes 11 et 13)
+    refs/open_buildings/hauteurs_2023-fidjrosse.tif, puis ob25d_grille.py -> hauteurs_locales-fidjrosse.npz ;
+  - littoral : image S2C_31NDH_20260124 (STAC earth-search), GTB_BBOX=2.340,6.338,2.397,6.361 GTB_S2=20260124-fidjrosse
+    s2_crop.py <TCI.tif> refs/sentinel2/s2_20260124-fidjrosse.png puis s2_littoral_run.py (points isoles ecartes).
+- Import : osm_import.py avec les fichiers ci-dessus et le 9e argument (dossier des tuiles) ; sorties copiees dans
+  godot/assets/models/tuiles/ (36 tuiles + zone_commun.glb, 111 Mo) et godot/assets/data/zone_aeroport.json.
+  Le fichier unique zone_aeroport.glb n'est plus utilise (retire du projet). Resultat : 8 834 batiments
+  (5 910 hauteurs mesurees), 4 149 x 1 990 m.
+- Jeu : monde.gd (dynamique) pose les tuiles a moins de 650 m du joueur et libere celles au-dela de 900 m ; le decor
+  (props.gd, vegetation.gd, realism.gd) suit les tuiles, en travail de fond (Partie.tache) en cours de partie.
+  L'ecran de chargement ne precharge que les tuiles autour du depart (Monde.fichiers). tests/test_tuiles.gd :
+  teleportation a Fidjrosse, sol, decor, liberation du depart.
+- Noms : Fidjrosse -> Fidjrossa (a valider), osm_import.py NOM_FICTIF.

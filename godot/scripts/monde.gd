@@ -10,12 +10,13 @@ signal tuile_chargee(cle: Vector2i, noeud: Node3D)
 signal tuile_dechargee(cle: Vector2i)
 
 @export var dossier := DOSSIER
-@export var dynamique := false
+@export var dynamique := true
 @export var rayon_charge := 650.0     # m du joueur au bord de la tuile
 @export var rayon_libere := 900.0     # plus grand que rayon_charge : pas d'aller-retour en bord de tuile
 @export var joueur_path: NodePath = ^"../Player"
 
 const DOSSIER := "res://assets/models/tuiles/"
+const DEPART := Vector2(150, 180)   # entre le point de la scene et la maison du joueur (x, z)
 
 var tuiles := {}     # Vector2i -> {"rect": Rect2 (x, z), "fichier": String, "noeud": Node3D, "attente": bool}
 var commun: Node3D
@@ -43,15 +44,20 @@ func _enter_tree() -> void:
 			_poser(cle, (load(tuiles[cle]["fichier"]) as PackedScene).instantiate())
 
 
-static func fichiers(dos := DOSSIER) -> PackedStringArray:
-	## Fichiers poses au lancement (fichier commun + tuiles), pour un chargement en arriere-plan avant la scene.
+static func fichiers(dos := DOSSIER, centre := DEPART, rayon := 800.0) -> PackedStringArray:
+	## Fichiers poses au lancement (fichier commun + tuiles autour du depart), pour un chargement en arriere-plan
+	## avant la scene. Les autres tuiles arrivent en cours de partie.
 	var idx: Variant = JSON.parse_string(FileAccess.get_file_as_string(dos + "tuiles.json"))
 	var res := PackedStringArray()
 	if typeof(idx) != TYPE_DICTIONARY:
 		return res
 	res.append(dos + String(idx["commun"]))
 	for t in idx["tuiles"]:
-		res.append(dos + String(t["fichier"]))
+		var r: Array = t["rect"]
+		var rect := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+		var q := Vector2(clampf(centre.x, rect.position.x, rect.end.x), clampf(centre.y, rect.position.y, rect.end.y))
+		if q.distance_to(centre) < rayon:
+			res.append(dos + String(t["fichier"]))
 	return res
 
 

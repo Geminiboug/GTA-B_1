@@ -47,6 +47,10 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 - [ ] **Compte itch.io** : crée le compte et la page (en brouillon). Je peux préparer les textes et les images à partir de [presentation.html](presentation.html).
 - [ ] **Captures pour le trailer** avec OBS (60 à 90 s au final, montage CapCut). Je peux te faire une liste de plans à filmer.
 
+## 4 bis. Valider un nom
+
+- [ ] **Fidjrossè devient « Fidjrossa »** dans le jeu (même principe que Haie Verte et Cadjehoue). D'accord, ou tu préfères un autre nom ?
+
 ## 5. Plus tard (pas urgent)
 
 - [ ] Un locuteur fon pour relire les menus et quelques dialogues (Phase 24).
