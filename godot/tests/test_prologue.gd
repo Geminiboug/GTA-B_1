@@ -68,7 +68,16 @@ func _walk_to(p: Vector3, delta: float) -> float:
 				break
 	var dx := aim.x - pos.x
 	var dz := aim.z - pos.z
-	(player.get_node("CamPivot") as Node3D).rotation.y = atan2(-dx, -dz)
+	var cap := atan2(-dx, -dz)
+	# un PNJ (corps solide) devant : on le contourne par la droite, comme un joueur
+	var avant := Vector3(dx, 0, dz).normalized()
+	var espace := player.get_world_3d().direct_space_state
+	if not d_libre(espace, pos, avant, true) or (stuck_t > 1.0 and not d_libre(espace, pos, avant, false)):
+		for dcap in [-0.6, 0.6, -1.2, 1.2, -1.8, 1.8]:      # cote libre (pas de moto, de mur...)
+			if d_libre(espace, pos, avant.rotated(Vector3.UP, dcap), false):
+				cap += dcap
+				break
+	(player.get_node("CamPivot") as Node3D).rotation.y = cap
 	Input.action_press("move_forward")
 	var d := Vector2(pos.x - p.x, pos.z - p.z).length()
 	# bloque : moins de 1 m parcouru en 6 s (les detours du GPS eloignent parfois de la cible)
@@ -78,6 +87,16 @@ func _walk_to(p: Vector3, delta: float) -> float:
 	else:
 		stuck_t += delta
 	return d
+
+
+func d_libre(espace: PhysicsDirectSpaceState3D, pos: Vector3, dv: Vector3, pnj_seul: bool) -> bool:
+	## Rien devant sur 1.5 m (PNJ seulement, ou tout obstacle) a hauteur de genou et de buste.
+	for h in [0.3, 1.0]:
+		var q := PhysicsRayQueryParameters3D.create(pos + Vector3(0, h, 0), pos + Vector3(0, h, 0) + dv * 1.5, PnjUtil.PNJ_LAYER if pnj_seul else 0xFFFFFFFF)
+		q.exclude = [player.get_rid()]
+		if espace.intersect_ray(q):
+			return false
+	return true
 
 
 func _stop() -> void:
@@ -117,7 +136,15 @@ func _physics_process(delta: float) -> bool:
 			q.exclude = [player.get_rid()]
 			var hit := player.get_world_3d().direct_space_state.intersect_ray(q)
 			if hit:
-				print("  obstacle a %.1f m de haut : %s (%s) a %s" % [h, hit["collider"].name, hit["collider"].get_parent().name, hit["position"]])
+				print("  obstacle a %.1f m de haut : %s a %s" % [h, (hit["collider"] as Node).get_path(), hit["position"]])
+		var qp := PhysicsShapeQueryParameters3D.new()
+		var sph := SphereShape3D.new()
+		sph.radius = 2.5
+		qp.shape = sph
+		qp.transform = Transform3D(Basis(), player.global_position + Vector3(0, 0.8, 0))
+		qp.exclude = [player.get_rid()]
+		for r in player.get_world_3d().direct_space_state.intersect_shape(qp, 16):
+			print("  autour : ", (r["collider"] as Node).get_path())
 		print("  sorties ", scene.get_node("Lieux").sorties, "
   route ", (hud.get("route") as PackedVector2Array).slice(0, 5))
 		return _end()

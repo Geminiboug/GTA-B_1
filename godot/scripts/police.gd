@@ -295,7 +295,7 @@ func _make_moto(at: Vector3, yaw: float) -> Node3D:
 			if m and m.resource_name == "veh_peinture_rouge":
 				(mi as MeshInstance3D).set_surface_override_material(si, paint)
 	var visual := z.get_node("Visual") as Node3D
-	var rider := PnjUtil.make("homme")
+	var rider := PnjUtil.make("homme", false)   # sur la moto
 	rider.name = "Agent"
 	visual.add_child(rider)
 	PnjUtil.apply(rider, PnjUtil.uniform_look("police", "homme", _rng))

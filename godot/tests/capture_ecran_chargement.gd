@@ -1,6 +1,6 @@
 extends SceneTree
 ## Captures pour l'ecran de chargement (assets/ui/chargement/) : quelques lieux du jeu en fin d'apres-midi, sans HUD,
-## en 1920x1080. Lancement (avec fenetre) : godot --path godot --script res://tests/capture_ecran_chargement.gd -- <dossier>
+## en 1920x1080. Lancement (avec fenetre) : godot --path godot --script res://tests/capture_ecran_chargement.gd -- <dossier> [sans_textures]
 
 var frame := 0
 var scene: Node
@@ -18,6 +18,8 @@ func _initialize() -> void:
 		out_dir = args[0]
 	DisplayServer.window_set_size(Vector2i(1920, 1080))
 	scene = load("res://scenes/zone_aeroport.tscn").instantiate()
+	if "sans_textures" in args:      # comparaison avant / apres les textures de matiere
+		scene.get_node("Realisme").set("textures_matieres", false)
 	root.add_child(scene)
 	player = scene.get_node("Player")
 	cam = Camera3D.new()

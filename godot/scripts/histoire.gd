@@ -572,6 +572,9 @@ func _cine() -> Node:
 	return get_node_or_null("../Cinematique")
 
 
+@export var geste_amplitude := 0.6   # gestes de conversation des cinematiques, moins amples (voir anim_ctrl.play_clips)
+
+
 func _dialog_step(delta: float) -> void:
 	if _dialog.is_empty():
 		if _dialog_t > 0.0:
@@ -602,7 +605,7 @@ func _dialog_step(delta: float) -> void:
 			# celui qui parle fait les gestes de la conversation (clip Idle_Talking)
 			var an: Node = who.get("anim") if who == _player else who
 			if an and an.has_method("play_clips") and (who != _player or _player.get("vehicle") == null):
-				an.play_clips([["Idle_Talking", 0.0]], true)
+				an.play_clips([["Idle_Talking", 0.0]], true, 1.0, geste_amplitude)
 		_dialog_t = duree_replique
 
 
@@ -613,7 +616,7 @@ func _pick_passenger(pv: Node3D) -> void:
 		genre = String(_client_walker.get_meta("genre", "homme"))
 		_client_walker.queue_free()
 		_client_walker = null
-	var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
+	var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre), false)   # assis sur le zem
 	# rattache a la partie qui s'incline et plonge (Visual) : le passager penche avec la moto dans les virages
 	var support: Node = pv.get_node_or_null("Visual")
 	(support if support else pv).add_child(pas)

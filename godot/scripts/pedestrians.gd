@@ -392,6 +392,10 @@ func _walk(w: Dictionary, delta: float, ppos: Vector3) -> void:
 	ch.global_transform = Transform3D(Basis(Vector3.UP, w["yaw"]), w["pos"])
 	ch.set("speed", speed * (1.3 if w["cross"] else 1.0))
 	ch.set("on_floor", true)
+	# il repart : le geste de la pause s'arrete (un geste en boucle, comme le telephone, ne finit jamais seul et figerait
+	# les jambes pendant la marche : le passant glisserait)
+	if speed > 0.3 and ch.has_method("playing_clip") and ch.playing_clip():
+		ch.stop_clips()
 	ch.set("rain_cover", 1.0 if w.get("rain_shy", false) and _rain_now() > 0.5 else 0.0)
 
 
@@ -656,19 +660,7 @@ func _hour() -> float:
 
 
 func _add_body(ch: Node3D) -> void:
-	var body := AnimatableBody3D.new()
-	body.name = "Corps"
-	body.sync_to_physics = false
-	body.collision_layer = PNJ_LAYER
-	body.collision_mask = 0
-	var cs := CollisionShape3D.new()
-	var cap := CapsuleShape3D.new()
-	cap.radius = 0.24
-	cap.height = 1.6
-	cs.shape = cap
-	cs.position = Vector3(0, 0.82, 0)
-	body.add_child(cs)
-	ch.add_child(body)
+	PnjUtil.ajouter_corps(ch)     # deja pose par PnjUtil.make, sauf pour un corps cree autrement
 	ch.add_to_group("pnj")
 
 

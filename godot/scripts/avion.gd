@@ -472,7 +472,11 @@ func _cabin_access(on: bool) -> void:
 			if mi == null:
 				continue
 			var cs := CollisionShape3D.new()
-			cs.shape = mi.mesh.create_trimesh_shape()
+			var forme := mi.mesh.create_trimesh_shape() as ConcavePolygonShape3D
+			# des deux cotes : en ratant la porte, on traversait la peau ou la paroi par l'arriere et on restait coince
+			# entre les deux
+			forme.backface_collision = true
+			cs.shape = forme
 			_hull.add_child(cs)
 			cs.global_transform = mi.global_transform
 		# seuil de porte : petite rampe du palier de l'escalier (2,58 m) au plancher de la cabine (2,67 m)
@@ -482,6 +486,16 @@ func _cabin_access(on: bool) -> void:
 		sill.shape = sb
 		_hull.add_child(sill)
 		sill.global_transform = global_transform * Transform3D(Basis(Vector3(0, 0, 1), 0.13), Vector3(-1.85, 2.665, -15.75))
+		# montants de porte : poteaux ronds tangents aux bords de l'ouverture (0,8 m). Ils ferment l'espace entre la peau
+		# et la paroi interieure, et un joueur qui arrive de biais glisse vers la porte au lieu de s'accrocher a l'arete
+		for zc in [-15.25, -16.25]:
+			var jamb := CollisionShape3D.new()
+			var cy := CylinderShape3D.new()
+			cy.radius = 0.1
+			cy.height = 2.2
+			jamb.shape = cy
+			_hull.add_child(jamb)
+			jamb.global_transform = global_transform * Transform3D(Basis.IDENTITY, Vector3(-1.92, 2.62 + 1.1, zc))
 	elif not on and _hull:
 		_hull.queue_free()
 		_hull = null

@@ -85,7 +85,7 @@ func _build_meshes() -> Dictionary:
 		if bq:
 			bq.rotation.x = ZEM.BEQUILLE_REPLIEE   # moto qui roule : bequille relevee
 		_lamp_surfaces(z, "veh_phare")
-		var driver := PnjUtil.make("homme")
+		var driver := PnjUtil.make("homme", false)
 		asm.add_child(driver)
 		var dl := PnjUtil.random_look(driver, _rng, "zem")
 		PnjUtil.apply(driver, dl)
@@ -95,7 +95,7 @@ func _build_meshes() -> Dictionary:
 		driver.position = Vector3(0, -0.05, 0.12)
 		if variant.begins_with("zem_passager"):
 			var genre := "femme" if variant.contains("_f") else "homme"
-			var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
+			var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre), false)
 			asm.add_child(pas)
 			var pl := PnjUtil.random_look(pas, _rng)
 			PnjUtil.apply(pas, pl)
@@ -113,7 +113,7 @@ func _build_meshes() -> Dictionary:
 		for n in DRIVERS_PER_MODEL:
 			await Partie.respirer()
 			var genre := "femme" if _rng.randf() < 0.2 else "homme"
-			var dr := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
+			var dr := PnjUtil.make(PnjUtil.random_variant(_rng, genre), false)
 			var asm2 := Node3D.new()
 			add_child(asm2)
 			asm2.add_child(dr)

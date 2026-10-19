@@ -23,6 +23,15 @@ uniform float roof_tin_ratio : hint_range(0.0, 1.0) = 0.55;  // part des toits p
 uniform int roof_force = 0;       // 0 auto, 1 tole, 2 beton
 uniform bool plain_wall = false;  // mur d'enceinte / pignon : pas de fenetres ni portes
 uniform int style = 0;            // 0 habitat, 1 mur-rideau vitre (terminal), 2 bardage tole (hangar)
+// Textures de matiere (refs/generees, blender/tools/textures_planches.py), posees par realism.gd : parpaings bruts, et
+// grain de l'enduit sur les murs peints (seule sa luminosite compte : la couleur de peinture reste celle du batiment).
+uniform sampler2D tex_parpaings : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_enduit : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform bool avec_texture = false;
+uniform float parpaings_taille = 1.1;   // m couverts par la texture de parpaings
+uniform float enduit_taille = 1.6;
+uniform float enduit_lum = 0.5;         // luminosite moyenne de la texture d'enduit (sRGB)
+uniform float enduit_force = 0.7;
 
 varying vec3 wpos;
 varying vec3 wnorm;
@@ -63,6 +72,9 @@ vec3 paint_pick(float h) {
 
 vec3 cement_blocks(vec2 p) {
 	// parpaings 40 x 20 cm, joints de mortier, blocs legerement differents
+	if (avec_texture) {
+		return pow(texture(tex_parpaings, p / parpaings_taille).rgb, vec3(1.0 / 2.2));
+	}
 	vec2 b = vec2(p.x / 0.4, p.y / 0.2);
 	b.x += 0.5 * mod(floor(b.y), 2.0);
 	vec2 f = fract(b);
@@ -124,6 +136,12 @@ void fragment() {
 		base = mix(base, cement_blocks(vec2(u, y)), peel * 0.8);
 		if (raw) {
 			base = cement_blocks(vec2(u, y));
+		} else if (avec_texture) {
+			// grain de l'enduit (deux echelles, sans repetition visible)
+			vec3 e = pow(texture(tex_enduit, vec2(u, y) / enduit_taille).rgb, vec3(1.0 / 2.2));
+			vec3 e2 = pow(texture(tex_enduit, vec2(y, -u) / (enduit_taille * 2.7) + 0.4).rgb, vec3(1.0 / 2.2));
+			float g = dot(mix(e, e2, 0.35), vec3(0.299, 0.587, 0.114)) / max(enduit_lum, 0.05);
+			base *= mix(1.0, g, enduit_force);
 		}
 		// soubassement peint d'une autre couleur (photos des rues de Cotonou : bas bleu ou vert, haut blanc ou creme),
 		// environ 2 batiments sur 5, entre 0,9 et 1,4 m ; trait de separation net, salissure par-dessus (plus bas)

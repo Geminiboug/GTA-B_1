@@ -22,11 +22,14 @@ func _physics_process(_d: float) -> bool:
 			_check(false, "le decor est place")
 			return _fin()
 		return false
+	if int(root.get_node("Partie").call("taches_en_attente")) > 0 and frame < 6000:
+		return false      # tuiles de depart encore en cours de garnissage (file de fond)
 	var c: Dictionary = props.get("counts")
 	var kit := 0
 	for k in ["rue_parasol", "rue_banc", "rue_gaz", "rue_bidons", "rue_casiers"]:
 		kit += int(c.get(k, 0))
-	_check(kit >= 60, "kit d'objets de rue devant les boutiques (%d)" % kit)
+	# tuiles de depart seulement (decor par tuile)
+	_check(kit >= 30, "kit d'objets de rue devant les boutiques (%d)" % kit)
 	_check(int(c.get("rue_sable", 0)) >= 5, "chantiers le long des murs (%d tas de sable)" % int(c.get("rue_sable", 0)))
 	_check(int(c.get("inscription", 0)) >= 20, "inscriptions peintes sur les murs (%d)" % int(c.get("inscription", 0)))
 	_check(int(c.get("toit_parabole", 0)) >= 50, "paraboles sur les toits (%d)" % int(c.get("toit_parabole", 0)))

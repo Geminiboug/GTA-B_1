@@ -16,6 +16,16 @@ uniform int mode = 0;
 uniform vec3 tint = vec3(1.0);
 uniform float depth_pull = 0.05;
 uniform bool bordure_peinte = false;  // terre-plein : bordures peintes rouge et blanc (biseaux), herbe dessus
+// Texture de matiere (refs/generees, blender/tools/textures_planches.py), posee par realism.gd pour les modes 0 a 5 :
+// elle donne le grain et la matiere ; les grandes variations procedurales (plaques, laterite, poussiere) restent.
+// tex_remplace : la texture remplace la couleur (paves : son propre calepinage) au lieu de la moduler.
+uniform sampler2D tex_sol : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform bool avec_texture = false;
+uniform bool tex_remplace = false;
+uniform vec3 tex_moyenne = vec3(0.5);   // couleur moyenne de la texture (sRGB), pour ne garder que son detail
+uniform float tex_taille = 2.0;         // m couverts par la texture
+uniform float tex_force = 0.85;
+uniform float tex_loin = 160.0;         // m : au-dela, le sol redevient procedural (pas de motif repete visible)
 
 varying vec3 wpos;
 
@@ -191,6 +201,19 @@ void fragment() {
 		col = vec3(0.6, 0.55, 0.5) * (0.85 + 0.15 * hash(floor(p / vec2(0.3, 0.2))));
 		col = mix(col, col * 0.6, clamp(joint, 0.0, 1.0) * fine);
 		col = mix(col, col * 0.7, smoothstep(0.6, 0.8, fbm(p * 0.3)) * 0.5);
+	}
+	if (avec_texture && mode <= 5) {
+		vec2 uv = p / tex_taille;
+		// deux lectures (la seconde tournee et a une autre echelle), melangees par un bruit lent : pas de repetition
+		vec3 a = texture(tex_sol, uv).rgb;
+		vec3 b = texture(tex_sol, vec2(-uv.y, uv.x) * 0.73 + vec2(0.31, 0.57)).rgb;
+		vec3 tx = pow(mix(a, b, smoothstep(0.4, 0.6, fbm(p * 0.07 + 31.0))), vec3(1.0 / 2.2));
+		float f = tex_force * (1.0 - smoothstep(tex_loin * 0.5, tex_loin, dist));
+		if (tex_remplace) {
+			col = mix(col, tx * (0.88 + 0.24 * fbm(p * 0.03 + 5.0)), f);
+		} else {
+			col = mix(col, col * tx / max(tex_moyenne, vec3(0.05)), f);
+		}
 	}
 	float spec = mode == 9 ? 0.5 : (mode >= 10 ? 0.45 : 0.15);  // sols exterieurs mats ; carrelage et terrazzo brillants
 	// --- pluie : sol plus sombre et plus brillant, flaques dans les creux (pas sur le sable de plage) ---

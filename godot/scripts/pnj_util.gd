@@ -54,8 +54,12 @@ static func scene_path(variant: String) -> String:
 	return "res://assets/models/chr_%s.glb" % variant
 
 
-static func make(variant: String) -> Node3D:
+const PNJ_LAYER := 1 << 4   # couche 5 : corps des personnages (le joueur les heurte, pas les vehicules)
+
+
+static func make(variant: String, corps := true) -> Node3D:
 	## Instance d'une morphologie ("homme", "femme", "homme_fort", "femme_ronde", "garcon", "fille").
+	## corps : capsule de collision (couche PNJ_LAYER) : on ne traverse aucun personnage (pas pour le joueur).
 	if not VARIANTS.has(variant):
 		variant = "homme"
 	var ch := (load(scene_path(variant)) as PackedScene).instantiate() as Node3D
@@ -67,7 +71,28 @@ static func make(variant: String) -> Node3D:
 	if arm and Squelette.find(ch) and Squelette.find(ch).find_bone("Hips") >= 0:
 		arm.rotation.y = PI
 	ch.set_meta("vieux", variant in ["homme_age", "femme_agee"])
+	if corps:
+		ajouter_corps(ch)
 	return ch
+
+
+static func ajouter_corps(ch: Node3D) -> void:
+	if ch.has_node("Corps"):
+		return
+	var body := AnimatableBody3D.new()
+	body.name = "Corps"
+	body.sync_to_physics = false
+	body.collision_layer = PNJ_LAYER
+	body.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var cap := CapsuleShape3D.new()
+	var enfant: bool = ch.get_meta("age", "adulte") == "enfant"
+	cap.radius = 0.2 if enfant else 0.24
+	cap.height = 1.2 if enfant else 1.6
+	cs.shape = cap
+	cs.position = Vector3(0, cap.height * 0.5 + 0.02, 0)
+	body.add_child(cs)
+	ch.add_child(body)
 
 
 static func random_genre(rng: RandomNumberGenerator, women_share := 0.5) -> String:

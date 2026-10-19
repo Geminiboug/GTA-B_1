@@ -2,6 +2,7 @@ extends SceneTree
 ## Rien sur la chaussee : murs (OSM et concessions generees) et batiments ne mordent pas sur la route visible.
 ## Chaque bord est echantillonne tous les 0,5 m ; un point est en faute s'il tombe sur une surface de route
 ## (rayon vertical sur la couche des surfaces a eviter, collisionneurs "route_*") a plus de `tolerance` m du bord.
+## Carte par tuiles (monde.gd) : seuls les murs et batiments des tuiles posees sont verifies (ailleurs, pas de route).
 ## Lancement : godot --headless --path godot --script res://tests/test_voirie.gd [-- liste]
 
 const AVOID_LAYER := 1 << 9
@@ -35,6 +36,11 @@ func _on_road(p: Vector2) -> String:
 	return n if n.begins_with("route_") and not n.contains("footway") and not n.contains("path") else ""
 
 
+func _pose(p: Vector2) -> bool:
+	var monde := scene.get_node_or_null("zone_aeroport")
+	return monde == null or not monde.has_method("chargee") or monde.chargee(Vector3(p.x, 0, p.y))
+
+
 func _seg_faults(a: Vector2, b: Vector2) -> Array:
 	## Points du segment sur la chaussee (en retrait de `tolerance` aux extremites).
 	var out := []
@@ -59,6 +65,8 @@ func _physics_process(_d: float) -> bool:
 	var bad_walls := []
 	for w in data.get("walls", []):
 		var pts: Array = w["pts"] if w is Dictionary else (w as Array)
+		if not _pose(Vector2(pts[0][0], pts[0][1])):
+			continue
 		for i in pts.size() - 1:
 			var fl := _seg_faults(Vector2(pts[i][0], pts[i][1]), Vector2(pts[i + 1][0], pts[i + 1][1]))
 			if fl.size() > 0:
@@ -66,6 +74,8 @@ func _physics_process(_d: float) -> bool:
 	var bad_bld := []
 	for b in data["buildings"]:
 		var pts: Array = b["pts"]
+		if not _pose(Vector2(pts[0][0], pts[0][1])):
+			continue
 		var faults := 0
 		var first: Array = []
 		for i in pts.size():
@@ -79,7 +89,10 @@ func _physics_process(_d: float) -> bool:
 	var bad_conc := []
 	var conc := scene.get_node_or_null("Concessions")
 	if conc:
-		for r in conc.get("_rects"):
+		var rects: Array = []
+		for k in conc.get("_rects"):
+			rects.append_array(conc.get("_rects")[k])
+		for r in rects:
 			for i in 4:
 				var su := [-1, 1, 1, -1]
 				var sv := [-1, -1, 1, 1]

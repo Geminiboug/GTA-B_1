@@ -271,9 +271,9 @@ for sd in (1, -1):
 for sd in (1, -1):
     for (y0, y1, a0, a1) in ((19.55, 19.0, 6, 36), (18.95, 18.45, 40, 58), (18.4, 17.95, 50, 63)):
         rows = []
-        for i in range(3):
-            yq = y0 + (y1 - y0) * i / 2
-            rows.append([surf(yq, sd * (a0 + (a1 - a0) * j / 3), 0.01) for j in range(4)])
+        for i in range(7):
+            yq = y0 + (y1 - y0) * i / 6
+            rows.append([surf(yq, sd * (a0 + (a1 - a0) * j / 8), 0.01) for j in range(9)])
         win.grid(rows, M["glass"], closed=False, smooth=True)
 fus_ob = fus.obj()
 # ======================================================================= porte avant gauche et cabine visitable
@@ -345,14 +345,21 @@ for f in bm.faces:
 bm.to_mesh(lob.data)
 bm.free()
 # cloisons : poste de pilotage (avec porte ouverte), arriere (offices et toilettes)
+# en bandes verticales de 10 cm qui suivent la section (ellipse) un peu en retrait de la peau : des boites pleines
+# depassaient de la carlingue en haut et en bas (angles visibles de l'exterieur, retour d'Olympe du 19/10/2026)
 for (yb, door_open) in ((17.3, True), (-7.9, False)):
     rx, rz, zc = sect_at(yb)
-    if door_open:
-        for sx in (-1, 1):
-            cab.box((sx * (0.45 + (rx - 0.45) / 2), yb, zc - 0.2), (rx - 0.45, 0.06, 2.8), M["cab"])
-        cab.box((0, yb, FLOOR_Z + 2.15), (0.9, 0.06, 0.5), M["cab"])
-    else:
-        cab.box((0, yb, zc - 0.2), (rx * 2 - 0.1, 0.06, 2.8), M["cab"])
+    x = -rx + 0.12
+    while x < rx - 0.12:
+        xm = x + 0.05
+        k = math.sqrt(max(0.0, 1.0 - (xm / (rx - 0.1)) ** 2))
+        z0 = max(FLOOR_Z, zc - (rz - 0.1) * k)
+        z1 = zc + (rz - 0.1) * k
+        if door_open and abs(xm) < 0.45:
+            z0 = max(z0, FLOOR_Z + 1.9)          # porte du poste : linteau seulement
+        if z1 - z0 > 0.02:
+            cab.box((xm, yb, (z0 + z1) / 2), (0.1, 0.06, z1 - z0), M["cab"])
+        x += 0.1
 # plancher du poste de pilotage (sans lui, on passait a travers jusqu'au fond de la coque)
 _rx, _rz, _zc = sect_at(19.0)
 _hw = _rx * math.sqrt(max(0.0, 1.0 - ((FLOOR_Z - _zc) / _rz) ** 2)) - 0.05
@@ -393,8 +400,17 @@ cab.box((0, 18.85, FLOOR_Z + 1.25), (1.9, 0.25, 0.04), M["glass"])
 cab.obj()
 belly.obj()
 liv.obj()
-win.obj()
+win_ob = win.obj()
 seams.obj()
+# vitres du poste plaquees sur la vraie coque (6 mm au-dessus) : posees sur la surface theorique, leurs coins
+# ressortaient de la carlingue a facettes (angles visibles devant la porte, retour d'Olympe du 19/10/2026)
+from mathutils.bvhtree import BVHTree as _BVH
+_coque = _BVH.FromObject(fus_ob, bpy.context.evaluated_depsgraph_get())
+for v in win_ob.data.vertices:
+    if v.co.y > 17.5:
+        hit = _coque.find_nearest(v.co, 0.3)
+        if hit[0] is not None:
+            v.co = hit[0] + hit[1] * 0.006
 
 
 # ======================================================================= ailes et empennages

@@ -102,7 +102,7 @@ func _avancer(delta: float) -> void:
 		var n: Node3D = membres[i]
 		n.global_position = Vector3(q.x, 0.0, q.y)
 		if dir != Vector2.ZERO:
-			n.rotation.y = atan2(-dir.x, -dir.y) + PI
+			n.rotation.y = atan2(-dir.x, -dir.y)   # face au sens de la marche (meme convention que pedestrians.gd)
 		n.set("speed", vitesse)
 	var c := (tete[0] as Vector2)
 	(cortege["son"] as Node3D).global_position = Vector3(c.x, 1.5, c.y)

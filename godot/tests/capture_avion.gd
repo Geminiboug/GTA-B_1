@@ -31,7 +31,8 @@ func _initialize() -> void:
 
 func _shot(name: String) -> void:
 	root.get_viewport().get_texture().get_image().save_png(out_dir.path_join("avion_%s.png" % name))
-	print("capture ", name)	done[name] = true
+	print("capture ", name)
+	done[name] = true
 
 
 func _look(p: Node3D, local_cam: Vector3, local_target := Vector3(0, 3, 0)) -> void:

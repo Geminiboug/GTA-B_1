@@ -42,6 +42,9 @@ const ASTUCES := [
 @export var sous_fils := false           # sous-fils du ResourceLoader (plus lent sur certains disques)
 @export var budget_ms := 12.0            # temps de mise en place par image (le reste pour l'affichage)
 @export var journal_ecarts := false     # mesure : temps hors etapes entre deux images, et l'etape qui precede
+@export var rodage_tour := 2.5     # s : tour complet de la camera sous l'ecran (shaders de tout ce qui l'entoure)
+@export var rodage_ips := 45.0     # images par seconde a tenir 30 images de suite pour lever l'ecran
+@export var rodage_max := 12.0     # s : au-dela, l'ecran part quand meme
 @export var etape_lente_ms := 120.0      # une etape plus longue est signalee dans le journal (saccade visible)
 
 var etape := "chargement"                # chargement, mise_en_place, fini, erreur
@@ -71,6 +74,10 @@ var _derniere := ""
 var _ecarts := []
 var _images := 0
 var _vide := 0
+var _t_rodage := 0.0
+var _stables := 0
+var _pivot: Node3D
+var _pivot_rot := Vector3.ZERO
 var _rng := RandomNumberGenerator.new()
 var _t0 := Time.get_ticks_msec()
 
@@ -130,6 +137,8 @@ func _process(delta: float) -> void:
 				_echec()
 		"mise_en_place":
 			_mise_en_place()
+		"rodage":
+			_rodage(delta)
 	_maj_barre()
 
 
@@ -189,20 +198,53 @@ func _mise_en_place() -> void:
 		get_viewport().disable_3d = false   # premiere image du monde (la plus lourde) encore sous l'ecran
 	if _vide >= 24:
 		Partie.chantier_actif = false
-		etape = "fini"
 		_gardes.clear()
-		if journal_ecarts:
-			_ecarts.sort_custom(func(a, b): return a[0] > b[0])
-			var somme := 0.0
-			for e in _ecarts:
-				somme += e[0]
-			print("Chargement : %.0f ms entre les images, les plus longs : %s" % [somme, str(_ecarts.slice(0, 12))])
-		print("Chargement : zone en place en %d ms (%d etapes, %.0f ms de calcul, %d images)" % [Time.get_ticks_msec() - _t0, _faits, _ms_etapes, _images])
-		var tw := create_tween().set_parallel()
-		for c in _ui.get_children():
-			if c is CanvasItem:
-				tw.tween_property(c, "modulate:a", 0.0, 0.6)
-		tw.chain().tween_callback(queue_free)
+		_debut_rodage()
+
+
+func _debut_rodage() -> void:
+	## Le monde tourne deja sous l'ecran opaque : les premieres images (compilation des shaders de ce que voit la camera,
+	## decor des tuiles proches, pietons qui apparaissent) sont lourdes. On les fait passer ici, camera en tour complet,
+	## et l'ecran ne part que quand les images sont redevenues regulieres.
+	etape = "rodage"
+	_t_rodage = 0.0
+	_stables = 0
+	_etat.text = tr("Derniers préparatifs…")
+	var j := get_tree().current_scene.get_node_or_null("Player") if get_tree().current_scene else null
+	_pivot = j.get("cam_pivot") as Node3D if j else null
+	if _pivot:
+		_pivot_rot = _pivot.rotation
+
+
+func _rodage(delta: float) -> void:
+	_t_rodage += delta
+	if _pivot and is_instance_valid(_pivot):
+		var u := clampf(_t_rodage / rodage_tour, 0.0, 1.0)
+		_pivot.rotation = Vector3(_pivot_rot.x, _pivot_rot.y + TAU * u, _pivot_rot.z) if u < 1.0 else _pivot_rot
+	_stables = _stables + 1 if delta < 1.0 / rodage_ips else 0
+	progression = clampf(_t_rodage / rodage_max, 0.0, 1.0)
+	var pret := _t_rodage > rodage_tour and _stables >= 30 and Partie.taches_en_attente() == 0
+	if pret or _t_rodage > rodage_max:
+		if _pivot and is_instance_valid(_pivot):
+			_pivot.rotation = _pivot_rot
+		_terminer()
+
+
+func _terminer() -> void:
+	etape = "fini"
+	if journal_ecarts:
+		_ecarts.sort_custom(func(a, b): return a[0] > b[0])
+		var somme := 0.0
+		for e in _ecarts:
+			somme += e[0]
+		print("Chargement : %.0f ms entre les images, les plus longs : %s" % [somme, str(_ecarts.slice(0, 12))])
+	print("Chargement : zone en place en %d ms (%d etapes, %.0f ms de calcul, %d images)" % [Time.get_ticks_msec() - _t0, _faits, _ms_etapes, _images])
+	print("Chargement : rodage %.1f s" % _t_rodage)
+	var tw := create_tween().set_parallel()
+	for c in _ui.get_children():
+		if c is CanvasItem:
+			tw.tween_property(c, "modulate:a", 0.0, 0.6)
+	tw.chain().tween_callback(queue_free)
 
 
 func _echec() -> void:

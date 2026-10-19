@@ -59,6 +59,38 @@ func _ready() -> void:
 		_setup(inst, key)
 	if spawn_at_home and get_tree().current_scene == get_parent():
 		_spawn_home.call_deferred()
+	_epave_porte()
+
+
+func _epave_porte() -> void:
+	## Epave de la plage (zone_aeroport_reperes, blender/tools/build_epave.py) : la carlingue collisionne des deux cotes
+	## (en ratant la porte, on traversait la peau par l'arriere et on restait coince dans l'encadrement), et deux
+	## poteaux ronds bordent l'ouverture (1,15 m) : on glisse vers la porte au lieu de s'accrocher a l'arete.
+	var rep := get_node_or_null("../zone_aeroport_reperes")
+	if rep == null:
+		return
+	for n in rep.find_children("avion_*", "", true, false):
+		for cs in n.find_children("*", "CollisionShape3D", true, false):
+			var sh := (cs as CollisionShape3D).shape as ConcavePolygonShape3D
+			if sh:
+				sh.backface_collision = true
+	var seuil := rep.find_child("escalier_palier_seuil", true, false) as MeshInstance3D
+	if seuil == null:
+		return
+	var c: Vector3 = seuil.global_transform * seuil.mesh.get_aabb().get_center()
+	var corps := StaticBody3D.new()
+	corps.name = "EpavePorte"
+	add_child(corps)
+	for dz in [-1.0, 1.0]:
+		var jamb := CollisionShape3D.new()
+		var cy := CylinderShape3D.new()
+		cy.radius = 0.12
+		cy.height = 3.0
+		jamb.shape = cy
+		corps.add_child(jamb)
+		# le long de la carlingue (axe local Z du seuil, = axe du fuselage), juste hors de l'ouverture
+		var b := seuil.global_transform.basis.orthonormalized()
+		jamb.global_position = c + b.x * 0.05 + Vector3.UP * 1.5 + b.z * dz * (0.576 + 0.12)
 
 
 # ------------------------------------------------------------------ mise en place

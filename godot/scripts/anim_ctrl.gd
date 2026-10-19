@@ -455,6 +455,24 @@ func _physics_process(delta: float) -> void:
 	_overlay(delta)
 
 
+@export var tete_cible := 3.0        # degres sous l'horizontale : regard naturel devant soi
+@export var tete_correction_max := 35.0
+
+
+func _redresser_tete() -> void:
+	## Les clips captes (Mixamo) penchent la tete de 17 a 25 degres sur nos personnages : le regard est ramene devant
+	## soi (tests/test_tete.gd). Mesure apres l'animation de cette image, avant le regard et les gestes.
+	var h: int = _bone.get("Head", -1)
+	if h < 0:
+		return
+	var b := (_skel.global_transform * _skel.get_bone_global_pose(h)).basis.orthonormalized()
+	var avant := (b * Vector3(0, 0, 1)).normalized()
+	var plongee := rad_to_deg(-asin(clampf(avant.y, -1.0, 1.0)))
+	var corr := clampf(plongee - tete_cible, 0.0, tete_correction_max)
+	if corr > 0.5:
+		_turn_bone("Head", Vector3(deg_to_rad(corr), 0.0, 0.0))
+
+
 func _instantane() -> void:
 	## Pose du squelette a la fin d'un clip ponctuel : l'arbre la rejoint en fondu_clip secondes.
 	_fondu_poses.clear()
@@ -469,6 +487,7 @@ func _overlay(delta: float) -> void:
 	if moving > 0.01 and (not anim_lod or _lod_every() <= 1) and not mx:
 		_upright(moving)
 	_look = _look.lerp(Vector2(clampf(look_yaw, -1.2, 1.2), clampf(look_pitch, -0.4, 0.6)), 1.0 - exp(-5.0 * delta))
+	_redresser_tete()
 	var breath := sin(_t * (1.7 + 2.6 * essouffle)) * 0.035 * essouffle
 	_turn_bone("Head", Vector3(-_look.y * 0.8, _look.x * 0.65, 0.0))
 	_turn_bone("UpperChest", Vector3(breath, _look.x * 0.3, 0.0))
@@ -610,9 +629,17 @@ func root_offset(name: String, t: float) -> Vector3:
 	return (a.position_track_interpolate(tr, clampf(t, 0.0, a.length)) - a.position_track_interpolate(tr, 0.0)) * k
 
 
-func play_clips(seq: Array, in_place := false, vitesse := 1.0) -> void:
+const OS_BRAS := ["LeftShoulder", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightShoulder", "RightUpperArm",
+	"RightLowerArm", "RightHand"]
+var _amplitude := 1.0
+var _pose_depart := {}      # os des bras -> rotation au debut du geste (amplitude reduite)
+
+
+func play_clips(seq: Array, in_place := false, vitesse := 1.0, amplitude := 1.0) -> void:
 	## Joue une suite de clips (ex. [["Death01", 1.2], ["LayToIdle", 0.0]]) a la place de l'arbre, puis reprend.
 	## in_place : le deplacement de la racine est retire (le controleur deplace lui-meme le corps, ex. escalade).
+	## amplitude < 1 : les bras ne vont qu'en partie vers les poses du clip (gestes de conversation : les poses les plus
+	## amples ecrasaient l'epaule et le tissu des manches s'y dechirait).
 	seq = seq.duplicate(true)
 	for e in seq:
 		if ALIAS.has(e[0]):
@@ -632,6 +659,13 @@ func play_clips(seq: Array, in_place := false, vitesse := 1.0) -> void:
 	_clip.root_motion_track = NodePath(ROOT_TRACK) if in_place else NodePath()
 	_seq = seq.duplicate(true)
 	_vitesse_clips = vitesse
+	_amplitude = amplitude
+	_pose_depart.clear()
+	if amplitude < 1.0:
+		for n in OS_BRAS:
+			var i := _skel.find_bone(n)
+			if i >= 0:
+				_pose_depart[i] = _skel.get_bone_pose_rotation(i)
 	_hold = 0.0
 	_next_clip()
 
@@ -670,6 +704,9 @@ func _clip_step(delta: float) -> bool:
 		return false
 	if _clip.is_playing():
 		_clip.advance(delta * _vitesse_clips)
+		if _amplitude < 1.0:
+			for i in _pose_depart:
+				_skel.set_bone_pose_rotation(i, (_pose_depart[i] as Quaternion).slerp(_skel.get_bone_pose_rotation(i), _amplitude))
 		return true
 	if _hold < 0.0:
 		_hold = -_hold

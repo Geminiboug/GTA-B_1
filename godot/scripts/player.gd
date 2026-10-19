@@ -214,7 +214,7 @@ func set_genre(g: String) -> void:
 		variante = g + "_mince"
 	elif corps == "fort":
 		variante = "homme_fort" if g == "homme" else "femme_ronde"
-	var m := PnjUtil.make(variante)
+	var m := PnjUtil.make(variante, false)     # pas de capsule de PNJ : le joueur a la sienne
 	m.set_script(ANIM_SCRIPT)
 	m.set("anim_lod", false)
 	m.name = "Model"

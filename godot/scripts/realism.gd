@@ -24,6 +24,20 @@ const AVOID := ["route_", "accotement", "zone_parking", "aeroport_", "promenade"
 
 var _ground_mats := {}
 var _facade_cache := {}
+## Textures de matiere tirees des planches generees (refs/generees, blender/tools/textures_planches.py).
+## Sols : mode -> [texture, metres couverts, remplace la couleur, couleur moyenne sRGB (pour n'en garder que le detail)].
+@export var textures_matieres := true
+const TEXTURES_SOL := {
+	0: ["res://assets/textures/sols/sable_quartier.png", 2.5, false, Vector3(0.886, 0.773, 0.655)],
+	1: ["res://assets/textures/sols/sable_plage.png", 3.0, false, Vector3(0.878, 0.773, 0.659)],
+	2: ["res://assets/textures/sols/bitume.png", 3.0, false, Vector3(0.624, 0.592, 0.561)],
+	3: ["res://assets/textures/sols/beton.png", 3.0, false, Vector3(0.647, 0.604, 0.557)],
+	4: ["res://assets/textures/sols/paves.png", 1.6, true, Vector3(0.71, 0.612, 0.553)],
+	5: ["res://assets/textures/sols/piste.png", 2.5, false, Vector3(0.682, 0.573, 0.455)],
+}
+const TEXTURE_PARPAINGS := "res://assets/textures/murs/parpaings.png"
+const TEXTURE_ENDUIT := "res://assets/textures/murs/enduit.png"
+const ENDUIT_LUM := 0.691
 var _evitement := {}       # Vector2i -> surfaces a eviter de la tuile
 
 
@@ -95,6 +109,13 @@ func _ground(mode: int, tint := Color(1, 1, 1)) -> ShaderMaterial:
 		m.shader = SOL
 		m.set_shader_parameter("mode", mode)
 		m.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
+		if textures_matieres and TEXTURES_SOL.has(mode):
+			var t: Array = TEXTURES_SOL[mode]
+			m.set_shader_parameter("tex_sol", load(t[0]))
+			m.set_shader_parameter("tex_taille", t[1])
+			m.set_shader_parameter("tex_remplace", t[2])
+			m.set_shader_parameter("tex_moyenne", t[3])
+			m.set_shader_parameter("avec_texture", true)
 		_ground_mats[key] = m
 	return _ground_mats[key]
 
@@ -126,6 +147,11 @@ func _facade(color: Color, plain: bool, roof: int, style := 0) -> ShaderMaterial
 		m.set_shader_parameter("plain_wall", plain)
 		m.set_shader_parameter("roof_force", roof)
 		m.set_shader_parameter("style", style)
+		if textures_matieres:
+			m.set_shader_parameter("tex_parpaings", load(TEXTURE_PARPAINGS))
+			m.set_shader_parameter("tex_enduit", load(TEXTURE_ENDUIT))
+			m.set_shader_parameter("enduit_lum", ENDUIT_LUM)
+			m.set_shader_parameter("avec_texture", true)
 		_facade_cache[key] = m
 	return _facade_cache[key]
 

@@ -45,6 +45,9 @@ func _parcours(bottom: Vector3, landing: Vector3, n: Vector3, allee: float, axe:
 	return [["palier", fl - d * 0.3], ["porte", dans], ["allee", a0], ["allee 12 m", a0 - n * 12.0], ["retour", a0],
 		["porte du poste", fl + d * axe + n * (poste - 1.2)], ["poste de pilotage", fl + d * axe + n * poste],
 		["porte du poste (retour)", fl + d * axe + n * (poste - 1.2)], ["devant le poste", fl + d * axe + n * 0.3],
+		# passages en biais (retour d'Olympe du 19/10/2026 : en ratant la porte, on restait coince dans l'encadrement)
+		["vers la porte en biais", dans + n * 0.6], ["sortie en biais", fl - d * 0.4 - n * 0.45],
+		["entree en biais", dans - n * 0.6], ["sortie en biais (autre cote)", fl - d * 0.4 + n * 0.45],
 		["retour porte", dans], ["sortie", fl - d * 0.3], ["pied de l'escalier", bottom]]
 
 
