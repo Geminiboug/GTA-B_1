@@ -59,6 +59,8 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Avenue Pape Jean-Paul II | Boulevard de l Envol |
 | Haie Vive (quartier, phase 9) | Haie Verte |
 | Cadjehoun (quartier, phase 9) | Cadjehoue |
-| Fidjrosse (quartier, extension du 19/10/2026) | Fidjrossa (a valider par Olympe) |
+| Fidjrosse (quartier, extension du 19/10/2026) | Fidjrossa (valide par Olympe le 19/10/2026) |
+| Djako Daho (quartier) | Djaka Daho |
+| Fiyegnon-Jacquot (quartier) | Fiyegnan-Jacot |
 
 Nouveaux lieux : meme principe, un nom proche a l oreille mais different, sans logo ni charte graphique reelle.

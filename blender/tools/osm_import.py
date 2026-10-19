@@ -52,6 +52,8 @@ LEVEL_H = 3.0
 # noms de rue reels (tags OSM) -> noms fictifs affiches en jeu (docs/correspondance_noms.md)
 NOM_FICTIF = {"Avenue Pape Jean-Paul II": "Boulevard de l'Envol", "Route des Pêches": "Route des Filets",
               "Carrefour Plage de Fidjrossé": "Carrefour Plage de Fidjrossa"}
+# quartiers (etiquettes de la carte, scripts/hud_carte.gd) : Fidjrossé -> Fidjrossa, Djako Daho -> Djaka Daho,
+# Fiyégnon-Jacquot -> Fiyégnan-Jacot (docs/LEGAL.md)
 SEA_EXTRA = 400.0
 # Front de mer apres l'amenagement de la Route des Peches (travaux depuis 2023) :
 # plage continue depuis la mer, puis promenade pietonne et piste cyclable.

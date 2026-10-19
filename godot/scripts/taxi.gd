@@ -17,6 +17,9 @@ const DESTINATIONS := [
 	["L'Épave Volante", -150.0, 240.0],
 	["Haie Verte", -150.0, -840.0],
 	["Cadjéhoué", 550.0, -1080.0],
+	["Fidjrossa", -1530.0, -291.0],
+	["Fiyégnan-Jacot", -1055.0, -505.0],
+	["Djaka Daho", -2856.0, -342.0],
 ]
 
 var _player: Node3D

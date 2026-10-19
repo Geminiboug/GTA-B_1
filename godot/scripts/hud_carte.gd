@@ -40,6 +40,9 @@ const PLACES := [
 	["Sweet Dream Beach", Vector2(622, 292)],
 	["Haie Verte", Vector2(-150, -840)],
 	["Cadjéhoué", Vector2(550, -1080)],
+	["Fidjrossa", Vector2(-1530, -291)],
+	["Fiyégnan-Jacot", Vector2(-1055, -505)],
+	["Djaka Daho", Vector2(-2856, -342)],
 	["Maquis La Plaja", Vector2(-159, 54)],
 	["Plage", Vector2(150, 330)],
 ]

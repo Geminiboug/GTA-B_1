@@ -24,7 +24,7 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
   - Montre-leur les images `apres_*.png` de [images/phase12/](images/phase12/), mélangées à d'autres images.
   - Demande : « À quel type de lieu cette image te fait-elle penser ? Qu'est-ce qui te fait penser cela ? ».
   - Note leurs réponses mot pour mot, sans souffler.
-- [ ] **Photos sur le terrain**, en plein jour sans ombre forte, prises de face. Range-les dans `refs/terrain/<type>/` :
+- [ ] **Photos sur le terrain** : liste complète et détaillée dans [photos_terrain.md](photos_terrain.md). Résumé :
   - `facades` : façades entières, de face (maison basse, maison à étage, boutique) ;
   - `portails` : portails de concession en gros plan ;
   - `sols` : bitume usé, pavés, sable, caniveaux (photo à la verticale, à 1 m du sol) ;
@@ -49,7 +49,7 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 
 ## 4 bis. Valider un nom
 
-- [ ] **Fidjrossè devient « Fidjrossa »** dans le jeu (même principe que Haie Verte et Cadjehoue). D'accord, ou tu préfères un autre nom ?
+- [x] **Fidjrossè devient « Fidjrossa »** dans le jeu (même principe que Haie Verte et Cadjehoue). D'accord, ou tu préfères un autre nom ?
 
 ## 5. Plus tard (pas urgent)
 
