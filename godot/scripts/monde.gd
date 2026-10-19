@@ -59,6 +59,15 @@ func _physics_process(_d: float) -> void:
 	if not dynamique:
 		return
 	var p := _position_joueur()
+	# teleportation (deplacement rapide, sauvegarde, mission) sur une tuile absente : chargee tout de suite
+	for cle in tuiles:
+		var t0: Dictionary = tuiles[cle]
+		if t0["noeud"] == null and (t0["rect"] as Rect2).has_point(Vector2(p.x, p.z)):
+			var res: Resource = ResourceLoader.load_threaded_get(t0["fichier"]) if t0["attente"] else load(t0["fichier"])
+			t0["attente"] = false
+			if res:
+				_poser(cle, (res as PackedScene).instantiate())
+	_figer_vehicules()
 	for cle in tuiles:
 		var t: Dictionary = tuiles[cle]
 		var d := _distance(cle, p)
@@ -77,6 +86,21 @@ func _physics_process(_d: float) -> void:
 			(t["noeud"] as Node3D).queue_free()
 			t["noeud"] = null
 			tuile_dechargee.emit(cle)
+
+
+func _figer_vehicules() -> void:
+	## Vehicules laisses sur une tuile liberee : figes (plus de sol sous eux), rendus a la vie quand elle revient.
+	for v in get_tree().get_nodes_in_group("vehicules"):
+		var n := v as Node3D
+		if n == null:
+			continue
+		var la := chargee(n.global_position)
+		if not la and n.process_mode != Node.PROCESS_MODE_DISABLED:
+			n.set_meta("mode_avant_tuile", n.process_mode)
+			n.process_mode = Node.PROCESS_MODE_DISABLED
+		elif la and n.has_meta("mode_avant_tuile"):
+			n.process_mode = n.get_meta("mode_avant_tuile")
+			n.remove_meta("mode_avant_tuile")
 
 
 func _poser(cle: Vector2i, n: Node3D) -> void:

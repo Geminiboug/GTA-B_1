@@ -24,6 +24,7 @@ const AVOID := ["route_", "accotement", "zone_parking", "aeroport_", "promenade"
 
 var _ground_mats := {}
 var _facade_cache := {}
+var _evitement := {}       # Vector2i -> surfaces a eviter de la tuile
 
 
 func _ready() -> void:
@@ -46,10 +47,19 @@ func _ready() -> void:
 	# tuiles chargees plus tard (monde.gd dynamique) : memes materiaux et surfaces a eviter
 	if zone is Monde:
 		zone.tuile_chargee.connect(func(_cle: Vector2i, n: Node3D) -> void:
-			for mi in n.find_children("*", "MeshInstance3D", true, false):
-				_apply(mi)
-				_add_avoid(mi, avoid)
-				_sol_plage(mi))
+			var meshes2 := n.find_children("*", "MeshInstance3D", true, false)
+			for debut in range(0, meshes2.size(), 6):     # travail de fond, quelques meshes a la fois
+				Partie.tache(func() -> void:
+					for mi in meshes2.slice(debut, debut + 6):
+						if is_instance_valid(mi):
+							_apply(mi)
+							_add_avoid(mi, avoid)
+							_sol_plage(mi)))
+		zone.tuile_dechargee.connect(func(cle: Vector2i) -> void:
+			for b in _evitement.get(cle, []):
+				if is_instance_valid(b):
+					(b as Node).queue_free()
+			_evitement.erase(cle))
 
 
 func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:
@@ -65,6 +75,16 @@ func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:
 			body.add_child(cs)
 			body.transform = mi.global_transform
 			parent.add_child(body)
+			# rangee avec sa tuile (Tuile_x_y sous monde.gd) : liberee avec elle
+			var t: Node = mi
+			while t and not String(t.name).begins_with("Tuile_"):
+				t = t.get_parent()
+			if t:
+				var parts := String(t.name).split("_")
+				var cle := Vector2i(int(parts[1]), int(parts[2]))
+				if not _evitement.has(cle):
+					_evitement[cle] = []
+				_evitement[cle].append(body)
 			return
 
 

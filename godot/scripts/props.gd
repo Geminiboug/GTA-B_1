@@ -104,7 +104,7 @@ func _ready() -> void:
 		cles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x or (a.x == b.x and a.y < b.y))
 	Partie.chantier(_place_promenade_lamps.bind(data.get("promenade", [])))
 	for cle in cles:
-		_placer_tuile(cle)
+		_placer_tuile(cle, true)
 	Partie.chantier(func() -> void:
 		placed = true
 		placement_done.emit()
@@ -112,31 +112,51 @@ func _ready() -> void:
 	if _monde:
 		_monde.tuile_chargee.connect(func(cle: Vector2i, _n: Node3D) -> void:
 			if placed and not _par_tuile.has(cle):
-				_placer_tuile(cle))
+				_placer_tuile(cle, false))
+		_monde.tuile_dechargee.connect(liberer_tuile)
 
 
-func _placer_tuile(cle: Vector2i) -> void:
-	## Confie le decor d'une tuile a la mise en place etalee (meme ordre que la zone d'un seul tenant).
+func _placer_tuile(cle: Vector2i, au_chargement: bool) -> void:
+	## Confie le decor d'une tuile a la mise en place etalee (au chargement) ou au travail de fond (tuile qui arrive en
+	## cours de partie : petites etapes, quelques ms par image).
 	var rect := Rect2(-1e6, -1e6, 2e6, 2e6) if _monde == null else (_monde.tuiles[cle]["rect"] as Rect2)
 	var ctx := {"cle": cle, "rect": rect, "fils": PackedVector3Array(), "cles": [], "routes": [], "bats": [], "troncons": []}
 	_par_tuile[cle] = ctx
 	_choisir(ctx)
-	var etape := func(f: Callable) -> void: Partie.chantier(_dans_tuile.bind(ctx, f))
+	var etape := func(f: Callable) -> void:
+		if au_chargement:
+			Partie.chantier(_dans_tuile.bind(ctx, f))
+		else:
+			Partie.tache(_dans_tuile.bind(ctx, f))
+	var nr := 12 if au_chargement else 2      # routes par etape
+	var nb := 60 if au_chargement else 8      # batiments par etape
+	var nt := 200 if au_chargement else 30    # troncons de mur par etape
+	var routes: Array = ctx["routes"]
+	var bats: Array = ctx["bats"]
+	var troncons: Array = ctx["troncons"]
 	etape.call(_debut_tuile)
-	etape.call(_place_billboards)  # en premier : ils ont besoin de place
-	etape.call(_place_poles_and_lamps)
-	etape.call(_place_roadside)
-	for debut in range(0, ctx["bats"].size(), 60):   # enseignes par paquets (~70 ms)
-		etape.call(_place_shop_signs.bind(debut, 60))
+	for d in range(0, routes.size(), nr):
+		etape.call(_place_billboards.bind(routes.slice(d, d + nr)))  # en premier : ils ont besoin de place
+	for d in range(0, routes.size(), nr):
+		etape.call(_place_poles_and_lamps.bind(routes.slice(d, d + nr)))
+	for d in range(0, routes.size(), nr):
+		etape.call(_place_roadside.bind(routes.slice(d, d + nr)))
+	for d in range(0, bats.size(), nb):
+		etape.call(_place_shop_signs.bind(bats.slice(d, d + nb)))
 		etape.call(_place_kit)     # devant les facades a enseigne de ce paquet
-	etape.call(_place_wall_texts)
-	etape.call(_place_toits)
-	etape.call(_place_chantiers)
+	for d in range(0, troncons.size(), nt):
+		etape.call(_place_wall_texts.bind(troncons.slice(d, d + nt)))
+	for d in range(0, bats.size(), nb):
+		etape.call(_place_toits.bind(bats.slice(d, d + nb)))
+	for d in range(0, troncons.size(), nt):
+		etape.call(_place_chantiers.bind(troncons.slice(d, d + nt)))
 	etape.call(_build)
 	etape.call(func() -> void: tuile_placee.emit(cle))
 
 
 func _dans_tuile(ctx: Dictionary, f: Callable) -> void:
+	if _par_tuile.get(ctx["cle"]) != ctx:
+		return      # tuile liberee avant la fin de son decor
 	_tuile = ctx
 	_bodies = ctx.get("corps")
 	_signs = ctx.get("signs")
@@ -157,6 +177,16 @@ func _debut_tuile() -> void:
 	add_child(_signs)
 	_tuile["corps"] = _bodies
 	_tuile["signs"] = _signs
+	# tuile rechargee : ses commerces, vendeurs et lampadaires sont reposes, on retire les anciens
+	var rect: Rect2 = _tuile["rect"]
+	var hors := func(p: Vector3) -> bool: return not rect.has_point(Vector2(p.x, p.z))
+	shops = shops.filter(func(e: Dictionary) -> bool: return hors.call(e["pos"]))
+	vendor_spots = vendor_spots.filter(func(x: Transform3D) -> bool: return hors.call(x.origin))
+	var lp := PackedVector3Array()
+	for q in lamp_positions:
+		if hors.call(q):
+			lp.append(q)
+	lamp_positions = lp
 	_devantures.clear()
 	_kit_fait = 0
 
@@ -183,6 +213,25 @@ func _choisir(ctx: Dictionary) -> void:
 	for si in _troncons.size():
 		if rect.has_point((_troncons[si][0] + _troncons[si][1]) * 0.5):
 			ctx["troncons"].append(si)
+
+
+func liberer_tuile(cle: Vector2i) -> void:
+	## Tuile dechargee (monde.gd, au-dela de rayon_libere) : son decor part avec elle. Les poteaux gardent leurs attaches
+	## (cables vers cette tuile quand elle reviendra).
+	var ctx: Dictionary = _par_tuile.get(cle, {})
+	if ctx.is_empty():
+		return
+	_par_tuile.erase(cle)
+	for key in ctx["cles"]:
+		if _chunk_nodes.has(key):
+			(_chunk_nodes[key] as Node).queue_free()
+			_chunk_nodes.erase(key)
+		_chunks.erase(key)
+	for n in ["corps", "signs", "cables"]:
+		if ctx.get(n) and is_instance_valid(ctx[n]):
+			(ctx[n] as Node).queue_free()
+	var cles: Array = ctx["cles"]
+	parked = parked.filter(func(pk: Dictionary) -> bool: return pk.get("taken", false) or (pk["slot"] as Array).is_empty() or not cles.has(pk["slot"][0]))
 
 
 func _dans(p: Vector2) -> bool:
@@ -386,8 +435,8 @@ func _facing(dir2: Vector2) -> Basis:
 
 
 # ---------------------------------------------------------------- reseau electrique et eclairage
-func _place_poles_and_lamps() -> void:
-	for ri in _tuile["routes"]:
+func _place_poles_and_lamps(routes: Array) -> void:
+	for ri in routes:
 		var r: Dictionary = _roads[ri]
 		var kind: String = r["kind"]
 		if kind in ["footway", "path", "pedestrian", "track"]:
@@ -491,7 +540,7 @@ func _wire(a: Vector3, b: Vector3) -> void:
 
 
 # ---------------------------------------------------------------- commerces et vehicules de bord de route
-func _place_roadside() -> void:
+func _place_roadside(routes: Array) -> void:
 	# [type, rayon libre, proba axes bitumes, proba rues de quartier]
 	var table := [
 		["prop_kpayo", 1.0, 0.045, 0.012],
@@ -503,7 +552,7 @@ func _place_roadside() -> void:
 		["voiture", 2.4, 0.05, 0.07],
 		["zems", 1.6, 0.04, 0.02],
 	]
-	for ri in _tuile["routes"]:
+	for ri in routes:
 		var r: Dictionary = _roads[ri]
 		var kind: String = r["kind"]
 		if kind in ["footway", "path", "pedestrian"]:
@@ -624,8 +673,8 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		_cyl_col(xf.origin, 0.4, 0.8)
 
 
-func _place_billboards() -> void:
-	for ri in _tuile["routes"]:
+func _place_billboards(routes: Array) -> void:
+	for ri in routes:
 		var r: Dictionary = _roads[ri]
 		if r["kind"] not in ["primary", "secondary"]:
 			continue
@@ -672,9 +721,9 @@ func _road_dist(p: Vector2) -> float:
 	return best
 
 
-func _place_shop_signs(debut: int, nombre: int) -> void:
+func _place_shop_signs(lot: Array) -> void:
 	var tous: Array = _carte.data["buildings"]
-	for bi in (_tuile["bats"] as Array).slice(debut, debut + nombre):
+	for bi in lot:
 		var bld: Dictionary = tous[bi]
 		_graine("enseigne", bi)
 		if bld["roof"] == "abri" or float(bld["h"]) < 2.9 or _rng.randf() > 0.4:
@@ -733,8 +782,8 @@ func _troncons_murs(walls: Array, longueur := 8.0) -> Array:
 	return out
 
 
-func _place_wall_texts() -> void:
-	for si in _tuile["troncons"]:
+func _place_wall_texts(lot: Array) -> void:
+	for si in lot:
 		var seg: Array = _troncons[si]
 		_graine("inscription", si)
 		if _rng.randf() > mur_texte_chance:
@@ -927,11 +976,11 @@ func _mesh_parabole() -> Mesh:
 		[_cyl(0.012, 0.42), Transform3D(incl * Basis(Vector3.RIGHT, deg_to_rad(-90.0)), Vector3(0, 1.02, -0.17)), 1]], [blanc, gris])
 
 
-func _place_toits() -> void:
+func _place_toits(lot: Array) -> void:
 	## Sur les toits plats : citerne noire sur environ un toit sur deux ; fers d'attente aux angles des maisons a
 	## etage (construction qui continue quand l'argent revient).
 	var tous: Array = _carte.data["buildings"]
-	for bi in _tuile["bats"]:
+	for bi in lot:
 		var bld: Dictionary = tous[bi]
 		if String(bld.get("roof", "")) != "plat":
 			continue
@@ -1104,9 +1153,9 @@ func _place_kit() -> void:
 	_kit_fait = _devantures.size()
 
 
-func _place_chantiers() -> void:
+func _place_chantiers(lot: Array) -> void:
 	## Devant quelques murs : tas de sable et parpaings (on construit partout, petit a petit), cote rue.
-	for si in _tuile["troncons"]:
+	for si in lot:
 		var seg: Array = _troncons[si]
 		_graine("chantier", si)
 		if _rng_kit.randf() > chantier_chance:

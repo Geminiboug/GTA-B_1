@@ -47,6 +47,9 @@ var journal: Node              # journal de partie automatique (scripts/journal.
 ## Hors chargement (tests, scene lancee directement), chantier() execute l'etape tout de suite.
 var chantier_actif := false
 var chantiers: Array[Callable] = []
+## Hors chargement, travail de fond (decor d'une tuile qui arrive, monde.gd) : tache() le fait quelques ms par image.
+var budget_fond_ms := 3.0
+var _fond: Array = []          # [etape, image de physique ou elle a ete confiee]
 
 
 # mixage (phase 19) : un bus par categorie, regle dans les options ; reverberation des grands interieurs (Lieux)
@@ -107,6 +110,35 @@ func chantier_differe(etape: Callable) -> void:
 		chantiers.append(etape)
 	else:
 		etape.call_deferred()
+
+
+func tache(etape: Callable) -> void:
+	## Etape de travail de fond : pendant le chargement, une etape de la mise en place ; sinon executee plus tard,
+	## budget_fond_ms par image (au moins une etape par image), dans l'ordre.
+	if chantier_actif:
+		chantiers.append(etape)
+	else:
+		_fond.append([etape, Engine.get_physics_frames()])
+
+
+func taches_en_attente() -> int:
+	return _fond.size()
+
+
+func _process(_d: float) -> void:
+	if _fond.is_empty():
+		return
+	var t := Time.get_ticks_usec()
+	while not _fond.is_empty():
+		# deux pas de physique au moins apres la mise en file : les collisions d'une tuile qui vient d'arriver sont
+		# enregistrees avant les lancers de rayons du decor
+		if Engine.get_physics_frames() < int(_fond[0][1]) + 2:
+			break
+		var c: Callable = _fond.pop_front()[0]
+		if c.is_valid():
+			c.call()
+		if Time.get_ticks_usec() - t > budget_fond_ms * 1000.0:
+			break
 
 
 func respirer() -> void:

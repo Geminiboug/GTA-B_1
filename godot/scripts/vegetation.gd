@@ -9,7 +9,7 @@ extends Node3D
 
 @export var zone_path: NodePath = ^"../zone_aeroport"
 @export var models: PackedScene = preload("res://assets/models/vegetation.glb")
-@export var area := Rect2(-670, -380, 1340, 760)   # x, z (Godot)
+@export var area := Rect2()   # x, z (Godot) ; vide : les limites de la carte (zone_aeroport.json)
 @export var grid_step := 9.0
 @export var tree_chance := 0.10
 @export var bush_chance := 0.10
@@ -34,6 +34,9 @@ var _airside: Array = []      # [a, b, demi-largeur] : axes de piste et de taxiw
 
 func _ready() -> void:
 	_rng.seed = seed_value
+	if area.size == Vector2.ZERO:
+		var b: Array = Carte.zone().data["bounds"]
+		area = Rect2(float(b[0]), float(b[1]), float(b[2]) - float(b[0]), float(b[3]) - float(b[1]))
 	var inst := models.instantiate()
 	for mi in inst.find_children("*", "MeshInstance3D", true, false):
 		_meshes[String(mi.name)] = mi.mesh
@@ -61,20 +64,50 @@ func _ready() -> void:
 		cles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x or (a.x == b.x and a.y < b.y))
 		monde.tuile_chargee.connect(func(cle: Vector2i, _n: Node3D) -> void:
 			if not _par_tuile.has(cle):
-				_tuile(cle, monde.tuiles[cle]["rect"]))
+				_tuile(cle, monde.tuiles[cle]["rect"], false))
+		monde.tuile_dechargee.connect(liberer_tuile)
 	for cle in cles:
-		_tuile(cle, monde.tuiles[cle]["rect"] if monde else area)
+		_tuile(cle, monde.tuiles[cle]["rect"] if monde else area, true)
 	Partie.chantier(func() -> void: print("Vegetation : %d cocotiers, %d badamiers, %d neems, %d manguiers, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_badamier"].size(), _xforms["veg_neem"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()]))
 
 
-func _tuile(cle: Vector2i, rect: Rect2) -> void:
-	_par_tuile[cle] = []
+func _tuile(cle: Vector2i, rect: Rect2, au_chargement: bool) -> void:
+	## Vegetation d'une tuile : d'un bloc au chargement, par bandes de quelques rangees en cours de partie (travail de fond).
 	var nom := "%d_%d" % [cle.x, cle.y]
-	Partie.chantier(func() -> void:
+	var zone := rect.intersection(area)
+	var ctx := {"noeuds": []}
+	_par_tuile[cle] = ctx
+	var bande := zone.size.y if au_chargement else grid_step * 4.0
+	var etapes: Array[Callable] = []
+	var z := zone.position.y
+	while z < zone.end.y - 0.001:
+		var morceau := Rect2(zone.position.x, z, zone.size.x, minf(bande, zone.end.y - z))
+		etapes.append(func() -> void: _scatter_inland(morceau))
+		z += bande
+	var suite := func(f: Callable) -> void:
+		var g := func() -> void:
+			if _par_tuile.get(cle) != ctx:
+				return    # tuile liberee entre-temps
+			f.call()
+		if au_chargement:
+			Partie.chantier(g)
+		else:
+			Partie.tache(g)
+	suite.call(func() -> void:
 		_debut(nom)
-		_scatter_inland(rect.intersection(area))
-		_build_multimeshes(nom)
-		_par_tuile[cle] = _derniers)
+		ctx["noeuds"] = _derniers)
+	for e in etapes:
+		suite.call(e)
+	suite.call(func() -> void:
+		_build_multimeshes(nom))
+
+
+func liberer_tuile(cle: Vector2i) -> void:
+	var ctx: Dictionary = _par_tuile.get(cle, {})
+	_par_tuile.erase(cle)
+	for n in ctx.get("noeuds", []):
+		if is_instance_valid(n):
+			(n as Node).queue_free()
 
 
 var _derniers: Array = []   # noeuds de la derniere tuile posee
