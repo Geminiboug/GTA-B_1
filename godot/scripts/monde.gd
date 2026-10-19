@@ -1,3 +1,4 @@
+class_name Monde
 extends Node3D
 ## Chargement par morceaux (docs/chargement_par_morceaux.md) : la zone est faite de tuiles de 500 m, un .glb par tuile
 ## (osm_import.py, 9e argument), plus un fichier commun toujours charge (mer, plage d'un seul tenant...).
@@ -8,11 +9,13 @@ extends Node3D
 signal tuile_chargee(cle: Vector2i, noeud: Node3D)
 signal tuile_dechargee(cle: Vector2i)
 
-@export var dossier := "res://assets/models/tuiles/"
+@export var dossier := DOSSIER
 @export var dynamique := false
 @export var rayon_charge := 650.0     # m du joueur au bord de la tuile
 @export var rayon_libere := 900.0     # plus grand que rayon_charge : pas d'aller-retour en bord de tuile
 @export var joueur_path: NodePath = ^"../Player"
+
+const DOSSIER := "res://assets/models/tuiles/"
 
 var tuiles := {}     # Vector2i -> {"rect": Rect2 (x, z), "fichier": String, "noeud": Node3D, "attente": bool}
 var commun: Node3D
@@ -38,6 +41,18 @@ func _enter_tree() -> void:
 	for cle in tuiles:
 		if not dynamique or _distance(cle, depart) < rayon_charge:
 			_poser(cle, (load(tuiles[cle]["fichier"]) as PackedScene).instantiate())
+
+
+static func fichiers(dos := DOSSIER) -> PackedStringArray:
+	## Fichiers poses au lancement (fichier commun + tuiles), pour un chargement en arriere-plan avant la scene.
+	var idx: Variant = JSON.parse_string(FileAccess.get_file_as_string(dos + "tuiles.json"))
+	var res := PackedStringArray()
+	if typeof(idx) != TYPE_DICTIONARY:
+		return res
+	res.append(dos + String(idx["commun"]))
+	for t in idx["tuiles"]:
+		res.append(dos + String(t["fichier"]))
+	return res
 
 
 func _physics_process(_d: float) -> void:

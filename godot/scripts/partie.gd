@@ -109,6 +109,12 @@ func chantier_differe(etape: Callable) -> void:
 		etape.call_deferred()
 
 
+func respirer() -> void:
+	## A attendre (await) dans un long _ready : pendant le chargement, rend la main a l'ecran (une image) ; sinon rien.
+	if chantier_actif:
+		await get_tree().process_frame
+
+
 func file_videe() -> void:
 	## A attendre (await) : rend la main quand toutes les etapes deja confiees sont faites (tout de suite hors chargement).
 	if not chantier_actif:

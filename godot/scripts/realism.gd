@@ -43,6 +43,13 @@ func _ready() -> void:
 				_add_avoid(mi, avoid)
 				_sol_plage(mi))
 	Partie.chantier(_build_sea)
+	# tuiles chargees plus tard (monde.gd dynamique) : memes materiaux et surfaces a eviter
+	if zone is Monde:
+		zone.tuile_chargee.connect(func(_cle: Vector2i, n: Node3D) -> void:
+			for mi in n.find_children("*", "MeshInstance3D", true, false):
+				_apply(mi)
+				_add_avoid(mi, avoid)
+				_sol_plage(mi))
 
 
 func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:

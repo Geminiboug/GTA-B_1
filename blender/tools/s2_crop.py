@@ -7,8 +7,11 @@ from rasterio.enums import Resampling
 import numpy as np
 from PIL import Image
 url, out = sys.argv[1], sys.argv[2]
+# emprise : GTB_BBOX=lon0,lat0,lon1,lat1 (extension de la carte), sinon la zone de l'aeroport
+import os
+BB = tuple(float(v) for v in os.environ.get("GTB_BBOX", "2.365,6.338,2.397,6.361").split(","))
 with rasterio.open(url) as src:
-    b = transform_bounds("EPSG:4326", src.crs, 2.365, 6.338, 2.397, 6.361)
+    b = transform_bounds("EPSG:4326", src.crs, *BB)
     win = from_bounds(*b, transform=src.transform)
     arr = src.read(window=win, out_shape=(3, int(win.height) * 6, int(win.width) * 6), resampling=Resampling.bilinear)
     print("px", win.width, win.height, "crs", src.crs)

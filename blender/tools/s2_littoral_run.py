@@ -17,4 +17,12 @@ for x in range(0, W, 12):
         else: miss += 1
         y -= 1
     coast.append((x, yc)); inner.append((x, top))
+# points isoles (nuage, bateau, ecume) : ecartes s'ils s'eloignent de plus de 40 px de la mediane de leurs voisins
+import numpy as _np
+def _isoles(pts, k=25, tol=35):
+    ys = _np.array([p[1] for p in pts], float)
+    return [i for i in range(len(pts)) if abs(ys[i] - _np.median(ys[max(0, i - k):i + k + 1])) > tol]
+_bad = set(_isoles(coast)) | set(_isoles(inner))
+coast = [p for i, p in enumerate(coast) if i not in _bad]
+inner = [p for i, p in enumerate(inner) if i not in _bad]
 exec('def smooth' + open('/home/olympe/GTA-B_1/blender/tools/s2_littoral.py').read().split('def smooth')[1])

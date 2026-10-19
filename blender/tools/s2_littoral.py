@@ -1,8 +1,11 @@
-import json, numpy as np
+import json, os, numpy as np
 from PIL import Image
-im = np.asarray(Image.open('/home/olympe/GTA-B_1/refs/sentinel2/s2_20260124.png')).astype(int)
+# GTB_S2=<suffixe> : refs/sentinel2/s2_<suffixe>.png -> littoral_<suffixe>.geojson ; GTB_BBOX=lon0,lat0,lon1,lat1 (celle de s2_crop.py)
+SUF = os.environ.get('GTB_S2', '20260124')
+im = np.asarray(Image.open('/home/olympe/GTA-B_1/refs/sentinel2/s2_%s.png' % SUF)).astype(int)
 H, W, _ = im.shape
-LON0, LON1, LAT0, LAT1 = 2.365, 2.397, 6.338, 6.361
+_bb = [float(v) for v in os.environ.get('GTB_BBOX', '2.365,6.338,2.397,6.361').split(',')]
+LON0, LON1, LAT0, LAT1 = _bb[0], _bb[2], _bb[1], _bb[3]
 R, G, B = im[..., 0], im[..., 1], im[..., 2]
 water = (R < 40) & (G < 70)
 surf = (R > 230) & (G > 230) & (B > 190)
@@ -34,7 +37,7 @@ coast, inner = smooth(coast), smooth(inner, 4)
 widths = [(c[1] - i[1]) * (LAT1 - LAT0) / H * 110540 for c, i in zip(coast, inner)]
 print('points', len(coast), 'largeur plage m: min %.0f med %.0f max %.0f' % (min(widths), np.median(widths), max(widths)))
 feat = lambda name, pts: {"type": "Feature", "properties": {"name": name, "source": "Copernicus Sentinel-2, 2026-01-24"}, "geometry": {"type": "LineString", "coordinates": [ll(*p) for p in pts]}}
-json.dump({"type": "FeatureCollection", "features": [feat("trait_de_cote", coast), feat("limite_plage", inner)]}, open('/home/olympe/GTA-B_1/refs/sentinel2/littoral_20260124.geojson', 'w'))
+json.dump({"type": "FeatureCollection", "features": [feat("trait_de_cote", coast), feat("limite_plage", inner)]}, open('/home/olympe/GTA-B_1/refs/sentinel2/littoral_%s.geojson' % SUF, 'w'))
 # image de controle
 ov = im.copy().astype(np.uint8)
 for (x, y) in coast: ov[max(0, int(y) - 3):int(y) + 3, x:x + 12] = (255, 0, 0)

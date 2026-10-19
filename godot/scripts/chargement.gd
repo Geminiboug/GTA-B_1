@@ -41,6 +41,7 @@ const ASTUCES := [
 @export var zoom_diapo := 0.06           # zoom lent sur chaque image (6 %)
 @export var sous_fils := false           # sous-fils du ResourceLoader (plus lent sur certains disques)
 @export var budget_ms := 12.0            # temps de mise en place par image (le reste pour l'affichage)
+@export var journal_ecarts := false     # mesure : temps hors etapes entre deux images, et l'etape qui precede
 @export var etape_lente_ms := 120.0      # une etape plus longue est signalee dans le journal (saccade visible)
 
 var etape := "chargement"                # chargement, mise_en_place, fini, erreur
@@ -60,6 +61,15 @@ var _roue: Control
 var _paquet: PackedScene
 var _zone: Node
 var _faits := 0
+var _ms_etapes := 0.0
+var _prets := []
+var _tuiles: PackedStringArray = []
+var _gardes: Array[Resource] = []
+var _t_entree := 0
+var _fin_image := 0
+var _derniere := ""
+var _ecarts := []
+var _images := 0
 var _vide := 0
 var _rng := RandomNumberGenerator.new()
 var _t0 := Time.get_ticks_msec()
@@ -73,6 +83,21 @@ func _ready() -> void:
 	_astuce.text = tr(ASTUCES[_rng.randi() % ASTUCES.size()])
 	if ResourceLoader.load_threaded_request(scene_jeu, "", sous_fils) != OK:
 		_echec()
+	# les tuiles de la zone (monde.gd) et les modeles charges par les scripts (lieux, vehicules, personnages) ne sont
+	# pas des dependances de la scene : charges ici en arriere-plan aussi, sinon le _ready qui les lit fige l'ecran
+	for f in _a_precharger():
+		if ResourceLoader.load_threaded_request(f, "", sous_fils) == OK:
+			_tuiles.append(f)
+
+
+func _a_precharger() -> PackedStringArray:
+	var res := Monde.fichiers()
+	var lieux: Dictionary = (load("res://scripts/lieux.gd") as GDScript).get_script_constant_map().get("MODELS", {})
+	for f in lieux.values() + Vehicules.MODELS.values():
+		res.append(f)
+	for v in PnjUtil.VARIANTS:
+		res.append(PnjUtil.scene_path(v))
+	return res
 
 
 func _process(delta: float) -> void:
@@ -83,7 +108,15 @@ func _process(delta: float) -> void:
 			var st := ResourceLoader.load_threaded_get_status(scene_jeu, p)
 			if st == ResourceLoader.THREAD_LOAD_IN_PROGRESS or st == ResourceLoader.THREAD_LOAD_LOADED:
 				progression = maxf(progression, float(p[0]) if not p.is_empty() else 0.0)
-			if st == ResourceLoader.THREAD_LOAD_LOADED:
+			var tuiles_pretes := 0
+			for f in _tuiles:
+				if ResourceLoader.load_threaded_get_status(f) != ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+					tuiles_pretes += 1
+			if st == ResourceLoader.THREAD_LOAD_LOADED and tuiles_pretes == _tuiles.size():
+				for f in _tuiles:
+					var r := ResourceLoader.load_threaded_get(f)
+					if r:
+						_gardes.append(r)   # gardees en cache jusqu'a la fin : monde.gd les retrouve sans relire le disque
 				_paquet = ResourceLoader.load_threaded_get(scene_jeu) as PackedScene
 				if _paquet == null:
 					_echec()
@@ -102,7 +135,12 @@ func _process(delta: float) -> void:
 
 func _entrer() -> void:
 	## La zone devient la scene courante (les scripts qui testent current_scene a leur _ready gardent leur comportement).
+	_t_entree = Time.get_ticks_msec()
 	_zone = _paquet.instantiate()
+	if journal_ecarts:
+		for n in _zone.get_children():
+			n.ready.connect(func() -> void: _prets.append([Time.get_ticks_usec(), String(n.name)]))
+		_zone.tree_entered.connect(func() -> void: _prets.append([Time.get_ticks_usec(), "entree"]))
 	if _zone == null:
 		_echec()
 		return
@@ -118,6 +156,18 @@ func _entrer() -> void:
 
 func _mise_en_place() -> void:
 	## Execute les etapes confiees a Partie.chantier, budget_ms par image ; progression = etapes faites / total connu.
+	_images += 1
+	var maint := Time.get_ticks_usec()
+	if _fin_image > 0 and journal_ecarts:
+		_ecarts.append([(maint - _fin_image) / 1000.0, _derniere])
+	if _images == 1:
+		print("Chargement : zone instanciee et prete en %d ms" % (Time.get_ticks_msec() - _t_entree))
+		var lents := []
+		for i in range(1, _prets.size()):
+			lents.append([(_prets[i][0] - _prets[i - 1][0]) / 1000.0, _prets[i][1]])
+		lents.sort_custom(func(a, b): return a[0] > b[0])
+		if journal_ecarts:
+			print("Chargement : _ready les plus longs ", lents.slice(0, 10))
 	var t := Time.get_ticks_usec()
 	while not Partie.chantiers.is_empty() and Time.get_ticks_usec() - t < budget_ms * 1000.0:
 		var c: Callable = Partie.chantiers.pop_front()
@@ -125,9 +175,12 @@ func _mise_en_place() -> void:
 		if c.is_valid():
 			c.call()
 		var duree := (Time.get_ticks_usec() - t1) / 1000.0
+		_ms_etapes += duree
 		if duree > etape_lente_ms:
 			print("Chargement : etape lente %.0f ms (%s.%s)" % [duree, c.get_object().get("name") if c.get_object() else "?", c.get_method()])
 		_faits += 1
+		_derniere = "%s.%s" % [c.get_object().get("name") if c.get_object() else "?", c.get_method()]
+	_fin_image = Time.get_ticks_usec()
 	var total := _faits + Partie.chantiers.size()
 	progression = float(_faits) / float(maxi(total, 1))
 	# quelques images sans nouvelle etape (des scripts attendent une image avant de confier les leurs) : termine
@@ -137,7 +190,14 @@ func _mise_en_place() -> void:
 	if _vide >= 24:
 		Partie.chantier_actif = false
 		etape = "fini"
-		print("Chargement : zone en place en %d ms (%d etapes)" % [Time.get_ticks_msec() - _t0, _faits])
+		_gardes.clear()
+		if journal_ecarts:
+			_ecarts.sort_custom(func(a, b): return a[0] > b[0])
+			var somme := 0.0
+			for e in _ecarts:
+				somme += e[0]
+			print("Chargement : %.0f ms entre les images, les plus longs : %s" % [somme, str(_ecarts.slice(0, 12))])
+		print("Chargement : zone en place en %d ms (%d etapes, %.0f ms de calcul, %d images)" % [Time.get_ticks_msec() - _t0, _faits, _ms_etapes, _images])
 		var tw := create_tween().set_parallel()
 		for c in _ui.get_children():
 			if c is CanvasItem:

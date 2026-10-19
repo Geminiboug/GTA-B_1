@@ -76,6 +76,7 @@ func _build_meshes() -> Dictionary:
 	var out := {}
 	# zem + conducteur en chemise jaune (+ passager ou passagere), poses puis fusionnes en un seul mesh
 	for variant in ZEM_VARIANTS:
+		await Partie.respirer()
 		var asm := Node3D.new()
 		add_child(asm)
 		var z := ZEM_SCENE.instantiate()
@@ -110,6 +111,7 @@ func _build_meshes() -> Dictionary:
 		var sp: Vector3 = Vehicules._rel(car, seat).origin if seat else Vector3(-0.4, 0.6, 0.0)
 		car.free()
 		for n in DRIVERS_PER_MODEL:
+			await Partie.respirer()
 			var genre := "femme" if _rng.randf() < 0.2 else "homme"
 			var dr := PnjUtil.make(PnjUtil.random_variant(_rng, genre))
 			var asm2 := Node3D.new()
@@ -132,15 +134,18 @@ func _build_meshes() -> Dictionary:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	for variant in ZEM_VARIANTS:
+		await Partie.respirer()
 		var asm: Node3D = out[variant]
 		out[variant] = PnjUtil.merge(asm)
 		asm.queue_free()
 	for key in out.keys():
 		if String(key).begins_with("drv_"):
+			await Partie.respirer()
 			var asm: Node3D = out[key]
 			out[key] = PnjUtil.merge(asm)
 			asm.queue_free()
 	for model in CAR_MODELS:
+		await Partie.respirer()
 		out[model] = Vehicules.merged(model)
 	return out
 

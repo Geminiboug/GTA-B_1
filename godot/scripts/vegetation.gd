@@ -5,6 +5,7 @@ extends Node3D
 ## Jamais sur un batiment, un mur, une route, la piste, le tarmac ou la plage pour les arbres.
 ## Rien sur l'aerodrome : 120 m de part et d'autre de l'axe de piste, 45 m autour des taxiways (bande d'herbe).
 ## Rendu en MultiMesh (des centaines d'arbres pour un cout tres faible) + collision sur les troncs.
+## Pose tuile par tuile (monde.gd) : chaque case de la grille tire avec sa propre graine, MultiMesh et troncs par tuile.
 
 @export var zone_path: NodePath = ^"../zone_aeroport"
 @export var models: PackedScene = preload("res://assets/models/vegetation.glb")
@@ -26,6 +27,7 @@ var _rng := RandomNumberGenerator.new()
 var _meshes := {}
 var _xforms := {"veg_cocotier": [], "veg_arbre": [], "veg_buisson": [], "veg_badamier": [], "veg_neem": []}
 var _trunks: StaticBody3D
+var _par_tuile := {}        # Vector2i -> [troncs, MultiMeshInstance3D...] (pour liberer la tuile plus tard)
 var _temp_bodies: Array[Node] = []
 var _airside: Array = []      # [a, b, demi-largeur] : axes de piste et de taxiways (Vector2 x, z)
 
@@ -43,18 +45,48 @@ func _ready() -> void:
 	await Partie.file_videe()   # pendant le chargement : apres les etapes du realisme
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	_trunks = StaticBody3D.new()
-	_trunks.name = "Troncs"
-	add_child(_trunks)
 	for a in Carte.zone().data.get("aeroways", []):
 		var half := 120.0 if a["kind"] in ["runway", "stopway"] else 45.0
 		var pts: Array = a["pts"]
 		for k in pts.size() - 1:
 			_airside.append([Vector2(float(pts[k][0]), float(pts[k][1])), Vector2(float(pts[k + 1][0]), float(pts[k + 1][1])), half])
-	Partie.chantier(_scatter_beach_palms.bind(zone))
-	Partie.chantier(_scatter_inland)
-	Partie.chantier(_build_multimeshes)
+	Partie.chantier(func() -> void:
+		_debut("plage")
+		_scatter_beach_palms(zone)
+		_build_multimeshes("plage"))
+	var monde := zone as Monde
+	var cles: Array = [Vector2i.ZERO]
+	if monde:
+		cles = monde.tuiles.keys().filter(func(c: Vector2i) -> bool: return monde.tuiles[c]["noeud"] != null)
+		cles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x or (a.x == b.x and a.y < b.y))
+		monde.tuile_chargee.connect(func(cle: Vector2i, _n: Node3D) -> void:
+			if not _par_tuile.has(cle):
+				_tuile(cle, monde.tuiles[cle]["rect"]))
+	for cle in cles:
+		_tuile(cle, monde.tuiles[cle]["rect"] if monde else area)
 	Partie.chantier(func() -> void: print("Vegetation : %d cocotiers, %d badamiers, %d neems, %d manguiers, %d buissons" % [_xforms["veg_cocotier"].size(), _xforms["veg_badamier"].size(), _xforms["veg_neem"].size(), _xforms["veg_arbre"].size(), _xforms["veg_buisson"].size()]))
+
+
+func _tuile(cle: Vector2i, rect: Rect2) -> void:
+	_par_tuile[cle] = []
+	var nom := "%d_%d" % [cle.x, cle.y]
+	Partie.chantier(func() -> void:
+		_debut(nom)
+		_scatter_inland(rect.intersection(area))
+		_build_multimeshes(nom)
+		_par_tuile[cle] = _derniers)
+
+
+var _derniers: Array = []   # noeuds de la derniere tuile posee
+var _lot := {}               # kind -> transformations de la tuile en cours (_xforms : toute la zone)
+
+
+func _debut(nom: String) -> void:
+	_lot = {}
+	_trunks = StaticBody3D.new()
+	_trunks.name = "Troncs_" + nom
+	add_child(_trunks)
+	_derniers = [_trunks]
 
 
 func _build_avoid_shapes(zone: Node) -> void:
@@ -109,6 +141,9 @@ func _add(kind: String, p: Vector3, y: float, scale_range := Vector2(0.8, 1.2), 
 	var r := yaw if yaw >= 0.0 else _rng.randf_range(0.0, TAU)
 	var b := Basis(Vector3.UP, r).scaled(Vector3.ONE * s)
 	_xforms[kind].append(Transform3D(b, Vector3(p.x, y, p.z)))
+	if not _lot.has(kind):
+		_lot[kind] = []
+	_lot[kind].append(_xforms[kind][-1])
 	if kind != "veg_buisson":
 		var cs := CollisionShape3D.new()
 		var cyl := CylinderShape3D.new()
@@ -129,6 +164,7 @@ func _scatter_beach_palms(zone: Node) -> void:
 		pts.append(prom.global_transform * v)
 	pts.sort_custom(func(a, b): return a.x < b.x)
 	var last_x := -INF
+	_rng.seed = seed_value
 	for p in pts:
 		if p.x - last_x < beach_palm_spacing:
 			continue
@@ -144,15 +180,17 @@ func _scatter_beach_palms(zone: Node) -> void:
 				_add("veg_cocotier", q, max(y, 0.0), Vector2(0.85, 1.25), PI / 2.0 + _rng.randf_range(-0.6, 0.6))
 
 
-func _scatter_inland() -> void:
-	var x := area.position.x
-	while x < area.end.x:
-		var z := area.position.y
-		while z < area.end.y:
-			var p := Vector3(x + _rng.randf_range(-3.5, 3.5), 0, z + _rng.randf_range(-3.5, 3.5))
+func _scatter_inland(zone: Rect2) -> void:
+	## Grille alignee sur area (les memes cases quelle que soit la tuile) ; une graine par case.
+	if zone.size.x <= 0.0 or zone.size.y <= 0.0:
+		return
+	for ix in range(ceili((zone.position.x - area.position.x) / grid_step), ceili((zone.end.x - area.position.x) / grid_step)):
+		for iz in range(ceili((zone.position.y - area.position.y) / grid_step), ceili((zone.end.y - area.position.y) / grid_step)):
+			_rng.seed = hash([seed_value, ix, iz])
+			var p := Vector3(area.position.x + ix * grid_step + _rng.randf_range(-3.5, 3.5), 0,
+				area.position.y + iz * grid_step + _rng.randf_range(-3.5, 3.5))
 			var roll := _rng.randf()
 			if _on_airside(Vector2(p.x, p.z)):
-				z += grid_step
 				continue
 			if roll < tree_chance:
 				var y := _free_spot(p, 2.2)
@@ -166,8 +204,6 @@ func _scatter_inland() -> void:
 				var y := _free_spot(p, 0.8)
 				if not is_nan(y):
 					_add("veg_buisson", p, y, Vector2(0.7, 1.4))
-			z += grid_step
-		x += grid_step
 
 
 func _essence(p: Vector3) -> String:
@@ -183,9 +219,9 @@ func _on_airside(p: Vector2) -> bool:
 	return false
 
 
-func _build_multimeshes() -> void:
-	for kind in _xforms:
-		var list: Array = _xforms[kind]
+func _build_multimeshes(nom: String) -> void:
+	for kind in _lot:
+		var list: Array = _lot[kind]
 		if list.is_empty() or not _meshes.has(kind):
 			continue
 		var mm := MultiMesh.new()
@@ -195,6 +231,7 @@ func _build_multimeshes() -> void:
 		for i in list.size():
 			mm.set_instance_transform(i, list[i])
 		var mmi := MultiMeshInstance3D.new()
-		mmi.name = kind
+		mmi.name = kind + "_" + nom
 		mmi.multimesh = mm
 		add_child(mmi)
+		_derniers.append(mmi)

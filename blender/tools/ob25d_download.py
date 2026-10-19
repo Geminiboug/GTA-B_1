@@ -1,6 +1,7 @@
 # GTB : hauteurs reelles des batiments, Google Open Buildings 2.5D Temporal (CC BY 4.0), sans Earth Engine.
 # Lit seulement la fenetre de la zone dans la tuile GeoTIFF (lecture HTTP partielle).
 # Lancement (WSL) : ~/.venvs/geo/bin/python blender/tools/ob25d_download.py <manifeste.json>... <sortie.tif>
+#   Variable GTB_BBOX=lon0,lat0,lon1,lat1 pour une autre emprise (extension de la carte).
 #   manifestes : https://storage.googleapis.com/open-buildings-temporal-data/v1/manifests/<11|13>_EPSG_32631_2023_06_30.json
 import json
 import sys
@@ -8,7 +9,10 @@ import pyproj
 import rasterio
 from rasterio.merge import merge
 
+import os
 BBOX = (2.370, 6.343, 2.392, 6.364)       # lon/lat de la zone (identique a l'export Overture) ; nord etendu (phase 9)
+if os.environ.get("GTB_BBOX"):
+    BBOX = tuple(float(v) for v in os.environ["GTB_BBOX"].split(","))
 *MANIFESTS, OUT = sys.argv[1:]
 tr = pyproj.Transformer.from_crs(4326, 32631, always_xy=True)
 x0, y0 = tr.transform(BBOX[0], BBOX[1])

@@ -1,13 +1,16 @@
 extends Node3D
 ## Mobilier urbain, commerces de rue, vehicules gares, enseignes et avions, places au lancement a partir
 ## des donnees reelles de la zone (godot/assets/data/zone_aeroport.json, genere par osm_import.py).
-## Deterministe (seed) : la ville est la meme a chaque partie. Rendu en MultiMesh decoupes par quartiers
-## (pour que les objets lointains ne soient pas affiches) + collisions simples.
+## Deterministe (seed) : la ville est la meme a chaque partie. Pose tuile par tuile (monde.gd, docs/chargement_par_morceaux.md) :
+## chaque objet tire au sort avec sa propre graine (route et point, batiment, troncon de mur), le decor d'une tuile ne
+## depend donc pas des autres ; collisions, enseignes, cables et MultiMesh (decoupes par quartiers de chunk_size, pour que
+## les objets lointains ne soient pas affiches) sont ranges par tuile.
 ## Tous les noms d'enseignes et de marques sont FICTIFS (voir docs/LEGAL.md).
 
 @export var props_scene: PackedScene = preload("res://assets/models/props.glb")
 @export var zem_scene: PackedScene = preload("res://assets/models/veh_zem.glb")
 @export var seed_value := 229
+@export var monde_path: NodePath = ^"../zone_aeroport"
 @export var chunk_size := 80.0   # petits quartiers : un objet ne disparait pas trop pres (distance mesuree au centre du groupe)
 
 const SHOP_NAMES := [
@@ -44,6 +47,12 @@ var _chunks := {}         # "kind|cx|cz" -> {"kind", "xf": [], "col": []}
 var _occupied := {}       # grille 2 m -> true (evite les superpositions)
 var _bodies: StaticBody3D
 var _wire_pts := PackedVector3Array()
+var _monde: Monde
+var _tuile := {}            # tuile en cours de decor : {cle, rect, corps, signs, fils, cles, routes, bats, troncons}
+var _par_tuile := {}        # Vector2i -> contexte de la tuile (pour la liberer plus tard)
+var _poteaux := {}          # Vector2i(route, point) -> attaches des cables du poteau (cables entre deux tuiles)
+var _troncons: Array = []   # troncons de mur droits [a, b] (toute la zone)
+signal tuile_placee(cle: Vector2i)
 var _roads: Array = []
 var _signs: Node3D
 var counts := {}
@@ -60,11 +69,13 @@ var placed := false
 @export var chantier_chance := 0.05    # part des troncons de mur de 8 m avec un tas de sable et des parpaings devant
 @export var mur_texte_chance := 0.12   # part des troncons de mur de 8 m avec une inscription peinte
 @export var parabole_chance := 0.3     # part des toits plats avec une antenne parabolique
+@export var grappe_chance := 0.35      # part des etals qui ont 1 ou 2 voisins (petit marche de rue)
+var _en_grappe := false
 const KIT_TEINTES := {"rue_parasol": [Color(0.72, 0.2, 0.16), Color(0.86, 0.68, 0.18), Color(0.18, 0.36, 0.62),
 	Color(0.2, 0.48, 0.3), Color(0.85, 0.84, 0.8)], "rue_casiers": [Color(0.66, 0.12, 0.1), Color(0.12, 0.38, 0.2),
 	Color(0.85, 0.6, 0.1)]}
 var _rng_kit := RandomNumberGenerator.new()
-var _devantures: Array = []   # [milieu, normale vers la rue, longueur] de chaque facade a enseigne
+var _devantures: Array = []   # [milieu, normale vers la rue, longueur, batiment] des facades a enseigne de la tuile
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "toit_parabole": 220.0, "veh_berline": 300.0,
@@ -79,34 +90,109 @@ func _ready() -> void:
 	_carte = Carte.zone()
 	var data: Dictionary = _carte.data
 	_roads = data["roads"]
-	_bodies = StaticBody3D.new()
-	_bodies.name = "Collisions"
-	add_child(_bodies)
-	_signs = Node3D.new()
-	_signs.name = "Enseignes"
-	add_child(_signs)
+	_monde = get_node_or_null(monde_path) as Monde
+	_troncons = _troncons_murs(data.get("walls", []))
 	# attendre que les collisions de la carte soient enregistrees avant les requetes physiques
 	await Partie.file_videe()   # pendant le chargement : apres les etapes deja confiees (realisme)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	# avions aux postes : geres par air_traffic.gd (gares, departs, arrivees)
-	# etapes de la mise en place etalee pendant le chargement (Partie.chantier)
-	Partie.chantier(_place_billboards)  # en premier : ils ont besoin de place
-	Partie.chantier(_place_poles_and_lamps)
+	# etapes de la mise en place etalee pendant le chargement (Partie.chantier), tuile par tuile
+	var cles: Array = [Vector2i.ZERO]
+	if _monde:
+		cles = _monde.tuiles.keys().filter(func(c: Vector2i) -> bool: return _monde.tuiles[c]["noeud"] != null)
+		cles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x or (a.x == b.x and a.y < b.y))
 	Partie.chantier(_place_promenade_lamps.bind(data.get("promenade", [])))
-	Partie.chantier(_place_roadside)
-	var bats: Array = data["buildings"]
-	for debut in range(0, bats.size(), 60):   # par paquets (~70 ms) : meme resultat, meme ordre
-		Partie.chantier(_place_shop_signs.bind(bats.slice(debut, debut + 60)))
-		Partie.chantier(_place_kit)     # devant les facades a enseigne de ce paquet
-	Partie.chantier(_place_wall_texts.bind(data.get("walls", [])))
-	Partie.chantier(_place_toits.bind(data["buildings"]))
-	Partie.chantier(_place_chantiers.bind(data.get("walls", [])))
-	Partie.chantier(_build)
+	for cle in cles:
+		_placer_tuile(cle)
 	Partie.chantier(func() -> void:
 		placed = true
 		placement_done.emit()
 		print("Props : ", counts))
+	if _monde:
+		_monde.tuile_chargee.connect(func(cle: Vector2i, _n: Node3D) -> void:
+			if placed and not _par_tuile.has(cle):
+				_placer_tuile(cle))
+
+
+func _placer_tuile(cle: Vector2i) -> void:
+	## Confie le decor d'une tuile a la mise en place etalee (meme ordre que la zone d'un seul tenant).
+	var rect := Rect2(-1e6, -1e6, 2e6, 2e6) if _monde == null else (_monde.tuiles[cle]["rect"] as Rect2)
+	var ctx := {"cle": cle, "rect": rect, "fils": PackedVector3Array(), "cles": [], "routes": [], "bats": [], "troncons": []}
+	_par_tuile[cle] = ctx
+	_choisir(ctx)
+	var etape := func(f: Callable) -> void: Partie.chantier(_dans_tuile.bind(ctx, f))
+	etape.call(_debut_tuile)
+	etape.call(_place_billboards)  # en premier : ils ont besoin de place
+	etape.call(_place_poles_and_lamps)
+	etape.call(_place_roadside)
+	for debut in range(0, ctx["bats"].size(), 60):   # enseignes par paquets (~70 ms)
+		etape.call(_place_shop_signs.bind(debut, 60))
+		etape.call(_place_kit)     # devant les facades a enseigne de ce paquet
+	etape.call(_place_wall_texts)
+	etape.call(_place_toits)
+	etape.call(_place_chantiers)
+	etape.call(_build)
+	etape.call(func() -> void: tuile_placee.emit(cle))
+
+
+func _dans_tuile(ctx: Dictionary, f: Callable) -> void:
+	_tuile = ctx
+	_bodies = ctx.get("corps")
+	_signs = ctx.get("signs")
+	_wire_pts = ctx["fils"]
+	f.call()
+	ctx["fils"] = _wire_pts
+
+
+func _debut_tuile() -> void:
+	## Conteneurs de la tuile (collisions, enseignes).
+	var cle: Vector2i = _tuile["cle"]
+	var suffixe := "_%d_%d" % [cle.x, cle.y]
+	_bodies = StaticBody3D.new()
+	_bodies.name = "Collisions" + suffixe
+	add_child(_bodies)
+	_signs = Node3D.new()
+	_signs.name = "Enseignes" + suffixe
+	add_child(_signs)
+	_tuile["corps"] = _bodies
+	_tuile["signs"] = _signs
+	_devantures.clear()
+	_kit_fait = 0
+
+
+func _choisir(ctx: Dictionary) -> void:
+	## Ce qui concerne la tuile : routes qui l'approchent (a 60 m), batiments et troncons de mur dont le centre est dedans.
+	var rect: Rect2 = ctx["rect"]
+	var large := rect.grow(60.0)
+	for ri in _roads.size():
+		var pts: Array = _roads[ri]["pts"]
+		var bb := Rect2(_v2(pts[0]), Vector2.ZERO)
+		for q in pts:
+			bb = bb.expand(_v2(q))
+		if bb.grow(1.0).intersects(large):
+			ctx["routes"].append(ri)
+	var bats: Array = _carte.data["buildings"]
+	for bi in bats.size():
+		var c := Vector2.ZERO
+		for q in bats[bi]["pts"]:
+			c += _v2(q)
+		c /= bats[bi]["pts"].size()
+		if rect.has_point(c):
+			ctx["bats"].append(bi)
+	for si in _troncons.size():
+		if rect.has_point((_troncons[si][0] + _troncons[si][1]) * 0.5):
+			ctx["troncons"].append(si)
+
+
+func _dans(p: Vector2) -> bool:
+	return (_tuile["rect"] as Rect2).has_point(p)
+
+
+func _graine(a: String, b := 0, c := 0) -> void:
+	## Tirage propre a un objet (deterministe, independant de l'ordre des tuiles).
+	_rng.seed = hash([seed_value, a, b, c])
+	_rng_kit.seed = hash([seed_value * 7 + 3, a, b, c])
 
 
 # ---------------------------------------------------------------- chargement
@@ -262,9 +348,12 @@ func _add(kind: String, xf: Transform3D, color := Color.WHITE) -> Array:
 	## Ajoute une instance ; renvoie [groupe, index] (pour pouvoir la retirer, ex. voiture prise par le joueur).
 	if not _meshes.has(kind):
 		return []
-	var key := "%s|%d|%d" % [kind, floori(xf.origin.x / chunk_size), floori(xf.origin.z / chunk_size)]
+	var cle: Vector2i = _tuile.get("cle", Vector2i.ZERO)
+	var key := "%s|%d|%d|%d|%d" % [kind, cle.x, cle.y, floori(xf.origin.x / chunk_size), floori(xf.origin.z / chunk_size)]
 	if not _chunks.has(key):
 		_chunks[key] = {"kind": kind, "xf": [], "col": []}
+		if _tuile.has("cles"):
+			_tuile["cles"].append(key)
 	_chunks[key]["xf"].append(xf)
 	_chunks[key]["col"].append(color)
 	counts[kind] = counts.get(kind, 0) + 1
@@ -298,17 +387,20 @@ func _facing(dir2: Vector2) -> Basis:
 
 # ---------------------------------------------------------------- reseau electrique et eclairage
 func _place_poles_and_lamps() -> void:
-	for r in _roads:
+	for ri in _tuile["routes"]:
+		var r: Dictionary = _roads[ri]
 		var kind: String = r["kind"]
 		if kind in ["footway", "path", "pedestrian", "track"]:
 			continue
 		var w: float = r["width"]
+		_graine("poteaux", ri)
 		var side := 1.0 if _rng.randf() < 0.5 else -1.0
-		# etat partage avec la fonction anonyme (les lambdas GDScript copient les variables locales)
-		var state := {"prev": []}
 		var pts: Array = r["pts"]
-		# poteaux bois tous les ~35 m d'un cote, cables entre eux
-		_walk(pts, 35.0, _rng.randf_range(2.0, 20.0), func(p: Vector2, t: Vector2, _k: int) -> void:
+		# poteaux bois tous les ~35 m d'un cote, cables entre eux (y compris vers un poteau deja pose d'une tuile voisine)
+		_walk(pts, 35.0, _rng.randf_range(2.0, 20.0), func(p: Vector2, t: Vector2, k: int) -> void:
+			if not _dans(p):
+				return
+			_graine("poteau", ri, k)
 			# cote habituel, sinon l'autre cote (chaussees separees : on evite l'autre voie)
 			var pos := Vector2.ZERO
 			var y := NAN
@@ -319,7 +411,6 @@ func _place_poles_and_lamps() -> void:
 					break
 				y = NAN
 			if is_nan(y):
-				state["prev"] = []
 				return
 			_occupy(pos, 1.0)
 			var xf := Transform3D(_facing(t), Vector3(pos.x, y, pos.y))
@@ -328,15 +419,19 @@ func _place_poles_and_lamps() -> void:
 			var attach := []
 			for x in [-0.75, 0.0, 0.75]:
 				attach.append(xf * Vector3(x, 8.55, 0))
-			var prev: Array = state["prev"]
-			if prev.size() == 3:
-				for i in 3:
-					_wire(prev[i], attach[i])
-			state["prev"] = attach
+			_poteaux[Vector2i(ri, k)] = attach
+			for voisin in [k - 1, k + 1]:
+				var autre: Array = _poteaux.get(Vector2i(ri, voisin), [])
+				if autre.size() == 3:
+					for i in 3:
+						_wire(autre[i], attach[i])
 		)
 		# lampadaires sur les grands axes, en quinconce
 		if kind in ["primary", "secondary"] and r["surface"] == "bitume":
+			_graine("lampadaires", ri)
 			_walk(pts, 32.0, _rng.randf_range(5.0, 15.0), func(p: Vector2, t: Vector2, k: int) -> void:
+				if not _dans(p):
+					return
 				var s0 := 1.0 if k % 2 == 0 else -1.0
 				var n := Vector2.ZERO
 				var pos := Vector2.ZERO
@@ -359,8 +454,13 @@ func _place_poles_and_lamps() -> void:
 
 
 func _place_promenade_lamps(prom: Array) -> void:
+	## Front de mer (fichier commun, toujours charge) : pose une fois, hors tuiles.
 	if prom.size() < 2:
 		return
+	_bodies = StaticBody3D.new()
+	_bodies.name = "Collisions_promenade"
+	add_child(_bodies)
+	_tuile = {"cle": Vector2i(-9999, -9999), "rect": Rect2(-1e6, -1e6, 2e6, 2e6), "cles": [], "fils": PackedVector3Array()}
 	_walk(prom, 25.0, 6.0, func(p: Vector2, t: Vector2, _k: int) -> void:
 		var n := Vector2(-t.y, t.x)
 		if n.y > 0.0:
@@ -374,6 +474,7 @@ func _place_promenade_lamps(prom: Array) -> void:
 		_cyl_col(xf.origin, 0.2, 8.5)
 		lamp_positions.append(xf * Vector3(0, 8.1, -1.75))
 	)
+	_build()
 
 
 func _wire(a: Vector3, b: Vector3) -> void:
@@ -402,13 +503,18 @@ func _place_roadside() -> void:
 		["voiture", 2.4, 0.05, 0.07],
 		["zems", 1.6, 0.04, 0.02],
 	]
-	for r in _roads:
+	for ri in _tuile["routes"]:
+		var r: Dictionary = _roads[ri]
 		var kind: String = r["kind"]
 		if kind in ["footway", "path", "pedestrian"]:
 			continue
 		var big := kind in ["primary", "secondary", "tertiary"]
 		var w: float = r["width"]
-		_walk(r["pts"], 9.0, _rng.randf_range(0.0, 9.0), func(p: Vector2, t: Vector2, _k: int) -> void:
+		_graine("bord", ri)
+		_walk(r["pts"], 9.0, _rng.randf_range(0.0, 9.0), func(p: Vector2, t: Vector2, k: int) -> void:
+			if not _dans(p):
+				return
+			_graine("bord", ri, k)
 			var roll := _rng.randf()
 			var acc := 0.0
 			for row in table:
@@ -490,6 +596,12 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		return
 	if kind == "prop_etal":
 		kind = ["prop_etal_rouge", "prop_etal_jaune", "prop_etal_bleu"][_rng.randi() % 3]
+		# petits marches de rue : les etals se groupent (2 ou 3 voisins le long de la rue)
+		if not _en_grappe and _rng.randf() < grappe_chance:
+			_en_grappe = true
+			for j in _rng.randi_range(1, 2):
+				_place_one("prop_etal", radius, p + t * (3.4 if j == 1 else -3.4), t, w)
+			_en_grappe = false
 	var xf := Transform3D(basis.rotated(Vector3.UP, _rng.randf_range(-0.25, 0.25)), Vector3(pos.x, y, pos.y))
 	_add(kind, xf)
 	# vendeur assis sur le tabouret, face a la route (positions locales du modele, Godot = Blender (x, z, -y))
@@ -513,12 +625,16 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 
 
 func _place_billboards() -> void:
-	var ad_i := 0
-	for r in _roads:
+	for ri in _tuile["routes"]:
+		var r: Dictionary = _roads[ri]
 		if r["kind"] not in ["primary", "secondary"]:
 			continue
 		var w: float = r["width"]
-		_walk(r["pts"], 140.0, _rng.randf_range(30.0, 100.0), func(p: Vector2, t: Vector2, _k: int) -> void:
+		_graine("pubs", ri)
+		_walk(r["pts"], 140.0, _rng.randf_range(30.0, 100.0), func(p: Vector2, t: Vector2, k: int) -> void:
+			if not _dans(p):
+				return
+			_graine("pub", ri, k)
 			var side := 1.0 if _rng.randf() < 0.5 else -1.0
 			var n := Vector2(-t.y, t.x) * side
 			var pos := p + n * (w / 2.0 + 5.5)
@@ -530,8 +646,7 @@ func _place_billboards() -> void:
 			var xf := Transform3D(_facing(-n.rotated(0.35 * side)), Vector3(pos.x, y, pos.y))
 			_add("prop_panneau_pub", xf)
 			_box_col(xf, Vector3(4.6, 5.6, 0.4), 2.8)
-			var ad: Array = ADS[ad_i % ADS.size()]
-			ad_i += 1
+			var ad: Array = ADS[(ri * 3 + k) % ADS.size()]
 			var face := xf * Transform3D(Basis.IDENTITY, Vector3(0, 5.5, -0.04))
 			_panel(face, Vector2(6.0, 2.9), ad[2])
 			_label(face * Transform3D(Basis.IDENTITY, Vector3(0, 0.45, -0.02)), ad[0], 5.4, ad[3], 0.9)
@@ -542,7 +657,8 @@ func _place_billboards() -> void:
 # ---------------------------------------------------------------- enseignes et inscriptions
 func _road_dist(p: Vector2) -> float:
 	var best := INF
-	for r in _roads:
+	for ri in _tuile["routes"]:
+		var r: Dictionary = _roads[ri]
 		if r["kind"] in ["footway", "path"]:
 			continue
 		var pts: Array = r["pts"]
@@ -556,8 +672,11 @@ func _road_dist(p: Vector2) -> float:
 	return best
 
 
-func _place_shop_signs(buildings: Array) -> void:
-	for bld in buildings:
+func _place_shop_signs(debut: int, nombre: int) -> void:
+	var tous: Array = _carte.data["buildings"]
+	for bi in (_tuile["bats"] as Array).slice(debut, debut + nombre):
+		var bld: Dictionary = tous[bi]
+		_graine("enseigne", bi)
 		if bld["roof"] == "abri" or float(bld["h"]) < 2.9 or _rng.randf() > 0.4:
 			continue
 		var pts: Array = bld["pts"]
@@ -586,7 +705,7 @@ func _place_shop_signs(buildings: Array) -> void:
 		var mid: Vector2 = best[0]
 		var n: Vector2 = best[1]
 		var width: float = min(float(best[2]) * 0.75, 5.0)
-		_devantures.append([mid, n, float(best[2])])
+		_devantures.append([mid, n, float(best[2]), bi])
 		var pos := mid + n * 0.12
 		var xf := Transform3D(_facing(n), Vector3(pos.x, 2.75, pos.y))
 		var bg: Color = SIGN_COLORS[_rng.randi() % SIGN_COLORS.size()]
@@ -614,8 +733,10 @@ func _troncons_murs(walls: Array, longueur := 8.0) -> Array:
 	return out
 
 
-func _place_wall_texts(walls: Array) -> void:
-	for seg in _troncons_murs(walls):
+func _place_wall_texts() -> void:
+	for si in _tuile["troncons"]:
+		var seg: Array = _troncons[si]
+		_graine("inscription", si)
 		if _rng.randf() > mur_texte_chance:
 			continue
 		var a: Vector2 = seg[0]
@@ -665,7 +786,7 @@ func _label(xf: Transform3D, text: String, max_width: float, color: Color, heigh
 
 # ---------------------------------------------------------------- construction
 func _build() -> void:
-	for key in _chunks:
+	for key in _tuile["cles"]:
 		var ch: Dictionary = _chunks[key]
 		var kind: String = ch["kind"]
 		var list: Array = ch["xf"]
@@ -696,11 +817,12 @@ func _build() -> void:
 		mat.albedo_color = Color(0.05, 0.05, 0.05)
 		am.surface_set_material(0, mat)
 		var wires := MeshInstance3D.new()
-		wires.name = "Cables"
+		wires.name = "Cables_%d_%d" % [_tuile["cle"].x, _tuile["cle"].y]
 		wires.mesh = am
 		wires.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(wires)
-		counts["cables"] = _wire_pts.size() / 2
+		_tuile["cables"] = wires
+		counts["cables"] = counts.get("cables", 0) + _wire_pts.size() / 2
 
 
 # ---------------------------------------------------------------- vehicules gares pris par le joueur
@@ -805,12 +927,15 @@ func _mesh_parabole() -> Mesh:
 		[_cyl(0.012, 0.42), Transform3D(incl * Basis(Vector3.RIGHT, deg_to_rad(-90.0)), Vector3(0, 1.02, -0.17)), 1]], [blanc, gris])
 
 
-func _place_toits(buildings: Array) -> void:
+func _place_toits() -> void:
 	## Sur les toits plats : citerne noire sur environ un toit sur deux ; fers d'attente aux angles des maisons a
 	## etage (construction qui continue quand l'argent revient).
-	for bld in buildings:
+	var tous: Array = _carte.data["buildings"]
+	for bi in _tuile["bats"]:
+		var bld: Dictionary = tous[bi]
 		if String(bld.get("roof", "")) != "plat":
 			continue
+		_graine("toit", bi)
 		var h := float(bld.get("h", 0.0))
 		if h < 2.8 or h > 14.0:
 			continue
@@ -959,6 +1084,7 @@ func _place_kit() -> void:
 	## Devant les facades a enseigne : un parasol avec un banc, ou un revendeur (gaz, bidons, casiers), a 1 ou 2 m du mur.
 	var choix := [["rue_parasol", 0.45], ["rue_banc", 0.25], ["rue_gaz", 0.1], ["rue_bidons", 0.12], ["rue_casiers", 0.08]]
 	for i in range(_kit_fait, _devantures.size()):
+		_graine("kit", _devantures[i][3])
 		if _rng_kit.randf() > kit_chance:
 			continue
 		var mid: Vector2 = _devantures[i][0]
@@ -978,9 +1104,11 @@ func _place_kit() -> void:
 	_kit_fait = _devantures.size()
 
 
-func _place_chantiers(walls: Array) -> void:
+func _place_chantiers() -> void:
 	## Devant quelques murs : tas de sable et parpaings (on construit partout, petit a petit), cote rue.
-	for seg in _troncons_murs(walls):
+	for si in _tuile["troncons"]:
+		var seg: Array = _troncons[si]
+		_graine("chantier", si)
 		if _rng_kit.randf() > chantier_chance:
 			continue
 		var a: Vector2 = seg[0]
