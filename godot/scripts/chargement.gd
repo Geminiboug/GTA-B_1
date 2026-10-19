@@ -16,13 +16,13 @@ const SABLE := Color("#F6F1E7")
 const POUSSIERE := Color("#6C6457")
 const VERT := Color("#008751")
 
-## Captures du jeu (1280x720, prises avec l'interface) : la zone garde le cadre sans la mini-carte (haut gauche),
-## l'heure et l'argent (haut droite)
+## Captures du jeu sans HUD (1920x1080, tests/capture_ecran_chargement.gd)
 const DIAPOS := [
-	{"img": "res://assets/ui/chargement/epave_plage.png", "zone": Rect2(262, 48, 1018, 672), "lieu": "L'ÉPAVE VOLANTE"},
-	{"img": "res://assets/ui/chargement/quartiers_vues.png", "zone": Rect2(772, 48, 508, 312), "lieu": "LES QUARTIERS"},
-	{"img": "res://assets/ui/chargement/vehicules_plage.png", "zone": Rect2(262, 48, 1018, 672), "lieu": "LA PLAGE"},
-	{"img": "res://assets/ui/chargement/minibus_plage.png", "zone": Rect2(262, 48, 1018, 672), "lieu": "LA PLAGE"},
+	{"img": "res://assets/ui/chargement/epave.png", "lieu": "L'ÉPAVE VOLANTE"},
+	{"img": "res://assets/ui/chargement/quartier.png", "lieu": "LES QUARTIERS"},
+	{"img": "res://assets/ui/chargement/ararat.png", "lieu": "ARARAT HYPERMARKET"},
+	{"img": "res://assets/ui/chargement/route_peches.png", "lieu": "LA ROUTE DES PÊCHES"},
+	{"img": "res://assets/ui/chargement/terminal.png", "lieu": "L'AÉROPORT"},
 ]
 const ASTUCES := [
 	"Le zem est bien plus qu'un moyen de transport : à Gbê Town, c'est une institution.",
@@ -186,10 +186,12 @@ func _montrer(i: int, direct := false) -> void:
 
 
 func _animer(delta: float) -> void:
-	_t_diapo += delta
+	# une etape de mise en place lente donne un grand delta : le zoom ralentit au lieu de sauter
+	_t_diapo += minf(delta, 1.0 / 30.0)
+	var u := minf(_t_diapo / (duree_diapo + duree_fondu), 1.0)
 	var img := _img[_cur]
 	img.pivot_offset = img.size * 0.5
-	img.scale = Vector2.ONE * (1.0 + zoom_diapo * minf(_t_diapo / (duree_diapo + duree_fondu), 1.0))
+	img.scale = Vector2.ONE * (1.0 + zoom_diapo * u * (2.0 - u))
 	if _t_diapo >= duree_diapo and DIAPOS.size() > 1:
 		_montrer((_diapo + 1) % DIAPOS.size())
 	_roue.rotation += delta * 3.0
@@ -245,6 +247,7 @@ func _construire_ui() -> void:
 		t.set_anchors_preset(Control.PRESET_FULL_RECT)
 		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		t.modulate.a = 0.0
 		fond.add_child(t)
 		_img.append(t)

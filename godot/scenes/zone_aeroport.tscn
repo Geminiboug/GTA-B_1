@@ -1,6 +1,6 @@
 [gd_scene load_steps=45 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/zone_aeroport.glb" id="2_zone"]
+[ext_resource type="Script" path="res://scripts/monde.gd" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="4_player"]
 [ext_resource type="PackedScene" path="res://scenes/zem.tscn" id="5_zem"]
@@ -87,7 +87,8 @@ directional_shadow_max_distance = 200.0
 [node name="Limites" type="StaticBody3D" parent="."]
 script = ExtResource("7_bounds")
 
-[node name="zone_aeroport" parent="." instance=ExtResource("2_zone")]
+[node name="zone_aeroport" type="Node3D" parent="."]
+script = ExtResource("2_zone")
 
 [node name="zone_aeroport_reperes" parent="." instance=ExtResource("3_reperes")]
 
