@@ -3,7 +3,15 @@ class_name Vehicules
 ## en un seul mesh (circulation, voitures garees en MultiMesh). Modeles : blender/tools/build_vehicles.py.
 
 const MODELS := {"veh_berline": "res://assets/models/veh_berline.glb", "veh_4x4": "res://assets/models/veh_4x4.glb",
-	"veh_minibus": "res://assets/models/veh_minibus.glb", "veh_pickup": "res://assets/models/veh_pickup.glb"}
+	"veh_minibus": "res://assets/models/veh_minibus.glb", "veh_pickup": "res://assets/models/veh_pickup.glb",
+	"veh_pejo": "res://assets/models/veh_pejo.glb", "veh_mersede": "res://assets/models/veh_mersede.glb"}
+## Berlines (memes reglages de camera, de son et d usure que la berline d origine) : Toyoda Koralo, Pejo 460, Mersede 109
+const BERLINES := ["veh_berline", "veh_pejo", "veh_mersede"]
+
+
+static func berline(r: float) -> String:
+	## Berline tiree au sort (r entre 0 et 1) : la Koralo domine a Cotonou, puis les vieilles Pejo et Mersede.
+	return "veh_berline" if r < 0.55 else ("veh_pejo" if r < 0.8 else "veh_mersede")
 const ZEM_SCENE := "res://scenes/zem.tscn"
 const CAR_SCRIPT := preload("res://scripts/voiture.gd")
 const CAM_SCRIPT := preload("res://scripts/zem_camera.gd")
@@ -26,6 +34,12 @@ const TUNING := {
 		"regime_couple": 2300.0, "regime_max": 4500.0, "rapports": [4.3, 2.35, 1.45, 1.0, 0.82], "pont": 4.1,
 		"part_motrice": 0.45, "trainee": 0.95, "repartition_avant": 0.58, "hauteur_cg": 0.72,
 		"rigidite_avant": 10.0, "rigidite_arriere": 11.0},
+	"veh_pejo": {"max_speed": 50.0, "grip": 0.97, "roll_factor": 0.011, "masse": 1300.0, "couple_max": 170.0,
+		"regime_couple": 4200.0, "regime_max": 6300.0, "rapports": [3.42, 1.81, 1.28, 0.98, 0.77], "pont": 4.06,
+		"part_motrice": 0.6, "trainee": 0.65, "repartition_avant": 0.62, "hauteur_cg": 0.55},
+	"veh_mersede": {"max_speed": 44.0, "grip": 0.93, "roll_factor": 0.012, "masse": 1250.0, "couple_max": 125.0,
+		"regime_couple": 2800.0, "regime_max": 4800.0, "rapports": [3.87, 2.25, 1.44, 1.0, 0.78], "pont": 3.46,
+		"part_motrice": 0.47, "trainee": 0.66, "repartition_avant": 0.52, "hauteur_cg": 0.55},
 }
 
 static var _merged := {}
@@ -57,8 +71,8 @@ static func create(model_id: String, color: Color) -> Node3D:
 	var rig := Node3D.new()
 	rig.name = "CamRig"
 	rig.set_script(CAM_SCRIPT)
-	rig.set("follow_height", 1.9 if model_id == "veh_berline" else 2.4)
-	rig.set("base_distance", 6.0 if model_id == "veh_berline" else 7.0)
+	rig.set("follow_height", 1.9 if model_id in BERLINES else 2.4)
+	rig.set("base_distance", 6.0 if model_id in BERLINES else 7.0)
 	var arm := SpringArm3D.new()
 	arm.name = "SpringArm3D"
 	arm.spring_length = 6.0

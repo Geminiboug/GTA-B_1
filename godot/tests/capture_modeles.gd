@@ -9,7 +9,7 @@ var scene: Node
 var out := ""
 var cam: Camera3D
 var models := [["veh_berline", Color(0.7, 0.08, 0.06)], ["veh_4x4", Color(0.85, 0.85, 0.83)], ["veh_minibus", Color(0.95, 0.8, 0.15)],
-	["veh_pickup", Color(0.15, 0.3, 0.55)]]
+	["veh_pickup", Color(0.15, 0.3, 0.55)], ["veh_pejo", Color(0.12, 0.14, 0.18)], ["veh_mersede", Color(0.85, 0.82, 0.7)]]
 var nodes: Array[Node3D] = []
 const BASE := Vector3(60, 0.2, 8)
 

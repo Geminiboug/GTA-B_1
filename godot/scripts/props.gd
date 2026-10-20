@@ -57,7 +57,7 @@ var _roads: Array = []
 var _signs: Node3D
 var counts := {}
 var lamp_positions := PackedVector3Array()
-const CAR_KINDS := ["veh_berline", "veh_4x4", "veh_minibus", "veh_pickup"]
+const CAR_KINDS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup"]
 var _chunk_nodes := {}
 var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
@@ -78,7 +78,7 @@ var _rng_kit := RandomNumberGenerator.new()
 var _devantures: Array = []   # [milieu, normale vers la rue, longueur, batiment] des facades a enseigne de la tuile
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
-const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "toit_parabole": 220.0, "veh_berline": 300.0,
+const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "toit_parabole": 220.0, "veh_berline": 300.0, "veh_pejo": 300.0, "veh_mersede": 300.0,
 	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0,
 	"rue_parasol": 160.0, "rue_sable": 140.0, "rue_parpaings": 140.0}
 
@@ -611,7 +611,7 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 			_occupy(pos, radius)
 			var dir := t if _rng.randf() < 0.5 else -t
 			var r := _rng.randf()
-			var model := "veh_berline" if r < 0.55 else ("veh_4x4" if r < 0.78 else ("veh_pickup" if r < 0.9 else "veh_minibus"))
+			var model := Vehicules.berline(r / 0.55) if r < 0.55 else ("veh_4x4" if r < 0.78 else ("veh_pickup" if r < 0.9 else "veh_minibus"))
 			var xf := Transform3D(_facing(dir), Vector3(pos.x, y, pos.y))
 			var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
 			var slot := _add(model, xf, col)

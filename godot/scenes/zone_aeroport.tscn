@@ -1,4 +1,4 @@
-[gd_scene load_steps=45 format=3]
+[gd_scene load_steps=46 format=3]
 
 [ext_resource type="Script" path="res://scripts/monde.gd" id="2_zone"]
 [ext_resource type="PackedScene" path="res://assets/models/zone_aeroport_reperes.glb" id="3_reperes"]
@@ -38,6 +38,7 @@
 [ext_resource type="Script" path="res://scripts/tactile.gd" id="56_tact"]
 [ext_resource type="Script" path="res://scripts/cinematique.gd" id="57_cine"]
 [ext_resource type="Script" path="res://scripts/activites.gd" id="58_activ"]
+[ext_resource type="Script" path="res://scripts/monuments.gd" id="59_monum"]
 [ext_resource type="Script" path="res://scripts/succes.gd" id="59_succes"]
 [ext_resource type="Script" path="res://scripts/metiers.gd" id="60_metiers"]
 [ext_resource type="Script" path="res://scripts/evenements.gd" id="61_evt"]
@@ -202,3 +203,6 @@ script = ExtResource("60_metiers")
 
 [node name="Evenements" type="Node3D" parent="."]
 script = ExtResource("61_evt")
+
+[node name="Monuments" type="Node3D" parent="."]
+script = ExtResource("59_monum")

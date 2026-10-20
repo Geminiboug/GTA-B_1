@@ -4,7 +4,7 @@ extends SceneTree
 ## 1) virage plein braquage a fond a 60 km/h, 2) lever de pied en plein virage, 3) slalom a 70 km/h.
 ## La voiture doit rester controlable : derive de la caisse sous 0,3 rad (~17 deg) sans frein a main, pas de tete-a-queue.
 
-const MODELES := ["veh_berline", "veh_4x4", "veh_minibus", "veh_pickup"]
+const MODELES := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup"]
 const DERIVE_MAX := 0.3
 
 var frame := 0

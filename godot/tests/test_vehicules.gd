@@ -156,10 +156,14 @@ func _physics_process(delta: float) -> bool:
 		var bd := INF
 		for i in props.parked.size():
 			var d: float = (props.parked[i]["xf"] as Transform3D).origin.distance_to(player.global_position)
-			if props.parked[i]["model"] != "zem" and d < bd:
+			var pxf: Transform3D = props.parked[i]["xf"]
+			var q := PhysicsRayQueryParameters3D.create(pxf.origin + Vector3(0, 0.25, 0) - pxf.basis.z * 2.6, pxf.origin + Vector3(0, 0.25, 0) - pxf.basis.z * 12.0)
+			var libre: bool = player.get_world_3d().direct_space_state.intersect_ray(q).is_empty() if d < bd else false
+			if props.parked[i]["model"] in Vehicules.BERLINES and d < bd and libre:      # rien devant (le pieton y sera pose)
 				bd = d
 				pk = props.parked[i]
 				mark["pk"] = i
+				mark["pk_d"] = pk
 		if pk.is_empty():
 			t0 += 1      # decor des tuiles encore en file de fond : voitures garees pas encore posees, on attend
 			return false
@@ -172,7 +176,7 @@ func _physics_process(delta: float) -> bool:
 		var v: Node3D = player._nearest_vehicle()
 		if v:
 			player.enter_vehicle(v)
-		_check(player.vehicle != null and props.parked[mark["pk"]].get("taken", false), "voiture garee prise : %s" % (player.vehicle.get("model_name") if player.vehicle else "aucune"))
+		_check(player.vehicle != null and (mark["pk_d"] as Dictionary).get("taken", false), "voiture garee prise : %s" % (player.vehicle.get("model_name") if player.vehicle else "aucune"))
 		# un pieton devant la voiture
 		var w: Dictionary = peds._walkers[0]
 		var vv: Node3D = player.vehicle
@@ -190,9 +194,18 @@ func _physics_process(delta: float) -> bool:
 	elif step == 11 and (frame - t0) % 60 == 1:
 		var vv: CharacterBody3D = player.vehicle
 		var cols := []
+		var hs := []
+		for k in range(-1, 6):
+			var pp: Vector3 = vv.global_position - vv.global_transform.basis.z * float(k) * 0.6
+			var qd := PhysicsRayQueryParameters3D.create(pp + Vector3(0, 1.5, 0), pp - Vector3(0, 1, 0))
+			qd.exclude = [vv.get_rid()]
+			var hd := vv.get_world_3d().direct_space_state.intersect_ray(qd)
+			hs.append("%.3f" % hd["position"].y if hd else "-")
+		print("      sol devant (pas de 0,6 m) : ", hs)
 		for i in vv.get_slide_collision_count():
-			cols.append(String(vv.get_slide_collision(i).get_collider().name) if vv.get_slide_collision(i).get_collider() else "?")
-		print("      t=%d vitesse %.1f pos %s sol %s chocs %s rider %s" % [frame - t0, vv.get("speed"), vv.global_position, vv.is_on_floor(), cols, vv.get("has_rider")])
+			var sc := vv.get_slide_collision(i)
+			cols.append("%s n%s" % [(sc.get_collider() as Node).get_path() if sc.get_collider() else "?", sc.get_normal().snapped(Vector3.ONE * 0.1)])
+		print("      t=%d vitesse %.1f pos %s sol %s chocs %s rider %s gaz %.2f regime %.0f rapport %d moteur %s frein_main %s" % [frame - t0, vv.get("speed"), vv.global_position, vv.is_on_floor(), cols, vv.get("has_rider"), vv.get("throttle"), vv.get("rpm"), vv.get("rapport"), vv.get("moteur"), Input.is_action_pressed("handbrake")])
 	if step == 11 and (mark["w"]["state"] == "down" or frame - t0 > 300):
 		_release_all()
 		_check(mark["w"]["state"] == "down", "pieton renverse par la voiture (a %.0f km/h)" % _kmh())

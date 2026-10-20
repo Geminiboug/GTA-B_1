@@ -30,7 +30,9 @@ func _process(_d: float) -> bool:
 	if frame == 30:
 		(scene.get_node("Player") as Node3D).global_position = centre + Vector3(0, 1, 0)
 	if frame > 30:
-		cam.global_position = centre + Vector3(0, haut, 1.0)
+		# 5e argument "biais" : vue de trois quarts au lieu de la verticale (monuments)
+		var biais := OS.get_cmdline_user_args().size() > 4
+		cam.global_position = centre + (Vector3(haut * 0.9, haut * 0.55, -haut * 1.1) if biais else Vector3(0, haut, 1.0))
 		cam.look_at(centre, Vector3.UP)
 		cam.current = true
 	if frame == 900:

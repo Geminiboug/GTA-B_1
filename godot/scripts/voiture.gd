@@ -256,13 +256,13 @@ func _ready() -> void:
 func _salete() -> ShaderMaterial:
 	## Poussiere de laterite et rouille propres a chaque voiture (les vieux minibus et berlines rouillent plus).
 	if usure.x < 0.0:
-		var vieux := model_name in ["veh_minibus", "veh_berline"]
+		var vieux := model_name in ["veh_minibus", "veh_berline", "veh_pejo", "veh_mersede"]
 		usure = Vector2(randf_range(0.25, 0.9), randf_range(0.0, 0.7) if vieux and randf() < 0.6 else randf_range(0.0, 0.15))
 	var m := ShaderMaterial.new()
 	m.shader = SALETE
 	m.set_shader_parameter("poussiere", usure.x)
 	m.set_shader_parameter("rouille", usure.y)
-	m.set_shader_parameter("haut_caisse", 1.0 if model_name == "veh_berline" else 1.2)
+	m.set_shader_parameter("haut_caisse", 1.0 if model_name in Vehicules.BERLINES else 1.2)
 	return m
 
 
@@ -281,7 +281,7 @@ static func _verre_teinte() -> StandardMaterial3D:
 
 
 func diesel_moteur() -> bool:
-	return model_name != "veh_berline"
+	return not model_name in Vehicules.BERLINES
 
 
 static func _son(cle: String, fabrique: Callable) -> AudioStream:
@@ -1079,7 +1079,7 @@ func _update_sound(delta: float, _slip: float) -> void:
 		_fx.volume_db = -8.0
 		_fx.play()
 	_rapport_prec = rapport
-	if model_name == "veh_berline" and _thr_prec > 0.7 and throttle < 0.2 and rpm > regime_max * 0.7 and randf() < 0.5 and not _fx.playing:
+	if model_name in Vehicules.BERLINES and _thr_prec > 0.7 and throttle < 0.2 and rpm > regime_max * 0.7 and randf() < 0.5 and not _fx.playing:
 		_fx.stream = _son("petarade", func() -> AudioStream: return AudioSynth.petarade())
 		_fx.volume_db = -4.0
 		_fx.play()

@@ -15,6 +15,12 @@ const LIVERIES := {
 	"golfe": {"c1": Color(0.08, 0.42, 0.48), "c2": Color(0.08, 0.3, 0.36), "titre": "Golfe Aviation", "logo": "GA", "immat": "GB-GLF"},
 	"trans_ouest": {"c1": Color(0.6, 0.08, 0.12), "c2": Color(0.75, 0.1, 0.15), "titre": "Trans-Ouest", "logo": "TO", "immat": "GB-TRO"},
 	"air_lagune": {"c1": Color(0.15, 0.6, 0.65), "c2": Color(0.95, 0.55, 0.15), "titre": "Air Lagune", "logo": "AL", "immat": "GB-LAG"},
+	# parodies reconnaissables des compagnies qui desservent Cotonou (docs/LEGAL.md 6 bis : noms et logos inventes)
+	"ethiopique": {"c1": Color(0.02, 0.48, 0.24), "c2": Color(0.95, 0.78, 0.08), "titre": "Éthiopique", "logo": "ÉT", "immat": "GB-ETQ"},
+	"air_franc": {"c1": Color(0.02, 0.14, 0.42), "c2": Color(0.86, 0.1, 0.16), "titre": "AIR FRANC", "logo": "AF", "immat": "GB-AFR"},
+	"askai": {"c1": Color(0.05, 0.22, 0.52), "c2": Color(0.2, 0.62, 0.28), "titre": "Askai", "logo": "A", "immat": "GB-ASK"},
+	"royal_marok": {"c1": Color(0.72, 0.06, 0.1), "c2": Color(0.04, 0.38, 0.2), "titre": "Royal Air Marok", "logo": "★", "immat": "GB-RAM"},
+	"cote_ivoire": {"c1": Color(0.95, 0.5, 0.08), "c2": Color(0.05, 0.55, 0.3), "titre": "Air Côte Ivoire", "logo": "CI", "immat": "GB-ACI"},
 }
 const MAIN_R := 0.57
 const NOSE_R := 0.38

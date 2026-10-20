@@ -48,6 +48,12 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Biréacteur moyen-courrier americain | Boing 7-3 (livrees : compagnies inventees du tableau 6) | aucun |
 | Biréacteur moyen-courrier europeen | Aerobis A-32 | aucun |
 | Biturbopropulseur regional | Dash Ouest Q4 | aucun |
+| Compagnie ethiopienne | Ethiopique (vert et jaune) | lettres ET |
+| Compagnie francaise | AIR FRANC (bleu nuit et rouge) | lettres AF |
+| Compagnie togolaise | Askai (bleu et vert) | lettre A |
+| Compagnie marocaine | Royal Air Marok (rouge et vert) | etoile a cinq branches |
+| Compagnie ivoirienne | Air Cote Ivoire (orange et vert) | lettres CI |
+| Moto 100 cm3 indienne (zem) : lettrage du reservoir | BAJOU | aucun |
 
 ## 5. Personnes
 - Aucun visage, nom ou voix de personne reelle identifiable.

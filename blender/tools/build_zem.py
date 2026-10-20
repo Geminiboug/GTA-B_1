@@ -380,6 +380,24 @@ for s in (-1, 1):
     CH.loft(RUBBER, [(0.18, s * 0.152, 0.88, 0.006, 0.035), (0.1, s * 0.137, 0.86, 0.006, 0.045), (0.03, s * 0.112, 0.835, 0.006, 0.035)], 8, 3.0)
     CH.loft(STRIPE, [(0.42, s * 0.12, 0.925, 0.003, 0.006), (0.3, s * 0.152, 0.93, 0.003, 0.007), (0.16, s * 0.15, 0.905, 0.003, 0.006)], 6, 2.0, caps=False)
 CH.lathe(CHROME, (0, 0.3, 1.03), (math.pi / 2, 0), [(0.0, 0.0), (0.0, 0.04), (0.012, 0.038), (0.016, 0.0)], 16)
+# marque parodique (docs/LEGAL.md 6 bis) en lettres chromees sur les flancs du reservoir
+MARQUE_ZEM = os.environ.get("GTB_ZEM_MARQUE", "BAJOU")
+_lettres = []
+for s in (-1, 1):
+    cu = bpy.data.curves.new("txt_zem", "FONT")
+    cu.body = MARQUE_ZEM
+    cu.size = 0.045
+    cu.extrude = 0.0015
+    cu.align_x = "CENTER"
+    cu.align_y = "CENTER"
+    t = bpy.data.objects.new("txt_zem", cu)
+    bpy.context.scene.collection.objects.link(t)
+    t.rotation_euler = (math.pi / 2, 0, s * math.pi / 2)
+    t.location = (s * 0.163, 0.27, 0.9)
+    me = bpy.data.meshes.new_from_object(t.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    _lettres.append((me, s, tuple(t.location), tuple(t.rotation_euler)))
+    bpy.data.objects.remove(t, do_unlink=True)
+    me.materials.append(CHROME)
 
 # --- selle biplace surpiquee, caches lateraux, garde-boue et feu arriere, porte-bagages ---
 SEAT_S = [(0.04, 0, 0.84, 0.1, 0.035), (0.0, 0, 0.865, 0.14, 0.05), (-0.18, 0, 0.87, 0.15, 0.055), (-0.32, 0, 0.885, 0.145, 0.06),
@@ -426,6 +444,12 @@ CH.tube(FRAME, [(-0.1, 0.05, 0.26), (-0.2, -0.1, 0.25)], 0.009, 6)              
 for s in (-1, 1):                                                                                   # pare-moteur tubulaire
     CH.tube(CHROME, [(0, 0.5, 0.74), (s * 0.12, 0.47, 0.62), (s * 0.28, 0.33, 0.48), (s * 0.27, 0.22, 0.34), (s * 0.12, 0.2, 0.22)], 0.014, 8)
 CH.obj(chassis)
+for me, s, loc, rot_ in _lettres:
+    lo = bpy.data.objects.new("zem_marque_%s" % ("d" if s > 0 else "g"), me)
+    bpy.context.scene.collection.objects.link(lo)
+    lo.parent = chassis
+    lo.location = loc
+    lo.rotation_euler = rot_
 
 # --- bequille centrale : objet a part, pivot sous le cadre ; zem.gd la replie (-80 deg autour de X) quand on roule ---
 BQ_PIV = (0.0, -0.1, 0.26)

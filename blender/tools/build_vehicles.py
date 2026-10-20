@@ -353,9 +353,28 @@ def wheel(M, name, piv, r, w, side, spokes=5):
     return ob
 
 
-def badge(me, M, c, r, front=True):
-    """Ecusson parodique (marque inventee, docs/LEGAL.md 6 bis) : ovale chrome horizontal et une vague au milieu."""
+def badge(me, M, c, r, front=True, kind="vague"):
+    """Ecusson parodique (marque inventee, docs/LEGAL.md 6 bis) : ovale chrome et vague (Toyoda), etoile a cinq
+    branches dans un cercle (Mersede), panthere dressee sur un blason (Pejo)."""
     d = 1 if front else -1
+    if kind == "etoile":
+        n = 24
+        for i in range(n):
+            a = i / n * math.tau
+            me.box(M["chrome"], (c[0] + math.cos(a) * r, c[1], c[2] + math.sin(a) * r), (r * 0.3, 0.012, r * 0.12), ry=-a + math.pi / 2)
+        for i in range(5):
+            a = math.pi / 2 + i / 5 * math.tau
+            me.box(M["chrome"], (c[0] + math.cos(a) * r * 0.45, c[1] + d * 0.003, c[2] + math.sin(a) * r * 0.45), (r * 0.9, 0.012, r * 0.1),
+                   ry=-a)
+        return
+    if kind == "panthere":
+        # blason (contour) et silhouette de panthere dressee : corps oblique, tete, pattes avant levees, queue
+        for x, z, w, h, a in ((-0.7, 0.0, 0.08, 1.9, 0.0), (0.7, 0.0, 0.08, 1.9, 0.0), (0.0, 0.95, 1.48, 0.08, 0.0),
+                              (-0.35, -1.15, 0.85, 0.08, -0.5), (0.35, -1.15, 0.85, 0.08, 0.5),
+                              (0.0, -0.1, 0.32, 1.2, -0.35), (0.22, 0.55, 0.32, 0.3, 0.0), (0.35, 0.2, 0.42, 0.12, 0.6),
+                              (-0.25, -0.75, 0.12, 0.5, 0.2), (-0.35, 0.2, 0.1, 0.7, 0.5)):
+            me.box(M["chrome"], (c[0] + x * r, c[1] + d * (0.003 if abs(x) < 0.6 else 0.0), c[2] + z * r), (w * r, 0.012, h * r), ry=a)
+        return
     n = 20
     for i in range(n):
         a = i / n * math.tau
@@ -463,6 +482,14 @@ def vehicle(name, sp):
             det.box(M["chrome"], (-gw / 2 + 0.03 + k * (gw - 0.06) / (n - 1), yf + 0.03, fz - 0.02), (0.018, 0.02, gh * 0.9))
         for z in (gh / 2, -gh / 2):
             det.box(M["chrome"], (0, yf + 0.035, fz - 0.02 + z), (gw + 0.04, 0.025, 0.03))
+    elif style == "upright":
+        # calandre droite a cadre chrome epais et barrettes horizontales, plus haute que les phares (berline allemande)
+        for k in range(6):
+            det.box(M["chrome"], (0, yf + 0.04, fz - 0.02 - gh * 0.4 + k * gh * 0.16), (gw - 0.04, 0.02, 0.012))
+        for s in (-1, 1):
+            det.box(M["chrome"], (s * gw / 2, yf + 0.045, fz - 0.02), (0.035, 0.03, gh + 0.03))
+        for z in (gh / 2, -gh / 2):
+            det.box(M["chrome"], (0, yf + 0.045, fz - 0.02 + z), (gw + 0.035, 0.03, 0.035))
     elif style == "wide":
         # calandre chromee pleine largeur, trois lames horizontales epaisses (pick-up)
         for k in range(3):
@@ -472,7 +499,7 @@ def vehicle(name, sp):
     else:
         for k in range(4):
             det.box(M["chrome"], (0, yf + 0.03, fz - 0.02 - gh * 0.4 + k * gh * 0.27), (gw * 0.97, 0.02, 0.012))
-    badge(det, M, (0, yf + 0.06, fz - 0.02 + sp.get("badge_dz", 0.0)), sp.get("badge_r", 0.055), front=True)
+    badge(det, M, (0, yf + 0.06, fz - 0.02 + sp.get("badge_dz", 0.0)), sp.get("badge_r", 0.055), front=True, kind=sp.get("badge", "vague"))
     lw = sp.get("lamp_w", 0.34)
     sweep = sp.get("lamp_sweep", 0.12)
     for s in (-1, 1):
@@ -507,7 +534,7 @@ def vehicle(name, sp):
     det.box(M["plate"], (0, yr - 0.03, sp["rear_plate_z"]), (0.44, 0.02, 0.11))
     # ecusson et noms parodiques en relief a l'arriere (marque a gauche, modele a droite)
     bz_ = sp.get("badge_rear_z", sp["rear_plate_z"] + 0.2)
-    badge(det, M, (0, yr - 0.06, bz_), sp.get("badge_r", 0.055) * 0.9, front=False)
+    badge(det, M, (0, yr - 0.06, bz_), sp.get("badge_r", 0.055) * 0.9, front=False, kind=sp.get("badge", "vague"))
     if sp.get("brand"):
         lettrage(root, M, sp["brand"], (-cr["hw"] * 0.45, yr - 0.07, bz_ - 0.02), 0.045)
         lettrage(root, M, sp["model"], (cr["hw"] * 0.45, yr - 0.07, bz_ - 0.02), 0.045)
@@ -741,5 +768,51 @@ PICKUP = dict(L=5.3, W=1.85, wb=3.08, r=0.36, track=1.54, tire_w=0.24, spokes=6,
     seat_rows=[0.1], seat_z=0.64, dash_y=1.05, bed=(-2.5, -0.9, 0.82),
     grille="wide", grille_w=0.86, lamp_hug=True, lamp_w=0.36, lamp_sweep=0.25, badge_r=0.065, brand="TOYODA", model="HAILUX")
 
-for nm, sp in (("veh_berline", SEDAN), ("veh_4x4", SUV), ("veh_minibus", MINIBUS), ("veh_pickup", PICKUP)):
+
+# Pejo 460 (berline francaise des annees 1990, 4,56 x 1,76 x 1,40 m, empattement 2,70 m) : profil en coin (capot bas
+# et plongeant, malle haute), phares fins etires vers les ailes, petite calandre, ecusson panthere.
+PEJO = dict(L=4.56, W=1.76, wb=2.7, r=0.31, track=1.48, tire_w=0.2, spokes=5, stations=[
+    S(-2.28, 0.4, 0.88, 0.92, 0.76, 0.6),
+    S(-2.2, 0.32, 0.97, 1.0, 0.85, 0.68),
+    S(-1.95, 0.28, 1.0, 1.03, 0.875, 0.7),
+    S(-1.6, 0.27, 1.0, 1.03, 0.88, 0.7, top="glass"),
+    S(-1.0, 0.26, 0.98, 1.38, 0.88, 0.64, win=True),
+    S(-0.42, 0.26, 0.97, 1.4, 0.88, 0.64),
+    S(-0.32, 0.26, 0.97, 1.4, 0.88, 0.64, win=True),
+    S(0.35, 0.26, 0.95, 1.39, 0.88, 0.64, win=True, top="glass"),
+    S(1.15, 0.27, 0.9, 0.93, 0.875, 0.7),
+    S(1.75, 0.28, 0.8, 0.82, 0.86, 0.68),
+    S(2.12, 0.31, 0.7, 0.71, 0.8, 0.6),
+    S(2.28, 0.37, 0.6, 0.61, 0.7, 0.5),
+], bumper_z=0.42, bumper_h=0.2, lamp_z=0.6, lamp_h=0.08, grille_h=0.08, tail_z=0.86, tail_h=0.15, rear_plate_z=0.66,
+    mirror_y=1.0, wiper_y=1.08, doors=[0.2, -0.7], door_lines=[1.05, -0.35, -1.15], strip_z=0.55,
+    seat_rows=[0.0, -0.95], seat_z=0.47, dash_y=0.78,
+    grille="oval", grille_w=0.42, lamp_hug=True, lamp_w=0.5, lamp_sweep=0.3, tail_bar=True, badge="panthere", badge_r=0.05,
+    brand="PEJO", model="460")
+
+# Mersede 109 (berline allemande des annees 1980, 4,42 x 1,68 x 1,38 m, empattement 2,66 m) : caisse carree, capot
+# et malle plats et hauts, pare-brise peu incline, calandre droite a cadre chrome, etoile a cinq branches.
+MERSEDE = dict(L=4.42, W=1.68, wb=2.66, r=0.3, track=1.44, tire_w=0.19, spokes=8, stations=[
+    S(-2.21, 0.38, 0.88, 0.91, 0.74, 0.6),
+    S(-2.15, 0.3, 0.95, 0.97, 0.82, 0.66),
+    S(-1.9, 0.27, 0.97, 0.99, 0.835, 0.67),
+    S(-1.55, 0.27, 0.97, 0.99, 0.84, 0.67, top="glass"),
+    S(-1.05, 0.26, 0.96, 1.37, 0.84, 0.64, win=True),
+    S(-0.42, 0.26, 0.95, 1.38, 0.84, 0.64),
+    S(-0.32, 0.26, 0.95, 1.38, 0.84, 0.64, win=True),
+    S(0.38, 0.26, 0.94, 1.37, 0.84, 0.64, win=True, top="glass"),
+    S(1.0, 0.27, 0.92, 0.95, 0.84, 0.7),
+    S(1.7, 0.28, 0.88, 0.9, 0.835, 0.7),
+    S(2.1, 0.3, 0.84, 0.86, 0.8, 0.66),
+    S(2.21, 0.36, 0.76, 0.77, 0.74, 0.58),
+], bumper_z=0.42, bumper_h=0.2, lamp_z=0.68, lamp_h=0.13, grille_h=0.24, tail_z=0.8, tail_h=0.17, rear_plate_z=0.6,
+    mirror_y=0.98, wiper_y=1.05, doors=[0.2, -0.68], door_lines=[1.0, -0.35, -1.12], strip_z=0.5,
+    seat_rows=[0.0, -0.95], seat_z=0.47, dash_y=0.75, bumper_mat="black",
+    grille="upright", grille_w=0.4, grille_dz=0.03, lamp_hug=True, lamp_w=0.38, lamp_sweep=0.0, badge="etoile", badge_r=0.05,
+    badge_dz=0.17, brand="MERSEDE", model="109")
+MODELES = {"veh_berline": SEDAN, "veh_4x4": SUV, "veh_minibus": MINIBUS, "veh_pickup": PICKUP, "veh_pejo": PEJO, "veh_mersede": MERSEDE}
+CHOIX = os.environ.get("GTB_VEH", "")   # noms separes par des virgules (vide = tous)
+for nm, sp in MODELES.items():
+    if CHOIX and nm not in CHOIX.split(","):
+        continue
     vehicle(nm, sp)
