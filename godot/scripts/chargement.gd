@@ -89,7 +89,7 @@ func _ready() -> void:
 	_montrer(0, true)
 	_astuce.text = tr(ASTUCES[_rng.randi() % ASTUCES.size()])
 	if ResourceLoader.load_threaded_request(scene_jeu, "", sous_fils) != OK:
-		_echec()
+		_echec("demande de chargement refusee : %s" % scene_jeu)
 	# les tuiles de la zone (monde.gd) et les modeles charges par les scripts (lieux, vehicules, personnages) ne sont
 	# pas des dependances de la scene : charges ici en arriere-plan aussi, sinon le _ready qui les lit fige l'ecran
 	for f in _a_precharger():
@@ -126,7 +126,7 @@ func _process(delta: float) -> void:
 						_gardes.append(r)   # gardees en cache jusqu'a la fin : monde.gd les retrouve sans relire le disque
 				_paquet = ResourceLoader.load_threaded_get(scene_jeu) as PackedScene
 				if _paquet == null:
-					_echec()
+					_echec("scene vide apres chargement : %s" % scene_jeu)
 					return
 				print("Chargement : scene chargee en %d ms" % (Time.get_ticks_msec() - _t0))
 				_etat.text = tr("Mise en place du quartier…")
@@ -134,7 +134,7 @@ func _process(delta: float) -> void:
 				_entrer.call_deferred()
 				etape = "entree"
 			elif st == ResourceLoader.THREAD_LOAD_FAILED or st == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-				_echec()
+				_echec("chargement de la scene en echec (etat %d)" % st)
 		"mise_en_place":
 			_mise_en_place()
 		"rodage":
@@ -151,7 +151,7 @@ func _entrer() -> void:
 			n.ready.connect(func() -> void: _prets.append([Time.get_ticks_usec(), String(n.name)]))
 		_zone.tree_entered.connect(func() -> void: _prets.append([Time.get_ticks_usec(), "entree"]))
 	if _zone == null:
-		_echec()
+		_echec("scene impossible a instancier")
 		return
 	Partie.chantiers.clear()
 	Partie.chantier_actif = true
@@ -248,10 +248,12 @@ func _terminer() -> void:
 	tw.chain().tween_callback(queue_free)
 
 
-func _echec() -> void:
+func _echec(raison := "") -> void:
+	## La raison s affiche sous le message (a recopier pour le diagnostic, surtout sur telephone sans journal).
 	etape = "erreur"
 	progression = -1.0
-	_etat.text = tr("Le chargement a échoué. Relance le jeu.")
+	_etat.text = tr("Le chargement a échoué. Relance le jeu.") + ("
+" + raison if raison != "" else "")
 	_etat.add_theme_color_override("font_color", LATERITE_CLAIRE)
 	push_error("Chargement : impossible de charger %s" % scene_jeu)
 
