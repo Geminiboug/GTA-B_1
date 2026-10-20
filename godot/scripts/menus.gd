@@ -77,7 +77,47 @@ func _ready() -> void:
 func _nouvelle_partie() -> void:
 	Partie.nouvelle_partie()
 	_close()
-	get_tree().call_group("histoire", "commencer")
+	_preparer(func() -> void: get_tree().call_group("histoire", "commencer"))
+
+
+## Apres l'ecran titre, le joueur est pose ailleurs que la ou le chargement a tout prepare (debut de l'histoire,
+## sauvegarde) : tuiles, decor, passants et matieres de ce nouvel endroit arrivent d'un coup et les premieres
+## secondes saccadent. Un ecran opaque reste le temps que les images redeviennent regulieres, puis le jeu commence.
+@export var preparation_ips := 45.0     # images par seconde a tenir 30 images de suite
+@export var preparation_max := 15.0     # s : au-dela, l'ecran part quand meme
+const FOND_PREPARATION := Color(0.0902, 0.0784, 0.0588)
+
+
+func _preparer(apres: Callable) -> void:
+	if get_tree().current_scene != get_parent():
+		apres.call()      # tests : scene lancee par un script
+		return
+	var ecran := ColorRect.new()
+	ecran.color = FOND_PREPARATION
+	ecran.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ecran.mouse_filter = Control.MOUSE_FILTER_STOP
+	var l := Label.new()
+	l.text = tr("Préparation du quartier…")
+	l.set_anchors_preset(Control.PRESET_CENTER)
+	l.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	l.add_theme_font_size_override("font_size", 28)
+	ecran.add_child(l)
+	add_child(ecran)
+	var t := 0.0
+	var stables := 0
+	while t < preparation_max:
+		await get_tree().process_frame
+		var d := get_process_delta_time()
+		t += d
+		stables = stables + 1 if d < 1.0 / preparation_ips else 0
+		if t > 1.0 and stables >= 30 and Partie.taches_en_attente() == 0:
+			break
+	print("Preparation : %.1f s" % t)
+	Partie.suivre_saccades(30.0)
+	apres.call()
+	var tw := create_tween()
+	tw.tween_property(ecran, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(ecran.queue_free)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -144,7 +184,7 @@ func _show_title() -> void:
 	_button("Continuer", func() -> void:
 		_close()
 		Partie.charger_emplacement(get_parent(), Partie.dernier_emplacement())
-		get_tree().call_group("histoire", "reprendre"), Partie.existe_sauvegarde())
+		_preparer(func() -> void: get_tree().call_group("histoire", "reprendre")), Partie.existe_sauvegarde())
 	_button("Charger une partie", func() -> void: _show_emplacements(false), Partie.existe_sauvegarde())
 	_button("Options", _show_options)
 	_button("Crédits", _show_credits)

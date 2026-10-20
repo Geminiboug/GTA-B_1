@@ -185,7 +185,8 @@ func _apply(mi: MeshInstance3D) -> void:
 		mat = _ground(4)
 	elif (n.begins_with("route_") and n.ends_with("_terre")) or n.begins_with("accotement"):
 		mat = _ground(5)
-	elif n.begins_with("route_") or n.begins_with("zone_parking") or n in ["aeroport_runway", "aeroport_taxiway", "aeroport_stopway"]:
+	elif n.begins_with("route_") or n.begins_with("zone_parking") or n.begins_with("aeroport_runway") \
+			or n.begins_with("aeroport_taxiway") or n.begins_with("aeroport_stopway"):   # + suffixe de tuile _tX_Y
 		mat = _ground(2)
 	elif n.begins_with("aeroport_tarmac"):
 		mat = _ground(6)

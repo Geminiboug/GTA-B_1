@@ -110,10 +110,12 @@ func _figer_vehicules() -> void:
 
 
 func _poser(cle: Vector2i, n: Node3D) -> void:
+	var t := Time.get_ticks_usec()
 	n.name = "Tuile_%d_%d" % [cle.x, cle.y]
 	add_child(n)
 	tuiles[cle]["noeud"] = n
 	tuile_chargee.emit(cle, n)
+	Partie.noter_lent("tuile %s" % n.name, Time.get_ticks_usec() - t)
 
 
 func chargee(p: Vector3) -> bool:

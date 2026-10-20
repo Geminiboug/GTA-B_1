@@ -125,7 +125,34 @@ func taches_en_attente() -> int:
 	return _fond.size()
 
 
-func _process(_d: float) -> void:
+## Mesure des saccades apres l'ecran de chargement (journal en console) : images de plus de saccade_ms, sur suivi_s
+@export var saccade_ms := 34.0
+var _suivi := -1.0
+var _saccades: Array = []
+
+
+func noter_lent(quoi: String, us: int) -> void:
+	## Pendant le suivi des saccades : une operation de plus de 20 ms est journalisee avec son nom.
+	if _suivi > 0.0 and us > 20000:
+		_saccades.append("[%s %d ms]" % [quoi, us / 1000])
+
+
+func suivre_saccades(duree: float) -> void:
+	_suivi = duree
+	_saccades.clear()
+	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
+
+
+func _process(d: float) -> void:
+	if _suivi > 0.0:
+		_suivi -= d
+		if d * 1000.0 > saccade_ms:
+			var vp := get_viewport().get_viewport_rid()
+			_saccades.append("%.1fs:%dms(f%d,cpu%.0f,gpu%.0f,cam%s)" % [Time.get_ticks_msec() / 1000.0, int(d * 1000.0), _fond.size(),
+				RenderingServer.viewport_get_measured_render_time_cpu(vp), RenderingServer.viewport_get_measured_render_time_gpu(vp),
+				get_viewport().get_camera_3d().name if get_viewport().get_camera_3d() else "-"])
+		if _suivi <= 0.0:
+			print("Apres chargement : %d saccades > %d ms : %s" % [_saccades.size(), int(saccade_ms), " ".join(PackedStringArray(_saccades.slice(0, 40)))])
 	if _fond.is_empty():
 		return
 	var t := Time.get_ticks_usec()
@@ -136,7 +163,9 @@ func _process(_d: float) -> void:
 			break
 		var c: Callable = _fond.pop_front()[0]
 		if c.is_valid():
+			var t1 := Time.get_ticks_usec()
 			c.call()
+			noter_lent("tache %s.%s" % [c.get_object().name if c.get_object() is Node else "?", c.get_method()], Time.get_ticks_usec() - t1)
 		if Time.get_ticks_usec() - t > budget_fond_ms * 1000.0:
 			break
 

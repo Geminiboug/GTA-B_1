@@ -240,6 +240,7 @@ func _terminer() -> void:
 		print("Chargement : %.0f ms entre les images, les plus longs : %s" % [somme, str(_ecarts.slice(0, 12))])
 	print("Chargement : zone en place en %d ms (%d etapes, %.0f ms de calcul, %d images)" % [Time.get_ticks_msec() - _t0, _faits, _ms_etapes, _images])
 	print("Chargement : rodage %.1f s" % _t_rodage)
+	Partie.suivre_saccades(30.0)
 	var tw := create_tween().set_parallel()
 	for c in _ui.get_children():
 		if c is CanvasItem:
