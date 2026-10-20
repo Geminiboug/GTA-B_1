@@ -151,12 +151,18 @@ func _physics_process(delta: float) -> bool:
 	elif step == 9 and frame - t0 == 60:
 		player.exit_vehicle()
 		# voiture garee
+		# voiture garee la plus proche (decor par tuile : la premiere de la liste peut etre a l'autre bout de la carte)
 		var pk: Dictionary = {}
+		var bd := INF
 		for i in props.parked.size():
-			if props.parked[i]["model"] != "zem":
+			var d: float = (props.parked[i]["xf"] as Transform3D).origin.distance_to(player.global_position)
+			if props.parked[i]["model"] != "zem" and d < bd:
+				bd = d
 				pk = props.parked[i]
 				mark["pk"] = i
-				break
+		if pk.is_empty():
+			t0 += 1      # decor des tuiles encore en file de fond : voitures garees pas encore posees, on attend
+			return false
 		var xf: Transform3D = pk["xf"]
 		player.global_position = xf.origin - xf.basis.x * 1.3 + Vector3(0, 0.5, 0)
 		player.reset_physics_interpolation()

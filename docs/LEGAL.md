@@ -28,6 +28,26 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 - Chaque commerce ou lieu reel recoit un nom fictif (voir tableau ci-dessous).
 - L'aeroport porte un nom fictif. Zone militaire : reproduction vague, pas de details reels.
 - Aucun lieu reel nomme ne doit etre associe a une activite criminelle.
+- Vehicules et avions (decision d'Olympe du 20/10/2026) : marques parodiques reconnaissables, a la maniere de GTA.
+  Silhouette, calandre, optiques et proportions inspirees des modeles courants a Cotonou, mais jamais copiees a
+  l'identique ; noms et logos inventes (aucun vrai logo, aucun vrai nom de modele). Liste dans le tableau 6 bis.
+- Monuments et statues publics (decision d'Olympe du 20/10/2026) : reproduits fidelement. Risque connu : une
+  sculpture recente peut etre protegee par le droit d'auteur de son createur ; a verifier avant une sortie commerciale.
+
+## 6 bis. Marques parodiques (vehicules, avions)
+| Inspiration (non nommee en jeu) | Nom en jeu | Logo en jeu |
+|---|---|---|
+| Berline japonaise compacte annees 1990-2000 | Toyoda Koralo | ovale chrome, vague (lagune) |
+| 4x4 japonais tout-terrain | Toyoda Landa | ovale chrome, vague (lagune) |
+| Pick-up japonais | Toyoda Hailux | ovale chrome, vague (lagune) |
+| Minibus japonais a toit haut | Toyoda Haisse | ovale chrome, vague (lagune) |
+| Berline francaise annees 1990 | Pejo 460 | panthere dressee (clin d oeil au Danxome) |
+| Berline allemande annees 1980 | Mersede 109 | etoile a cinq branches dans un cercle |
+| Moto 100 cm3 indienne (zem) | Bajou Boksa | ecusson hexagonal |
+| Moto 125 cm3 chinoise (zem) | Haojin | aile stylisee |
+| Biréacteur moyen-courrier americain | Boing 7-3 (livrees : compagnies inventees du tableau 6) | aucun |
+| Biréacteur moyen-courrier europeen | Aerobis A-32 | aucun |
+| Biturbopropulseur regional | Dash Ouest Q4 | aucun |
 
 ## 5. Personnes
 - Aucun visage, nom ou voix de personne reelle identifiable.

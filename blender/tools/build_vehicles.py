@@ -353,6 +353,44 @@ def wheel(M, name, piv, r, w, side, spokes=5):
     return ob
 
 
+def badge(me, M, c, r, front=True):
+    """Ecusson parodique (marque inventee, docs/LEGAL.md 6 bis) : ovale chrome horizontal et une vague au milieu."""
+    d = 1 if front else -1
+    n = 20
+    for i in range(n):
+        a = i / n * math.tau
+        me.box(M["chrome"], (c[0] + math.cos(a) * r * 1.45, c[1], c[2] + math.sin(a) * r), (r * 0.5, 0.012, r * 0.16),
+               ry=-a + math.pi / 2)
+    for i in range(7):
+        t = i / 6
+        x = (t - 0.5) * r * 2.2
+        me.box(M["chrome"], (c[0] + x, c[1] + d * 0.003, c[2] + math.sin(t * math.tau) * r * 0.32), (r * 0.42, 0.012, r * 0.14),
+               ry=-math.cos(t * math.tau) * 0.6)
+
+
+def lettrage(parent, M, texte, loc, h):
+    """Nom en relief chrome (texte Blender converti en maillage), sur la face arriere (regarde -Y)."""
+    cu = bpy.data.curves.new("txt_" + texte, "FONT")
+    cu.body = texte
+    cu.size = h
+    cu.extrude = 0.002
+    cu.align_x = "CENTER"
+    ob = bpy.data.objects.new("txt_" + texte, cu)
+    bpy.context.scene.collection.objects.link(ob)
+    ob.rotation_euler = (math.pi / 2, 0, 0)
+    ob.location = loc
+    me = bpy.data.meshes.new_from_object(ob.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bpy.data.objects.remove(ob, do_unlink=True)
+    me.materials.clear()
+    me.materials.append(M["chrome"])
+    mo = bpy.data.objects.new("lettrage_" + texte, me)
+    bpy.context.scene.collection.objects.link(mo)
+    mo.rotation_euler = (math.pi / 2, 0, 0)
+    mo.location = loc
+    mo.parent = parent
+    return mo
+
+
 def seat(me, M, x, y, z, w, front=True):
     """Siege : assise inclinee, dossier, appui-tete (avant)."""
     me.box(M["seat"], (x, y, z), (w, 0.5, 0.13), rx=0.06)
@@ -406,20 +444,49 @@ def vehicle(name, sp):
         for s in (-1, 1):
             det.box(M[sp.get("bumper_mat", "body")], (s * (bw / 2 - 0.16), y0 - dirn * 0.12, bz), (0.14, 0.26, sp["bumper_h"] * 0.96), rz=s * dirn * 0.5, smooth=True)
         det.box(M["black"], (0, y0 + dirn * 0.1, bz - sp["bumper_h"] * 0.32), (bw - 0.4, 0.05, 0.06))
-    # avant : calandre a lamelles, phares en amande, clignotants ; plaque
+    # avant : calandre (style propre au modele), phares, clignotants ; ecusson parodique ; plaque
     fz = sp["lamp_z"]
     cf = belt_at(yf - 0.05)
-    det.box(M["black"], (0, yf + 0.0, fz - 0.02), (cf["hw"] * 0.85, 0.06, sp["grille_h"]))
-    for k in range(4):
-        det.box(M["chrome"], (0, yf + 0.03, fz - 0.02 - sp["grille_h"] * 0.4 + k * sp["grille_h"] * 0.27), (cf["hw"] * 0.82, 0.02, 0.012))
+    gh = sp["grille_h"]
+    gw = sp.get("grille_w", cf["hw"] * 0.85)
+    style = sp.get("grille", "bars")
+    det.box(M["black"], (0, yf + 0.0, fz - 0.02), (gw, 0.06, gh))
+    if style == "oval":
+        # petite calandre ovale entre les phares (berline japonaise des annees 1990), deux lames fines
+        for k in range(2):
+            det.box(M["chrome"], (0, yf + 0.03, fz - 0.02 - gh * 0.18 + k * gh * 0.36), (gw * 0.9, 0.02, 0.01))
+        det.box(M["chrome"], (0, yf + 0.03, fz - 0.02 + gh * 0.5), (gw, 0.022, 0.016))
+    elif style == "vertical":
+        # grande calandre chromee a barreaux verticaux, cadre epais (4x4)
+        n = 11
+        for k in range(n):
+            det.box(M["chrome"], (-gw / 2 + 0.03 + k * (gw - 0.06) / (n - 1), yf + 0.03, fz - 0.02), (0.018, 0.02, gh * 0.9))
+        for z in (gh / 2, -gh / 2):
+            det.box(M["chrome"], (0, yf + 0.035, fz - 0.02 + z), (gw + 0.04, 0.025, 0.03))
+    elif style == "wide":
+        # calandre chromee pleine largeur, trois lames horizontales epaisses (pick-up)
+        for k in range(3):
+            det.box(M["chrome"], (0, yf + 0.035, fz - 0.02 - gh * 0.33 + k * gh * 0.33), (gw, 0.025, 0.035))
+        for s in (-1, 1):
+            det.box(M["chrome"], (s * gw / 2, yf + 0.035, fz - 0.02), (0.03, 0.025, gh))
+    else:
+        for k in range(4):
+            det.box(M["chrome"], (0, yf + 0.03, fz - 0.02 - gh * 0.4 + k * gh * 0.27), (gw * 0.97, 0.02, 0.012))
+    badge(det, M, (0, yf + 0.06, fz - 0.02 + sp.get("badge_dz", 0.0)), sp.get("badge_r", 0.055), front=True)
+    lw = sp.get("lamp_w", 0.34)
+    sweep = sp.get("lamp_sweep", 0.12)
     for s in (-1, 1):
-        lx = s * (cf["hw"] - 0.25)
+        lx = s * (gw / 2 + lw / 2 + 0.02) if sp.get("lamp_hug") else s * (cf["hw"] - 0.25)
         lh = sp["lamp_h"]
-        det.box(M["black"], (lx, yf - 0.025, fz), (0.37, 0.1, lh + 0.04), rz=-s * 0.12)
-        det.box(M["lamp"], (lx, yf + 0.024, fz), (0.34, 0.012, lh * 0.92), rz=-s * 0.12)     # glace (s'allume la nuit)
-        det.box(M["chrome"], (lx, yf + 0.03, fz + lh * 0.5), (0.35, 0.014, 0.012), rz=-s * 0.12)
-        det.box(M["chrome"], (lx, yf + 0.03, fz - lh * 0.5), (0.35, 0.014, 0.012), rz=-s * 0.12)
-        det.box(M["lamp"], (lx + s * 0.15, yf - 0.02, fz - lh * 0.3), (0.05, 0.01, 0.015), rz=-s * 0.12)
+        det.box(M["black"], (lx, yf - 0.025, fz), (lw + 0.03, 0.1, lh + 0.04), rz=-s * sweep)
+        det.box(M["lamp"], (lx, yf + 0.024, fz), (lw, 0.012, lh * 0.92), rz=-s * sweep)     # glace (s'allume la nuit)
+        det.box(M["chrome"], (lx, yf + 0.03, fz + lh * 0.5), (lw + 0.01, 0.014, 0.012), rz=-s * sweep)
+        det.box(M["chrome"], (lx, yf + 0.03, fz - lh * 0.5), (lw + 0.01, 0.014, 0.012), rz=-s * sweep)
+        det.box(M["lamp"], (lx + s * lw * 0.44, yf - 0.02, fz - lh * 0.3), (0.05, 0.01, 0.015), rz=-s * sweep)
+        if sp.get("lamp_twin"):
+            # deux optiques rondes par bloc (4x4 ancien) sous la glace
+            for k in (-1, 1):
+                det.lathe_y(M["chrome"], (lx + k * lw * 0.24, yf + 0.03, fz), [(0.0, lh * 0.42), (0.01, lh * 0.38)], 16)
         det.box(M["orange"], (s * (cf["hw"] - 0.05), yf - 0.12, fz - 0.01), (0.07, 0.14, sp["lamp_h"] * 0.6), rz=-s * 0.5)
         # antibrouillard dans le pare-chocs
         det.box(M["lamp"], (s * (cf["hw"] - 0.3), yf + 0.12, bz - 0.02), (0.12, 0.02, 0.06))
@@ -434,7 +501,16 @@ def vehicle(name, sp):
         det.box(M["tail"], (s * (cr["hw"] - 0.17), yr - 0.0, tz), (0.3, 0.07, sp["tail_h"]), rz=s * 0.1)
         det.box(M["orange"], (s * (cr["hw"] - 0.17), yr - 0.01, tz - sp["tail_h"] * 0.38), (0.28, 0.07, sp["tail_h"] * 0.25), rz=s * 0.1)
         det.box(M["lamp"], (s * (cr["hw"] - 0.17), yr - 0.012, tz + sp["tail_h"] * 0.32), (0.12, 0.06, sp["tail_h"] * 0.2), rz=s * 0.1)
+    if sp.get("tail_bar"):
+        # bandeau rouge sombre entre les feux, sur le coffre (berlines des annees 1990)
+        det.box(M["tail"], (0, yr - 0.03, tz), (cr["hw"] * 2 - 0.62, 0.06, sp["tail_h"] * 0.55))
     det.box(M["plate"], (0, yr - 0.03, sp["rear_plate_z"]), (0.44, 0.02, 0.11))
+    # ecusson et noms parodiques en relief a l'arriere (marque a gauche, modele a droite)
+    bz_ = sp.get("badge_rear_z", sp["rear_plate_z"] + 0.2)
+    badge(det, M, (0, yr - 0.06, bz_), sp.get("badge_r", 0.055) * 0.9, front=False)
+    if sp.get("brand"):
+        lettrage(root, M, sp["brand"], (-cr["hw"] * 0.45, yr - 0.07, bz_ - 0.02), 0.045)
+        lettrage(root, M, sp["model"], (cr["hw"] * 0.45, yr - 0.07, bz_ - 0.02), 0.045)
     det.box(M["chrome"], (0, yr - 0.02, sp["rear_plate_z"] + 0.1), (0.3, 0.02, 0.03))
     det.lathe_y(M["chrome"], (hw * 0.55, yr + 0.05, st[0]["zb"] + 0.02), [(0.25, 0.024), (-0.12, 0.032), (-0.14, 0.03)], 12, cap=False)
     det.lathe_y(M["black"], (hw * 0.55, yr + 0.05, st[0]["zb"] + 0.02), [(-0.13, 0.026), (-0.125, 0.0)], 12)
@@ -600,7 +676,8 @@ SEDAN = dict(L=4.3, W=1.7, wb=2.5, r=0.3, track=1.46, tire_w=0.19, spokes=6, sta
     S(2.15, 0.38, 0.66, 0.67, 0.68, 0.5),
 ], bumper_z=0.43, bumper_h=0.2, lamp_z=0.66, lamp_h=0.11, grille_h=0.12, tail_z=0.8, tail_h=0.16, rear_plate_z=0.62,
     mirror_y=0.95, wiper_y=1.0, doors=[0.15, -0.65], door_lines=[1.0, -0.33, -1.1], strip_z=0.55,
-    seat_rows=[-0.05, -0.95], seat_z=0.47, dash_y=0.72)
+    seat_rows=[-0.05, -0.95], seat_z=0.47, dash_y=0.72,
+    grille="oval", grille_w=0.52, lamp_hug=True, lamp_w=0.4, lamp_sweep=0.2, tail_bar=True, brand="TOYODA", model="KORALO")
 
 # 4x4 tout-terrain (4,80 x 1,88 x 1,85 m, empattement 2,80 m) : caisse haute et carree, hayon vertical,
 # roue de secours au hayon, elargisseurs d'ailes noirs, pare-chocs gris.
@@ -613,12 +690,13 @@ SUV = dict(L=4.8, W=1.88, wb=2.8, r=0.38, track=1.58, tire_w=0.26, spokes=6, fla
     S(-0.45, 0.37, 1.16, 1.85, 0.94, 0.81, win=True),
     S(0.6, 0.37, 1.15, 1.84, 0.94, 0.81, win=True, top="glass"),
     S(1.3, 0.38, 1.12, 1.15, 0.935, 0.84),
-    S(1.95, 0.4, 1.08, 1.1, 0.92, 0.82),
-    S(2.2, 0.45, 1.0, 1.02, 0.88, 0.76),
-    S(2.28, 0.52, 0.92, 0.93, 0.82, 0.7),
+    S(1.95, 0.4, 1.13, 1.15, 0.93, 0.84),
+    S(2.2, 0.45, 1.1, 1.12, 0.91, 0.8),
+    S(2.28, 0.52, 1.04, 1.05, 0.88, 0.76),
 ], bumper_z=0.58, bumper_h=0.24, lamp_z=0.92, lamp_h=0.14, grille_h=0.2, tail_z=1.0, tail_h=0.24, rear_plate_z=0.78,
     mirror_y=1.12, wiper_y=1.2, doors=[0.2, -0.85], door_lines=[1.2, -0.5, -1.65], strip_z=0.72,
-    seat_rows=[-0.05, -1.05], seat_z=0.62, dash_y=0.9)
+    seat_rows=[-0.05, -1.05], seat_z=0.62, dash_y=0.9,
+    grille="vertical", grille_w=0.92, lamp_hug=True, lamp_w=0.3, lamp_sweep=0.0, badge_r=0.065, brand="TOYODA", model="LANDA")
 
 # Minibus a toit haut (4,85 x 1,88 x 2,25 m, empattement 2,57 m), cabine avancee, porte laterale coulissante,
 # galerie chargee : le transport en commun de Cotonou.
@@ -641,7 +719,8 @@ MINIBUS = dict(L=4.85, W=1.88, wb=2.57, r=0.33, track=1.62, tire_w=0.21, spokes=
     S(2.43, 0.38, 0.9, 0.92, 0.88, 0.76),
 ], bumper_z=0.45, bumper_h=0.2, lamp_z=0.8, lamp_h=0.13, grille_h=0.14, tail_z=0.95, tail_h=0.3, rear_plate_z=0.7,
     mirror_y=1.9, wiper_y=2.05, doors=[1.55, 0.35], door_lines=[2.05, 1.2, -0.3], strip_z=0.6,
-    seat_rows=[1.45, 0.45, -0.45, -1.4], seat_z=0.6, dash_y=2.05)
+    seat_rows=[1.45, 0.45, -0.45, -1.4], seat_z=0.6, dash_y=2.05,
+    grille="bars", grille_w=0.62, lamp_hug=True, lamp_w=0.42, lamp_sweep=0.05, brand="TOYODA", model="HAISSE")
 
 # Pick-up simple cabine (5,30 x 1,85 x 1,80 m, empattement 3,08 m) : cabine courte, long plateau ouvert (benne evidee,
 # plancher noir), tres courant a Cotonou pour les livraisons (phase 9).
@@ -655,11 +734,12 @@ PICKUP = dict(L=5.3, W=1.85, wb=3.08, r=0.36, track=1.54, tire_w=0.24, spokes=6,
     S(0.7, 0.42, 1.07, 1.78, 0.92, 0.8, win=True, top="glass"),  # haut du pare-brise
     S(1.4, 0.43, 1.05, 1.1, 0.92, 0.82),                         # bas du pare-brise
     S(2.15, 0.45, 1.0, 1.04, 0.9, 0.8),
-    S(2.45, 0.5, 0.93, 0.95, 0.84, 0.72),
-    S(2.6, 0.56, 0.86, 0.87, 0.78, 0.66),
+    S(2.45, 0.5, 1.0, 1.02, 0.88, 0.76),
+    S(2.6, 0.56, 0.95, 0.96, 0.84, 0.72),
 ], bumper_z=0.55, bumper_h=0.22, lamp_z=0.88, lamp_h=0.13, grille_h=0.18, tail_z=0.9, tail_h=0.24, rear_plate_z=0.72,
     mirror_y=1.3, wiper_y=1.36, doors=[0.35], door_lines=[1.3, -0.72], strip_z=0.7,
-    seat_rows=[0.1], seat_z=0.64, dash_y=1.05, bed=(-2.5, -0.9, 0.82))
+    seat_rows=[0.1], seat_z=0.64, dash_y=1.05, bed=(-2.5, -0.9, 0.82),
+    grille="wide", grille_w=0.86, lamp_hug=True, lamp_w=0.36, lamp_sweep=0.25, badge_r=0.065, brand="TOYODA", model="HAILUX")
 
 for nm, sp in (("veh_berline", SEDAN), ("veh_4x4", SUV), ("veh_minibus", MINIBUS), ("veh_pickup", PICKUP)):
     vehicle(nm, sp)
