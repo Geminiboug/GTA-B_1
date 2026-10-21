@@ -376,16 +376,10 @@ func _construire_ui() -> void:
 	logo.position = Vector2(-40, 0)
 	logo.size = Vector2(430, 250)
 	_cadre.add_child(logo)
-	var gtb := _label(118, TITRE, 22)
-	gtb.text = "GTB"
-	gtb.position = Vector2(70, 8)
-	gtb.rotation = -0.05
+	var gtb := LogoGtb.new()
+	gtb.position = Vector2(60, 6)
+	gtb.size = Vector2(300, 190)
 	logo.add_child(gtb)
-	var sous := _label(28, SABLE, 8)
-	sous.text = "GBÊ TOWN BÉNIN"
-	sous.position = Vector2(76, 166)
-	sous.rotation = -0.05
-	logo.add_child(sous)
 	var filet := ColorRect.new()
 	filet.color = VERT
 	filet.position = Vector2(78, 204)

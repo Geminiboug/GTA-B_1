@@ -117,6 +117,7 @@ func _physics_process(delta: float) -> bool:
 		return false
 	if phase == "init":
 		scene.get_node("Lieux")._spawn_home()
+		histoire.set("secondes_par_caractere", 0.0)      # le test n'attend pas la lecture lente des repliques
 		histoire.commencer()
 		_check(com.spots.any(func(s: Dictionary) -> bool: return s["kind"] == "etal"), "etals connus du commerce")
 		var etal: Vector3 = histoire.points["etal"]

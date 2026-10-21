@@ -575,7 +575,7 @@ func _arrest() -> void:
 		hj.annonce("ARRÊTÉ", "Amende : %s" % Partie.fcfa(Partie.amende_par_niveau * lvl), 3.5)
 	_fade_then(func() -> void:
 		if _player.get("vehicle"):
-			_player.exit_vehicle()
+			_player.exit_vehicle(true)
 		Partie.prelever(Partie.amende_par_niveau * lvl, "Amende")
 		Partie.stats["amendes"] = int(Partie.stats.get("amendes", 0)) + 1
 		Partie.set_recherche(0)
@@ -592,7 +592,7 @@ func _malaise() -> void:
 		hj.annonce("ÉVANOUI", "Centre de santé Gbêkpo : %s de soins" % Partie.fcfa(Partie.frais_hopital), 3.5)
 	_fade_then(func() -> void:
 		if _player.get("vehicle"):
-			_player.exit_vehicle()
+			_player.exit_vehicle(true)
 		Partie.prelever(Partie.frais_hopital, "Soins")
 		Partie.set_recherche(0)
 		Partie.soigner(100.0)

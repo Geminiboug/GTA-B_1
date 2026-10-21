@@ -329,6 +329,8 @@ static func apply(ch: Node, look: Dictionary) -> void:
 			mat = look["legs"]
 		elif n.begins_with("chr_boubou") or n.begins_with("chr_jupe") or n.begins_with("chr_pagne") or n.begins_with("chr_foulard"):
 			mat = look["cloth"]
+		elif n.begins_with("chr_chaussures"):
+			mat = look.get("shoes_mat", null)
 		elif n == "chr_casque" or n.begins_with("chr_casque_"):
 			mat = look.get("helmet", null)
 		elif n.begins_with("chr_casquette") or n.begins_with("chr_bonnet"):

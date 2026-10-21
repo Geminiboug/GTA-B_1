@@ -47,7 +47,8 @@ func _process(_d: float) -> bool:
 			_check(mep.size() >= 5 and mep[-1] > mep[0], "mise en place sur plusieurs images (%d), %.0f %% -> %.0f %%" % [mep.size(), mep[0] * 100.0 if mep.size() else 0.0, mep[-1] * 100.0 if mep.size() else 0.0])
 			_check(not root.get_node("Partie").chantier_actif and root.get_node("Partie").chantiers.is_empty(), "toutes les etapes faites")
 			var pi := z.get_node("Pietons")
-			_check(pi._walkers.size() == pi.walker_count, "tous les pietons en place (%d)" % pi._walkers.size())
+			var libres := pi._walkers.filter(func(w: Dictionary) -> bool: return not w.has("chaise"))      # les vendeurs assis suivent leur tuile
+			_check(libres.size() == pi.walker_count, "tous les pietons en place (%d)" % libres.size())
 			_check(z.get_node("Concessions").count > 0, "concessions construites (%d)" % z.get_node("Concessions").count)
 			print("RESULTAT test_chargement : %s" % ("OK" if fails == 0 else "%d ECHEC(S)" % fails))
 			quit(1 if fails else 0)

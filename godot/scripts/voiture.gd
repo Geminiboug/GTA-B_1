@@ -900,7 +900,7 @@ func _physics_process(delta: float) -> void:
 		if absf(n.y) > 0.6:
 			continue
 		# bordure, trottoir : obstacle bas que les roues franchissent ; la caisse monte, pas de choc ni de degats
-		var haut := _hauteur_obstacle(c.get_position(), n)
+		var haut := _hauteur_obstacle(c.get_position(), n, c.get_collider())
 		if haut < marche_max and absf(speed) > 0.5:
 			if not marche:
 				global_position.y += haut + 0.03
@@ -943,7 +943,7 @@ func _physics_process(delta: float) -> void:
 	_effets(delta)
 
 
-func _hauteur_obstacle(contact: Vector3, n: Vector3) -> float:
+func _hauteur_obstacle(contact: Vector3, n: Vector3, obstacle: Object = null) -> float:
 	## Hauteur du dessus de l'obstacle au-dessus du sol sous la voiture (rayons verticaux, pas le point de contact
 	## renvoye par le moteur, qui est au milieu de la zone de contact).
 	var space := get_world_3d().direct_space_state
@@ -951,6 +951,14 @@ func _hauteur_obstacle(contact: Vector3, n: Vector3) -> float:
 	var q := PhysicsRayQueryParameters3D.create(dans + Vector3.UP * 2.0, dans - Vector3.UP * 2.0)
 	q.exclude = [get_rid()]
 	var h1 := space.intersect_ray(q)
+	if obstacle != null:
+		# mur plus haut que 2 m : le rayon partait de l'interieur et touchait le sol, la voiture le prenait pour une bordure
+		# (aucun degat, la caisse montait) ; on compte alors le dessus de ce meme obstacle, vu de plus haut
+		var qh := PhysicsRayQueryParameters3D.create(dans + Vector3.UP * 25.0, dans - Vector3.UP * 2.0)
+		qh.exclude = [get_rid()]
+		var hh := space.intersect_ray(qh)
+		if not hh.is_empty() and hh["collider"] == obstacle:
+			h1 = hh
 	var q2 := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.0, global_position - Vector3.UP * 3.0)
 	q2.exclude = [get_rid()]
 	var h2 := space.intersect_ray(q2)

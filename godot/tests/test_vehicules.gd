@@ -108,16 +108,31 @@ func _physics_process(delta: float) -> bool:
 		for q in bld:
 			c += Vector2(float(q[0]), float(q[1]))
 		c /= bld.size()
+		mark["c"] = c
 		var p0 := c + Vector2(0, 25)
 		while Carte.zone().in_building(p0):
 			p0.y += 5.0
 		car.global_transform = Transform3D(Basis(Vector3.UP, atan2(-(c - p0).x, -(c - p0).y)), Vector3(p0.x, 0.3, p0.y))
 		car.set("_yaw", car.rotation.y)
-		car.set("_vel", (c - p0).normalized() * 14.0)
+		car.set("_vel", Vector2.ZERO if car.get("_vel") is Vector2 else Vector3.ZERO)
+		mark["lancer"] = (c - p0).normalized() * 14.0
 		mark["health"] = car.get("health")
 		t0 = frame
+		step = 55
+	elif step == 55 and frame - t0 == 300:
+		# la tuile du batiment se charge autour de la voiture avant le choc (chargement par tuiles)
+		car.set("_vel", mark["lancer"])
+		t0 = frame
 		step = 6
+	elif step == 6 and frame - t0 == 60:
+		for i in range(0, 1):
+			pass
+		print("  voiture ", car.global_position, " vel ", car.get("_vel"), " sante ", car.get("health"))
 	elif step == 6 and frame - t0 == 150:
+		var lc: KinematicCollision3D = car.get_last_slide_collision()
+		if lc:
+			print("  dernier contact: ", (lc.get_collider() as Node).get_path(), " normale ", lc.get_normal(), " pos ", lc.get_position())
+		print("  fin choc: ", car.global_position, " centre batiment ", mark.get("c"), " vel ", car.get("_vel"))
 		_check(car.get("health") < mark["health"] and _kmh() < 20.0, "choc a 50 km/h : degats %.0f %%, vitesse apres %.0f km/h" % [mark["health"] - car.get("health"), _kmh()])
 		player.exit_vehicle()
 		step = 7
@@ -145,7 +160,8 @@ func _physics_process(delta: float) -> bool:
 			player.enter_vehicle(v)
 		var a: Dictionary = traffic._agents[mark["idx"]]
 		_check(player.vehicle != null and not a.get("active", true), "vehicule de la circulation pris : %s" % (player.vehicle.get("model_name") if player.vehicle else "aucun"))
-		_check(peds._walkers.size() > mark["walkers"] and peds._walkers[-1].get("carjacked", false), "conducteur ejecte (%s, etat %s)" % [peds._walkers[-1]["node"].get_meta("genre"), peds._walkers[-1]["state"]])
+		var ejecte: Array = peds._walkers.filter(func(w: Dictionary) -> bool: return w.get("carjacked", false))      # les vendeurs des tuiles s'ajoutent aussi a la liste
+		_check(not ejecte.is_empty(), "conducteur ejecte (%s, etat %s)" % [ejecte[0]["node"].get_meta("genre") if not ejecte.is_empty() else "?", ejecte[0]["state"] if not ejecte.is_empty() else "?"])
 		step = 9
 		t0 = frame
 	elif step == 9 and frame - t0 == 60:

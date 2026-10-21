@@ -470,7 +470,7 @@ func charger(scene: Node) -> bool:
 	if player and d.has("joueur"):
 		var j: Dictionary = d["joueur"]
 		if player.get("vehicle"):
-			player.exit_vehicle()
+			player.exit_vehicle(true)
 		if String(j.get("genre", "homme")) != String(player.get("genre")):
 			player.set_genre(j["genre"])
 		player.global_position = Vector3(j["pos"][0], j["pos"][1], j["pos"][2])

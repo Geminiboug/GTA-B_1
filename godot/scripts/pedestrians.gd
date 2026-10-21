@@ -1440,7 +1440,7 @@ func _reclaim(w: Dictionary, v: Node3D) -> void:
 		if _player.has_method("knocked_out_of_vehicle"):
 			_player.knocked_out_of_vehicle(w["pos"])
 		else:
-			_player.exit_vehicle()
+			_player.exit_vehicle(true)
 		Partie.blesser(10.0)
 		if _player.has_method("shake"):
 			_player.shake(0.6)

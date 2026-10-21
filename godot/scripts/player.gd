@@ -177,8 +177,11 @@ func _player_look(g: String) -> Dictionary:
 		var w := PnjUtil.wax(PnjUtil.WAX_PALETTES[3], 0)
 		return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.95, 0.94, 0.9)), "legs": PnjUtil.plain(PnjUtil.SKINS[0]),
 			"cloth": w, "show": ["chr_haut", "chr_pagne_long", "chr_semelle", "chr_foulard"]}
-	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.1, 0.5, 0.55)), "legs": PnjUtil.plain(Color(0.2, 0.3, 0.48)),
-		"cloth": PnjUtil.plain(Color(0.2, 0.3, 0.48)), "show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"]}
+	# tenue de depart (planche d'Olympe, 22/10/2026) : t-shirt blanc a logo GTB, pantalon en wax jaune ocre, bleu nuit et rouge,
+	# baskets blanches
+	var wax_gtb := PnjUtil.wax([Color(0.9, 0.6, 0.05), Color(0.08, 0.11, 0.3), Color(0.55, 0.08, 0.13)], 1)
+	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.96, 0.96, 0.95)), "legs": wax_gtb,
+		"cloth": wax_gtb, "shoes_mat": PnjUtil.plain(Color(0.94, 0.94, 0.92)), "show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"]}
 
 
 func _dress(model: Node, g: String) -> void:
@@ -188,7 +191,53 @@ func _dress(model: Node, g: String) -> void:
 	model.set_meta("age", "adulte")
 	set_meta("genre", g)
 	var perso := get_parent().get_node_or_null("Personnalisation") if get_parent() else null
-	PnjUtil.apply(model, perso.look(g) if perso and not Partie.tenue.is_empty() else _player_look(g))
+	var depart: bool = not (perso and not Partie.tenue.is_empty())
+	PnjUtil.apply(model, _player_look(g) if depart else perso.look(g))
+	_logo_poitrine(model, depart and g == "homme")
+
+
+var _logo_att: BoneAttachment3D
+var _logo_lbl: Label3D
+
+
+func _logo_poitrine(model: Node, voulu: bool) -> void:
+	## Logo GTB noir sur la poitrine du t-shirt de depart : l'os de la poitrine donne la position, le texte est tenu face
+	## au personnage (les axes des os importes ne sont pas ceux du corps).
+	if _logo_lbl and is_instance_valid(_logo_lbl):
+		_logo_lbl.queue_free()
+	if _logo_att and is_instance_valid(_logo_att):
+		_logo_att.queue_free()
+	_logo_lbl = null
+	_logo_att = null
+	var sk := Squelette.find(model) as Skeleton3D
+	if not voulu or sk == null:
+		return
+	var os := "UpperChest" if sk.find_bone("UpperChest") >= 0 else "Chest"
+	if sk.find_bone(os) < 0:
+		return
+	_logo_att = BoneAttachment3D.new()
+	_logo_att.name = "LogoPoitrine"
+	_logo_att.bone_name = os
+	sk.add_child(_logo_att)
+	_logo_lbl = Label3D.new()
+	_logo_lbl.text = "GTB"
+	_logo_lbl.font_size = 96
+	_logo_lbl.pixel_size = 0.0015
+	_logo_lbl.outline_size = 0
+	_logo_lbl.modulate = Color(0.04, 0.04, 0.05)
+	_logo_lbl.shaded = false
+	_logo_lbl.double_sided = false
+	_logo_lbl.top_level = true
+	_logo_att.add_child(_logo_lbl)
+
+
+func _maj_logo_poitrine() -> void:
+	if _logo_lbl == null or not is_instance_valid(_logo_lbl) or not is_instance_valid(_logo_att):
+		return
+	var b := body.global_transform.basis.orthonormalized()
+	var devant := -b.z
+	_logo_lbl.visible = vehicle == null or vehicle.get("kind") == "zem"
+	_logo_lbl.global_transform = Transform3D(b.rotated(Vector3.UP, PI), _logo_att.global_position + devant * 0.15 + Vector3.UP * -0.17)
 
 
 signal modele_change
@@ -427,7 +476,7 @@ func _pre_step(delta: float) -> void:
 func knocked_out_of_vehicle(from: Vector3) -> void:
 	## Le proprietaire reprend son vehicule (scripts/pedestrians.gd) : le joueur est tire dehors et projete.
 	if vehicle:
-		exit_vehicle()
+		exit_vehicle(true)
 	var away: Vector3 = (global_position - from) * Vector3(1, 0, 1)
 	velocity = away.normalized() * 5.0 + Vector3.UP * 2.0
 	if anim and anim.has_method("play_clips"):
@@ -473,8 +522,34 @@ func enter_vehicle(v: Node3D) -> void:
 	reset_physics_interpolation()
 
 
-func exit_vehicle() -> void:
+func _sortie_libre(v: Node3D) -> Variant:
+	## Endroit ou descendre : le cote prevu, sinon l'autre cote, l'avant ou l'arriere. Il faut la place de se tenir debout et
+	## aucun mur entre le vehicule et ce point (sinon le personnage se retrouvait de l'autre cote du mur). null : aucune place.
+	var prevu: Vector3 = v.exit_transform().origin
+	var c := v.global_position
+	var off := prevu - c
+	off.y = 0.0
+	var b := v.global_transform.basis
+	var droite := b.x * (off.dot(b.x))
+	var essais: Array[Vector3] = [prevu, c + off - droite * 2.0, c + off - droite + b.z * 2.2, c + off - droite - b.z * 2.2,
+		c + off + b.z * 2.6, c + off - b.z * 2.6]
+	for p in essais:
+		var q := Vector3(p.x, prevu.y, p.z)
+		var depart := c + (q - c) * 0.55 + Vector3.UP * 0.9
+		if _ray(depart, q + Vector3.UP * 0.9).is_empty() and _fits(_stand_height, q):
+			return q
+	return null
+
+
+func exit_vehicle(force := false) -> void:
+	## force : sortie imposee (arrestation, vol, chargement) : on descend meme sans place libre.
 	var v := vehicle
+	var sortie: Variant = _sortie_libre(v)
+	if sortie == null:
+		if not force:
+			Partie.notifier(tr("Pas la place pour descendre ici."))
+			return
+		sortie = v.exit_transform().origin
 	process_physics_priority = 0
 	_skirt_visible(true)
 	_clear_ik()
@@ -485,10 +560,9 @@ func exit_vehicle() -> void:
 	v.get_node("CamRig").activate(false)
 	$CamPivot/SpringArm3D/Camera3D.current = true
 	# on descend cote gauche (portiere conducteur / gauche de la moto), debout, dans le meme sens
-	var xf: Transform3D = v.exit_transform()
 	_exit_from = body.global_transform           # le corps visible glisse du siege jusqu'au sol (_process)
 	_exit_t = 0.0
-	global_transform = Transform3D(Basis.IDENTITY, xf.origin)
+	global_transform = Transform3D(Basis.IDENTITY, sortie as Vector3)
 	_facing = v.rotation.y
 	body.rotation = Vector3(0, _facing, 0)
 	cam_pivot.rotation.y = v.get_node("CamRig").rotation.y
@@ -521,6 +595,7 @@ func _ride(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_maj_logo_poitrine()
 	if not _pre.is_empty():
 		_pre_step(delta)
 		return

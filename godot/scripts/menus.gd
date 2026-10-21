@@ -188,6 +188,7 @@ func is_open() -> bool:
 
 func _clear(title: String) -> void:
 	_title.text = title
+	_title.visible = true
 	for c in _box.get_children():
 		c.queue_free()
 
@@ -206,6 +207,10 @@ func _button(text: String, cb: Callable, enabled := true) -> Button:
 func _show_title() -> void:
 	_page = "titre"
 	_clear("GTB")
+	_title.visible = false      # le logo anime (planche de marque) remplace le mot GTB
+	var logo := LogoGtb.new()
+	logo.custom_minimum_size = Vector2(560, 330)
+	_box.add_child(logo)
 	var sub := Label.new()
 	sub.text = "Gbê Town Bénin · Le Dernier Vol"
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
