@@ -225,7 +225,7 @@ func texte_aide(ctx: String, manette: bool) -> String:
 				l = [t.call(dep, "marcher"), t.call(tr("Souris"), "caméra"),
 					t.call(k.call("sprint"), "courir (tapoter)") + "   " + t.call(k.call("walk"), "marche lente"),
 					t.call(k.call("jump"), "sauter / escalader"), t.call(k.call("crouch"), "s'accroupir"),
-					t.call(k.call("interact"), "monter dans un véhicule"), t.call(k.call("parler"), "parler / acheter"),
+					t.call(k.call("interact"), "monter dans un véhicule") + "   " + t.call(k.call("heler"), "héler un zem"), t.call(k.call("parler"), "parler / acheter"),
 					t.call(k.call("map"), "carte") + "   " + t.call(k.call("camera_vue"), "vue"),
 					t.call(k.call("inventaire"), "inventaire") + "   " + t.call(k.call("telephone"), "téléphone") + "   " + t.call(k.call("torche"), "torche"),
 					t.call(k.call("arme_suivante"), "arme") + "   " + t.call(k.call("garde"), "viser") + "   " + t.call(k.call("recharger"), "recharger")]

@@ -498,7 +498,13 @@ func _skirt_visible(vis: bool) -> void:
 				mi.visible = true
 
 
-func enter_vehicle(v: Node3D) -> void:
+var pillion := false                # passager derriere le conducteur d'un zem-taxi (scripts/zem_taxi.gd) : ne conduit pas
+var pillion_libre := false          # le zem-taxi est arrete : on peut descendre
+
+
+func enter_vehicle(v: Node3D, en_passager := false) -> void:
+	pillion = en_passager
+	pillion_libre = false
 	if crouched:
 		crouched = false
 		($Collision.shape as CapsuleShape3D).height = _stand_height
@@ -510,7 +516,8 @@ func enter_vehicle(v: Node3D) -> void:
 	_enter_t = 0.0
 	$Collision.disabled = true
 	velocity = Vector3.ZERO
-	v.set_rider(true)
+	if not en_passager:
+		v.set_rider(true)
 	if v.has_method("portiere"):
 		v.portiere(true)
 	v.get_node("CamRig").activate(true)
@@ -554,7 +561,10 @@ func exit_vehicle(force := false) -> void:
 	_skirt_visible(true)
 	_clear_ik()
 	vehicle = null
-	v.set_rider(false)
+	if not pillion:
+		v.set_rider(false)
+	pillion = false
+	pillion_libre = false
 	if v.has_method("portiere"):
 		v.portiere(false)
 	v.get_node("CamRig").activate(false)
@@ -577,7 +587,7 @@ func _ride(_delta: float) -> void:
 	var seat: Transform3D = vehicle.seat_transform()
 	var hip := HIP_HEIGHT - (0.04 if genre == "femme" else 0.0)
 	hip -= seat_hip_drop + (car_seat_raise if vehicle.name == "Voiture" else 0.0)
-	var target := Transform3D(seat.basis, seat.origin - seat.basis.y * hip - seat.basis.z * seat_hip_back)
+	var target := Transform3D(seat.basis, seat.origin - seat.basis.y * hip - seat.basis.z * (seat_hip_back - (0.52 if pillion else 0.0)))
 	if _enter_t < 1.0:
 		_enter_t = minf(1.0, _enter_t + _delta / enter_time)
 		var k := smoothstep(0.0, 1.0, _enter_t)
@@ -585,7 +595,10 @@ func _ride(_delta: float) -> void:
 		# zem : la jambe passe par-dessus la selle (arc plus haut) ; voiture : on se baisse sous le toit
 		target = _enter_from.interpolate_with(target, k).translated(Vector3.UP * sin(k * PI) * (0.28 if vehicle.get("kind") == "zem" else 0.12))
 	global_transform = target
-	_ride_ik()
+	if pillion:
+		_clear_ik()
+	else:
+		_ride_ik()
 	body.rotation = Vector3.ZERO
 	if anim:
 		anim.speed = 0.0
@@ -601,7 +614,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if Input.is_action_just_pressed("interact"):
 		if vehicle:
-			exit_vehicle()
+			if not pillion or pillion_libre:
+				exit_vehicle()
 			return
 		_carjack = false
 		var v := _nearest_vehicle()
