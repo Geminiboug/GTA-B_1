@@ -9,6 +9,8 @@ extends Node
 @export var player_path: NodePath = ^"../Player"
 @export var rayon_marqueur := 1.6
 @export var duree_replique := 2.8
+## Lecture lente des repliques (signalement d'Olympe du 22/10/2026) : secondes par caractere, la replique dure au moins duree_replique
+@export var secondes_par_caractere := 0.085
 @export var course_prix_base := 300          # FCFA, petits boulots de zem
 @export var course_prix_km := 450             # FCFA par km (tarifs de zem a Cotonou : 200 a 1 000 F la course)
 
@@ -586,6 +588,7 @@ func _dialog_step(delta: float) -> void:
 	if _dialog_t <= 0.0:
 		var l: Array = _dialog.pop_front()
 		var who := _speaker(l[0])
+		var duree := maxf(duree_replique, 1.4 + tr(l[1]).length() * secondes_par_caractere)
 		# cinematique de dialogue (a pied, a l'arret) : plan par-dessus l'epaule, sous-titre avec le nom
 		var ci := _cine()
 		if ci and is_instance_valid(who):
@@ -595,10 +598,10 @@ func _dialog_step(delta: float) -> void:
 			var arret: bool = _player.get("vehicle") == null and Vector2(_player.velocity.x, _player.velocity.z).length() < 0.6
 			if arret and autre and is_instance_valid(autre) and autre != who:
 				ci.cadrer(who, autre)
-			ci.sous_titre(tr(NOMS_PERSOS.get(l[0], String(l[0]).capitalize())), tr(l[1]), duree_replique)
+			ci.sous_titre(tr(NOMS_PERSOS.get(l[0], String(l[0]).capitalize())), tr(l[1]), duree)
 		if is_instance_valid(who):
 			if not (ci and ci.en_cours):
-				Bulle.say(who, l[1], duree_replique, 2.1, Color(1, 0.95, 0.75))
+				Bulle.say(who, l[1], duree, 2.1, Color(1, 0.95, 0.75))
 			messages.append([l[0], l[1]])
 			if messages.size() > 20:
 				messages.pop_front()
@@ -606,7 +609,7 @@ func _dialog_step(delta: float) -> void:
 			var an: Node = who.get("anim") if who == _player else who
 			if an and an.has_method("play_clips") and (who != _player or _player.get("vehicle") == null):
 				an.play_clips([["Idle_Talking", 0.0]], true, 1.0, geste_amplitude)
-		_dialog_t = duree_replique
+		_dialog_t = duree
 
 
 func _pick_passenger(pv: Node3D) -> void:

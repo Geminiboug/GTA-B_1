@@ -30,7 +30,7 @@ extends CharacterBody3D
 @export var crouch_speed := 1.1      # m/s accroupi (C, manette R3 : bascule)
 @export var crouch_height := 1.2     # m : hauteur de la capsule accroupi (debout 1,75)
 @export var climb_min := 0.5         # m : en dessous, on saute ou on monte la marche
-@export var climb_max := 1.6         # m : rebord le plus haut qu'on agrippe (bras tendus)
+@export var climb_max := 2.8         # m : rebord le plus haut qu'on agrippe (au-dela de sa taille, on se hisse a la force des bras)
 @export var climb_reach := 0.7       # m : distance maximale du mur devant soi
 @export_group("Sprint et endurance (facon GTA V)")
 @export var sprint_hold_level := 0.55     # maintenir le bouton : sprint moyen (0 = trot, 1 = sprint maximal)
@@ -637,6 +637,8 @@ func _physics_process(delta: float) -> void:
 	if tilt < 0.98 and sprint_level <= 0.0:
 		target_speed = lerpf(walk_speed * 0.6, target_speed, smoothstep(0.15, 0.95, tilt))
 	target_speed *= minf(tilt * 4.0, 1.0)
+	if _punch_cd > 0.0 and arme == "":
+		target_speed = 0.0      # pieds plantes pendant un coup : le clip est sur place, sinon le personnage glisse
 
 	var hvel := Vector2(velocity.x, velocity.z)
 	var hspeed := hvel.length()
@@ -671,6 +673,8 @@ func _physics_process(delta: float) -> void:
 	if _roll_t > 0.0:
 		hvel = _roll_dir * roulade_vitesse * (0.4 + 0.6 * _roll_t / roulade_duree)
 		_facing = atan2(-_roll_dir.x, -_roll_dir.y)
+	if _punch_cd > 0.0 and arme == "" and is_on_floor():
+		hvel = Vector2.ZERO
 	velocity.x = hvel.x
 	velocity.z = hvel.y
 	_animations_vie(delta, dir, hvel.length())
@@ -781,7 +785,7 @@ func _try_climb() -> bool:
 	var end: Vector3 = anim.root_offset(CLIMB_CLIP, 99.0)
 	_climb = {"t": 0.0, "from": p, "dest": dest, "rise": maxf(end.y, 0.3), "adv": maxf(Vector2(end.x, end.z).length(), 0.1),
 		"len": anim.clip_length(CLIMB_CLIP),
-		"rate": clampf(1.0 / sqrt(h), 0.75, 1.3)}      # rebord haut : on se hisse plus lentement
+		"rate": clampf(1.0 / sqrt(h), 0.55, 1.3)}      # rebord haut : on se hisse plus lentement
 	$Collision.disabled = true
 	velocity = Vector3.ZERO
 	sprint_level = 0.0

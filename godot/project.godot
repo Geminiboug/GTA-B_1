@@ -38,6 +38,7 @@ file_logging/enable_file_logging=true
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/mode=3
 window/handheld/orientation=4
 
 [input]

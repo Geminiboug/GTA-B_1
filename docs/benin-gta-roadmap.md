@@ -128,14 +128,16 @@ En cours (code ecrit, tests en cours, pas encore commite) :
 - [ ] PNJ qui contournent objets et batiments et ne se traversent plus entre eux : code ecrit, non teste ; test_vie a corriger (passants qui ne s'arretent plus)
 
 Nouvelles demandes du 22/10/2026 (a traiter vite, avant le reste) :
-- [ ] Cinematiques : les personnages parlent trop vite, ralentir le rythme des repliques
+- [x] (fait, a verifier en jeu) Cinematiques : repliques plus lentes (duree selon la longueur du texte, histoire.gd secondes_par_caractere)
 - [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche : toujours pas regle
 - [ ] Retirer le son effrayant qu'on entend en approchant des gens en blanc et noir (cortege)
 - [ ] Plein ecran par defaut au lancement du jeu
 - [ ] Escalade : pouvoir franchir des murs et objets plus hauts que le personnage
 - [ ] Tenue du joueur : t-shirt blanc et pantalon, d'apres la planche d'habits dans Telechargements
 - [ ] Frappe : le personnage glisse sur le sol quand on frappe en maintenant une touche de deplacement
-- [ ] Message coupe de l'utilisateur : "quand on se colle a un batiment avec ..." (phrase a redemander)
+- [ ] Sortie de vehicule collee a un batiment : le personnage se retrouve de l'autre cote du mur (chercher une sortie libre, sinon rester dans le vehicule)
+- [ ] Tenue du joueur : planche "GTB Character Texture Reference Sheet" (Telechargements) : t-shirt blanc avec logo GTB noir sur la poitrine, pantalon en wax (jaune ocre, bleu nuit, rouge), baskets blanches ; image de reference seulement, texturer a notre facon (pagne procedural et logo peint sur les UV du modele)
+- [ ] Nouveau logo : planche "GTB Brand Board_ Benin Game Logo Concepts" (Telechargements) : logo ocre #FFC629 avec skyline de Cotonou et palmiers, "Gbe Town Benin" en script, variantes (blanche, compacte, icone ronde, icone d'app), palette noir charbon #0B0B0F / orange terre #E67E22 / blanc casse #F5F5F5, 3 animations proposees (trace au pinceau 3 s, fondu lumineux 2,5 s, ambiance de ville 4 s). A integrer : ecran titre, chargement, menu, HUD, icone ; choix de l'animation a demander a Olympe. Verifier que la skyline ne reproduit pas un batiment protege (docs/LEGAL.md)
 
 A faire :
 - [ ] Missions : zone jaune parfois inaccessible (dans un mur, un batiment, hors d'atteinte)

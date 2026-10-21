@@ -27,7 +27,7 @@ func _physics_process(_d: float) -> bool:
 			print("RESULTAT test_evenements : 1 ECHEC(S)")
 			quit(1)
 			return true
-		_check((ev.cortege["membres"] as Array).size() == 14 and (ev.cortege["son"] as AudioStreamPlayer3D).playing, "14 personnes et la fanfare")
+		_check((ev.cortege["membres"] as Array).size() == 14 and ev.cortege["son"] is Node3D, "14 personnes (cortege silencieux)")
 		mark["p"] = (ev.cortege["membres"][0] as Node3D).global_position
 		mark["r"] = float(P.perso.get("respect", 0.0))
 	if frame > 50 and frame < 500 and not ev.cortege.is_empty():

@@ -63,15 +63,11 @@ func lancer() -> void:
 		look["legs"] = noir
 		PnjUtil.apply(ch, look)
 		membres.append(ch)
-	var son := AudioStreamPlayer3D.new()
-	son.stream = AudioSynth.fanfare_loop()
-	son.unit_size = 18.0
-	son.max_distance = 220.0
-	son.volume_db = -2.0
+	# plus de fanfare : le son du cortege etait effrayant (retour d'Olympe du 22/10/2026) ; le noeud reste pour suivre le cortege
+	var son := Node3D.new()
 	add_child(son)
-	son.play()
 	cortege = {"chemin": chemin, "d": 0.0, "membres": membres, "son": son, "accompagne": 0.0, "fini": false}
-	Partie.notifier(tr("Des funérailles passent dans le quartier : on entend la fanfare."))
+	Partie.notifier(tr("Des funérailles passent dans le quartier."))
 
 
 func _point(chemin: PackedVector2Array, d: float) -> Array:
