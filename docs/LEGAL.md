@@ -80,6 +80,7 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Boulevard de France | Boulevard de l'Hexagone |
 | Monuments publics (Bio Guera, l Amazone, place du Souvenir) | noms reels gardes (monuments historiques, decision du 20/10/2026) |
 | Parc Cardinal Bernardin Gantin | Parc Cardinal Cotodji (comme l aeroport) |
+| EPITECH Benin (ecole) | ETIPECH (choix d'Olympe du 21/10/2026 ; logo invente, pas celui de l'ecole) |
 | Wellness Fitness Center | Wellbeing Gym |
 | Nico s Hair | Coco s Hair |
 | FADOUL | Fadil Market |

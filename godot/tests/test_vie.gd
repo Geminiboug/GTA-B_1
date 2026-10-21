@@ -52,6 +52,10 @@ func _physics_process(_d: float) -> bool:
 		var bd := INF
 		var un: Dictionary = ws[0]
 		var autre: Dictionary = ws[1]
+		ws = ws.filter(func(x: Dictionary) -> bool: return not x.has("chaise") and not x.get("cross", false))      # ni vendeurs assis ni passants qui traversent
+		var prom := ws.filter(func(x: Dictionary) -> bool: return x.get("prom", false))
+		if prom.size() >= 2:
+			ws = prom      # sur la promenade, personne ne traverse une rue pendant la causette
 		for a in ws:
 			for b in ws:
 				var d: float = (a["pos"] as Vector3).distance_to(b["pos"])
@@ -61,19 +65,27 @@ func _physics_process(_d: float) -> bool:
 					un = a
 					autre = b
 		print("  joueur pres de deux marcheurs a %.1f m l'un de l'autre" % bd)
-		if bd > 4.0 and not un["prom"]:
+		if bd > 4.0:
 			# peu de marcheurs : l'autre reprend le chemin du premier, 2 m derriere (causette a moins de 6 m)
 			for cle in un:
-				if not cle in ["node", "partner", "speed"]:
+				if not cle in ["node", "partner"]:
 					autre[cle] = un[cle].duplicate() if un[cle] is PackedVector2Array else un[cle]
-			autre["s"] = maxf(0.0, float(un["s"]) - 2.0)
+			if un.has("s"):
+				autre["s"] = maxf(0.0, float(un["s"]) - 2.0)
+		set_meta("paire", [un, autre])
 		(pl as Node3D).global_position = best + Vector3(2, 0.3, 2)
+	if frame > 170 and frame % 60 == 0 and frame < 700 and has_meta("paire"):
+		var pr: Array = get_meta("paire")
+		print("  paire f%d: %s / %s dist %.1f far %s %s clip %s cross %s" % [frame, pr[0]["state"], pr[1]["state"], (pr[0]["pos"] as Vector3).distance_to(pr[1]["pos"]), pr[0].get("far"), pr[1].get("far"), pr[0]["node"].call("playing_clip"), pr[0].get("cross")])
 	if frame == 400:
 		var n := 0
 		for w in scene.get_node("Pietons").get("_walkers"):
 			n += 0 if w.get("far", false) else 1
 		print("  marcheurs proches : %d" % n)
 	if frame == 450:
+		for w in (get_meta("paire") as Array):
+			if w["state"] == "causette":
+				w["pause_time"] = 0.5      # la causette de la paire d'essai se termine, les arrets spontanes prennent le relais
 		scene.get_node("Pietons").set("causette_chance", 0.0)
 		scene.get_node("Pietons").set("pause_chance", 0.3)
 	if frame == 700:

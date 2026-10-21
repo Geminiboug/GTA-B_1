@@ -224,15 +224,26 @@ func _extend_runway() -> void:
 	var t_exit := 0.0
 	while t_exit < RUNWAY_LENGTH and _b.grow(-0.5).has_point(_rw_a + u * t_exit):
 		t_exit += 1.0
+	# piste entiere dans la carte (extension du 20/10) : revetement, axe, bords et seuils viennent des tuiles ;
+	# on n'ajoute que les zones de toucher, les points de visee et les numeros
+	var dedans := t_exit >= RUNWAY_LENGTH
 	var p_exit := _rw_a + u * t_exit
 	var p_end := _rw_a + u * RUNWAY_LENGTH
 	var hw := 22.5
+	var marks: Array = []
+	if not dedans:
+		_piste_lointaine(marks, t_exit, p_exit, p_end, hw)
+	_marques_toucher(marks, p_end)
+
+
+func _piste_lointaine(marks: Array, t_exit: float, p_exit: Vector2, p_end: Vector2, hw: float) -> void:
+	var u := _rw_u
+	var n := Vector2(-u.y, u.x)
 	_quad_mesh([[p_exit + n * hw, p_exit - n * hw, p_end - n * hw, p_end + n * hw]], 0.017, _ground_mat(2), "PisteLointaine")
 	# bande d'herbe (graded strip) de part et d'autre, prolongee 60 m au-dela du seuil
 	var g_end := p_end + u * 60.0
 	_quad_mesh([[p_exit + n * STRIP_HALF, p_exit - n * STRIP_HALF, g_end - n * STRIP_HALF, g_end + n * STRIP_HALF]], 0.007, _ground_mat(8), "BandeHerbeLointaine")
 	# marquage : axe (tirets 30 m / 20 m), bords, seuil 24 (bandes), zone de toucher et point de visee
-	var marks: Array = []
 	var t := ceilf((t_exit + 2.0) / 50.0) * 50.0
 	while t + 30.0 < RUNWAY_LENGTH - 60.0:
 		marks.append(_rect(_rw_a + u * t, u, 30.0, 0.9))
@@ -247,6 +258,11 @@ func _extend_runway() -> void:
 			continue
 		var off := k * 3.6 + (0.9 if k > 0 else -0.9) - signf(k) * 1.8
 		marks.append(_rect(thr + n * off, -u, 30.0, 1.8))
+
+
+func _marques_toucher(marks: Array, p_end: Vector2) -> void:
+	var u := _rw_u
+	var n := Vector2(-u.y, u.x)
 	# zone de toucher et point de visee pour les deux seuils (ceux qui tombent dans la carte sont dessines aussi)
 	for end in [[_rw_a, u], [p_end, -u]]:
 		var p0: Vector2 = end[0]
@@ -281,8 +297,8 @@ const TAXI_LINES := [[744.0, 191.0, 2352.0, 191.0], [1600.0, 22.0, 1600.0, 191.0
 func _extend_taxiways() -> void:
 	## Hors carte : suite du taxiway parallele T2 (a 191 m de l'axe) jusqu'au seuil 24, bretelles vers la piste a
 	## 1 600 m et 2 340 m, suite de T1 jusqu'a la piste (meme trace que dans scripts/air_traffic.gd).
-	if _rw_u == Vector2.ZERO:
-		return
+	if _rw_u == Vector2.ZERO or _b.grow(-0.5).has_point(_rw_a + _rw_u * RUNWAY_LENGTH):
+		return      # piste entiere dans la carte : les vrais taxiways OSM sont dans les tuiles, rien a inventer
 	var u := _rw_u
 	var n := Vector2(-u.y, u.x)
 	var tw: Array = []

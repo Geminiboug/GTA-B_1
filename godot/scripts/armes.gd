@@ -171,7 +171,7 @@ func _frapper() -> void:
 	var nom := arme
 	get_tree().create_timer(0.28).timeout.connect(func() -> void:
 		var touche := false
-		var cibles := get_tree().get_nodes_in_group("pnj_interieur")
+		var cibles := get_tree().get_nodes_in_group("pnj_interieur") + get_tree().get_nodes_in_group("cibles_coups")
 		if _peds:
 			cibles.append(_peds)
 		for tg in cibles:

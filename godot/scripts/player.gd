@@ -565,7 +565,7 @@ func _physics_process(delta: float) -> void:
 		elif anim and anim.has_method("punch"):
 			anim.punch()
 		# passants de la rue et clients des interieurs (magasin, aerogare : scripts/pnj_interieur.gd)
-		var targets := get_tree().get_nodes_in_group("pnj_interieur")
+		var targets := get_tree().get_nodes_in_group("pnj_interieur") + get_tree().get_nodes_in_group("cibles_coups")
 		var peds := get_parent().get_node_or_null("Pietons")
 		if peds:
 			targets.append(peds)

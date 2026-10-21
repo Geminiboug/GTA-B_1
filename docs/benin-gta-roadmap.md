@@ -76,143 +76,92 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 
 ### Phases 0 a 10 : socle (fait techniquement)
 
-- [x] Phase 0 : cadrage et setup (depot, logiciels, nom, bbox, 57 photos de reference)
-- [x] Phase 1 : pipeline assets (conventions, export en un clic, 20 materiaux)
-- [x] Phase 2 : blockout de la zone aeroport (OSM, Overture, Sentinel-2, reperes) ; jalon valide le 14/10/2026
-- [x] Phase 3 : joueur a pied facon GTA V (clips Quaternius, sprint, saut, escalade, accroupi, IK, ragdoll, mode debug)
 - [ ] Jalon phase 3 : balade fluide dans tout le quartier (a valider par Olympe, Phase 11)
-- [x] Phase 4 : le zem (modele, conduite, camera, son)
 - [ ] Jalon phase 4 : conduire un zem de l'aeroport a la plage (a valider par Olympe, Phase 11)
-- [x] Phase 5 : ville vivante (pietons, 10 morphologies, visages, tenues, trafic, avions, interieurs, jour/nuit, sons)
 - [ ] Jalon phase 5 : le quartier "respire" (a valider par Olympe, Phase 11)
-- [x] Phase 6 : modelisation detaillee (sauf textures photo et kit modulaire de facades, passes en Phase 12)
-- [x] Phase 7 : gameplay de base (FCFA, inventaire, HUD, menus, options, sauvegarde, prologue et acte 1 : 8 missions)
-- [x] Phase 8 : police et danger (equilibrage passe en Phase 11)
-- [x] Phase 9 : extension (Haie Verte, Cadjehoue, deplacement rapide en zem, pick-up, missions de Maman Fifi)
-- [x] Phase 10 : finition (prereglages, export Windows, export web, page de presentation, fiche de playtest)
 
 ### Phase 11 : Validation et playtest (v0.1)
-- Retours d'Olympe du 16/10/2026 (premiere partie), a traiter dans cet ordre :
-  - [x] 1. Prologue : objectif affiche, marqueur sur la carte, la mini-carte et dans le monde (vendeuse de pain), touche affichee a proximite ("T : acheter le pain"), parcours maison -> pain -> retour verifie par un test
-  - [x] 2. Commandes a l'ecran : rappel au debut (bouger, courir, sauter, camera, interagir) puis aides selon la situation (a pied, pres d'un vehicule, zem, voiture, vendeur), clavier ou manette selon l'appareil utilise
-  - [x] 2 bis. Mouvement du joueur plus naturel : analyse image par image comparee a de vraies personnes (bras, buste, pieds qui glissent, demi-tours, demarrages, transitions entre allures, inclinaison)
-  - [x] 2 ter. Saut : plus de glissade a la reception ni de pose "Spider-Man" ; reception selon la hauteur et la vitesse (enchainement en course, petite flexion, reception lourde apres grande chute)
-  - [x] 3. Carte : detection automatique des clotures et maisons sur la chaussee (comparaison a la largeur reelle des routes), recul ou suppression, test pour que ca ne revienne pas
-  - [x] 4. Police : delai d'arrivee realiste apres un appel (1 min reelle, decision d'Olympe du 16/10/2026, reglable), depart d'un commissariat fictif ou du bord de la zone, trajet visible sur la route, la carte et la mini-carte ; reaction immediate seulement si un policier voit l'infraction
-  - [x] 5. Avions : dimensions comparees aux vrais avions (largeur de cabine, allee, hauteur, porte du cockpit) et agrandies si besoin, collisions refaites pour circuler partout (allee, cockpit, sortie par la porte, escalier)
-  - [x] 6. Epave de la plage : recherche de son etat reel actuel (type d'avion, morceaux restants, position, couleurs, rouille, vegetation), refaite a l'identique, interieur praticable
-  - [x] 7. Animations visibles pour chaque action : vol de voiture (ouvrir, sortir le conducteur, chute ou fuite), PNJ qui reprend sa voiture (ouvrir, sortir le joueur, monter), moto (enjamber, descendre), voiture (ouvrir, s'asseoir, fermer, sortir), acheter, parler, dormir, s'asseoir, frapper, tomber, se relever ; clips Quaternius sinon clips composes avec l'IK
-  - Photos du net : libres comme references (on refait nous-memes) ; comme textures, seulement sous licence libre (Wikimedia Commons, Mapillary...) avec credit dans docs/CREDITS.md, ou photos d'Olympe
+- Photos du net : libres comme references (on refait nous-memes) ; comme textures, seulement sous licence libre (Wikimedia Commons, Mapillary...) avec credit dans docs/CREDITS.md, ou photos d'Olympe
 - [ ] Olympe joue l'acte 1 en entier (1 h minimum) et note tout ce qui cloche dans docs/retours_olympe.md
 - [ ] Validation des jalons des phases 3, 4 et 5 avec docs/validation_phases_3_5.md
 - [ ] Playtest avec 2 ou 3 amis (docs/playtest.md), observer sans aider, noter ou ils bloquent
-- [x] Journal de partie automatique (temps par mission, morts, arrestations, argent gagne et depense, endroits ou le joueur se perd) dans user://logs/, pour equilibrer sur des chiffres
 - [ ] Equilibrage : prix, amendes, chronos, vitesse et agressivite de la police, salaires des courses de zem
-- [x] Defauts visibles : bout de pagne sous les voitures, cheveux secs sous la pluie, casquette de la policiere, traversees du corps pendant la marche
-- [x] Remesurer les performances machine degagee ; si Haut descend sous 60 img/s dans l'Ararat et l'aerogare : profiler et corriger (ombres, lumieres, nombre de PNJ, occultation)
-- [x] Verifier la version web dans Chrome et Firefox (chargement, controles, son, performances), ou la retirer de la cible v0.1 : Chrome verifie le 17/10 (chargement complet, son corrige, mais 7 a 10 img/s : un seul fil, pas d'occultation, WebGL) ; Firefox absent de la machine. web retire de la cible (decision d'Olympe du 17/10/2026)
-- [x] Rapport de crash : log d'erreurs ecrit sur disque et numero de version affiche dans le menu
-- [x] Numero de version dans le fichier de sauvegarde et conversion des anciennes sauvegardes (une sauvegarde de la demo doit se charger en v0.2 et apres)
-- [x] Test de fluidite automatique : perf_fps.gd lance par un script, echec sous 70 / 60 img/s
-- [x] Retours d'Olympe du 17/10/2026 :
-  - [x] Torche tenue a l'envers dans la main (le faisceau etait bon) : modele retourne
-  - [x] Police visible seulement apres une betise signalee : plus de patrouilles stationnees au niveau 0 (reglage police.patrouilles_sans_recherche)
-  - [x] Prologue bloque au riz de l'Ararat (4 500 F pour 3 000 F en poche) : tante Mireille donne 5 000 F, puis 2 000 F pour la sauce ; Maman Fifi avance 2 000 F
-  - [x] Limiteur de vitesse (K, manette croix bas) a 50 km/h, sous le seuil des contraventions, compteur de vitesse a l'ecran (test_limiteur)
-  - [x] Fleches qui faisaient bouger le joueur pendant un achat : deplacement bloque tant qu'un menu est ouvert (achat, inventaire, telephone)
-  - [x] Nom de l'assistant retire des credits
-  - [x] Plage : blocages et sursauts. Le sable n'avait pas de collision (on tombait sur le fond marin a -1,2 m) et le filet de securite des vehicules les ramenait en arriere des que l'estran passait sous -0,6 m. Collision ajoutee, seuil abaisse sous le fond marin, l'eau freine les vehicules (test_plage)
-  - [x] Realisme des voitures et minibus beaucoup plus pousse : conduite, apparence, degats, son et effets (voir la deuxieme passe vehicules)
-  - [x] Mission de la plage : destination sur un toit (inaccessible), recalee sur la rue devant Sweet Dream Beach (histoire.gd, _rue)
-  - [x] Torche : orientee chaque image comme le faisceau, quelle que soit la pose de la main
-  - [x] Vetements plus fins : une subdivision de plus sur tous les tissus, plus d'allegement du pantalon (build_character.py) ; niveaux de detail de Godot pour la foule
-  - [x] Mouvements naturels : 22 captures Mixamo fournies par Olympe (attentes, marches homme / femme, course, sprint, virages, parler, telephoner, saluer, deux disputes) reunies par blender/tools/build_mixamo.py, retargetees (bonemap_mixamo.tres), mises sur place au chargement avec leur vitesse naturelle mesuree ; attente et demarche propres a chaque PNJ ; tests/mesure_foulee.gd
-  - [x] Chute d'images en entrant dans l'Ararat et l'aerogare : les clients et voyageurs etaient fabriques a l'entree (pics de 140 ms) ; ils sont fabriques une fois au chargement puis seulement montres / caches ; tests/perf_entree.gd
-  - [x] Virages sur place et demarrages / arrets avec les clips captes : a l'arret, une direction a plus de 60 degres joue MX_Tourne_G90 / D90 ou MX_DemiTour_Marche (le corps suit la rotation du bassin captee, test_virage) ; arret marque MX_Arret apres une course ; fondu de 0,22 s a la fin de chaque clip ponctuel. MX_Depart non utilise (clip de 3 s, trop long pour la maniabilite : l'arbre d'animation gere le demarrage)
 - [ ] Jalon : 3 testeurs finissent l'acte 1 sans aide, sans bug bloquant, et ont envie de continuer
-
-### Demande d'Olympe du 17/10/2026 : inventaire et vehicules realistes
-- [x] Inventaire du joueur (I, croix gauche) avec torche (L) et smartphone (P) au depart ; anciennes sauvegardes completees (version 3) ; aliments a emporter qui se mangent
-- [x] Torche : lampe dans la main droite, faisceau qui suit le regard, eteinte en vehicule
-- [x] Smartphone : heure, meteo, argent ; Messages (objectif, dernieres repliques), Carte, Zem a la demande, Contacts, Appareil photo
-- [x] Zem refait en detail (moteur a ailettes, echappement, fourche, selle biplace, porte-bagages, clignotants, roues) : blender/tools/build_zem.py, plongee de fourche au freinage
-- [x] Voitures, 4x4, minibus, pick-up refaits (carrosserie nette, montants, jours de portes, optiques, roues et freins) : plis vifs, phares qui s'allument la nuit, peinture vernie ; tests/capture_modeles.gd
-- [x] Conduite plus realiste : suspension par roue, pneus (adherence selon la charge), boite de vitesses reelle : couple selon le regime, 5 rapports, masse et trainee par modele (Vehicules.TUNING) ; test_conduite (berline 0-80 en 8 s, pointe 166 km/h, plongee 6 degres au freinage)
-- [x] Deuxieme passe (retour d'Olympe du 17/10/2026, voitures et minibus pas assez realistes) :
-  - [x] Conduite : modele de pneus (derive, charge par essieu selon la hauteur du centre de gravite, inertie de lacet) : sous-virage, survirage au lever de pied ou au frein a main, contre-braquage ; adherence selon le revetement (goudron, paves, laterite, sable, eau) et la pluie ; ABS ; volant qui revient au centre ; reglages par modele (repartition, hauteur du centre de gravite, rigidite des pneus) ; test_tenue
-  - [x] Son : moteur essence (berline) ou diesel qui claque (4x4, minibus, pick-up) par explosions de cylindres, en charge et a vide melanges selon l'accelerateur, accordes sur le regime ; roulement selon le revetement, vent, passages de rapport, petarades, portieres
-  - [x] Effets : poussiere de laterite ou de sable, fumee et traces de pneus sur le goudron en glisse, fumees douces
-  - [x] Degats : tole froissee au point de choc, pare-brise etoile, phares casses, feu moteur sous 15 %, reparer() pour le garage (phase 16) ; tests/capture_degats.gd
-  - [x] Apparence : vitres teintees qui refletent le ciel, poussiere rouge en bas de caisse et rouille propres a chaque voiture (aussi dans la circulation), pick-up a plateau ouvert
-  - [x] Detail des modeles : minibus facon taxi-brousse (vitre par rangee de sieges, montants fins, porte coulissante), interieurs avec sieges, feux de recul, clignotants (18/10)
 
 ### Phase 12 : Cotonou reel (v0.1)
 - [ ] Releves photo d'Olympe (facades, sols, portails, enseignes, toits) classes dans refs/terrain/ par type
 - [ ] Textures tirees des photos (redressement, suppression des ombres, raccord sans couture), versions basse et haute resolution selon la qualite
 - [ ] Kit modulaire de facades (rez-de-chaussee boutique, etages, balcons, grilles, climatiseurs) assemble avec variation controlee
 - [ ] Sols reels : bitume use, paves, laterite rouge, sable, caniveaux, flaques qui suivent le relief
-- [x] Usure : coulures, rouille, peinture ecaillee, affiches dechirees (dans shaders/facade.gdshader plutot que des decals : aucun cout par objet) ; a completer avec les photos d'Olympe
-- [x] Pente reelle de la plage : estran de 40 m en pente concave jusqu'a -0,8 m puis fond qui descend sous l'eau (osm_import.py, plage_estran), sable mouille et ressac (shaders/sol.gdshader)
-- [x] Audit visuel compare aux photos de refs/ (docs/audit_cotonou.md, captures avant / apres dans docs/images/phase12/) ; corrections faites : sol en sable gris-beige (plus de laterite rouge partout), poteaux en beton, lampadaires solaires, facades moins saturees, soubassements peints, citernes noires et fers d'attente sur les toits
-- [x] Suite de l'audit (18/10) : kit d'objets de rue devant les boutiques et chantiers le long des murs, axes tertiaires et secondaires en paves, bordures des terre-pleins peintes rouge et blanc, acroteres a creneaux, badamiers et neems, persiennes metalliques, fenetres naco, grilles en losanges, paraboles ; capture de controle tests/capture_kit_rue.gd. Reste : flaques qui suivent le relief, balustres
 - [ ] Jalon : un Cotonois reconnait le quartier sur une capture, sans indice (test a l'aveugle avec 2 ou 3 Cotonois, voir docs/audit_cotonou.md)
 
 ### Phase 13 : Demo publique "Acte 1" (v0.1)
 - [ ] Trailer de 60 a 90 s (captures OBS par Olympe, montage CapCut), sans nom ni marque reels
-- [x] Captures d'ecran soignees (mode photo simple : camera libre, masquer le HUD) : F12 (scripts/mode_photo.gd), captures dans user://captures/ ; les captures elles-memes restent a faire par Olympe
 - [ ] Page itch.io (et page Steam si decide) a partir de docs/presentation.html
-- [x] Ecran de fin de demo : "A suivre", lien vers un formulaire de retours (menus.gd fin_demo ; lien a renseigner dans Menus > formulaire_retours quand Olympe aura cree le formulaire)
-- [x] Tous les textes du jeu (menus, HUD, dialogues, missions) sortis du code dans un fichier de traduction (base de la traduction de la Phase 24) : godot/i18n/gtb.pot (427 textes) genere par godot/tools/extraire_textes.py, francais comme cle, Label / Button / Label3D traduits par Godot ; quelques repliques composees a la volee (prenom, prix) seront a reprendre en Phase 24
-- [x] Credits complets en jeu (OSM ODbL, Overture, Open Buildings CC BY 4.0, Sentinel-2, Quaternius CC0, autres de docs/CREDITS.md) : bouton Credits (titre et pause), texte dans godot/assets/data/credits.txt
-- [x] Verification legale complete avec docs/LEGAL.md avant publication : docs/verification_legale.md, controle automatique tests/test_legal.gd (avis d'avocat recommande avant une sortie payante)
-- [x] Export Linux (x86_64) verifie : builds/linux/GTB.x86_64 lance dans Ubuntu (WSL), partie chargee sans erreur ; preset Web retire
 - [ ] Export Android : commandes tactiles faites (scripts/tactile.gd : joystick virtuel, camera au doigt, boutons a pied / en vehicule, carte, sac, telephone, pause ; qualite Basse au premier lancement ; aide clavier masquee ; capture_tactile), preset Android et orientation paysage prets ; SDK Android et Java installes (18/10), compression ETC2/ASTC activee, APK de debug exporte (builds/android/GTB.apk, 86 Mo ; procedure : docs/android.md) ; reste : icone du jeu, mesurer 30 img/s sur un telephone de milieu de gamme
 - [ ] Jalon : demo publiee, 20 premiers retours de joueurs recus et tries
 
 ### Phase 14 : Combat et armes (v0.2)
-- [x] Corps a corps facon San Andreas : enchainements de coups, blocage, esquive, saisie, coups au sol : direct / croise / croise appuye (clic), garde (clic droit, LB) qui pare 85 %, roulade (garde + saut), coups au sol ; la saisie attend un clip adapte (aucun dans les bibliotheques Quaternius) ; test_combat
-- [x] Visee : visee libre a la souris (clic droit, camera par-dessus l'epaule, reticule, haut du corps en pose de tir et jambes qui marchent, pose complete a l'arret), verrouillage de cible a la manette (LB) et changement de cible d'un coup de stick droit
-- [x] Armes fictives (choix d'Olympe du 17/10/2026) : baton, bouteille (biere du maquis, casse apres 3 coups), machette, coupe-coupe (Quincaillerie Le Bon Clou, de jour) ; pistolet, fusil a pompe, fusil de chasse artisanal et munitions (le Gaou, la nuit pres de la plage) ; Tab / RB change d'arme, R / L3 recharge ; clips d'epee et de pistolet, detonations et echo synthetises, recul, eclair au canon, impacts ; le decor et les voitures arretent les balles ; passants qui fuient, police a 2 etoiles ; option violence reduite ; scripts/armes.gd, test_armes, capture_armes
-- [x] Sante, armure, hopital : blouson de moto renforce (Ararat, 12 000 F) qui absorbe 60 % des coups et des chutes (barre bleue), reveil devant le Centre de sante Gbekpo (fictif, croix verte) avec 4 000 F de soins ; test_sante
-- [x] PNJ qui se defendent, fuient ou appellent la police selon leur caractere : bagarreur (35 %) en garde qui rend les coups, peureux qui fuit, un sur cinq qui appelle la police au telephone ; points de vie et K.-O.
-- [x] Police a 5 niveaux : 1 agent a pied, 2 agent + patrouille, 3 barrage de deux voitures devant le joueur, 4 unite speciale en 4x4, 5 motos de police qui suivent les rues (test_police_niveaux)
-- [x] Moyens de semer la police : se cacher au marche (trace perdue 3 fois plus vite au milieu des etals), changer de tenue (une etoile de moins hors de vue), repeindre le vehicule au garage (plus recherche hors de vue)
 - [ ] Jalon : un combat de rue et une poursuite a 3 etoiles sont lisibles et amusants
 
 ### Phase 15 : Progression du personnage (v0.2)
-- [x] Statistiques visibles : endurance, muscles, poids, respect, competences (zem, voiture, tir, natation) ; scripts/stats.gd, sauvegardees (Partie.perso), message a chaque palier de 10
-- [x] Le corps change avec les statistiques (morphologies existantes : mince, normal, fort) ; l'arme et la torche reviennent dans la main
-- [x] Manger (maquis, etals, Ararat) et faire du sport (salle Gbekpo Fitness, 1 000 F la seance ; footing) influencent le corps
-- [x] Competences qui augmentent a l'usage : zem plus stable (guidon), voiture mieux tenue (adherence), visee plus precise (dispersion), muscles qui renforcent les coups, endurance qui allonge le sprint
-- [x] Ecran de statistiques dans le menu pause ; test_stats
 - [ ] Jalon : apres 2 h de jeu, le joueur sent que son personnage a progresse
 
 ### Phase 16 : Personnalisation et proprietes (v0.2)
-- [x] Tailleur Chez Dossou (boubou en wax sur mesure), Friperie du Carrefour (t-shirts, jean, sandales, baskets), Maillots Sport 229 (5 clubs fictifs) ; scripts/personnalisation.gd, test_perso
-- [x] Coiffeur Salon Elegance : coupe courte, afro, tresses, crane rase (barbe et teintures : il faudra des maillages dans build_character.py)
-- [x] Garage de Tonton Codjo : reparer, repeindre (seme la police hors de vue), klaxon deux tons ; pots, jantes et autocollants restent a modeliser
-- [x] Proprietes (Agence Immo Gbekpo) : chambre a Cadjehoue (150 000 F), appartement a Haie Verte (600 000 F), planques ou l'on dort et sauvegarde, vehicule gare devant garde
-- [x] Garde-robe (Partie.tenue, drapeaux garde_robe) et vehicules gares gardes dans les sauvegardes
 - [ ] Jalon : deux joueurs n'ont pas le meme Sena ni le meme zem
 
 ### Phase 17 : Territoires des zems (v0.2)
-- [x] Carte des stationnements de zems (6 : aeroport, carrefours, marche, Route des Filets) avec un proprietaire par stationnement, pancarte et carre de couleur sur la mini-carte ; scripts/territoires.gd, test_territoires
-- [x] Respect du quartier : gagne par les courses, les missions, les stationnements pris ; perdu par les amendes (scripts/stats.gd)
-- [x] Bande de Sena : recruter jusqu'a 3 zemidjans (B, a un stationnement tenu, selon le respect), ils suivent (G : suivre / attendre) et se battent ; les equiper reste a faire
-- [x] Syndicats rivaux fictifs (Syndicat des Zems Unis, Lions du Littoral) : defi (trois zemidjans a mettre a terre en 90 s), negociation payante avec assez de respect ; courses entre zems a faire
-- [x] Revenus passifs (1 500 F par stationnement et par heure de jeu), attaques a defendre en 3 minutes
 - [ ] Jalon : prendre et tenir 3 stationnements change la vie du quartier (plus de zems de ta couleur, salutations)
 
 ### Phase 17 bis : Chargement par zones (v0.2)
 - [ ] Chargement et dechargement des tuiles de 500 m en arriere-plan, sans saccade (docs/chargement_par_morceaux.md). Fait : etape 1 (un .glb par tuile, osm_import.py), etape 2 (19/10 : monde.gd pose les 16 tuiles + le fichier commun, prechargees en arriere-plan par l'ecran de chargement ; test_tuiles), etape 3 (19/10 : props.gd et vegetation.gd posent le decor tuile par tuile, une graine par objet, conteneurs par tuile ; realism.gd suit les tuiles chargees ; concessions et occultation restent globales, sans lancer de rayons). Reste : liberation au-dela de 900 m (etape 4)
-- [x] Sauvegarde de l'etat (vehicules gares aux proprietes, stationnements tenus, tenue, statistiques) ; par zone quand le chargement par tuiles existera
-- [x] Interieurs : personnages fabriques une fois au chargement puis montres / caches selon la distance (plus d'a-coup a l'entree, tests/perf_entree.gd)
 - [ ] Jalon : 70 img/s en Haut avec la zone cargo et les evenements prevus, avant de commencer l'acte 2
+
+### Retours d'Olympe du 21/10/2026 : coherence et realisme (prioritaire, avant l'acte 2)
+Bugs de coherence d'abord, nouvelles fonctions ensuite.
+
+En cours (code ecrit, tests en cours, pas encore commite) :
+- [ ] URGENT : pistes de l'aeroport conformes au vrai DBBB (piste unique 06/24, 2 400 m). Fait : faux taxiway parallele, bande d'herbe et fausses bretelles de horizon.gd supprimes ; les avions roulent sur les vrais taxiways OSM (bretelles A a 652 m et B a 986 / 1 104 m, raquettes aux deux seuils, piste remontee). test_avion 06 et 24 : 47 controles sur 48 (un seul echec de mesure de hauteur, non reproduit au decollage suivant) ; reste a verifier visuellement
+- [ ] Ecran "Preparation du quartier" anime : fait (photo qui zoome, barre de progression), a verifier en jeu
+- [ ] Vendeuses de vrais personnages assis sur les chaises de leur etal, qui reagissent aux coups puis se rassoient : fait, test_vendeurs a 162 / 163 (une vendeuse egaree a corriger)
+- [ ] Cortege (blanc et noir) qui reagit aux coups et aux chocs de vehicule : fait, test d'un coup sur le cortege a ecrire
+- [ ] PNJ qui contournent objets et batiments et ne se traversent plus entre eux : code ecrit, non teste ; test_vie a corriger (passants qui ne s'arretent plus)
+
+Nouvelles demandes du 22/10/2026 (a traiter vite, avant le reste) :
+- [ ] Cinematiques : les personnages parlent trop vite, ralentir le rythme des repliques
+- [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche : toujours pas regle
+- [ ] Retirer le son effrayant qu'on entend en approchant des gens en blanc et noir (cortege)
+- [ ] Plein ecran par defaut au lancement du jeu
+- [ ] Escalade : pouvoir franchir des murs et objets plus hauts que le personnage
+- [ ] Tenue du joueur : t-shirt blanc et pantalon, d'apres la planche d'habits dans Telechargements
+- [ ] Frappe : le personnage glisse sur le sol quand on frappe en maintenant une touche de deplacement
+- [ ] Message coupe de l'utilisateur : "quand on se colle a un batiment avec ..." (phrase a redemander)
+
+A faire :
+- [ ] Missions : zone jaune parfois inaccessible (dans un mur, un batiment, hors d'atteinte)
+- [ ] Vehicules (motos, voitures, minibus...) : degats aux chocs, feu, puis explosion realiste
+- [ ] Zem : on le hele au bord de la voie, on monte, on choisit la destination, le trajet se fait en direct (pas de teleportation)
+- [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos)
+- [ ] Carte jusqu'a EPITECH Benin, batiment visitable (photos d'Olympe), sous le nom ETIPECH (docs/LEGAL.md)
+- [ ] Pilotage d'avions, d'abord de petits appareils pour de courts trajets
+- [ ] Revue morceau par morceau etendue a tout : batiments, murs, vegetation, routes
+- [ ] Beaucoup plus d'animations pour des mouvements naturels
+- [ ] Voitures : on voit ouvrir la portiere et entrer (joueur et passagers, chacun de son cote)
+- [ ] Motos : montee naturelle, mains sur le guidon, bras qui suivent la direction
+- [ ] Virages moins brutaux (conduite retravaillee)
+- [ ] Supermarche : aller au rayon de l'article pour l'acheter
+- [ ] Etals : marchandise modelisee et coherente avec ce que crie le vendeur
+- [ ] Carburant : stations et vendeurs de bord de route, pompistes PNJ, jauge et ravitaillement
+- [ ] Trafic plus dense (vehicules et pietons), carte moins deserte
+- [ ] Monuments fideles restants : Bio Guera au carrefour Erevan (cavalier a la lance sur cheval cabre, rocher, socle noir poli), l'Amazone, memorial de la place du Souvenir (trois personnages), Parc Cardinal Cotodji
+- [ ] Vehicules : silhouettes plus fideles, barre de feux arriere de la Koralo invisible, zem Haojin, Landa garee immobile en (95, -934)
+- [ ] Android : le chargement echoue ; le nouvel APK affiche la raison, Olympe teste puis on corrige
+- [ ] Temps de chargement : 67 s contre 35 s avant l'extension de la carte
+- [ ] Reexporter Windows, Linux et Android apres ce lot
 
 ### Phase 18 : Acte 2 "Sous les ailes" (v0.3)
 - [ ] Ecriture complete de l'acte 2 dans docs/histoire.md (15 a 20 missions), validee par Olympe avant production
 - [ ] Zone cargo de l'aeroport en interieur et exterieur (hangars, entrepots, controles, chariots, camions)
-- [x] Systeme de cinematiques (scripts/cinematique.gd) : bandes noires, plan par-dessus l'epaule pendant les dialogues de l'histoire, plans scriptes (jouer), sous-titres avec le nom actives par defaut et taille reglable dans les options, Espace / Entree / A pour passer, interface cachee ; capture_cinematique
 - [ ] Animations faciales simples (clignements, regard ; bouche synchronisee en Phase 19 avec les voix)
 - [ ] Types de missions varies : infiltration, filature, escorte, course, defense, mission en avion au sol
 - [ ] Commissaire Adjovi et le Patron mis en scene, revelations de Tonton Codjo
@@ -224,24 +173,17 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 - [ ] Phrases des PNJ (vendeuses qui interpellent, clients du zem, disputes, insultes, remarques) en francais de Cotonou, fon et mina
 - [ ] Radios dans les vehicules : 3 a 5 stations fictives (musique beninoise et africaine, talk-show, infos du quartier qui commentent les actions du joueur), musique originale ou sous contrat
 - [ ] Remplacement des sons synthetises les plus visibles par des enregistrements terrain (zem, klaxons, marche, ambiance)
-- [x] Mixage : bus Vehicules / Ambiance / Effets / Voix reglables dans les options, sources rangees automatiquement, reverberation dans l'Ararat et l'aerogare ; test_mixage
 - [ ] Jalon : fermer les yeux 30 s dans le quartier, on se croit a Cotonou
 
 ### Phase 20 : Activites secondaires (v0.5)
 - [ ] Ecole de pilotage a l'aeroport (rouler, decoller, atterrir, puis avion pilotable)
 - [ ] Missions de metier : chauffeur de minibus fait (T au volant d'un minibus : 6 arrets, passagers qui paient 200 F, prime de fin de ligne ; scripts/metiers.gd, test_metiers), livreur (courses de zem) fait ; ambulance, pompier, vigile a faire
-- [x] Courses de zems de nuit (20 h - 5 h, Route des Filets, 8 points de passage, 2 rivaux pilotes, 10 000 F au 1er) ; courses de voitures a faire ; scripts/activites.gd, test_activites
-- [x] Paris sur les matchs de foot au maquis (clubs fictifs, cote 3 contre 1, resultat a l'heure de jeu suivante)
-- [x] Evenements de quartier : funerailles avec fanfare a 16 h (accompagner le cortege : respect). Reste : mariages, fetes, coupures de courant qui ouvrent des opportunites
-- [x] Option daltonisme (couleurs des syndicats adaptees)
-- [x] Collectibles : 15 enseignes peintes (noms fictifs) a photographier avec le telephone ou F12, 1 000 F chacune, 25 000 F la collection ; 20 sacs de cauris caches (500 F, 20 000 F la collection) ; sauts acrobatiques en zem ou en voiture (plus de 1,2 s ou 15 m en l'air, payes selon la longueur)
-- [x] Taux de completion (pourcentage) dans le menu Statistiques : missions, stationnements, proprietes, fresques, courses
 - [ ] Jalon : un joueur peut passer 5 h sans toucher a l'histoire
 
 ### Phase 21 : Extension de Cotonou (v0.5)
 - [ ] Pipeline d'import entierement automatise et documente (OSM, Overture, Open Buildings, Sentinel-2) pour une nouvelle zone
 - [ ] Centre et grand marche (le chaos ultime pour les poursuites), quartier d'affaires, port
-- [ ] Lagune et ponts, Akpakpa, Fidjrosse
+- [ ] Lagune et ponts, Akpakpa
 - [ ] Noms fictifs de toutes les nouvelles zones dans docs/correspondance_noms.md
 - [ ] Jalon : traverser Cotonou d'ouest en est a zem sans chargement ni chute sous 60 img/s
 
@@ -356,7 +298,7 @@ STACK
 - Modelisation : Blender 5.2 (Microsoft Store), export glTF 2.0 (.glb), tout par script (blender/tools/)
 - Moteur : Godot 4.7.2 (Forward+), physique interpolee, RTX 2050 chez Olympe
 - Echelle : 1 unite = 1 metre
-- Zone : aeroport de Cotonou, Erevan, la plage, Haie Verte et Cadjehoue. Bbox N 6.3610, S 6.346380, O 2.375259, E 2.387500 (1,35 x 1,6 km), OSM dans refs/osm/zone-gtb.osm ; origine figee au centre de la premiere zone (6.3498725, 2.3813795)
+- Zone : aeroport de Cotonou, Erevan, la plage, Haie Verte, Cadjehoue et l'extension est (7 081 x 2 321 m), OSM dans refs/osm/ (fusion par blender/tools/osm_fusion.py) ; origine figee au centre de la premiere zone (6.3498725, 2.3813795)
 - Cible : Android, Windows et Linux ; pas d'Apple, pas de web
 
 CONVENTIONS
@@ -368,44 +310,43 @@ CONVENTIONS
 - Objets : jamais de nom en *_col / *-col pour un objet decoratif (Godot cree une collision)
 - Tout son est synthetise (godot/scripts/audio_synth.gd) jusqu'a la Phase 19 ; tout modele est fait par script Blender (blender/tools/)
 
-ETAT ACTUEL (16/10/2026)
-- Phases 0 a 10 faites techniquement. Le jeu est jouable du lancement (builds/windows/GTB.exe, ecran titre, Nouvelle
-  partie) a la fin de l'acte 1 ("A suivre").
-- Fait :
-  - Monde : 1,35 x 1,6 km (aeroport, Erevan, plage, Haie Verte, Cadjehoue), OSM + Overture + Open Buildings 2.5D +
-    littoral Sentinel-2 (osm_import.py -> zone_aeroport.glb/.json), tuiles de 500 m, occultation, concessions avec
-    portails, harmattan, horizon a 6 km, meteo, jour / nuit, sons synthetises.
-  - Jeu : joueur facon GTA V (sprint, saut, escalade, accroupi, ragdoll, entree / sortie de vehicule animees), zem,
-    berline, 4x4, minibus, pick-up, zem-taxi (deplacement rapide), circulation, pietons, interieurs (maison, Ararat,
-    terminal, avions), argent FCFA, achats, sante, HUD, ecran titre, pause, options (Bas / Moyen / Haut), sauvegarde
-    (lit ou menu), histoire "Le Dernier Vol" (docs/histoire.md : 8 missions prologue + acte 1, 2 missions de Maman Fifi
-    a Haie Verte, courses de zem a volonte), police fictive (etoiles, patrouilles, arrestation, amendes, contraventions).
-  - Personnages : corps Quaternius cales sur 10 morphologies, vetements decoupes dans la peau, clips captes pour le
-    joueur et les PNJ (LOD d'animation et d'ombre).
-  - Tests : godot/tests/test_*.gd (20 suites) tous OK dont test_journal.
-  - Phase 11 : journal de partie automatique (journal.gd), version 0.1.0 et log disque actif, migration sauvegardes v2,
-    defauts visuels corriges (pagne sous vehicules, cheveux mouilles sous pluie, casquette policiere, traversees).
-- PHASE EN COURS : Phase 11, validation et playtest (voir la roadmap). Prochaines taches pour l'agent :
-  1. Flaques qui suivent le relief, balustres des acroteres.
-  2. Chargement par morceaux (Phase 17 bis), puis extension : Fidjrosse, puis le centre et le grand marche (decision
-     d'Olympe du 18/10/2026).
-  3. Equilibrage apres les retours de jeu d'Olympe (prix, amendes, chronos, police, salaires zem).
-- Taches d'Olympe (ne pas les faire a sa place) : toutes regroupees dans docs/a_faire_olympe.md (jouer et remplir
-  docs/retours_olympe.md, jalons 3 a 5, playtest, test a l'aveugle, photos et sons de terrain, APK sur telephone, logo,
-  formulaire de retours, page itch.io). Ajouter dans ce fichier tout nouveau besoin d'Olympe.
-- Ensuite : Phase 12 (Cotonou reel), Phase 13 (demo publique), puis v0.2 (phases 14 a 17).
-- Personnages : base Quaternius Universal Base Characters (refs/ubc, non versionne) calee par blender/tools/ubc_body.py.
-- Outils : Godot 4.7.2 dans Telechargements (utiliser le _console.exe pour la ligne de commande ; modeles d'export dans
-  %APPDATA%/Godot/export_templates/4.7.2.stable) ; Blender 5.2 lance via
-  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... (voir docs/PIPELINE.md) ; Python geo dans WSL
-  (~/.venvs/geo, overturemaps installe). Envoi git : depuis le git Windows (le git de WSL n'a pas les identifiants),
-  jamais de ligne Co-Authored-By.
-- Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; aucun nom reel en jeu (signaler
-  avant de renommer) ; budget 70 images/s dehors et 60 en interieur ; tests au vert a chaque commit ; demander avant
-  tout choix structurant (en particulier tout ce qui est liste dans "Decisions a prendre").
-- Attention mesures : arreter les Blender / Godot restes en fond avant perf_fps.gd (sinon 10 images/s dans les interieurs).
-- Bloquants : aucun. Attention : si l editeur Godot est ouvert pendant qu on modifie project.godot, il faut le fermer et
-  rouvrir le projet (sinon erreurs "global uniform does not exist", fichiers non importes).
+ETAT ACTUEL (21/10/2026)
+- Le jeu est jouable du lancement (ecran titre, Nouvelle partie) a la fin de l'acte 1 ("A suivre"). Exports Windows,
+  Linux et Android (APK de debug) dans builds/ ; presets "Windows", "Linux", "Android".
+- Fait depuis le 16/10 :
+  - Monde : carte agrandie a l'est (81 tuiles + partie commune, 7 081 x 2 321 m, 19 790 batiments, 1 037 routes),
+    tuiles chargees / dechargees a la volee (monde.gd, signaux tuile_chargee / tuile_dechargee), masques de la carte
+    en cache (zone_aeroport_carte.bin, a regenerer avec tests/outil_cache_carte.gd apres chaque import), mini-carte
+    plafonnee a 8192 px. Chargement 67 s a l'export (35 s avant l'extension) : a optimiser.
+  - Commandes : toutes les touches clavier et boutons souris sont reaffectables (menus.gd, partie.gd TOUCHES_REGLABLES,
+    options["touches"]) ; l'aide a l'ecran suit les touches choisies.
+  - Ecran "Preparation du quartier" anime apres Nouvelle partie / Continuer (menus.gd _preparer).
+  - Vehicules et avions en marques parodiques reconnaissables (docs/LEGAL.md, tableau 6 bis) : Toyoda Koralo / Landa /
+    Hailux / Haisse, Pejo 460, Mersede 109, zem Bajou Boksa ; avions Boing 7-3, Aerobis A-32, Dash Ouest Q4, 5 livrees.
+  - Monuments fideles (monuments.gd) : Place Calvaire faite.
+  - PNJ : vendeuses de vrais personnages assis sur les chaises de leur etal (etats assis / retour_chaise), cortege en
+    blanc et noir qui reagit aux coups et aux chocs, evitement des objets et des autres PNJ (pedestrians.gd _eviter).
+  - Aeroport : une seule piste 06/24 de 2 400 m ; faux taxiway et fausses bretelles de horizon.gd supprimes ; les avions
+    roulent sur les vrais taxiways OSM (air_traffic.gd : T2, bretelles A 652 m et B 986 / 1 104 m, raquettes) ; test_avion OK.
+- En cours : tests des PNJ. test_vendeurs 162 / 163 (une vendeuse egaree), test_vie : les passants ne discutent plus
+  (causette) depuis l'evitement. Code PNJ non commite tant que ces deux tests ne sont pas verts.
+- A faire (liste complete et a jour dans la roadmap, section "Retours d'Olympe du 21/10/2026") : zones jaunes de
+  mission inaccessibles, degats / feu / explosion des vehicules, zem a heler avec trajet reel, revue de la carte morceau
+  par morceau (routes, batiments, murs, vegetation), ETIPECH (ecole visitable, photos d'Olympe), avions pilotables,
+  animations (portieres, montee a moto, mains sur le guidon), virages moins brutaux, supermarche par rayons, etals
+  coherents avec ce que crie le vendeur, carburant et pompistes, trafic plus dense, monuments restants (Bio Guera au
+  carrefour Erevan, l'Amazone, place du Souvenir, parc), Android (le chargement echoue, le nouvel APK affiche la raison).
+- Taches d'Olympe (ne pas les faire a sa place) : docs/a_faire_olympe.md (jouer, retours, photos dont ETIPECH, tests Android).
+- Outils : Godot 4.7.2 (exe sur le Bureau : Godot_v4.7.2-stable_win64.exe, lancer en --headless --path godot --script
+  res://tests/xxx.gd) ; modeles d'export dans %APPDATA%/Godot/export_templates/4.7.2.stable ; Blender 5.2 via
+  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... ; Python geo dans WSL (~/.venvs/geo) ;
+  Python Windows absent : utiliser wsl.exe -e python3. Envoi git : git Windows (git -c safe.directory=* push depuis Git
+  Bash), jamais de ligne Co-Authored-By.
+- Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; noms fictifs pour les lieux,
+  marques et personnes (monuments et statues publics gardent leur nom reel) ; donnees ouvertes seulement ; 70 images/s
+  dehors et 60 en interieur ; tests au vert a chaque commit ; roadmap et ce prompt mis a jour a chaque travail fini.
+- Attention mesures : arreter les Blender / Godot restes en fond avant perf_fps.gd.
+- Bloquants : aucun. Si l'editeur Godot est ouvert pendant qu'on modifie project.godot, le fermer et rouvrir le projet.
 
 ROADMAP
 Socle fait : 0 Setup, 1 Pipeline, 2 Blockout, 3 Joueur, 4 Zem, 5 Ville vivante, 6 Modelisation, 7 Gameplay, 8 Police, 9 Extension, 10 Finition.

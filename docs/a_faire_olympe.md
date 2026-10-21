@@ -39,7 +39,6 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 
 - [ ] **Tester l'APK** (`builds/android/GTB.apk`) sur un téléphone Android de milieu de gamme. Le mode débug (F1 sur clavier, sinon dis-moi ce que tu ressens) : est-ce fluide ? Les boutons tactiles sont-ils bien placés ?
 - [ ] **Tester la qualité « Bas »** sur un PC modeste (le tien en Bas, ou celui d'un ami) et me dire si ça saccade.
-
 ## 4. Publication de la démo
 
 - [ ] **Logo et icône du jeu** : il y a une icône provisoire (`godot/icone.png`, « GTB » jaune sur fond nuit, faite par `godot/tools/faire_icone.gd`). Si tu fais un vrai logo (palette donnée plus tôt), mets-le en PNG carré 1024 x 1024 à la place.
@@ -60,3 +59,4 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 ## Décisions déjà prises (rappel)
 
 - Agrandir la carte (validé le 18/10/2026) : d'abord Fidjrossè à l'ouest, puis le centre avec le grand marché, et avant ça le chargement par morceaux. Je m'y mets après avoir fini les tâches en cours des Phases 11 et 12.
+ QW26P0-K

@@ -20,6 +20,7 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
+	add_to_group("cibles_coups")      # player.gd et armes.gd : le cortege recoit les coups du joueur
 	_player = get_node_or_null(player_path)
 	_day = get_node_or_null("../JourNuit")
 
@@ -85,7 +86,66 @@ func _point(chemin: PackedVector2Array, d: float) -> Array:
 	return [chemin[-1], Vector2.ZERO]
 
 
+@export var arret_apres_coup := 8.0     # s : le cortege s'arrete et proteste quand on frappe ou renverse l'un des siens
+
+
+func player_attack(origin: Vector3, dir: Vector3, coup := 0, _degats := -1.0, portee := 1.6, _arme := false) -> bool:
+	## Coup du joueur (player.gd, armes.gd) sur un membre du cortege : il chancelle ou tombe, tout le cortege s'arrete,
+	## se tourne vers le joueur et proteste, la police est prevenue.
+	if cortege.is_empty():
+		return false
+	var best: Node3D = null
+	var bd := portee
+	for n in cortege["membres"]:
+		var rel: Vector3 = (n as Node3D).global_position - origin
+		rel.y = 0.0
+		if rel.length() < bd and rel.normalized().dot(dir) > 0.4:
+			bd = rel.length()
+			best = n
+	if best == null:
+		return false
+	_toucher(best, coup >= 2 or _rng.randf() < 0.3)
+	get_tree().call_group("police", "crime", "agression", best.global_position)
+	return true
+
+
+func _toucher(n: Node3D, tombe: bool) -> void:
+	if tombe:
+		n.call("play_clips", [["Death01", _rng.randf_range(1.5, 3.0)], ["LayToIdle", 0.0]])
+	else:
+		n.call("play_clips", [["Hit_Chest", 0.0]])
+	cortege["arret"] = arret_apres_coup
+	Bulle.say(n, tr(["Eh ! Respecte le deuil !", "Ça ne va pas, non ?", "On enterre notre mère !"][_rng.randi() % 3]))
+
+
+func _chocs_vehicule() -> void:
+	## Le vehicule du joueur qui fonce dans le cortege renverse ceux qu'il touche.
+	var v: Node3D = _player.get("vehicle")
+	if v == null or absf(float(v.get("speed"))) < 2.0:
+		return
+	for n in cortege["membres"]:
+		var nn := n as Node3D
+		if nn.global_position.distance_to(v.global_position) < 2.2 and not nn.get_meta("renverse", false):
+			nn.set_meta("renverse", true)
+			_toucher(nn, true)
+			get_tree().call_group("police", "crime", "agression", nn.global_position)
+
+
 func _avancer(delta: float) -> void:
+	_chocs_vehicule()
+	if float(cortege.get("arret", 0.0)) > 0.0:
+		# arrete : chacun se tourne vers le joueur (sauf ceux a terre, dont le clip joue)
+		cortege["arret"] = float(cortege["arret"]) - delta
+		for n in cortege["membres"]:
+			var nn := n as Node3D
+			nn.set("speed", 0.0)
+			if not nn.call("playing_clip"):
+				var d := _player.global_position - nn.global_position
+				nn.rotation.y = lerp_angle(nn.rotation.y, atan2(-d.x, -d.z), 1.0 - exp(-4.0 * delta))
+		if float(cortege["arret"]) <= 0.0:
+			for n in cortege["membres"]:
+				(n as Node).remove_meta("renverse")
+		return
 	cortege["d"] = float(cortege["d"]) + vitesse * delta
 	var chemin: PackedVector2Array = cortege["chemin"]
 	var tete: Array = _point(chemin, float(cortege["d"]))

@@ -1,8 +1,8 @@
 extends Node3D
-## Trafic aerien realiste sur l'aeroport (piste 06/24 de 2 400 m, axe tire des donnees OSM et prolonge hors carte).
+## Trafic aerien realiste sur l'aeroport (piste unique 06/24 de 2 400 m, axe et taxiways tires des donnees OSM).
 ## - Postes de stationnement OSM : des avions y sont gares (compagnies fictives), d'autres arrivent et repartent.
-## - Depart : repoussage par un tracteur, mise en route, roulage sur les taxiways reels (T2 parallele a la piste,
-##   T1 vers la piste, raquette T4 au seuil 06 ; prolongements hors carte vers le seuil 24), alignement, course au
+## - Depart : repoussage par un tracteur, mise en route, roulage sur les taxiways reels (T2 devant l'aerogare,
+##   bretelle A ou B, piste remontee jusqu'a la raquette du seuil), alignement, course au
 ##   decollage (VR ~ 140 kt), rotation a 2,5 deg/s, envol, train rentre 3 s apres, volets rentres a 400 m.
 ## - Arrivee : approche finale stabilisee a 3 deg (feux et train sortis, volets pleins), arrondi vers 14 m,
 ##   toucher train principal dans la zone de toucher (fumee, crissement), spoilers, inverseurs, freinage,
@@ -41,12 +41,6 @@ var planes: Array = []
 var _a := Vector2.ZERO         # seuil 06
 var _u := Vector2.ZERO         # 06 -> 24
 var _n := Vector2.ZERO         # vers l'aerogare
-var _t1: Array = []            # taxiway T1 (de la piste vers T2)
-var _t1w: Array = []           # T1, troncon ouest : bord nord (vers la piste) -> carrefour J avec T3
-var _t1e: Array = []           # T1, troncon est : J -> T2 (t ~ 680)
-var _t3: Array = []            # T3 : J -> T2 (t ~ 618), vers le sud-ouest
-var _t3_t := 618.0
-var _t4: Array = []            # raquette du seuil 06 (de la piste t=189 a t=10)
 var _rng := RandomNumberGenerator.new()
 var _timer := 0.0
 var _day: Node
@@ -74,8 +68,6 @@ func _ready() -> void:
 	_a = p0
 	_u = (p1 - p0).normalized()
 	_n = Vector2(-_u.y, _u.x)
-	_find_taxiways(data)
-	_split_t1(data)
 	_find_stands(data)
 	for i in mini(initial_parked, stands.size()):
 		var k := _free_stand()
@@ -94,104 +86,71 @@ func to_rw(p: Vector2) -> Vector2:
 	return Vector2(d.dot(_u), d.dot(_n))
 
 
-const CLIP_Z := -386.06       # limite nord de la premiere zone : les trajets de roulage ont ete regles sur ces troncons
+# Reseau reel des taxiways de Cotonou (donnees OSM de la zone), en coordonnees de piste (t le long de l'axe depuis le
+# seuil 06, s vers l'aerogare). Une seule piste 06/24 de 2 400 m (+ 60 m et 52 m de prolongements d'arret), pas de
+# taxiway parallele sur toute la longueur : T2 longe l'aire de trafic de t = 423 a 1 316, deux bretelles (A a
+# 652 m, perpendiculaire ; B en Y a 986 / 1 104 m) et une raquette de demi-tour a chaque seuil. Les avions remontent
+# la piste pour s'aligner (backtrack), comme a Cotonou.
+const T2 := [[423, 192], [491, 192], [619, 191], [680, 191], [780, 189], [859, 188], [940, 187], [1012, 186],
+	[1079, 183], [1104, 181], [1191, 180], [1316, 178]]
+const A_OUEST := [[619, 191], [625, 188], [630, 185], [636, 180], [641, 175], [645, 170], [650, 160], [652, 91]]
+const A_EST := [[680, 191], [674, 188], [668, 184], [659, 176], [652, 168], [650, 160], [652, 91]]
+const A_PISTE := [[652, 91], [651, 40], [645, 15], [630, 3], [600, 0]]          # A -> piste vers le seuil 06
+const B_OUEST := [[1012, 186], [1022, 183], [1028, 179], [1036, 172], [1042, 165], [1046, 159], [1049, 152],
+	[1050, 146], [1051, 137], [1050, 108], [1050, 91], [1048, 62]]
+const B_EST := [[1097, 182], [1087, 180], [1078, 177], [1069, 171], [1061, 164], [1055, 155], [1052, 147],
+	[1051, 137], [1050, 108], [1050, 91], [1048, 62]]
+const B_1104 := [[1048, 62], [1049, 47], [1051, 41], [1054, 35], [1057, 29], [1061, 23], [1065, 19], [1071, 13],
+	[1078, 9], [1083, 6], [1089, 4], [1095, 2], [1104, 0]]
+const B_986 := [[1048, 62], [1047, 51], [1046, 46], [1044, 41], [1043, 37], [1040, 32], [1038, 28], [1035, 24],
+	[1030, 19], [1027, 15], [1022, 12], [1017, 9], [1011, 6], [1005, 3], [998, 1], [986, 0]]
+const RAQUETTE_06 := [[189, 0], [174, 3], [165, 6], [40, 71], [34, 70], [29, 67], [22, 62], [15, 55], [11, 46], [8, 35]]
+const RAQUETTE_24 := [[2221, 0], [2232, 3], [2240, 7], [2356, 71], [2361, 72], [2368, 70], [2379, 61], [2387, 49],
+	[2391, 36], [2390, 23], [2386, 11], [2378, 0], [2368, -7], [2355, -12], [2342, -12], [2330, -9], [2319, -2], [2312, 0]]
+const R_ALIGN := 28.0          # rayon du dernier quart de tour pour s'aligner dans la raquette
 
 
-func _taxi_pts(aw: Dictionary) -> Array:
-	## Taxiway coupe a l'ancienne limite nord (la zone agrandie en phase 9 contient les taxiways entiers ; T1, T3 et T4
-	## sont reconnus par leurs extremites telles qu'elles etaient au bord de la carte).
+func _rw_pts(lst: Array, inverse := false) -> Array:
 	var out: Array = []
-	var prev := Vector2.INF
-	for q in aw["pts"]:
-		var p := Vector2(float(q[0]), float(q[1]))
-		var inside := p.y >= CLIP_Z
-		if prev != Vector2.INF and (prev.y >= CLIP_Z) != inside:
-			var k := (CLIP_Z - prev.y) / (p.y - prev.y)
-			var x := prev.lerp(p, k)
-			if inside:
-				out.append(x)
-			else:
-				out.append(x)
-				break
-		if inside:
-			out.append(p)
-		prev = p
+	for q in lst:
+		out.append(rw(float(q[0]), float(q[1])))
+	if inverse:
+		out.reverse()
 	return out
 
 
-func _find_taxiways(data: Dictionary) -> void:
-	for aw in data.get("aeroways", []):
-		if aw["kind"] != "taxiway":
-			continue
-		var pts: Array = _taxi_pts(aw)
-		if pts.size() < 2:
-			continue
-		var r0 := to_rw(pts[0])
-		var r1 := to_rw(pts[pts.size() - 1])
-		# T1 : relie T2 (s ~ 191) au bord nord de la carte en direction de la piste (s ~ 117)
-		if absf(r0.y - 117.0) < 25.0 and absf(r1.y - T2_S) < 15.0:
-			_t1 = pts
-		elif absf(r1.y - 117.0) < 25.0 and absf(r0.y - T2_S) < 15.0:
-			pts.reverse()
-			_t1 = pts
-		# T4 : raquette entre t ~ 10 et t ~ 190 sur l'axe
-		elif absf(r0.y) < 6.0 and absf(r1.y) < 6.0 and absf(r0.x - r1.x) > 120.0:
-			if r0.x > r1.x:
-				_t4 = pts
-			else:
-				pts.reverse()
-				_t4 = pts
+func t2_s(t: float) -> float:
+	## Distance de T2 a l'axe a l'abscisse t (T2 n'est pas tout a fait parallele a la piste).
+	for i in T2.size() - 1:
+		if t <= float(T2[i + 1][0]):
+			return lerpf(float(T2[i][1]), float(T2[i + 1][1]), clampf((t - float(T2[i][0])) / float(T2[i + 1][0] - T2[i][0]), 0.0, 1.0))
+	return float(T2[T2.size() - 1][1])
 
 
-func _split_t1(data: Dictionary) -> void:
-	## T1 rejoint T2 en Y vers le nord-est ; le raccord T3 part du meme carrefour J vers le sud-ouest.
-	if _t1.is_empty():
-		return
-	for aw in data.get("aeroways", []):
-		if aw["kind"] != "taxiway":
-			continue
-		var pts: Array = _taxi_pts(aw)
-		if pts.size() < 2:
-			continue
-		for flip in [false, true]:
-			var cand: Array = pts.duplicate()
-			if flip:
-				cand.reverse()
-			var j := -1
-			for i in range(1, _t1.size() - 1):
-				if (_t1[i] as Vector2).distance_to(cand[0]) < 2.0:
-					j = i
-			if j > 0 and absf(to_rw(cand[cand.size() - 1]).y - T2_S) < 15.0:
-				_t3 = cand
-				_t3_t = to_rw(cand[cand.size() - 1]).x
-				_t1w = _t1.slice(0, j + 1)
-				_t1e = _t1.slice(j)
-				return
-	_t1w = _t1.duplicate()
-	_t1e = []
+func t2(t: float) -> Vector2:
+	return rw(t, t2_s(t))
 
 
-func _to_runway_06(st: Dictionary) -> Array:
-	## Depuis le poste : T2 puis T3 (postes au sud-ouest) ou T2 puis T1 est (postes au nord-est), T1 ouest, piste.
-	var path: Array = []
-	var west: bool = float(st["t"]) < 650.0 and not _t3.is_empty()
-	var j_t := _t3_t if west else 680.0
-	path.append_array(_t2_line(float(st["t"]) + (22.0 if west else -22.0), j_t))
-	var link: Array = _t3.duplicate() if west else _t1e.duplicate()
-	link.reverse()
-	path.append_array(link)
-	var w := _t1w.duplicate()
-	w.reverse()
-	path.append_array(w)
-	return path
-
-
-func _from_t1(st: Dictionary) -> Array:
-	## Sortie de piste par T1 (arrivee en 24) jusqu'a T2, du bon cote du poste.
-	var path: Array = _t1w.duplicate()
-	var west: bool = float(st["t"]) < 650.0 and not _t3.is_empty()
-	path.append_array(_t3 if west else _t1e)
-	return path
+func _alignement(seuil: String) -> Array:
+	## Raquette du seuil puis quart de tour sur l'axe, cap de decollage, et 55 m de piste devant.
+	var R := R_ALIGN
+	var out: Array = []
+	if seuil == "06":
+		for q in _rw_pts(RAQUETTE_06):
+			if to_rw(q).y > R + 4.0 or to_rw(q).x > 60.0:
+				out.append(q)
+		for j in range(0, 10):
+			var ang := float(j) / 9.0 * PI / 2.0       # cap -n -> cap +u
+			out.append(rw(10.0 + R - R * cos(ang), R - R * sin(ang)))
+		out.append_array([rw(10.0 + R + 30.0, 0.0), rw(10.0 + R + 55.0, 0.0)])
+	else:
+		for q in _rw_pts(RAQUETTE_24.slice(0, 9)):
+			out.append(q)
+		for j in range(0, 10):
+			var ang := float(j) / 9.0 * PI / 2.0       # cap -n -> cap -u
+			out.append(rw(2390.0 - R + R * cos(ang), R - R * sin(ang)))
+		out.append_array([rw(2390.0 - R - 30.0, 0.0), rw(2390.0 - R - 55.0, 0.0)])
+	return out
 
 
 func _find_stands(data: Dictionary) -> void:
@@ -199,10 +158,10 @@ func _find_stands(data: Dictionary) -> void:
 		if sp.size() < 5:
 			continue
 		var p := Vector2(float(sp[0]), float(sp[1]))
-		if p.y < CLIP_Z:
-			continue      # au-dela de la premiere zone : pas de trajet de roulage regle jusque-la
 		var d := Vector2(float(sp[3]), float(sp[4])).normalized()
 		var r := to_rw(p)
+		if r.x < 445.0 or r.x > 1290.0:
+			continue      # hors de l'aire de trafic desservie par T2
 		if d.dot(_n) < 0.5 or r.y < 230.0:
 			continue      # poste inutilisable par un biréacteur de cette taille (trop pres du taxiway, ou sens inverse)
 		var dup := false
@@ -330,33 +289,26 @@ func start_departure(k: int, runway: String) -> void:
 	var p: Node3D = st["plane"]
 	if p == null:
 		return
-	# repoussage : le nez se retrouve vers la jonction a prendre sur T2 (T1 pour la 06, nord-est pour la 24)
-	var to_t1 := runway == "06"
-	var go_ne: bool = (not to_t1) or float(st["t"]) < 650.0
+	# repoussage : le nez se retrouve vers la bretelle a prendre sur T2 (A pour la 06, B pour la 24)
+	var t_st: float = st["t"]
+	var go_ne: bool = t_st < 650.0 if runway == "06" else t_st < 1040.0
 	var head := _u if go_ne else -_u
-	var t_push: float = st["t"] + (-22.0 if go_ne else 22.0)
-	var end := rw(t_push, T2_S)
+	var t_push: float = t_st + (-22.0 if go_ne else 22.0)
+	var end := t2(t_push)
 	var path: Array = [end]          # le roulage part de la ou le tracteur a laisse l'avion
-	if to_t1:
-		path.append_array(_to_runway_06(st))
-		path.append_array([rw(650.0, 60.0), rw(648.0, 22.0), rw(630.0, 3.0), rw(600.0, 0.0)])
+	if runway == "06":
+		# T2, bretelle A, piste remontee jusqu'a la raquette du seuil 06
+		path.append_array(_t2_line(t_push, 619.0 if go_ne else 680.0))
+		path.append_array(_rw_pts(A_OUEST if go_ne else A_EST))
+		path.append_array(_rw_pts(A_PISTE))
 		path.append_array(_rw_line(560.0, 200.0))
-		var R := 28.0
-		for q in _t4:
-			if to_rw(q).y > R + 4.0 or to_rw(q).x > 60.0:
-				path.append(q)
-		for j in range(0, 10):
-			var ang := float(j) / 9.0 * PI / 2.0       # quart de cercle : cap -n -> cap +u
-			path.append(rw(10.0 + R - R * cos(ang), R - R * sin(ang)))
-		path.append_array([rw(10.0 + R + 30.0, 0.0), rw(10.0 + R + 55.0, 0.0)])
 	else:
-		path.append_array(_t2_line(t_push, 2340.0))
-		var R2 := 28.0
-		path.append(rw(2340.0, 60.0))
-		for j in range(0, 10):
-			var ang2 := float(j) / 9.0 * PI / 2.0       # cap -n -> cap -u
-			path.append(rw(2340.0 - R2 + R2 * cos(ang2), R2 - R2 * sin(ang2)))
-		path.append_array([rw(2340.0 - R2 - 30.0, 0.0), rw(2340.0 - R2 - 55.0, 0.0)])
+		# T2, bretelle B jusqu'a la piste a 1 104 m, piste remontee jusqu'a la raquette du seuil 24
+		path.append_array(_t2_line(t_push, 1012.0 if go_ne else 1097.0))
+		path.append_array(_rw_pts(B_OUEST if go_ne else B_EST))
+		path.append_array(_rw_pts(B_1104))
+		path.append_array(_rw_line(1150.0, 2200.0))
+	path.append_array(_alignement(runway))
 	st["plane"] = null
 	st["reserved"] = false
 	p.call("set_parked", false)
@@ -388,7 +340,7 @@ func _t2_line(t0: float, t1: float) -> Array:
 	var out: Array = []
 	var n := maxi(2, int(absf(t1 - t0) / 40.0) + 1)
 	for i in n:
-		out.append(rw(lerpf(t0, t1, float(i) / (n - 1)), T2_S))
+		out.append(t2(lerpf(t0, t1, float(i) / (n - 1))))
 	return out
 
 
@@ -444,8 +396,9 @@ func _taxi_in_path(from_t: float, k: int, exit_pts: Array) -> PackedVector2Array
 	var ps := to_rw(st["pos"]).y
 	var ds := to_rw(st["pos"] + dir).y - ps
 	var x := to_rw(st["pos"] - dir * ((ps - T2_S) / maxf(ds, 0.1)))
-	path.append_array(_t2_line(from_t, x.x + (60.0 if from_t > x.x else -60.0)))
-	path.append_array([rw(x.x, T2_S), st["pos"] - dir * 15.0, st["pos"]])
+	if from_t >= 0.0:      # -1 : le poste est juste devant le bout de la bretelle, pas de T2
+		path.append_array(_t2_line(from_t, x.x + (60.0 if from_t > x.x else -60.0)))
+	path.append_array([t2(x.x), st["pos"] - dir * 15.0, st["pos"]])
 	return _clean(path)
 
 
@@ -624,9 +577,9 @@ func _step_arrival(p: Node3D, delta: float) -> void:
 			p.set("speed", v)
 			_place(p, mv["pos"], d, 0.0, mv["pitch"])
 			var r := to_rw(mv["pos"])
-			# bretelle de sortie : 1 600 m (ou 2 340 m si encore trop rapide) en 06, T1 en 24 ; on quitte la piste
-			# a vitesse de roulage, l'entree de la trajectoire commence 90 m avant le virage
-			var exits: Array = [1510.0, 2250.0] if mv["runway"] == "06" else [760.0]
+			# sortie en 06 : bretelle B a 986 m si deja lent, sinon demi-tour dans la raquette du seuil 24 ;
+			# en 24 : bretelle B a 1 104 m si deja lent, sinon bretelle A a 652 m
+			var exits: Array = [986.0, 2150.0] if mv["runway"] == "06" else [1104.0, 652.0]
 			for e in exits:
 				var reached: bool = (r.x >= e) if mv["runway"] == "06" else (r.x <= e)
 				if reached and not mv.get("passed_" + str(e), false):
@@ -660,16 +613,31 @@ func _step_arrival(p: Node3D, delta: float) -> void:
 func _begin_taxi_in(p: Node3D, at_t: float) -> void:
 	var exit_pts: Array
 	var from_t: float
-	if mv["runway"] == "06":
-		# sortie a droite par la bretelle perpendiculaire (1 600 m ou 2 340 m), puis T2 vers le sud-ouest
-		var link := 1600.0 if at_t < 2000.0 else 2340.0
-		exit_pts = [rw(at_t, 0.0), rw(link, 0.0), rw(link, 60.0), rw(link, T2_S)]
-		from_t = link
+	var ouest: bool = float(stands[mv["stand"]]["t"]) < 1040.0
+	exit_pts = [rw(at_t, 0.0)]
+	if at_t > 900.0 and at_t < 1200.0:
+		# bretelle B (986 m en 06, 1 104 m en 24), puis vers T2 du cote du poste
+		exit_pts.append_array(_rw_pts(B_986 if mv["runway"] == "06" else B_1104, true))
+	elif at_t < 900.0:
+		# bretelle A a 652 m (arrivee en 24 encore rapide a 1 104 m)
+		exit_pts.append_array([rw(652.0, 0.0), rw(652.0, 91.0)])
+		ouest = float(stands[mv["stand"]]["t"]) < 650.0
 	else:
-		# sortie a gauche par T1, puis T3 (postes au sud-ouest) ou T1 est (postes au nord-est)
-		exit_pts = [rw(at_t, 0.0), rw(650.0, 0.0), rw(650.0, 60.0)]
-		exit_pts.append_array(_from_t1(stands[mv["stand"]]))
-		from_t = to_rw(exit_pts[exit_pts.size() - 1]).x
+		# arrivee en 06 trop rapide pour B : demi-tour dans la raquette du seuil 24, piste redescendue, bretelle B
+		exit_pts.append_array(_rw_pts(RAQUETTE_24))
+		exit_pts.append_array(_rw_line(2290.0, 1150.0))
+		exit_pts.append_array(_rw_pts(B_1104, true))
+	var t_st: float = stands[mv["stand"]]["t"]
+	if at_t < 900.0:
+		exit_pts.append_array(_rw_pts(A_OUEST if ouest else A_EST, true))
+		from_t = 619.0 if ouest else 680.0
+	elif t_st > 990.0 and t_st < 1120.0:
+		# poste entre les deux branches de B : tout droit depuis le pied de B
+		exit_pts.append_array([rw(1050.0, 91.0), rw(1051.0, 137.0)])
+		from_t = -1.0
+	else:
+		exit_pts.append_array(_rw_pts(B_OUEST if ouest else B_EST, true))
+		from_t = 1012.0 if ouest else 1097.0
 	mv["phase"] = "roulage"
 	mv["path"] = _taxi_in_path(from_t, mv["stand"], exit_pts)
 	mv["seg"] = 0

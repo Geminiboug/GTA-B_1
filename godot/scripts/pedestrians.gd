@@ -52,8 +52,85 @@ func _ready() -> void:
 	if props:
 		if not props.placed:
 			await props.placement_done
-		_seat_vendors(props.vendor_spots)
-	print("Pietons : %d marcheurs, %d assis" % [_walkers.size(), props.vendor_spots.size() if props else 0])
+		# vendeurs : vrais personnages assis sur les tabourets et chaises des etals de chaque tuile, poses et retires
+		# avec elle (avant : un MultiMesh fige pose une fois, qui restait assis dans le vide quand la tuile partait et
+		# ne reagissait pas aux coups)
+		_props = props
+		props.tuile_placee.connect(_vendeurs_tuile)
+		var monde := get_node_or_null("../zone_aeroport")
+		if monde and monde.has_signal("tuile_dechargee"):
+			_monde = monde
+			monde.tuile_dechargee.connect(_vendeurs_partent)
+		_vendeurs_spots(props.vendor_spots)
+	print("Pietons : %d marcheurs, %d places de vendeurs" % [_walkers.size(), props.vendor_spots.size() if props else 0])
+
+
+# ------------------------------------------------------------ vendeurs assis
+var _props: Node
+var _monde: Node
+var _vendeurs := {}      # cle de la place (position arrondie) -> passant assis
+var _modeles := {}       # variante -> PackedScene (gardee en cache pour les fils de travail)
+
+
+func _cle_place(t: Transform3D) -> Vector2i:
+	return Vector2i(roundi(t.origin.x * 4.0), roundi(t.origin.z * 4.0))
+
+
+func _vendeurs_tuile(cle: Vector2i) -> void:
+	## Tuile posee par props.gd : ses places de vendeurs recoivent un vendeur.
+	if _monde == null or not (_monde.get("tuiles") as Dictionary).has(cle):
+		return
+	var rect: Rect2 = _monde.get("tuiles")[cle]["rect"]
+	_vendeurs_spots(_props.vendor_spots.filter(func(t: Transform3D) -> bool: return rect.has_point(Vector2(t.origin.x, t.origin.z))))
+
+
+func _vendeurs_spots(spots: Array) -> void:
+	## Un vendeur par place libre ; le modele est fabrique dans un fil de travail, la pose en travail de fond.
+	for t in spots:
+		var k := _cle_place(t)
+		if _vendeurs.has(k):
+			continue
+		_vendeurs[k] = {}
+		var genre := "femme" if _rng.randf() < 0.75 else "homme"      # surtout des femmes aux etals de Cotonou
+		var variante := PnjUtil.random_variant(_rng, genre, 0.0)
+		# modele charge ici, sur le fil principal (deux fils qui chargent le meme fichier en meme temps peuvent
+		# recevoir null) ; le fil de travail ne fait plus que l'instancier depuis le cache
+		if not _modeles.has(variante):
+			_modeles[variante] = load(PnjUtil.scene_path(variante))
+		var pret := [null]
+		var tache := WorkerThreadPool.add_task(func() -> void: pret[0] = PnjUtil.make(variante))
+		Partie.tache(func() -> void:
+			WorkerThreadPool.wait_for_task_completion(tache)
+			if not _vendeurs.has(k):
+				(pret[0] as Node).queue_free()     # tuile repartie entre-temps
+				return
+			_vendeurs[k] = _assis(genre, t, pret[0]))
+
+
+func _assis(genre: String, chaise: Transform3D, pret: Node3D) -> Dictionary:
+	var w := _new_walker(genre, Vector2(chaise.origin.x, chaise.origin.z), "", {}, pret)
+	w["chaise"] = chaise
+	w["prom"] = false
+	w["caractere"] = "telephone" if _rng.randf() < 0.4 else ("bagarreur" if _rng.randf() < 0.3 else "peureux")
+	_set_state(w, "assis")
+	return w
+
+
+func _vendeurs_partent(cle: Vector2i) -> void:
+	## Tuile dechargee (monde.gd) : ses vendeurs partent avec elle (avec leurs chaises).
+	if _monde == null or not (_monde.get("tuiles") as Dictionary).has(cle):
+		return
+	var rect: Rect2 = _monde.get("tuiles")[cle]["rect"]
+	for k in _vendeurs.keys():
+		var w: Dictionary = _vendeurs[k]
+		var t: Vector2 = Vector2(k) / 4.0
+		if not rect.has_point(t):
+			continue
+		_vendeurs.erase(k)
+		if w.is_empty():
+			continue        # encore en preparation : la tache le jettera
+		_walkers.erase(w)
+		(w["node"] as Node).queue_free()
 
 
 # ------------------------------------------------------------ marcheurs
@@ -282,9 +359,18 @@ func _physics_process(delta: float) -> void:
 		pv = null
 	if _tick % 10 == 0:
 		_vendor_calls(ppos, pv)
+	_voisins.clear()
+	for w in _walkers:
+		if not w.get("far", false):
+			var p: Vector3 = w["pos"]
+			var c := Vector2i(floori(p.x), floori(p.z))
+			if not _voisins.has(c):
+				_voisins[c] = []
+			_voisins[c].append(w)
 	for k in _walkers.size():
 		var w: Dictionary = _walkers[k]
 		var ch: Node3D = w["node"]
+		var avant: Vector3 = w["pos"]
 		if do_lod:
 			var far: bool = (w["pos"] as Vector3).distance_to(cpos) > lod_distance
 			ch.visible = not far
@@ -302,6 +388,8 @@ func _physics_process(delta: float) -> void:
 			_walk(w, dt, ppos)
 		else:
 			_react(w, dt, ppos)
+		if not w.get("far", false) and not w.has("ragdoll") and w["state"] != "assis":
+			_eviter(w, avant)
 		_triggers(w, dt, ppos, pv)
 
 
@@ -687,6 +775,11 @@ func _speak(w: Dictionary, cat: String, voice := false) -> void:
 func _set_state(w: Dictionary, st: String, t := 0.0) -> void:
 	w["state"] = st
 	w["state_t"] = t
+	# vendeur : assis sur sa chaise seulement dans l'etat "assis" (il se leve pour reagir, se rassoit ensuite)
+	if w.has("chaise"):
+		(w["node"] as Node).set("seated", st == "assis")
+		if st == "resume" or st == "walk":
+			w["state"] = "retour_chaise"       # un vendeur ne part pas se promener : il retourne a son etal
 	if w["cross"]:
 		w["cross"] = false
 		(w["node"] as Node).remove_from_group("obstacles_route")
@@ -962,6 +1055,21 @@ func _react(w: Dictionary, delta: float, ppos: Vector3) -> void:
 					ch.stop_clips()
 				w.erase("partner")
 				_set_state(w, "resume")
+		"assis":
+			# sur le tabouret de l'etal, face a la rue
+			var c: Transform3D = w["chaise"]
+			me2 = Vector2(c.origin.x, c.origin.z)
+			w["yaw"] = c.basis.get_euler().y
+		"retour_chaise":
+			# apres une reaction (coup, fuite, appel) : il revient a son etal et se rassoit
+			var c: Transform3D = w["chaise"]
+			var d := Vector2(c.origin.x, c.origin.z) - me2
+			if d.length() > 0.35 and t < 40.0:
+				speed = 1.3
+				face = d
+				me2 = _step_towards(me2, d.normalized(), minf(speed * delta, d.length()))
+			else:
+				_set_state(w, "assis")
 		"resume":
 			_resnap(w)
 			_set_state(w, "walk")
@@ -1007,6 +1115,51 @@ func _vie_quartier(w: Dictionary, k: int) -> void:
 				x[0]["partner"] = x[1]
 				x[0]["pause_time"] = duree
 			return
+
+
+## Evitement (PNJ proches seulement) : ni a travers les objets solides (etals, poteaux, voitures garees, murs), ni a
+## travers les autres passants.
+@export var ecart_pnj := 0.55            # m : distance mini entre deux passants
+var _voisins := {}                       # grille de 1 m -> passants proches (refaite a chaque image)
+var _requete := PhysicsPointQueryParameters3D.new()
+
+
+func _solide(p: Vector3) -> bool:
+	## Un objet solide du decor (couche du monde) a hauteur de genou en p ?
+	_requete.position = p + Vector3(0, 0.5, 0)
+	_requete.collision_mask = 1
+	_requete.collide_with_areas = false
+	return not get_world_3d().direct_space_state.intersect_point(_requete, 1).is_empty()
+
+
+func _eviter(w: Dictionary, avant: Vector3) -> void:
+	var me: Vector3 = w["pos"]
+	var corr := Vector3.ZERO
+	# les autres passants : on s'ecarte doucement (moitie du recouvrement, l'autre fait l'autre moitie)
+	var c := Vector2i(floori(me.x), floori(me.z))
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for o in _voisins.get(c + Vector2i(dx, dz), []):
+				if o == w:
+					continue
+				var d: Vector3 = me - (o["pos"] as Vector3)
+				d.y = 0.0
+				var L := d.length()
+				if L < ecart_pnj and L > 0.001:
+					corr += d / L * (ecart_pnj - L) * 0.5
+	me += corr
+	# objets solides : on reste avant l'obstacle et on le contourne par le cote
+	if me.distance_to(avant) > 0.001 and _solide(me):
+		var pas := me - avant
+		var lat := Vector3(-pas.z, 0, pas.x).normalized() * maxf(pas.length(), 0.05)
+		me = avant
+		for essai in [avant + lat, avant - lat, avant + lat * 2.0, avant - lat * 2.0]:
+			if not _solide(essai) and not _carte.in_building(Vector2(essai.x, essai.z)):
+				me = essai
+				break
+	if me.distance_to(w["pos"]) > 0.0001:
+		w["pos"] = me
+		(w["node"] as Node3D).global_position = Vector3(me.x, (w["node"] as Node3D).global_position.y, me.z)
 
 
 func _step_towards(from: Vector2, dir: Vector2, dist: float) -> Vector2:

@@ -137,7 +137,7 @@ func _on_phase(old: String, ph: String, mv: Dictionary, r: Vector2) -> void:
 	if mv["kind"] == "depart":
 		if old == "repoussage":
 			var head: Vector2 = mv["head"]
-			_check(absf(r.y - air.T2_S) < 3.0 and absf(head.dot(air._u)) > 0.98,
+			_check(absf(r.y - air.t2_s(r.x)) < 3.0 and absf(head.dot(air._u)) > 0.98,
 				"repoussage termine sur T2 (s = %.1f m, cap aligne %.2f)" % [r.y, absf(head.dot(air._u))])
 		if old == "roulage":
 			var head: Vector2 = mv["head"]

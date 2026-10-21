@@ -89,18 +89,6 @@ func _ready() -> void:
 					blue.append(_v(q0 + dir * s2 + nn * sd * hw, 0.3))
 				s2 += 30.0
 			carry = s2 - seg
-	# taxiways hors carte (scripts/horizon.gd, TAXI_LINES) : feux bleus des deux cotes
-	for l in [[744.0, 191.0, 2352.0, 191.0], [1600.0, 34.0, 1600.0, 179.0], [2340.0, 34.0, 2340.0, 179.0], [650.0, 34.0, 650.0, 118.0]]:
-		var q0: Vector2 = a + u * float(l[0]) + n * float(l[1])
-		var q1: Vector2 = a + u * float(l[2]) + n * float(l[3])
-		var seg := q0.distance_to(q1)
-		var dir := (q1 - q0) / seg
-		var nn := Vector2(-dir.y, dir.x)
-		var s2 := 0.0
-		while s2 <= seg:
-			for sd: float in [-1.0, 1.0]:
-				blue.append(_v(q0 + dir * s2 + nn * sd * 12.5, 0.3))
-			s2 += 30.0
 	_lights(white, Color(1.0, 0.95, 0.82), 3.0, "FeuxPisteBlancs")
 	_lights(green, Color(0.2, 1.0, 0.35), 3.5, "FeuxSeuil")
 	_lights(red, Color(1.0, 0.12, 0.08), 3.0, "FeuxFinPiste")

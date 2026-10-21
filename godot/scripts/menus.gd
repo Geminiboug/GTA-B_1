@@ -98,12 +98,34 @@ func _preparer(apres: Callable) -> void:
 	ecran.color = FOND_PREPARATION
 	ecran.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ecran.mouse_filter = Control.MOUSE_FILTER_STOP
+	ecran.clip_contents = true
+	# photo d'un lieu du jeu qui zoome lentement (comme l'ecran de chargement) : l'ecran ne parait pas fige
+	var diapos: Array = preload("res://scripts/chargement.gd").DIAPOS
+	var photo := TextureRect.new()
+	photo.texture = load(diapos[randi() % diapos.size()]["img"])
+	photo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	photo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	photo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	photo.modulate = Color(0.75, 0.75, 0.75)
+	ecran.add_child(photo)
 	var l := Label.new()
-	l.text = tr("Préparation du quartier…")
-	l.set_anchors_preset(Control.PRESET_CENTER)
+	l.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	l.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	l.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	l.offset_bottom = -70
 	l.add_theme_font_size_override("font_size", 28)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	l.add_theme_constant_override("outline_size", 8)
 	ecran.add_child(l)
+	var barre := ProgressBar.new()
+	barre.show_percentage = false
+	barre.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	barre.custom_minimum_size = Vector2(420, 8)
+	barre.offset_left = -210
+	barre.offset_right = 210
+	barre.offset_top = -50
+	barre.offset_bottom = -42
+	ecran.add_child(barre)
 	add_child(ecran)
 	var t := 0.0
 	var stables := 0
@@ -112,8 +134,15 @@ func _preparer(apres: Callable) -> void:
 		var d := get_process_delta_time()
 		t += d
 		stables = stables + 1 if d < 1.0 / preparation_ips else 0
+		# animation au temps reel (les images peuvent etre lentes pendant la preparation)
+		var u := t / preparation_max
+		photo.pivot_offset = photo.size / 2.0
+		photo.scale = Vector2.ONE * (1.0 + 0.08 * u)
+		barre.value = 100.0 * (1.0 - exp(-3.0 * u))
+		l.text = tr("Préparation du quartier") + ".".repeat(1 + int(t * 2.0) % 3)
 		if t > 1.0 and stables >= 30 and Partie.taches_en_attente() == 0:
 			break
+	barre.value = 100.0
 	print("Preparation : %.1f s" % t)
 	Partie.suivre_saccades(30.0)
 	apres.call()
