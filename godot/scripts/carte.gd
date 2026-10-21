@@ -9,6 +9,7 @@ extends RefCounted
 ## Coordonnees : Vector2(x, z) du monde Godot.
 
 const DATA_PATH := "res://assets/data/zone_aeroport.json"
+const CACHE_PATH := "res://assets/data/zone_aeroport_carte.bin"
 const CAR_KINDS := ["primary", "secondary", "tertiary", "residential", "unclassified", "service", "living_street",
 	"track", "trunk"]
 const MAJOR := ["primary", "secondary", "tertiary", "trunk"]
@@ -54,10 +55,56 @@ func _load() -> void:
 		var kind: String = r["kind"]
 		roads.append({"pts": pts, "width": float(r["width"]), "oneway": bool(r["oneway"]), "kind": kind,
 			"surface": r["surface"], "name": r["name"], "car": kind in CAR_KINDS, "major": kind in MAJOR})
-	_snap_dead_ends()
+	# raccords des impasses et masques au metre : longs a calculer sur la grande carte (une minute), donc lus dans un
+	# cache precalcule (tests/outil_cache_carte.gd) quand il correspond aux donnees de la zone (empreinte md5)
+	var t := Time.get_ticks_msec()
+	var cache := _lire_cache()
+	var etapes := "cache %s %d ms" % ["oui" if cache else "non", Time.get_ticks_msec() - t]
+	if not cache:
+		t = Time.get_ticks_msec()
+		_snap_dead_ends()
+		etapes += ", raccords %d ms" % (Time.get_ticks_msec() - t)
+	t = Time.get_ticks_msec()
 	_build_graph()
+	etapes += ", graphe %d ms" % (Time.get_ticks_msec() - t)
+	t = Time.get_ticks_msec()
 	_index_aretes()
-	_build_masks()
+	etapes += ", index %d ms" % (Time.get_ticks_msec() - t)
+	if not cache:
+		t = Time.get_ticks_msec()
+		_build_masks()
+		etapes += ", masques %d ms" % (Time.get_ticks_msec() - t)
+	print("Carte : ", etapes)
+
+
+func _empreinte() -> String:
+	return FileAccess.get_md5(DATA_PATH)
+
+
+func _lire_cache() -> bool:
+	if not FileAccess.file_exists(CACHE_PATH):
+		return false
+	var f := FileAccess.open(CACHE_PATH, FileAccess.READ)
+	if f == null:
+		return false
+	var d: Variant = bytes_to_var(f.get_buffer(f.get_length()).decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP))
+	if typeof(d) != TYPE_DICTIONARY or d.get("md5", "") != _empreinte() or (d["pts"] as Array).size() != roads.size():
+		return false
+	for i in roads.size():
+		roads[i]["pts"] = d["pts"][i]
+	road_mask = d["road_mask"]
+	bld_mask = d["bld_mask"]
+	return true
+
+
+func ecrire_cache(chemin := CACHE_PATH) -> void:
+	## Outil (editeur) : enregistre les rues raccordees et les masques calcules, pour les prochains lancements.
+	var pts: Array = []
+	for r in roads:
+		pts.append(r["pts"])
+	var octets := var_to_bytes({"md5": _empreinte(), "pts": pts, "road_mask": road_mask, "bld_mask": bld_mask})
+	var f := FileAccess.open(chemin, FileAccess.WRITE)
+	f.store_buffer(octets.compress(FileAccess.COMPRESSION_GZIP))
 
 
 # ------------------------------------------------------------------ graphe

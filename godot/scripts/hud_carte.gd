@@ -15,7 +15,8 @@ extends CanvasLayer
 @export var minimap_size := 240.0
 @export var minimap_margin := 18.0
 
-const S := 2.0                                    # pixels de texture par metre
+@export var texture_max := 8192.0                  # pixels : plus grand cote des textures du fond de carte
+var S := 2.0                                       # pixels de texture par metre (reduit si la zone est grande)
 const SHADER := preload("res://shaders/minicarte.gdshader")
 const PINS_FILE := "user://marqueurs.json"
 const COL_LAND := Color(0.2, 0.215, 0.195)
@@ -118,6 +119,8 @@ func _ready() -> void:
 	var b: Array = _carte.data["bounds"]
 	_origin = Vector2(float(b[0]), float(b[1]))
 	_size_m = Vector2(float(b[2]) - float(b[0]), float(b[3]) - float(b[1]))
+	# zone agrandie (7 km) : 2 px/m donnerait deux textures de 14 000 px et ~3 Go de memoire video avec le MSAA
+	S = minf(2.0, texture_max / maxf(_size_m.x, _size_m.y))
 	_font = ThemeDB.fallback_font
 	_base_vp = _make_viewport(false)
 	var base := Node2D.new()
@@ -162,7 +165,7 @@ func _make_viewport(transparent: bool) -> SubViewport:
 	vp.size = Vector2i(ceili(_size_m.x * S), ceili(_size_m.y * S))
 	vp.transparent_bg = transparent
 	vp.disable_3d = true
-	vp.msaa_2d = Viewport.MSAA_4X
+	vp.msaa_2d = Viewport.MSAA_2X
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	add_child(vp)
 	return vp
