@@ -556,3 +556,27 @@ static func fanfare_loop() -> AudioStreamWAV:
 	for i in n:
 		out[i] = clampf(out[i] * 0.6, -1.0, 1.0)
 	return _wav(out, true)
+
+
+static func explosion() -> AudioStreamWAV:
+	## Explosion : claquement sec, souffle grave qui roule, grondement et echo qui s'eteint (3,2 s).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77
+	var n := int(RATE * 3.2)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var lp := 0.0
+	var lp2 := 0.0
+	var ph := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var bruit := rng.randf_range(-1.0, 1.0)
+		lp += (bruit - lp) * 0.5
+		lp2 += (bruit - lp2) * 0.04
+		var f := 28.0 + 70.0 * exp(-t * 5.0)       # fondamentale qui chute : le "boum"
+		ph += TAU * f / RATE
+		var boum := sin(ph) * exp(-t * 2.2) * 1.0
+		var claque := lp * exp(-t * 14.0) * 0.9
+		var souffle := lp2 * exp(-t * 1.3) * 3.2
+		out[i] = clampf((boum + claque + souffle) * 0.8, -1.0, 1.0)
+	return _wav(out, false)

@@ -411,7 +411,7 @@ func _nearest_vehicle() -> Node3D:
 	var best: Node3D = null
 	var best_d := ENTER_DISTANCE
 	for v in get_tree().get_nodes_in_group("vehicules"):
-		if v.get("has_rider"):
+		if v.get("has_rider") or v.get("epave"):
 			continue
 		var ep: Vector3 = v.entry_point() if v.has_method("entry_point") else v.global_position
 		var d: float = global_position.distance_to(ep)

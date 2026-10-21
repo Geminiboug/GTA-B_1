@@ -58,6 +58,10 @@ func set_rider(value: bool) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if epave:
+		speed = 0.0
+		velocity = Vector3.ZERO
+		return
 	var accel_in := 0.0
 	var brake_in := 0.0
 	var steer_in := 0.0
@@ -132,6 +136,8 @@ func _physics_process(delta: float) -> void:
 		if abs(n.y) < 0.5 and fwd.dot(n) < -0.5:
 			if absf(speed) > 3.0:
 				get_tree().call_group("circulation", "on_vehicle_hit", get_slide_collision(i).get_collider(), absf(speed))
+			if absf(speed) > 6.0:
+				damage((absf(speed) - 6.0) * 3.0)
 			speed *= 0.2
 
 	# --- Visuel : inclinaison, guidon, roues ---
@@ -162,6 +168,20 @@ func seat_transform() -> Transform3D:
 # interface commune avec voiture.gd (joueur, circulation, mini-carte)
 var kind := "zem"
 var health := 100.0
+@export var delai_explosion := 10.0          # s entre le debut du feu (sante sous 15 %) et l'explosion
+var epave := false                           # explosee : carbonisee, plus conductible
+
+
+func damage(amount: float) -> void:
+	## Chocs : la moto s'abime, brule sous 15 % de sante puis explose (scripts/feu_vehicule.gd).
+	if epave:
+		return
+	health = maxf(0.0, health - amount)
+	if health < 15.0 and get_node_or_null("FeuVehicule") == null:
+		var fl := FeuVehicule.flammes_moto(Vector3(0, 0.7, 0.1))
+		add_child(fl[0])
+		add_child(fl[1])
+		FeuVehicule.allumer(self, fl[0], fl[1], delai_explosion)
 
 
 func entry_point() -> Vector3:

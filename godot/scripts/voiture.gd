@@ -69,6 +69,8 @@ var speed := 0.0         # vitesse longitudinale signee (camera, mini-carte, son
 var throttle := 0.0
 var braking := false
 var health := 100.0
+@export var delai_explosion := 12.0         # s entre le debut du feu (sante sous 15 %) et l'explosion
+var epave := false                          # explosee : carbonisee, plus conductible
 var rpm := 900.0
 var rapport := 0                 # rapport engage (0 = premiere), -1 marche arriere
 var patine := false              # roues motrices qui patinent (crissement)
@@ -612,11 +614,17 @@ func _allumer_feu() -> void:
 	_feu_lum.shadow_enabled = false
 	_feu_lum.position = _feu.position + Vector3(0, 0.4, 0)
 	add_child(_feu_lum)
+	FeuVehicule.allumer(self, _feu, _feu_lum, delai_explosion)
 
 
 func reparer() -> void:
 	## Garage (phase 16) : tole redressee, vitres et phares neufs, moteur repare.
 	health = 100.0
+	epave = false
+	var ff := get_node_or_null("FeuVehicule")
+	if ff:
+		ff.queue_free()
+	FeuVehicule.decarboniser(self)
 	for mi in _tole:
 		if not is_instance_valid(mi):
 			continue

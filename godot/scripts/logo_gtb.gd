@@ -67,7 +67,7 @@ func _centrer() -> void:
 func jouer() -> void:
 	if _tween:
 		_tween.kill()
-	if Partie.options.get("reduire_animations", false) or DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless":
 		_logo.modulate = Color(1, 1, 1, 1)
 		_logo.scale = Vector2.ONE
 		_halo.modulate.a = 0.35

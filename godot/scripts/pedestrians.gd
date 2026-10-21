@@ -1303,6 +1303,22 @@ func _incident(at: Vector2, line: String, radius: float) -> void:
 			_set_state(w, "flee")
 
 
+func souffle(pos: Vector3, rayon: float) -> void:
+	## Souffle d'une explosion (scripts/explosion.gd) : les passants proches sont projetes au sol, blesses, puis s'enfuient.
+	for w in _walkers:
+		var d: Vector3 = (w["pos"] as Vector3) - pos
+		d.y = 0.0
+		var L := d.length()
+		if L > rayon or w.has("ragdoll"):
+			continue
+		var k := L / rayon
+		w["pv"] = float(w.get("pv", 100.0)) - lerpf(80.0, 25.0, k)
+		var dir := Vector2(d.x, d.z).normalized() if L > 0.05 else Vector2.RIGHT
+		_knock_down(w, dir * lerpf(8.0, 3.0, k), "flee")
+		w["lie"] = _rng.randf_range(3.0, 5.0)
+		_speak(w, "ko", true)
+
+
 func player_attack(origin: Vector3, dir: Vector3, coup := 0, degats := -1.0, portee := 1.6, arme := false) -> bool:
 	## Coup du joueur (touche F, clic gauche, manette B) ; coup 0 direct, 1 croise, 2 crochet (scripts/player.gd).
 	## Renvoie vrai si quelqu'un est touche. Chaque passant a des points de vie et un caractere : le bagarreur se
