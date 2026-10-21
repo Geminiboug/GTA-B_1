@@ -33,6 +33,8 @@ func _ready() -> void:
 	layer = 30
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	add_to_group("menus")
+	# touches choisies par le joueur, aussi pour les actions creees par les autres scripts a leur _ready (armes...)
+	Partie.appliquer_touches.call_deferred()
 	_root = ColorRect.new()
 	(_root as ColorRect).color = Color(0.02, 0.03, 0.05, 0.62)
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -288,7 +290,7 @@ func _show_options() -> void:
 	_slider("Taille des sous-titres", o.get("taille_sous_titres", 26), 18, 44, func(v: float) -> void: o["taille_sous_titres"] = int(v))
 	_slider("Taille de l'interface", o.get("taille_interface", 1.0), 0.8, 1.6, func(v: float) -> void: o["taille_interface"] = v)
 	_check("Aide à la visée (souris)", o.get("aide_visee", true), func(v: bool) -> void: o["aide_visee"] = v)
-	_button("Touches du clavier", _show_touches)
+	_button("Commandes (clavier et souris)", _show_touches)
 	_check("Couleurs adaptées au daltonisme", o.get("daltonisme", false), func(v: bool) -> void: o["daltonisme"] = v)
 	_check("Violence réduite (armes moins puissantes)", o.get("violence_reduite", false), func(v: bool) -> void: o["violence_reduite"] = v)
 	var rl := HBoxContainer.new()
@@ -369,42 +371,91 @@ var _attente_touche := ""
 func _show_touches() -> void:
 	## Reaffectation des touches : cliquer sur une action puis appuyer sur la nouvelle touche (Echap annule).
 	_page = "touches"
-	_clear(tr("Touches du clavier"))
+	_clear(tr("Commandes (clavier et souris)"))
+	var info := Label.new()
+	info.text = tr("Clique sur une commande puis appuie sur la nouvelle touche ou le bouton de souris (Échap : annuler).")
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_theme_font_size_override("font_size", 16)
+	_box.add_child(info)
+	if _message_touche != "":
+		var m := Label.new()
+		m.text = _message_touche
+		m.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		m.add_theme_font_size_override("font_size", 16)
+		m.add_theme_color_override("font_color", Color(1, 0.8, 0.3))
+		_box.add_child(m)
+	var first: Button = null
+	var grille := GridContainer.new()      # deux colonnes : toute la liste tient a l'ecran
+	grille.columns = 2
+	grille.add_theme_constant_override("h_separation", 10)
+	_box.add_child(grille)
 	for e in Partie.TOUCHES_REGLABLES:
-		var nom := ""
-		for ev in InputMap.action_get_events(e[0]) if InputMap.has_action(e[0]) else []:
-			if ev is InputEventKey:
-				nom = OS.get_keycode_string((ev as InputEventKey).physical_keycode if (ev as InputEventKey).physical_keycode != 0 else (ev as InputEventKey).keycode)
-				break
+		if not InputMap.has_action(e[0]):
+			continue
 		var action: String = e[0]
-		_button("%s : %s" % [tr(e[1]), "…" if _attente_touche == action else nom], func() -> void:
+		var b := Button.new()
+		b.text = "%s : %s" % [tr(e[1]), "…" if _attente_touche == action else Partie.nom_touche(action)]
+		b.pressed.connect(func() -> void:
 			_attente_touche = action
+			_message_touche = ""
 			_show_touches())
+		b.add_theme_font_size_override("font_size", 18)
+		b.custom_minimum_size = Vector2(380, 34)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		grille.add_child(b)
+		if first == null or _attente_touche == action:
+			first = b
 	_button("Touches par défaut", func() -> void:
-		Partie.options["touches"] = {}
-		Partie.sauver_options()
-		for e in Partie.TOUCHES_REGLABLES:
-			var defaut = ProjectSettings.get_setting("input/" + String(e[0]))
-			if defaut is Dictionary and InputMap.has_action(e[0]):
-				InputMap.action_erase_events(e[0])
-				for ev in defaut["events"]:
-					InputMap.action_add_event(e[0], ev)
+		Partie.touches_par_defaut()
+		_message_touche = tr("Touches d'origine remises.")
 		_show_touches())
 	_button("Revenir", _show_options)
+	if first:
+		first.grab_focus.call_deferred()
+
+
+var _message_touche := ""
 
 
 func _input(event: InputEvent) -> void:
-	if _attente_touche == "" or not (event is InputEventKey) or not event.pressed:
+	## Saisie de la nouvelle touche : une touche du clavier ou un bouton de souris. Si une autre commande l'utilisait
+	## deja, les deux echangent leurs touches (jamais deux commandes sur la meme touche).
+	if _attente_touche == "":
+		return
+	var ok: bool = (event is InputEventKey or event is InputEventMouseButton) and event.is_pressed() and not event.is_echo()
+	if not ok:
 		return
 	get_viewport().set_input_as_handled()
-	var k := event as InputEventKey
-	if k.keycode != KEY_ESCAPE:
-		var t: Dictionary = Partie.options.get("touches", {})
-		t[_attente_touche] = k.physical_keycode if k.physical_keycode != 0 else k.keycode
-		Partie.options["touches"] = t
-		Partie.sauver_options()
+	if event is InputEventKey and (event as InputEventKey).keycode == KEY_ESCAPE:
+		_attente_touche = ""
+		_show_touches.call_deferred()
+		return
+	var code: Variant = Partie.code_touche(event)
+	var t: Dictionary = Partie.options.get("touches", {})
+	var ancien: Variant = Partie.code_touche(_premier_evenement(_attente_touche))
+	_message_touche = ""
+	for e in Partie.TOUCHES_REGLABLES:
+		var autre: String = e[0]
+		if autre == _attente_touche or not InputMap.has_action(autre):
+			continue
+		var code_autre: Variant = Partie.code_touche(_premier_evenement(autre))
+		# touche (entier) et bouton de souris (texte) ne se comparent pas directement
+		if typeof(code_autre) == typeof(code) and code_autre == code and ancien != null:
+			t[autre] = ancien
+			_message_touche = tr("« %s » prend l'ancienne touche (%s).") % [tr(e[1]), Partie.nom_touche(_attente_touche)]
+	t[_attente_touche] = code
+	Partie.options["touches"] = t
+	Partie.sauver_options()
 	_attente_touche = ""
-	_show_touches()
+	# la page est redessinee a l'image suivante (le clic de souris ne doit pas activer un autre bouton)
+	_show_touches.call_deferred()
+
+
+func _premier_evenement(action: String) -> InputEvent:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey or ev is InputEventMouseButton:
+			return ev
+	return null
 
 
 func _show_succes() -> void:

@@ -37,10 +37,17 @@ var options := {"volume": 0.8, "musique": 0.6, "sensibilite": 1.0, "effets_camer
 	"violence_reduite": false, "sous_titres": true, "taille_sous_titres": 26, "vol_vehicules": 1.0, "vol_ambiance": 1.0,
 	"vol_effets": 1.0, "taille_interface": 1.0, "aide_visee": true, "touches": {}, "langue": "auto", "daltonisme": false}
 # actions reaffectables au clavier (menu Options > Touches)
+## Commandes reaffectables (clavier et boutons de souris ; la manette garde ses boutons) : [action, libelle, touche par
+## defaut pour les actions creees par le code]. Options > Touches du clavier.
 const TOUCHES_REGLABLES := [["move_forward", "Avancer"], ["move_back", "Reculer"], ["move_left", "Gauche"],
-	["move_right", "Droite"], ["jump", "Sauter"], ["sprint", "Courir"], ["crouch", "S'accroupir"], ["interact", "Monter / descendre"],
-	["parler", "Parler / acheter"], ["attaque", "Frapper / tirer"], ["map", "Carte"], ["horn", "Klaxon"],
-	["handbrake", "Frein à main"], ["accelerate", "Accélérer"], ["brake", "Freiner"]]
+	["move_right", "Droite"], ["jump", "Sauter / escalader"], ["sprint", "Courir"], ["walk", "Marcher lentement"],
+	["crouch", "S'accroupir"], ["interact", "Monter / descendre d'un véhicule"], ["parler", "Parler / acheter"],
+	["attaque", "Frapper / tirer"], ["garde", "Viser / se protéger"], ["arme_suivante", "Arme suivante"],
+	["recharger", "Recharger"], ["map", "Carte"], ["map_pin", "Repère sur la carte"], ["camera_vue", "Changer de vue"],
+	["inventaire", "Inventaire", KEY_I], ["telephone", "Téléphone", KEY_P], ["torche", "Torche", KEY_L],
+	["photo", "Mode photo", KEY_F12], ["accelerate", "Accélérer"], ["brake", "Freiner / reculer"], ["handbrake", "Frein à main"],
+	["horn", "Klaxon"], ["limiteur", "Limiteur de vitesse"], ["bande", "Appeler la bande"]]
+var _touches_defaut := {}      # action -> evenements clavier / souris d'origine (pour "Touches par defaut")
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
 ## Mise en place etalee (ecran de chargement) : pendant le chargement, les scripts lourds confient leurs etapes a
 ## chantier() au lieu de tout construire dans _ready ; l'ecran de chargement les execute quelques ms par image.
@@ -493,6 +500,83 @@ func sauver_options() -> void:
 	appliquer_options()
 
 
+func appliquer_touches() -> void:
+	## Cree les actions du jeu qui n'existent pas encore (touche par defaut), puis pose les touches choisies par le
+	## joueur (options["touches"] : action -> code de touche, ou "souris:<bouton>"). Les boutons de manette restent.
+	for e in TOUCHES_REGLABLES:
+		if not InputMap.has_action(e[0]) and e.size() > 2:
+			InputMap.add_action(e[0])
+			var k := InputEventKey.new()
+			k.physical_keycode = e[2]
+			InputMap.action_add_event(e[0], k)
+	var t: Dictionary = options.get("touches", {})
+	for a in t:
+		if not InputMap.has_action(a):
+			continue
+		if not _touches_defaut.has(a):
+			_touches_defaut[a] = InputMap.action_get_events(a).filter(func(ev: InputEvent) -> bool: return ev is InputEventKey or ev is InputEventMouseButton)
+		for ev in InputMap.action_get_events(a):
+			if ev is InputEventKey or ev is InputEventMouseButton:
+				InputMap.action_erase_event(a, ev)
+		InputMap.action_add_event(a, evenement_touche(t[a]))
+
+
+func evenement_touche(code: Variant) -> InputEvent:
+	## Code enregistre -> evenement : entier = touche physique du clavier, "souris:N" = bouton de souris N.
+	if code is String and String(code).begins_with("souris:"):
+		var m := InputEventMouseButton.new()
+		m.button_index = int(String(code).trim_prefix("souris:")) as MouseButton
+		return m
+	var k := InputEventKey.new()
+	k.physical_keycode = int(code) as Key
+	return k
+
+
+func code_touche(ev: InputEvent) -> Variant:
+	## Evenement -> code enregistre (inverse de evenement_touche), null si ce n'est ni une touche ni un bouton de souris.
+	if ev is InputEventMouseButton:
+		return "souris:%d" % (ev as InputEventMouseButton).button_index
+	if ev is InputEventKey:
+		var k := ev as InputEventKey
+		return int(k.physical_keycode if k.physical_keycode != 0 else k.keycode)
+	return null
+
+
+func nom_touche(action: String) -> String:
+	## Nom lisible de la touche (ou du bouton de souris) d'une action, pour les menus et l'aide a l'ecran.
+	if not InputMap.has_action(action):
+		return "?"
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey:
+			var k := ev as InputEventKey
+			var code := k.physical_keycode if k.physical_keycode != 0 else k.keycode
+			# touche physique -> lettre de la disposition du clavier du joueur (AZERTY : Z Q S D)
+			var lettre := DisplayServer.keyboard_get_label_from_physical(code) if k.physical_keycode != 0 and DisplayServer.get_name() != "headless" else code
+			return OS.get_keycode_string(lettre if lettre != KEY_NONE else code)
+		if ev is InputEventMouseButton:
+			match (ev as InputEventMouseButton).button_index:
+				MOUSE_BUTTON_LEFT: return tr("Clic gauche")
+				MOUSE_BUTTON_RIGHT: return tr("Clic droit")
+				MOUSE_BUTTON_MIDDLE: return tr("Clic milieu")
+				MOUSE_BUTTON_WHEEL_UP: return tr("Molette haut")
+				MOUSE_BUTTON_WHEEL_DOWN: return tr("Molette bas")
+				var b: return tr("Souris %d") % b
+	return "—"
+
+
+func touches_par_defaut() -> void:
+	## Remet les touches d'origine (projet ou creees par le code) et oublie les choix du joueur.
+	for a in _touches_defaut:
+		for ev in InputMap.action_get_events(a):
+			if ev is InputEventKey or ev is InputEventMouseButton:
+				InputMap.action_erase_event(a, ev)
+		for ev in _touches_defaut[a]:
+			InputMap.action_add_event(a, ev)
+	_touches_defaut.clear()
+	options["touches"] = {}
+	sauver_options()
+
+
 func appliquer_options() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(float(options["volume"]), 0.0001)))
 	for e in [["Vehicules", "vol_vehicules"], ["Ambiance", "vol_ambiance"], ["Effets", "vol_effets"]]:
@@ -511,15 +595,7 @@ func appliquer_options() -> void:
 	# touches reaffectees (clavier seulement ; la manette garde ses boutons)
 	# noeuds qui ont fige un reglage a leur creation (couleurs du daltonisme...) : mise a jour immediate
 	get_tree().call_group("options", "options_changees")
-	var t: Dictionary = options.get("touches", {})
-	for a in t:
-		if InputMap.has_action(a):
-			for ev in InputMap.action_get_events(a):
-				if ev is InputEventKey:
-					InputMap.action_erase_event(a, ev)
-			var k := InputEventKey.new()
-			k.physical_keycode = int(t[a])
-			InputMap.action_add_event(a, k)
+	appliquer_touches()
 	var scene := get_tree().current_scene
 	if scene == null:
 		return

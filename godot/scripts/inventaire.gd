@@ -6,8 +6,6 @@ extends CanvasLayer
 ## sante. Les autres objets (colis, riz...) servent aux missions.
 
 @export var player_path: NodePath = ^"../Player"
-@export var touche := KEY_I
-@export var touche_torche := KEY_L
 @export var torche_portee := 28.0       # m
 @export var torche_angle := 26.0        # degres (demi-angle du cone)
 @export var torche_energie := 9.0
@@ -88,13 +86,13 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if get_tree().paused:
 		return
-	var toggle: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == touche) \
+	var toggle: bool = event.is_action_pressed("inventaire") \
 		or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_DPAD_LEFT)
 	if toggle:
 		ouvrir(not ouvert)
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == touche_torche:
+	if event.is_action_pressed("torche"):
 		if Partie.a("Torche"):
 			torche(not torche_allumee)
 		get_viewport().set_input_as_handled()

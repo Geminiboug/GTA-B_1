@@ -51,7 +51,12 @@ WALL = {"wall": (0.2, 2.2), "fence": (0.1, 1.8)}
 LEVEL_H = 3.0
 # noms de rue reels (tags OSM) -> noms fictifs affiches en jeu (docs/correspondance_noms.md)
 NOM_FICTIF = {"Avenue Pape Jean-Paul II": "Boulevard de l'Envol", "Route des Pêches": "Route des Filets",
-              "Carrefour Plage de Fidjrossé": "Carrefour Plage de Fidjrossa"}
+              "Carrefour Plage de Fidjrossé": "Carrefour Plage de Fidjrossa",
+              # extension est (21/10/2026)
+              "Boulevard de la Marina": "Boulevard de la Rade", "Avenue Dorothée Lima": "Avenue des Flamboyants",
+              "Avenue du Canada": "Avenue de l'Érable", "Place de Bulgarie": "Place des Roses",
+              "Boulevard de France": "Boulevard de l'Hexagone", "Avenue Y. Eipe": "Avenue des Palmiers",
+              "Rue du Révérend-Père Aupiais": "Rue du Vieux Séminaire", "Boulevard Roi Guézo": "Boulevard du Roi"}
 # quartiers (etiquettes de la carte, scripts/hud_carte.gd) : Fidjrossé -> Fidjrossa, Djako Daho -> Djaka Daho,
 # Fiyégnon-Jacquot -> Fiyégnan-Jacot (docs/LEGAL.md)
 SEA_EXTRA = 400.0

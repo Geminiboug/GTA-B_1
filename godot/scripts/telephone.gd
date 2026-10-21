@@ -8,7 +8,6 @@ extends CanvasLayer
 ## - Appareil photo : mode photo (scripts/mode_photo.gd).
 ## Haut / bas choisir, Entree (A) ouvrir, Retour arriere / Echap (B) revenir, P fermer. Le jeu continue.
 
-@export var touche := KEY_P
 @export var frais_appel_zem := 100       # FCFA en plus de la course quand on appelle un zem
 
 const APPS := ["Messages", "Carte", "Zem", "Contacts", "Appareil photo"]
@@ -86,7 +85,7 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if get_tree().paused:
 		return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == touche:
+	if event.is_action_pressed("telephone"):
 		if ouvert or Partie.a("Smartphone"):
 			ouvrir(not ouvert)
 		get_viewport().set_input_as_handled()

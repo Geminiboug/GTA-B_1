@@ -4,7 +4,6 @@ extends CanvasLayer
 ## descendre, Shift plus vite, molette champ de vision. Entree (ou A) enregistre une capture dans user://captures/,
 ## F12 ou Echap (B) pour sortir.
 
-@export var touche := KEY_F12
 @export var vitesse := 4.0
 @export var portee := 40.0            # m : la camera reste a cette distance du joueur au plus
 @export var sensibilite := 0.0025
@@ -34,7 +33,7 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	var toggle: bool = event is InputEventKey and event.pressed and not event.echo and event.keycode == touche
+	var toggle: bool = event.is_action_pressed("photo")
 	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START and Input.is_joy_button_pressed(event.device, JOY_BUTTON_BACK):
 		toggle = true
 	if toggle:

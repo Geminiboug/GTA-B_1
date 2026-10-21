@@ -216,19 +216,31 @@ func texte_aide(ctx: String, manette: bool) -> String:
 				l = ["RT : accélérer   LT : freiner / reculer", "Stick gauche : tourner", "RB : frein à main",
 					"Y : descendre", "Croix bas : limiteur 50 km/h"]
 	else:
+		# touches reelles (Options > Commandes : elles peuvent avoir ete changees)
+		var k := func(a: String) -> String: return Partie.nom_touche(a)
+		var dep := "%s %s %s %s" % [k.call("move_forward"), k.call("move_left"), k.call("move_back"), k.call("move_right")]
+		var t := func(touche: String, quoi: String) -> String: return "%s : %s" % [touche, tr(quoi)]
 		match ctx:
 			"pied":
-				l = ["Z Q S D : marcher", "Souris : caméra", "Maj (tapoter) : courir   Alt : marche lente",
-					"Espace : sauter / escalader", "C : s'accroupir", "E : monter dans un véhicule", "T : parler / acheter",
-					"M : carte   V : vue", "I : inventaire   P : téléphone   L : torche", "Tab : arme   clic droit : viser   R : recharger"]
+				l = [t.call(dep, "marcher"), t.call(tr("Souris"), "caméra"),
+					t.call(k.call("sprint"), "courir (tapoter)") + "   " + t.call(k.call("walk"), "marche lente"),
+					t.call(k.call("jump"), "sauter / escalader"), t.call(k.call("crouch"), "s'accroupir"),
+					t.call(k.call("interact"), "monter dans un véhicule"), t.call(k.call("parler"), "parler / acheter"),
+					t.call(k.call("map"), "carte") + "   " + t.call(k.call("camera_vue"), "vue"),
+					t.call(k.call("inventaire"), "inventaire") + "   " + t.call(k.call("telephone"), "téléphone") + "   " + t.call(k.call("torche"), "torche"),
+					t.call(k.call("arme_suivante"), "arme") + "   " + t.call(k.call("garde"), "viser") + "   " + t.call(k.call("recharger"), "recharger")]
 			"zem":
-				l = ["Z : accélérer   S : freiner", "Q D : tourner", "Espace : frein arrière", "H : klaxon",
-					"E : descendre", "T : chercher un client (à l'arrêt)", "K : limiteur 50 km/h"]
+				l = [t.call(k.call("accelerate"), "accélérer") + "   " + t.call(k.call("brake"), "freiner"),
+					t.call(k.call("move_left") + " " + k.call("move_right"), "tourner"), t.call(k.call("handbrake"), "frein arrière"),
+					t.call(k.call("horn"), "klaxon"), t.call(k.call("interact"), "descendre"),
+					t.call(k.call("parler"), "chercher un client (à l'arrêt)"), t.call(k.call("limiteur"), "limiteur 50 km/h")]
 			_:
-				l = ["Z : accélérer   S : freiner / reculer", "Q D : tourner", "Espace : frein à main", "H : klaxon",
-					"E : descendre", "K : limiteur 50 km/h"]
-	l.append(tr("Croix haut") if manette else "F2")
-	l[-1] += tr(" : cacher l'aide")
+				l = [t.call(k.call("accelerate"), "accélérer") + "   " + t.call(k.call("brake"), "freiner / reculer"),
+					t.call(k.call("move_left") + " " + k.call("move_right"), "tourner"), t.call(k.call("handbrake"), "frein à main"),
+					t.call(k.call("horn"), "klaxon"), t.call(k.call("interact"), "descendre"), t.call(k.call("limiteur"), "limiteur 50 km/h")]
+		l.append("F2" + tr(" : cacher l'aide"))
+		return "\n".join(l)
+	l.append(tr("Croix haut") + tr(" : cacher l'aide"))
 	for i in l.size():
 		l[i] = tr(l[i])
 	return "\n".join(l)

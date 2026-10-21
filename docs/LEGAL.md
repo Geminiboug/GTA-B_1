@@ -73,6 +73,13 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Maquis de la Playa | Maquis La Plaja |
 | Code Bar | Mot de Passe Bar |
 | Avion sur la plage | L Epave Volante |
+| Boulevard de la Marina | Boulevard de la Rade |
+| Avenue Dorothee Lima | Avenue des Flamboyants |
+| Avenue du Canada | Avenue de l'Erable |
+| Place de Bulgarie | Place des Roses |
+| Boulevard de France | Boulevard de l'Hexagone |
+| Monuments publics (Bio Guera, l Amazone, place du Souvenir) | noms reels gardes (monuments historiques, decision du 20/10/2026) |
+| Parc Cardinal Bernardin Gantin | Parc Cardinal Cotodji (comme l aeroport) |
 | Wellness Fitness Center | Wellbeing Gym |
 | Nico s Hair | Coco s Hair |
 | FADOUL | Fadil Market |
