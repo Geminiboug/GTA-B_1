@@ -74,6 +74,73 @@ func _rue(x: float, z: float) -> Vector3:
 	return _ground(q.x, q.y)
 
 
+## Points d'objectif dehors : verifies (jamais dans un batiment, un mur ou un objet, jamais sur un toit), recales sur le
+## sol libre le plus proche (retour d'Olympe du 21/10/2026 : zone jaune parfois inaccessible).
+const POINTS_VERIFIES := ["aerogare", "plage", "epave", "haie_verte", "patronne", "commandant", "codjo", "colis", "poste_0", "poste_1", "poste_2"]
+var _verif_t := 0.0
+
+
+func _libre(p: Vector3) -> bool:
+	## Vrai si un personnage tient debout en p (pieds), hors batiment, sans toucher le decor charge.
+	var c := Carte.zone()
+	if c and c.in_building(Vector2(p.x, p.z)):
+		return false
+	var cap := CapsuleShape3D.new()
+	cap.radius = 0.35
+	cap.height = 1.7
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = cap
+	q.transform = Transform3D(Basis.IDENTITY, p + Vector3.UP * 0.95)
+	q.collision_mask = 1
+	if _player:
+		q.exclude = [_player.get_rid()]
+	return get_viewport().get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
+
+
+func _degager(p: Vector3) -> Vector3:
+	var c := Carte.zone()
+	var xz := Vector2(p.x, p.z)
+	if c and (c.in_building(xz) or not c.in_bounds(xz)):
+		var near: Dictionary = c.nearest_on_network(xz)
+		if not near.is_empty():
+			xz = near["point"]
+	# sol sous 2 m (un rayon parti de 80 m touchait les toits)
+	var q := PhysicsRayQueryParameters3D.create(Vector3(xz.x, 2.0, xz.y), Vector3(xz.x, -10.0, xz.y), 1)
+	var hit := get_viewport().get_world_3d().direct_space_state.intersect_ray(q)
+	var base := Vector3(xz.x, (hit["position"] as Vector3).y if not hit.is_empty() else 0.0, xz.y)
+	if _libre(base):
+		return base
+	for rad in range(1, 14):
+		for k in 12:
+			var a := TAU * float(k) / 12.0 + rad * 0.5
+			var cand := base + Vector3(cos(a), 0, sin(a)) * (0.8 * rad)
+			var h2 := get_viewport().get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(cand + Vector3.UP * 2.0, cand - Vector3.UP * 10.0, 1))
+			if not h2.is_empty():
+				cand.y = (h2["position"] as Vector3).y
+			if _libre(cand):
+				return cand
+	return base
+
+
+func _revalider_cible(delta: float, ppos: Vector3, e: Dictionary) -> void:
+	## Quand le joueur approche, le decor de la tuile est charge : on recale l'objectif s'il est tombe dans un objet.
+	_verif_t -= delta
+	if _verif_t > 0.0:
+		return
+	_verif_t = 1.0
+	var cle := String(e.get("ou", e.get("qui", "")))
+	if not (cle in POINTS_VERIFIES) or not points.has(cle):
+		return
+	var p: Vector3 = points[cle]
+	if Vector2(ppos.x - p.x, ppos.z - p.z).length() > 70.0:
+		return
+	var p2 := _degager(p)
+	if p2.distance_to(p) > 0.4:
+		points[cle] = p2
+		_set_marker(p2)
+		_waypoint(p2)
+
+
 func _nearest_shop(kind: String, from: Vector3, min_d := 0.0) -> Vector3:
 	var com := get_node_or_null("../Commerce")
 	var best := Vector3.INF
@@ -120,6 +187,9 @@ func _setup() -> void:
 	for i in 3:
 		var sp2: Vector2 = stands[i]["pos"] if i < stands.size() else Vector2(300 + 40 * i, -380)
 		points["poste_%d" % i] = _ground(sp2.x, sp2.y)
+	for cle in POINTS_VERIFIES:
+		if points.has(cle):
+			points[cle] = _degager(points[cle])
 	_build_missions()
 
 
@@ -420,6 +490,7 @@ func _physics_process(delta: float) -> void:
 	if not _dialog.is_empty() and e0["t"] == "parler":
 		return
 	var e: Dictionary = missions[idx]["etapes"][step]
+	_revalider_cible(delta, ppos, e)
 	match e["t"]:
 		"parler":
 			var p: Vector3 = points[e["qui"]]
