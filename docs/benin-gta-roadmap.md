@@ -130,7 +130,7 @@ En cours ou a corriger :
 - [x] Tenue : pagne et logo GTB de la planche d'Olympe appliques (assets/textures/pagne_gtb.png, logo_tshirt_gtb.png) ; textures de l'aeroport (piste, parking, tarmac) et de l'epave (assets/textures/aeroport, epave)
 - [ ] Explosion : flammes plus vives ; vehicules de la circulation pas encore abimables
 - [ ] Avion leger : portes du pilote et du passager a animer a la montee (le modele les a), cockpit a habiller, atterrissage a regler sur le terrain, ecole de pilotage, puis helicopteres pilotables (decision d'Olympe 22/10 : seuls de petits avions et des helicopteres sont pilotables, jamais les avions de ligne)
-- [ ] Lag et chutes brutales d'images (retour d'Olympe 22/10) : tests/perf_saccades.gd (marche le long de la route) montre 189 images > 33 ms, jusqu'a 600 ms ; elles disparaissent (22 restantes) sans les vendeurs assis poses par tuile (pedestrians.gd _vendeurs_spots : ~50 noeuds par vendeur et 400 ms par image, cause exacte pas encore isolee ; ni l'attente du fil de travail, ni l'habillage, ni la fusion ne sont en cause). A traiter ensuite : densite 90 / 60 / 36 trop lourde ?
+- [x] Lag et chutes brutales d'images (retour d'Olympe 22/10) : cause isolee et corrigee (22/10). Chaque nouveau passant avec AnimCtrl reecrivait loop_mode sur les clips partages (anim_ctrl.gd _ready) : l'Animation emettait "changed" et tous les lecteurs deja en scene reconstruisaient leurs caches (400 a 500 ms par vendeur dans une foule). Garde `if loop_mode != LINEAR`. Vendeurs poses un par image sans fil de travail (pedestrians.gd _vendeur_cree), dix morphologies prechargees au chargement. tests/perf_saccades.gd : pire image 500-730 ms -> ~200 ms, restent des images de 34-50 ms dans les zones denses (~25 i/s) et des pics 100-200 ms a l'arrivee des grosses tuiles (a reduire : budget des taches de tuile, densite 90 / 60 / 36). Outils : tests/mesure_pnj.gd, liste_noeuds.gd, perf_saccades.gd (argument court + nom de noeud a retirer).
 - [ ] Voitures : portes arriere et cote passager pour les passagers PNJ ; motos : montee avec enjambement et mains sur le guidon a affiner
 - [ ] Stations-service : icone sur la mini-carte, essence pour l'avion
 
@@ -307,7 +307,7 @@ CONVENTIONS
 
 ETAT ACTUEL (22/10/2026)
 - Le jeu est jouable du lancement (ecran titre au logo anime, Nouvelle partie) a la fin de l'acte 1 ("A suivre"). Plein ecran par
-  defaut. Exports Windows, Linux et Android (APK de debug) dans builds/ : a refaire apres les derniers lots.
+  defaut. Exports Windows (0.7.1), Linux et Android (APK de debug 0.1.5, code 7) refaits le 22/10 apres le correctif de lag ; icone = nouveau logo GTB (godot/icone.png). Amelioration des personnages (visage, baskets, fesses) : maquette validee mais integration abandonnee par Olympe le 22/10 (resultat juge pire dans le jeu), scripts gardes dans blender/tools/maquette_perso*.py, modeles du jeu inchanges. test_tenue (voitures) ne se termine pas : a examiner.
 - Systemes ajoutes depuis le 16/10 (tous testes par godot/tests/test_*.gd) :
   - Monde : carte de 7 081 x 2 321 m en 81 tuiles streamees (monde.gd), cache de la carte (tests/outil_cache_carte.gd a relancer
     apres chaque import), mini-carte plafonnee a 8192 px. Chargement ~67 s a l'export a optimiser. Raccords de routes coupees :

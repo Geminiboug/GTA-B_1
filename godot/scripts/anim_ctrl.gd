@@ -191,7 +191,9 @@ func _ready() -> void:
 		if clip(n) == "":
 			continue
 		var a: Animation = _player.get_animation(clip(n))
-		if a:
+		# les clips sont partages par tous les personnages : reecrire le mode de boucle emet "changed" et tous les lecteurs
+		# deja en scene reconstruisent leurs caches (chaque nouveau passant coutait 400 ms dans une foule)
+		if a and a.loop_mode != Animation.LOOP_LINEAR:
 			a.loop_mode = Animation.LOOP_LINEAR
 	_tree = AnimationTree.new()
 	_tree.name = "Arbre"

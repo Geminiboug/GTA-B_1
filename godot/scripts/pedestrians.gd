@@ -48,6 +48,10 @@ func _ready() -> void:
 		var pret := [null]
 		var tache := WorkerThreadPool.add_task(func() -> void: pret[0] = PnjUtil.make(variante))
 		Partie.chantier(_spawn_pret.bind(tache, pret, genre))
+	# toutes les morphologies en cache des le chargement : le premier vendeur d'une variante ne charge plus un modele de
+	# 4 Mo sur le fil principal en pleine partie (200 ms)
+	for v in PnjUtil.VARIANTS:
+		Partie.chantier(func() -> void: _modeles[v] = load(PnjUtil.scene_path(v)))
 	var traffic := get_node_or_null("../Circulation")
 	if traffic and traffic.has_signal("driver_ejected"):
 		traffic.driver_ejected.connect(_on_driver_ejected)
@@ -88,7 +92,9 @@ func _vendeurs_tuile(cle: Vector2i) -> void:
 
 
 func _vendeurs_spots(spots: Array) -> void:
-	## Un vendeur par place libre ; le modele est fabrique dans un fil de travail, la pose en travail de fond.
+	## Un vendeur par place libre, un par image au plus (Partie.tache). Le modele est deja en cache (instancier ne coute que
+	## ~1 ms) : les fils de travail de l'ancienne version, une quarantaine d'instanciations a la fois, affamaient le fil
+	## principal (images de 500 ms des qu'une tuile apportait ses vendeurs).
 	for t in spots:
 		var k := _cle_place(t)
 		if _vendeurs.has(k):
@@ -96,18 +102,15 @@ func _vendeurs_spots(spots: Array) -> void:
 		_vendeurs[k] = {}
 		var genre := "femme" if _rng.randf() < 0.75 else "homme"      # surtout des femmes aux etals de Cotonou
 		var variante := PnjUtil.random_variant(_rng, genre, 0.0)
-		# modele charge ici, sur le fil principal (deux fils qui chargent le meme fichier en meme temps peuvent
-		# recevoir null) ; le fil de travail ne fait plus que l'instancier depuis le cache
 		if not _modeles.has(variante):
 			_modeles[variante] = load(PnjUtil.scene_path(variante))
-		var pret := [null]
-		var tache := WorkerThreadPool.add_task(func() -> void: pret[0] = PnjUtil.make(variante))
-		Partie.tache(func() -> void:
-			WorkerThreadPool.wait_for_task_completion(tache)
-			if not _vendeurs.has(k):
-				(pret[0] as Node).queue_free()     # tuile repartie entre-temps
-				return
-			_vendeurs[k] = _assis(genre, t, pret[0]))
+		Partie.tache(_vendeur_cree.bind(k, genre, t, variante))
+
+
+func _vendeur_cree(k: Vector2i, genre: String, t: Transform3D, variante: String) -> void:
+	if not _vendeurs.has(k):
+		return        # tuile repartie entre-temps
+	_vendeurs[k] = _assis(genre, t, PnjUtil.make(variante))
 
 
 func _assis(genre: String, chaise: Transform3D, pret: Node3D) -> Dictionary:

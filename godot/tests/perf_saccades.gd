@@ -10,6 +10,9 @@ var t_prec := 0
 var pics := 0
 var pire := 0.0
 var pos0 := Vector3(60, 1, 8)
+var court := false
+var somme_proc := 0.0
+var n_proc := 0
 
 
 func _initialize() -> void:
@@ -18,6 +21,7 @@ func _initialize() -> void:
 	scene = load("res://scenes/zone_aeroport.tscn").instantiate()
 	root.add_child(scene)
 	player = scene.get_node("Player")
+	court = "court" in OS.get_cmdline_user_args()
 	for n in OS.get_cmdline_user_args():
 		if scene.has_node(n):
 			scene.get_node(n).queue_free()
@@ -28,6 +32,7 @@ func _process(delta: float) -> bool:
 	if frame == 200:
 		player.global_position = pos0
 		player.reset_physics_interpolation()
+		root.get_node("Partie").call("suivre_saccades", 20.0)
 		t_prec = Time.get_ticks_usec()
 		return false
 	if frame < 200:
@@ -45,7 +50,11 @@ func _process(delta: float) -> bool:
 			int(root.get_node("Partie").call("taches_en_attente")), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 			int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))]
 			+ " proc %.0f phys %.0f nav %.0f" % [Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0])
-	if frame > 200 + 60 * 80:
+	if frame > 275:
+		somme_proc += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		n_proc += 1
+	if frame > 200 + (140 if court else 60 * 80):
+		print("PROC moyen %.0f ms" % (somme_proc / maxf(n_proc, 1)))
 		print("RESULTAT saccades : %d images > 33 ms, pire %.0f ms" % [pics, pire])
 		quit(0)
 		return true
