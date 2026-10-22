@@ -479,6 +479,8 @@ func _physics_process(delta: float) -> void:
 	if _tick % 45 == 0:
 		_recycler(ppos)
 	for a in _agents:
+		if a.get("active", true) and (a["body"] as Node).has_meta("epave"):
+			a["active"] = false          # explose : epave immobile
 		if a.get("active", true):
 			# loin du joueur : mis a jour un pas sur lod_pas, avec le temps cumule (budget CPU, phase 11)
 			a["dt"] = a.get("dt", 0.0) + delta
@@ -711,11 +713,29 @@ func on_vehicle_hit(collider: Object, impact: float) -> void:
 	## Le joueur a percute un vehicule de la circulation : il pile, klaxonne, le conducteur l'engueule.
 	for a in _agents:
 		if a["body"] == collider and a.get("active", true):
+			_abimer(a, impact)
 			a["stunned"] = _rng.randf_range(4.0, 8.0)
 			a["speed"] = 0.0
 			(a["horn"] as AudioStreamPlayer3D).play()
 			Bulle.say(a["body"], Dialogues.pick("choc_voiture", _rng, _pgenre()), 3.0, 2.0)
 			return
+
+
+func _abimer(a: Dictionary, impact: float) -> void:
+	## Les chocs abiment les vehicules de la circulation : fumee sous 40 %, feu sous 15 % puis explosion (feu_vehicule.gd).
+	var body: Node3D = a["body"]
+	a["pv"] = float(a.get("pv", 100.0)) - maxf(0.0, impact - 3.0) * 4.0
+	if float(a["pv"]) < 40.0 and not a.has("fumee"):
+		var f := FeuVehicule.flammes_moto(Vector3(0, 0.9, -1.2))
+		(f[0] as GPUParticles3D).emitting = false
+		a["fumee"] = f
+		body.add_child(f[0])
+		body.add_child(f[1])
+		(f[1] as Light3D).light_energy = 0.0
+	if float(a["pv"]) < 15.0 and not a.has("feu"):
+		var f: Array = a["fumee"]
+		(f[0] as GPUParticles3D).emitting = true
+		a["feu"] = FeuVehicule.allumer(body, f[0], f[1], 9.0)
 
 
 func reclaim(v: Node3D) -> bool:

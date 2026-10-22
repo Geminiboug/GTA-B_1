@@ -332,9 +332,13 @@ func _spawn_unit(ppos: Vector3, kind := "berline") -> void:
 	var cs := Vector2(commissariat.x, commissariat.z)
 	if kind == "pied":
 		# agent en patrouille a pied, a 60-90 m sur une rue reliee au joueur : il arrive en courant
-		var a := _rng.randf() * TAU
-		var near := _carte.nearest_on_network(pp + Vector2(cos(a), sin(a)) * _rng.randf_range(60.0, 90.0))
-		var q: Vector2 = near.get("point", pp + Vector2(70, 0))
+		var q: Vector2 = pp + Vector2(70, 0)
+		for essai in 8:
+			var a := _rng.randf() * TAU
+			var near := _carte.nearest_on_network(pp + Vector2(cos(a), sin(a)) * _rng.randf_range(60.0, 90.0))
+			q = near.get("point", pp + Vector2(cos(a), sin(a)) * 70.0)
+			if q.distance_to(pp) >= 60.0:       # la rue la plus proche du point tire peut etre bien plus pres du joueur
+				break
 		units.append({"car": null, "kind": "pied", "route": PackedVector2Array(), "state": "chase", "stuck": 0.0,
 			"officer": _make_officer(Vector3(q.x, 0.0, q.y))})
 		return

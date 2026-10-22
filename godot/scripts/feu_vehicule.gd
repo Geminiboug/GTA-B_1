@@ -84,7 +84,8 @@ func _physics_process(delta: float) -> void:
 			if lumiere and is_instance_valid(lumiere):
 				lumiere.light_energy = move_toward(lumiere.light_energy, 0.0, delta * 0.5)
 		return
-	var total := delai * (0.5 if float(vehicule.get("health")) <= 0.0 else 1.0)
+	var sante = vehicule.get("health")
+	var total := delai * (0.5 if sante != null and float(sante) <= 0.0 else 1.0)
 	var k := clampf(t / total, 0.0, 1.0)
 	if flammes and is_instance_valid(flammes):
 		flammes.scale = Vector3.ONE * (1.0 + 1.8 * k)
@@ -99,7 +100,7 @@ func _exploser() -> void:
 	explose = true
 	t = 0.0
 	var v := vehicule
-	var monde := v.get_parent()
+	var monde := Explosion._scene(v.get_parent())
 	var pos := v.global_position + Vector3.UP * 0.8
 	# l'occupant est projete et blesse
 	if v.get("has_rider"):
@@ -110,6 +111,7 @@ func _exploser() -> void:
 			if pl.get("velocity") != null:
 				pl.velocity += Vector3(randf_range(-3, 3), 6.0, randf_range(-3, 3))
 	v.set("epave", true)
+	v.set_meta("epave", true)         # vehicules de la circulation (agents de traffic.gd) : plus conduits
 	v.set("health", 0.0)
 	if v.get("_vel") != null:
 		v.set("_vel", Vector2.ZERO)

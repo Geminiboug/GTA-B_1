@@ -39,6 +39,15 @@ void fragment() {
 		float w = sin(p.x * 3.0 + sin(p.y * 2.2) * 1.6);
 		col = mix(col, col_b, smoothstep(0.25, 0.4, w));
 		col = mix(col, col_c, step(length(cell - vec2(0.25, -0.25)), 0.09));
+	} else if (motif == 4) {
+		// grandes fleurs a six petales et coeur (fond bleu nuit, petales jaunes, coeur rouge) : tissu de la tenue de depart
+		vec2 q = fract(p * 0.5) - 0.5;
+		float a = atan(q.y, q.x);
+		float d2 = length(q);
+		float petale = smoothstep(0.015, 0.0, d2 - (0.14 + 0.3 * abs(cos(a * 3.0))));
+		col = mix(col_a, col_b, petale);
+		col = mix(col, col_c, smoothstep(0.012, 0.0, d2 - 0.09));
+		col = mix(col, col_a, smoothstep(0.012, 0.0, abs(d2 - 0.16) - 0.012) * petale);
 	} else {
 		// damier a carre interieur
 		float chk = mod(id.x + id.y, 2.0);

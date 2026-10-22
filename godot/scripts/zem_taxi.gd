@@ -206,6 +206,10 @@ func _conduire(delta: float, arret: float) -> bool:
 	if _route.size() >= 2 and cp.distance_to(_route[0]) < maxf(v, 4.0) * 2.0:
 		var turn := absf((_route[0] - cp).angle_to(_route[1] - _route[0]))
 		but = minf(but, lerpf(but, 5.0, clampf(turn / 1.3, 0.0, 1.0)))
+	# obstacle devant (voiture arretee au carrefour, vehicule lent) : on ralentit et on attend derriere au lieu de le percuter
+	var libre_devant := _distance_libre(z, fwd)
+	if libre_devant < 14.0:
+		but = minf(but, maxf(0.0, (libre_devant - 3.5) * 1.2))
 	var fini := false
 	if arret > 0.0:
 		var libre := maxf(reste - arret, 0.0)
@@ -213,12 +217,12 @@ func _conduire(delta: float, arret: float) -> bool:
 		fini = reste <= arret + 0.8 and absf(v) < 0.6
 	var freine := v > but + 1.0 or (arret > 0.0 and reste <= arret)
 	z.set("ai_input", Vector3(0.0 if freine or v > but else clampf((but - v) / 3.0, 0.25, 1.0), 1.0 if freine else 0.0, clampf(-ang * 2.0, -1.0, 1.0)))
-	# coince (mur, voiture en travers) : replace au point suivant plutot que de bloquer le trajet
-	if absf(v) < 0.7 and not fini and not (arret > 0.0 and reste <= arret + 1.5):
+	# coince longtemps (mur, voiture en travers) : replace un peu plus loin sur le trajet, en dernier recours
+	if absf(v) < 0.7 and not fini and not (arret > 0.0 and reste <= arret + 1.5) and libre_devant > 6.0:
 		_coince += delta
 	else:
 		_coince = maxf(0.0, _coince - delta)
-	if _coince > 3.5 and _route.size() > 0:
+	if _coince > 9.0 and _route.size() > 0:
 		var nxt: Vector2 = _route[0] if _route.size() == 1 else _route[1]
 		var dv := (nxt - cp).normalized() if nxt.distance_to(cp) > 1.0 else fwd
 		var ny := atan2(-dv.x, -dv.y)
@@ -227,6 +231,14 @@ func _conduire(delta: float, arret: float) -> bool:
 		z.set("speed", 0.0)
 		_coince = 0.0
 	return fini
+
+
+func _distance_libre(z: Node3D, fwd: Vector2) -> float:
+	## Distance libre devant le zem (rayon horizontal a 0,6 m du sol, 16 m maxi).
+	var depart := z.global_position + Vector3(0, 0.6, 0) + Vector3(fwd.x, 0, fwd.y) * 1.2
+	var q := PhysicsRayQueryParameters3D.create(depart, depart + Vector3(fwd.x, 0, fwd.y) * 16.0, 1, [z.get_rid()])
+	var h := z.get_world_3d().direct_space_state.intersect_ray(q)
+	return 16.0 if h.is_empty() else depart.distance_to(h["position"])
 
 
 # ------------------------------------------------------------------ monter, choisir, arriver

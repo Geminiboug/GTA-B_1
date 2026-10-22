@@ -229,6 +229,28 @@ func damage(amount: float) -> void:
 		pass
 
 
+func conseil() -> String:
+	## Aide de l'ecole de pilotage : une ligne selon la phase du vol (affichee par le HUD tant qu'on pilote).
+	var kmh := _v.length() * 3.6
+	if carburant <= 0.0:
+		return tr("Panne d'essence : plane vers la piste, nez légèrement bas.")
+	if _au_sol and kmh < 8.0 and gaz < 0.05:
+		return tr("Gaz à fond : %s (maintenir). Reste sur l'axe de la piste avec A / D.") % Partie.nom_touche("accelerate")
+	if _au_sol and kmh < 105.0 and gaz > 0.5:
+		return tr("Accélère... à 105 km/h, tire doucement le manche : %s.") % Partie.nom_touche("move_back")
+	if _au_sol and kmh >= 105.0 and gaz > 0.5:
+		return tr("Cabre maintenant : %s (nez à 8 ou 10 degrés).") % Partie.nom_touche("move_back")
+	if not _au_sol and altitude < 120.0 and _v.y > 1.0:
+		return tr("Monte à plat : relâche le manche, garde les gaz. Vire avec %s / %s.") % [Partie.nom_touche("move_left"), Partie.nom_touche("move_right")]
+	if not _au_sol and altitude < 60.0 and _v.y < -0.5 and gaz < 0.3:
+		return tr("Approche : garde 100 à 120 km/h, pique un peu (%s), arrondi juste avant le sol (%s).") % [Partie.nom_touche("move_forward"), Partie.nom_touche("move_back")]
+	if _au_sol and kmh > 20.0 and gaz < 0.1:
+		return tr("Freins de roues : %s ; arrête-toi pour descendre.") % Partie.nom_touche("handbrake")
+	if not _au_sol:
+		return tr("Gaz %s / %s, vue cockpit %s.") % [Partie.nom_touche("accelerate"), Partie.nom_touche("brake"), Partie.nom_touche("camera_vue")]
+	return ""
+
+
 func info_hud() -> String:
 	var pc := roundi(100.0 * carburant / maxf(reservoir, 1.0))
 	return tr("Alt %d m   %d km/h   Gaz %d %%   Essence %d %%") % [roundi(altitude), roundi(_v.length() * 3.6), roundi(gaz * 100.0), pc] + ("   " + tr("DÉCROCHAGE !") if en_decrochage else "")

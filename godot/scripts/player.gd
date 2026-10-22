@@ -179,7 +179,7 @@ func _player_look(g: String) -> Dictionary:
 			"cloth": w, "show": ["chr_haut", "chr_pagne_long", "chr_semelle", "chr_foulard"]}
 	# tenue de depart (planche d'Olympe, 22/10/2026) : t-shirt blanc a logo GTB, pantalon en wax jaune ocre, bleu nuit et rouge,
 	# baskets blanches
-	var wax_gtb := PnjUtil.wax([Color(0.9, 0.6, 0.05), Color(0.08, 0.11, 0.3), Color(0.55, 0.08, 0.13)], 1)
+	var wax_gtb := PnjUtil.wax([Color(0.08, 0.11, 0.3), Color(0.92, 0.62, 0.05), Color(0.6, 0.08, 0.12)], 4)
 	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.96, 0.96, 0.95)), "legs": wax_gtb,
 		"cloth": wax_gtb, "shoes_mat": PnjUtil.plain(Color(0.94, 0.94, 0.92)), "show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"]}
 
@@ -558,6 +558,8 @@ func _sortie_libre(v: Node3D) -> Variant:
 func exit_vehicle(force := false) -> void:
 	## force : sortie imposee (arrestation, vol, chargement) : on descend meme sans place libre.
 	var v := vehicle
+	if v == null:
+		return
 	var sortie: Variant = _sortie_libre(v)
 	if sortie == null:
 		if not force:

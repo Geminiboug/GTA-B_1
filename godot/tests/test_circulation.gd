@@ -41,9 +41,10 @@ func _physics_process(_delta: float) -> bool:
 		var n: int = traffic._agents.size()
 		print("TEST vehicules : %d / %d roulent, vitesse moyenne %.1f km/h, distance moyenne en 20 s : %.0f m, ecart vertical max %.2f m" % [moving, n, total_speed / n * 3.6, dist / n, max_y])
 		var wdist := 0.0
-		for k in peds._walkers.size():
+		var nw := mini(peds._walkers.size(), start_peds.size())      # les vendeurs des tuiles s'ajoutent a la liste apres le depart
+		for k in nw:
 			wdist += (peds._walkers[k]["pos"] as Vector3).distance_to(start_peds[k])
-		print("TEST pietons : distance moyenne en 20 s : %.1f m (%d marcheurs)" % [wdist / peds._walkers.size(), peds._walkers.size()])
+		print("TEST pietons : distance moyenne en 20 s : %.1f m (%d marcheurs)" % [wdist / nw, nw])
 		# le joueur se met devant un vehicule en mouvement
 		for k in traffic._agents.size():
 			if traffic._agents[k]["speed"] > 5.0 and traffic._remaining(traffic._agents[k]) > 28.0:

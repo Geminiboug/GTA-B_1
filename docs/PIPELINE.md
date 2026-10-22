@@ -697,3 +697,20 @@ Regle : un modele hors fourchette est corrige a la source (script Blender), jama
   L'ecran de chargement ne precharge que les tuiles autour du depart (Monde.fichiers). tests/test_tuiles.gd :
   teleportation a Fidjrosse, sol, decor, liberation du depart.
 - Noms : Fidjrosse -> Fidjrossa (a valider), osm_import.py NOM_FICTIF.
+
+
+## Passe 5 (22/10/2026) : avion leger, portes, etals, raccords de routes
+- blender/tools/build_avion_leger.py -> blender/veh/avion_leger.blend + godot/assets/models/veh_avion_leger.glb :
+  monoplan leger a aile haute (Gbe Aero Colibri C-4). Noeuds lus par godot/scripts/avion_leger.gd : helice, gouverne_prof,
+  gouverne_dir, aileron_G / D, roue_avant, roue_principal_G / D, porte_g0 / porte_d0, pt_pilote, pt_sortie, pt_volant, pt_pedales.
+  Lancement (PowerShell) : & blender-launcher.exe -b --python blender/tools/build_avion_leger.py -- <.blend> <.glb> [apercu.png]
+- blender/tools/build_vehicles.py : percer_portes() decoupe, pour chaque porte (entre deux door_lines), la peau de la carrosserie
+  en un objet porte_g<k> / porte_d<k> dont l'origine est la charniere avant ; la carrosserie est percee (l'interieur se voit).
+  voiture.gd (ouvrir_porte) et avion_leger.gd les font pivoter ; apercus : GTB_VEH=veh_berline, 3e argument = dossier d'apercus.
+- blender/tools/build_props.py : un etal par marchandise (prop_etal_pain / fruits / arachides / eau / legumes) ; props.gd choisit la
+  marchandise (ETALS), commerce.gd donne les articles (etal_*), dialogues.gd les cris (vendeuse_*).
+- blender/tools/ponts_manquants.py : raccorde les extremites de routes coupees (voir l'en-tete du fichier) ; fusionner avec
+  osm_fusion.py dans refs/osm/zone-gtb-complet.osm puis relancer osm_import.py avec cette entree (9 arguments, OUT_BLEND dans un
+  dossier temporaire pour ne pas regonfler le depot) ; ensuite relancer godot/tests/outil_cache_carte.gd.
+- Nouveaux scripts Godot : feu_vehicule.gd + explosion.gd (degats, feu, explosion), stations.gd (carburant), zem_taxi.gd (zem a heler),
+  avion_leger.gd + avion_camera.gd (pilotage), monument_bio_guera.gd, logo_gtb.gd (logo anime).

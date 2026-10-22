@@ -28,11 +28,11 @@ func _physics_process(_d: float) -> bool:
 	if frame == 100:
 		(scene.get_node("Player") as Node3D).global_position = Vector3(25, 1, 6)
 		ch = PnjUtil.make("homme", false)
+		ch.set_script(preload("res://scripts/anim_ctrl.gd"))
 		scene.add_child(ch)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 5
 		PnjUtil.apply(ch, PnjUtil.random_look(ch, rng, ""))
-		ch.set_script(preload("res://scripts/anim_ctrl.gd"))
 		ch.global_position = Vector3(43.7, 0.0, 6.0)
 		ch.rotation.y = PI * 0.5
 		cam = Camera3D.new()

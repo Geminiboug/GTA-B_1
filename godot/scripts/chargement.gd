@@ -40,7 +40,8 @@ const ASTUCES := [
 @export var duree_fondu := 1.2           # s de fondu enchaine
 @export var zoom_diapo := 0.06           # zoom lent sur chaque image (6 %)
 @export var sous_fils := false           # sous-fils du ResourceLoader (plus lent sur certains disques)
-@export var budget_ms := 12.0            # temps de mise en place par image (le reste pour l'affichage)
+@export var budget_ms := 12.0            # temps de mise en place par image (le reste pour l'affichage) ; plus grand sur ordinateur
+@export var budget_ms_ordinateur := 24.0  # l'ecran de chargement est opaque : on peut y consacrer presque toute l'image (chargement ~2 fois plus court)
 @export var journal_ecarts := false     # mesure : temps hors etapes entre deux images, et l'etape qui precede
 @export var rodage_tour := 2.5     # s : tour complet de la camera sous l'ecran (shaders de tout ce qui l'entoure)
 @export var rodage_ips := 45.0     # images par seconde a tenir 30 images de suite pour lever l'ecran
@@ -84,6 +85,8 @@ var _t0 := Time.get_ticks_msec()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS   # l ecran titre met le jeu en pause pendant la mise en place
+	if not OS.has_feature("mobile") and not DisplayServer.is_touchscreen_available():
+		budget_ms = maxf(budget_ms, budget_ms_ordinateur)
 	_rng.randomize()
 	_construire_ui()
 	_montrer(0, true)

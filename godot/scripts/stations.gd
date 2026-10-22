@@ -173,6 +173,11 @@ func _poser(centre: Vector2, yaw: float, vers_rue: Vector2) -> void:
 		t.position = panneau.position + Vector3(0, 0, 0.11 * sens)
 		t.rotation.y = 0.0 if sens > 0.0 else PI
 		racine.add_child(t)
+	# repere orange sur la mini-carte (meme groupe que les stationnements de zems)
+	var rep := Node3D.new()
+	rep.add_to_group("carte_repere")
+	rep.set_meta("couleur", Color(0.95, 0.5, 0.1))
+	racine.add_child(rep)
 	stations.append({"pos": racine.global_position, "yaw": yaw, "noeud": racine, "pompes": pompes, "pompiste": null})
 
 

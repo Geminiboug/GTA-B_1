@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="gtb ponts_manquants">
+<node id="-1000001" visible="true" version="1" lat="6.3540994" lon="2.4072016"/>
+<node id="-1000002" visible="true" version="1" lat="6.3541009" lon="2.4074893"/>
+<way id="-2000000" visible="true" version="1"><nd ref="-1000001"/><nd ref="-1000002"/><tag k="highway" v="residential"/><tag k="name" v="Rue 12.080"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000003" visible="true" version="1" lat="6.3474625" lon="2.3848344"/>
+<node id="-1000004" visible="true" version="1" lat="6.3478093" lon="2.3849000"/>
+<way id="-2000001" visible="true" version="1"><nd ref="-1000003"/><nd ref="-1000004"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000005" visible="true" version="1" lat="6.3556432" lon="2.4065624"/>
+<node id="-1000006" visible="true" version="1" lat="6.3556521" lon="2.4061948"/>
+<way id="-2000002" visible="true" version="1"><nd ref="-1000005"/><nd ref="-1000006"/><tag k="highway" v="residential"/><tag k="name" v="Rue 12.086"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000007" visible="true" version="1" lat="6.3594623" lon="2.3746257"/>
+<node id="-1000008" visible="true" version="1" lat="6.3595026" lon="2.3742495"/>
+<way id="-2000003" visible="true" version="1"><nd ref="-1000007"/><nd ref="-1000008"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000009" visible="true" version="1" lat="6.3587674" lon="2.3790175"/>
+<node id="-1000010" visible="true" version="1" lat="6.3586492" lon="2.3789613"/>
+<way id="-2000004" visible="true" version="1"><nd ref="-1000009"/><nd ref="-1000010"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000011" visible="true" version="1" lat="6.3542822" lon="2.3867833"/>
+<node id="-1000012" visible="true" version="1" lat="6.3542262" lon="2.3868278"/>
+<way id="-2000005" visible="true" version="1"><nd ref="-1000011"/><nd ref="-1000012"/><tag k="highway" v="unclassified"/><tag k="name" v="Rue 387"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000013" visible="true" version="1" lat="6.3581418" lon="2.3611899"/>
+<node id="-1000014" visible="true" version="1" lat="6.3581594" lon="2.3616315"/>
+<way id="-2000006" visible="true" version="1"><nd ref="-1000013"/><nd ref="-1000014"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000015" visible="true" version="1" lat="6.3523241" lon="2.3839376"/>
+<node id="-1000016" visible="true" version="1" lat="6.3521969" lon="2.3837842"/>
+<way id="-2000007" visible="true" version="1"><nd ref="-1000015"/><nd ref="-1000016"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000017" visible="true" version="1" lat="6.3495267" lon="2.3640449"/>
+<node id="-1000018" visible="true" version="1" lat="6.3495257" lon="2.3637444"/>
+<way id="-2000008" visible="true" version="1"><nd ref="-1000017"/><nd ref="-1000018"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000019" visible="true" version="1" lat="6.3558906" lon="2.3535407"/>
+<node id="-1000020" visible="true" version="1" lat="6.3553546" lon="2.3535739"/>
+<way id="-2000009" visible="true" version="1"><nd ref="-1000019"/><nd ref="-1000020"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000021" visible="true" version="1" lat="6.3565255" lon="2.3567873"/>
+<node id="-1000022" visible="true" version="1" lat="6.3565415" lon="2.3570582"/>
+<way id="-2000010" visible="true" version="1"><nd ref="-1000021"/><nd ref="-1000022"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000023" visible="true" version="1" lat="6.3583894" lon="2.3682021"/>
+<node id="-1000024" visible="true" version="1" lat="6.3580263" lon="2.3681927"/>
+<way id="-2000011" visible="true" version="1"><nd ref="-1000023"/><nd ref="-1000024"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000025" visible="true" version="1" lat="6.3602529" lon="2.3812087"/>
+<node id="-1000026" visible="true" version="1" lat="6.3604705" lon="2.3811578"/>
+<way id="-2000012" visible="true" version="1"><nd ref="-1000025"/><nd ref="-1000026"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000027" visible="true" version="1" lat="6.3598974" lon="2.3791813"/>
+<node id="-1000028" visible="true" version="1" lat="6.3600555" lon="2.3795390"/>
+<way id="-2000013" visible="true" version="1"><nd ref="-1000027"/><nd ref="-1000028"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000029" visible="true" version="1" lat="6.3600816" lon="2.3503903"/>
+<node id="-1000030" visible="true" version="1" lat="6.3600964" lon="2.3507610"/>
+<way id="-2000014" visible="true" version="1"><nd ref="-1000029"/><nd ref="-1000030"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000031" visible="true" version="1" lat="6.3600964" lon="2.3507610"/>
+<node id="-1000032" visible="true" version="1" lat="6.3599192" lon="2.3508047"/>
+<way id="-2000015" visible="true" version="1"><nd ref="-1000031"/><nd ref="-1000032"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000033" visible="true" version="1" lat="6.3583804" lon="2.3661856"/>
+<node id="-1000034" visible="true" version="1" lat="6.3582191" lon="2.3662003"/>
+<way id="-2000016" visible="true" version="1"><nd ref="-1000033"/><nd ref="-1000034"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000035" visible="true" version="1" lat="6.3615201" lon="2.3711248"/>
+<node id="-1000036" visible="true" version="1" lat="6.3613036" lon="2.3711324"/>
+<way id="-2000017" visible="true" version="1"><nd ref="-1000035"/><nd ref="-1000036"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000037" visible="true" version="1" lat="6.3485132" lon="2.3766439"/>
+<node id="-1000038" visible="true" version="1" lat="6.3485833" lon="2.3771494"/>
+<way id="-2000018" visible="true" version="1"><nd ref="-1000037"/><nd ref="-1000038"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000039" visible="true" version="1" lat="6.3484517" lon="2.3738343"/>
+<node id="-1000040" visible="true" version="1" lat="6.3485132" lon="2.3766439"/>
+<way id="-2000019" visible="true" version="1"><nd ref="-1000039"/><nd ref="-1000040"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000041" visible="true" version="1" lat="6.3494255" lon="2.3657928"/>
+<node id="-1000042" visible="true" version="1" lat="6.3499121" lon="2.3659702"/>
+<way id="-2000020" visible="true" version="1"><nd ref="-1000041"/><nd ref="-1000042"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000043" visible="true" version="1" lat="6.3585387" lon="2.3691221"/>
+<node id="-1000044" visible="true" version="1" lat="6.3580237" lon="2.3692141"/>
+<way id="-2000021" visible="true" version="1"><nd ref="-1000043"/><nd ref="-1000044"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000045" visible="true" version="1" lat="6.3587194" lon="2.3796290"/>
+<node id="-1000046" visible="true" version="1" lat="6.3583705" lon="2.3794715"/>
+<way id="-2000022" visible="true" version="1"><nd ref="-1000045"/><nd ref="-1000046"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000047" visible="true" version="1" lat="6.3460513" lon="2.3921308"/>
+<node id="-1000048" visible="true" version="1" lat="6.3462865" lon="2.3921335"/>
+<way id="-2000023" visible="true" version="1"><nd ref="-1000047"/><nd ref="-1000048"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000049" visible="true" version="1" lat="6.3528471" lon="2.3874660"/>
+<node id="-1000050" visible="true" version="1" lat="6.3526711" lon="2.3873417"/>
+<way id="-2000024" visible="true" version="1"><nd ref="-1000049"/><nd ref="-1000050"/><tag k="highway" v="residential"/><tag k="name" v="Rue 12.062"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000051" visible="true" version="1" lat="6.3532000" lon="2.3874684"/>
+<node id="-1000052" visible="true" version="1" lat="6.3528471" lon="2.3874660"/>
+<way id="-2000025" visible="true" version="1"><nd ref="-1000051"/><nd ref="-1000052"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000053" visible="true" version="1" lat="6.3485833" lon="2.3771494"/>
+<node id="-1000054" visible="true" version="1" lat="6.3485132" lon="2.3766439"/>
+<way id="-2000026" visible="true" version="1"><nd ref="-1000053"/><nd ref="-1000054"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000055" visible="true" version="1" lat="6.3504900" lon="2.3543732"/>
+<node id="-1000056" visible="true" version="1" lat="6.3506058" lon="2.3543790"/>
+<way id="-2000027" visible="true" version="1"><nd ref="-1000055"/><nd ref="-1000056"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000057" visible="true" version="1" lat="6.3503698" lon="2.3570797"/>
+<node id="-1000058" visible="true" version="1" lat="6.3501422" lon="2.3594048"/>
+<way id="-2000028" visible="true" version="1"><nd ref="-1000057"/><nd ref="-1000058"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000059" visible="true" version="1" lat="6.3500026" lon="2.3595423"/>
+<node id="-1000060" visible="true" version="1" lat="6.3501422" lon="2.3594048"/>
+<way id="-2000029" visible="true" version="1"><nd ref="-1000059"/><nd ref="-1000060"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000061" visible="true" version="1" lat="6.3497623" lon="2.3611828"/>
+<node id="-1000062" visible="true" version="1" lat="6.3498273" lon="2.3613975"/>
+<way id="-2000030" visible="true" version="1"><nd ref="-1000061"/><nd ref="-1000062"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000063" visible="true" version="1" lat="6.3495257" lon="2.3637444"/>
+<node id="-1000064" visible="true" version="1" lat="6.3494255" lon="2.3657928"/>
+<way id="-2000031" visible="true" version="1"><nd ref="-1000063"/><nd ref="-1000064"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000065" visible="true" version="1" lat="6.3497009" lon="2.3622745"/>
+<node id="-1000066" visible="true" version="1" lat="6.3498273" lon="2.3613975"/>
+<way id="-2000032" visible="true" version="1"><nd ref="-1000065"/><nd ref="-1000066"/><tag k="highway" v="secondary"/><tag k="name" v="Route des Filets"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000067" visible="true" version="1" lat="6.3613989" lon="2.3642700"/>
+<node id="-1000068" visible="true" version="1" lat="6.3614135" lon="2.3646913"/>
+<way id="-2000033" visible="true" version="1"><nd ref="-1000067"/><nd ref="-1000068"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000069" visible="true" version="1" lat="6.3584188" lon="2.3567269"/>
+<node id="-1000070" visible="true" version="1" lat="6.3580332" lon="2.3567187"/>
+<way id="-2000034" visible="true" version="1"><nd ref="-1000069"/><nd ref="-1000070"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000071" visible="true" version="1" lat="6.3601549" lon="2.3763112"/>
+<node id="-1000072" visible="true" version="1" lat="6.3600517" lon="2.3762929"/>
+<way id="-2000035" visible="true" version="1"><nd ref="-1000071"/><nd ref="-1000072"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000073" visible="true" version="1" lat="6.3600083" lon="2.3537202"/>
+<node id="-1000074" visible="true" version="1" lat="6.3597479" lon="2.3536842"/>
+<way id="-2000036" visible="true" version="1"><nd ref="-1000073"/><nd ref="-1000074"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000075" visible="true" version="1" lat="6.3607507" lon="2.3724997"/>
+<node id="-1000076" visible="true" version="1" lat="6.3608298" lon="2.3720926"/>
+<way id="-2000037" visible="true" version="1"><nd ref="-1000075"/><nd ref="-1000076"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000077" visible="true" version="1" lat="6.3619929" lon="2.3592871"/>
+<node id="-1000078" visible="true" version="1" lat="6.3619128" lon="2.3588395"/>
+<way id="-2000038" visible="true" version="1"><nd ref="-1000077"/><nd ref="-1000078"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000079" visible="true" version="1" lat="6.3555421" lon="2.3595601"/>
+<node id="-1000080" visible="true" version="1" lat="6.3558943" lon="2.3595277"/>
+<way id="-2000039" visible="true" version="1"><nd ref="-1000079"/><nd ref="-1000080"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000081" visible="true" version="1" lat="6.3586644" lon="2.3599741"/>
+<node id="-1000082" visible="true" version="1" lat="6.3587434" lon="2.3603842"/>
+<way id="-2000040" visible="true" version="1"><nd ref="-1000081"/><nd ref="-1000082"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000083" visible="true" version="1" lat="6.3572407" lon="2.3576198"/>
+<node id="-1000084" visible="true" version="1" lat="6.3570632" lon="2.3575196"/>
+<way id="-2000041" visible="true" version="1"><nd ref="-1000083"/><nd ref="-1000084"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000085" visible="true" version="1" lat="6.3565415" lon="2.3570582"/>
+<node id="-1000086" visible="true" version="1" lat="6.3565255" lon="2.3567873"/>
+<way id="-2000042" visible="true" version="1"><nd ref="-1000085"/><nd ref="-1000086"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+<node id="-1000087" visible="true" version="1" lat="6.3448344" lon="2.3987664"/>
+<node id="-1000088" visible="true" version="1" lat="6.3448557" lon="2.3990794"/>
+<way id="-2000043" visible="true" version="1"><nd ref="-1000087"/><nd ref="-1000088"/><tag k="highway" v="residential"/><tag k="gtb:raccord" v="1"/></way>
+</osm>

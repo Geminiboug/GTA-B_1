@@ -50,6 +50,15 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 
 - [x] **Fidjrossè devient « Fidjrossa »** dans le jeu (même principe que Haie Verte et Cadjehoue). D'accord, ou tu préfères un autre nom ?
 
+## 4 ter. Demandes du 22/10/2026 : a trancher ou a fournir
+
+- [ ] **Emplacement d'ETIPECH** : EPITECH Benin est a Seme City, a environ 20 km a l'est de l'aeroport (la carte actuelle s'arrete a 3,6 km). Je propose de placer le campus ETIPECH dans la carte existante (licence artistique), pres de l'extremite est, avec un batiment visitable. D'accord, ou tu preferes etendre la carte vers l'est ?
+- [ ] **Photos d'ETIPECH** (facade, entree, hall, salles, escalier) pour que je fasse l'interieur, dans `refs/etipech/`.
+- [ ] **Logo en haute resolution** : la planche donne un logo de 444 px seulement. Si tu as le fichier du logo (PNG transparent 2048 px) et les variantes (icone ronde, version blanche), mets-les dans `refs/logo/`.
+- [ ] **Tester le pilotage** de l'avion leger a l'aeroport (E pour monter ; Accelerer / Freiner = gaz ; W piquer, S cabrer ; A / D incliner ; Z / X palonnier ; Espace freins de roues) et me dire si les reglages te conviennent (vitesse de rotation, assistance dans les virages).
+- [ ] **Tester le zem a heler** (touche H pres d'une rue), les stations Bon Plein (carburant) et le supermarche par rayons.
+- [ ] **Photos de l'Amazone, de la place du Souvenir et du parc** pour les monuments (comme pour Bio Guera).
+
 ## 5. Plus tard (pas urgent)
 
 - [ ] Un locuteur fon pour relire les menus et quelques dialogues (Phase 24).

@@ -325,6 +325,11 @@ func _process(delta: float) -> void:
 			jauge = "   " + tr("Essence %d %%") % pc + (" !" if pc < 15 else "")
 		if veh.has_method("info_hud"):
 			_compteur.text = veh.info_hud()
+			var carte := get_parent().get_node_or_null("HUD") if get_parent() else null
+			if veh.has_method("conseil") and carte and carte.has_method("show_hint") and bool(Partie.options.get("conseils_vol", true)):
+				var c: String = veh.conseil()
+				if c != "":
+					carte.call("show_hint", c)
 		else:
 			_compteur.text = "%d km/h" % kmh + jauge + ("
 " + tr("LIMITEUR %d (K)") % roundi(Limiteur.vitesse_kmh) if Limiteur.actif else "

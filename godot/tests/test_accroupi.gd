@@ -2,7 +2,7 @@ extends SceneTree
 ## Accroupi et escalade facon GTA V :
 ## - C (manette R3) accroupit : capsule basse, allure lente ; on ne se releve pas sous un plafond bas ;
 ## - saut devant un muret de 1,2 m : le joueur l'escalade (clip ClimbUp_1m) et se retrouve debout dessus ;
-## - devant un mur de 2,5 m : pas d'escalade (simple saut).
+## - devant un mur de 3,4 m : pas d'escalade (simple saut) ; jusqu'a 2,8 m on se hisse (plus haut que le personnage).
 ## Lancement : godot --headless --path godot --script res://tests/test_accroupi.gd
 
 var frame := 0
@@ -97,11 +97,11 @@ func _physics_process(_d: float) -> bool:
 		_check(absf(h - 1.2) < 0.12 and player.is_on_floor(), "debout sur le muret (%.2f m)" % h)
 		var adv := (player.global_position - start).dot(fwd)
 		_check(adv > 0.7 and adv < 2.6, "avance sur le muret %.2f m" % adv)
-		# mur de 2,5 m : on ne l'escalade pas
+		# mur de 3,4 m : on ne l'escalade pas
 		wall.queue_free()
 		player.global_position = start
 		player.reset_physics_interpolation()
-		wall = _box(start + fwd * 1.55 + Vector3.UP * 1.25, Vector3(2.0, 2.5, 3.0))
+		wall = _box(start + fwd * 1.55 + Vector3.UP * 1.7, Vector3(2.0, 3.4, 3.0))
 		climb_seen = false
 	if frame == 280:
 		Input.action_press("jump")
@@ -110,7 +110,7 @@ func _physics_process(_d: float) -> bool:
 	if frame > 280 and frame < 330 and not (player.get("_climb") as Dictionary).is_empty():
 		climb_seen = true
 	if frame == 360:
-		_check(not climb_seen and player.global_position.y - ground < 0.3, "mur de 2,5 m : pas d'escalade")
+		_check(not climb_seen and player.global_position.y - ground < 0.3, "mur de 3,4 m : pas d'escalade")
 		print("RESULTAT : %s" % ("tout fonctionne" if fails == 0 else "%d echec(s)" % fails))
 		return true
 	return frame > 900

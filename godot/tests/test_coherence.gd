@@ -107,9 +107,10 @@ func _physics_process(_delta: float) -> bool:
 		var n: int = traffic._agents.size()
 		_check(moving >= n / 2, "vehicules qui roulent : %d / %d, distance moyenne en 30 s : %.0f m" % [moving, n, dist / n])
 		var wd := 0.0
-		for k in peds._walkers.size():
+		var nw := mini(peds._walkers.size(), start_peds.size())      # les vendeurs des tuiles s'ajoutent a la liste apres le depart
+		for k in nw:
 			wd += (peds._walkers[k]["pos"] as Vector3).distance_to(start_peds[k])
-		_check(wd / peds._walkers.size() > 15.0, "pietons : distance moyenne en 30 s : %.1f m" % (wd / peds._walkers.size()))
+		_check(wd / nw > 15.0, "pietons : distance moyenne en 30 s : %.1f m" % (wd / nw))
 		# joueur pose sur une route
 		var e: Dictionary = carte.edges[0]
 		var rp: Vector2 = (e["pts"] as PackedVector2Array)[0].lerp((e["pts"] as PackedVector2Array)[1], 0.5)

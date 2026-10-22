@@ -61,7 +61,16 @@ static func _particules(amount: int, vie: float, additif: bool, taille: Vector2,
 	return p
 
 
-static func boum(monde: Node, pos: Vector3, rayon := 9.0, source: Node = null) -> void:
+static func _scene(n: Node) -> Node:
+	## La scene de la zone (celle qui contient Player et Pietons), meme si le vehicule est range dans un autre noeud.
+	var cur := n
+	while cur != null and cur.get_node_or_null("Player") == null:
+		cur = cur.get_parent()
+	return cur if cur != null else n
+
+
+static func boum(monde_: Node, pos: Vector3, rayon := 9.0, source: Node = null) -> void:
+	var monde := _scene(monde_)
 	var racine := Node3D.new()
 	racine.name = "Explosion"
 	monde.add_child(racine)

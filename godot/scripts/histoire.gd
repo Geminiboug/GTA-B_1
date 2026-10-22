@@ -686,20 +686,37 @@ func _dialog_step(delta: float) -> void:
 
 
 func _pick_passenger(pv: Node3D) -> void:
-	## Le client monte derriere : modele pose (sans animation), rattache au zem.
+	## Le client monte derriere : il vient de l'endroit ou il attendait et s'installe en 0,8 s (enjambement), puis le modele
+	## reste pose et rattache au zem.
 	var genre := "homme"
+	var depart_monde := pv.global_position - pv.global_transform.basis.x * 1.0
 	if _client_walker:
 		genre = String(_client_walker.get_meta("genre", "homme"))
+		depart_monde = _client_walker.global_position
 		_client_walker.queue_free()
 		_client_walker = null
 	var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre), false)   # assis sur le zem
 	# rattache a la partie qui s'incline et plonge (Visual) : le passager penche avec la moto dans les virages
-	var support: Node = pv.get_node_or_null("Visual")
-	(support if support else pv).add_child(pas)
+	var support: Node3D = pv.get_node_or_null("Visual") as Node3D
+	if support == null:
+		support = pv
+	support.add_child(pas)
 	PnjUtil.dress_random(pas, _rng)
-	PnjUtil.pose_passenger(pas)
-	pas.position = Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
+	var siege := Vector3(0, -0.02 + (0.04 if genre == "femme" else 0.0), 0.48)
+	var depart := support.to_local(depart_monde)
+	pas.position = depart
 	_passenger = pas
+	var monte := func(t: float) -> void:
+		if not is_instance_valid(pas):
+			return
+		var p := depart.lerp(siege, smoothstep(0.0, 1.0, t))
+		p.y += sin(t * PI) * 0.32          # la jambe passe par-dessus la selle
+		pas.position = p
+		if t > 0.45 and not pas.has_meta("assis"):
+			pas.set_meta("assis", true)
+			PnjUtil.pose_passenger(pas)
+	var tw := create_tween()
+	tw.tween_method(monte, 0.0, 1.0, 0.8)
 
 
 func _drop_passenger() -> void:

@@ -54,6 +54,7 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Compagnie marocaine | Royal Air Marok (rouge et vert) | etoile a cinq branches |
 | Compagnie ivoirienne | Air Cote Ivoire (orange et vert) | lettres CI |
 | Moto 100 cm3 indienne (zem) : lettrage du reservoir | BAJOU | aucun |
+| Monoplan leger a aile haute des aeroclubs, 4 places | Gbe Aero Colibri C-4 (livree verte et jaune, immatriculation fictive GB-) | aucun |
 
 ## 5. Personnes
 - Aucun visage, nom ou voix de personne reelle identifiable.
@@ -88,6 +89,7 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Consulat de l Armenie | non represente |
 | Compagnies aeriennes (comptoirs, tableau des departs) | Air Gbe, Atlantique Express, Sahel Airways, Golfe Aviation, Trans-Ouest, Air Lagune (inventees) |
 | Cafe et librairie du terminal | Cafe du Littoral, Librairie Presse (inventes) |
+| Stations-service des grandes marques petrolieres | Station Bon Plein (enseigne et couleurs inventees) |
 | Maison du joueur | terrain vide choisi par le script, aucune maison reelle reproduite |
 | Route des Peches | Route des Filets |
 | Avenue Pape Jean-Paul II | Boulevard de l Envol |

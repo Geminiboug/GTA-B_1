@@ -134,7 +134,7 @@ En cours ou a corriger :
 
 A faire :
 - [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos)
-- [ ] Carte jusqu'a ETIPECH (EPITECH Benin est a Seme City, a ~15 km a l'est de l'aeroport : il faut un long corridor routier, a decider avec Olympe) ; batiment visitable avec les photos d'Olympe (docs/LEGAL.md)
+- [ ] ETIPECH = palier final de progression (decision d'Olympe 22/10) : le joueur evolue dans la map jusqu'a atteindre son niveau ; pas de campus pose d'un coup. A concevoir : paliers de zones/missions, puis batiment visitable avec les photos d'Olympe (docs/LEGAL.md)
 - [ ] Revue morceau par morceau etendue a tout : batiments, murs, vegetation, routes
 - [ ] Beaucoup plus d'animations pour des mouvements naturels
 - [ ] Motos : montee naturelle, mains sur le guidon, bras qui suivent la direction
@@ -295,41 +295,44 @@ CONVENTIONS
 - Objets : jamais de nom en *_col / *-col pour un objet decoratif (Godot cree une collision)
 - Tout son est synthetise (godot/scripts/audio_synth.gd) jusqu'a la Phase 19 ; tout modele est fait par script Blender (blender/tools/)
 
-ETAT ACTUEL (21/10/2026)
-- Le jeu est jouable du lancement (ecran titre, Nouvelle partie) a la fin de l'acte 1 ("A suivre"). Exports Windows,
-  Linux et Android (APK de debug) dans builds/ ; presets "Windows", "Linux", "Android".
-- Fait depuis le 16/10 :
-  - Monde : carte agrandie a l'est (81 tuiles + partie commune, 7 081 x 2 321 m, 19 790 batiments, 1 037 routes),
-    tuiles chargees / dechargees a la volee (monde.gd, signaux tuile_chargee / tuile_dechargee), masques de la carte
-    en cache (zone_aeroport_carte.bin, a regenerer avec tests/outil_cache_carte.gd apres chaque import), mini-carte
-    plafonnee a 8192 px. Chargement 67 s a l'export (35 s avant l'extension) : a optimiser.
-  - Commandes : toutes les touches clavier et boutons souris sont reaffectables (menus.gd, partie.gd TOUCHES_REGLABLES,
-    options["touches"]) ; l'aide a l'ecran suit les touches choisies.
-  - Ecran "Preparation du quartier" anime apres Nouvelle partie / Continuer (menus.gd _preparer).
-  - Vehicules et avions en marques parodiques reconnaissables (docs/LEGAL.md, tableau 6 bis) : Toyoda Koralo / Landa /
-    Hailux / Haisse, Pejo 460, Mersede 109, zem Bajou Boksa ; avions Boing 7-3, Aerobis A-32, Dash Ouest Q4, 5 livrees.
-  - Monuments fideles (monuments.gd) : Place Calvaire faite.
-  - PNJ : vendeuses de vrais personnages assis sur les chaises de leur etal (etats assis / retour_chaise), cortege en
-    blanc et noir qui reagit aux coups et aux chocs, evitement des objets et des autres PNJ (pedestrians.gd _eviter).
-  - Aeroport : une seule piste 06/24 de 2 400 m ; faux taxiway et fausses bretelles de horizon.gd supprimes ; les avions
-    roulent sur les vrais taxiways OSM (air_traffic.gd : T2, bretelles A 652 m et B 986 / 1 104 m, raquettes) ; test_avion OK.
-- En cours : tests des PNJ. test_vendeurs 162 / 163 (une vendeuse egaree), test_vie : les passants ne discutent plus
-  (causette) depuis l'evitement. Code PNJ non commite tant que ces deux tests ne sont pas verts.
-- A faire (liste complete et a jour dans la roadmap, section "Retours d'Olympe du 21/10/2026") : zones jaunes de
-  mission inaccessibles, degats / feu / explosion des vehicules, zem a heler avec trajet reel, revue de la carte morceau
-  par morceau (routes, batiments, murs, vegetation), ETIPECH (ecole visitable, photos d'Olympe), avions pilotables,
-  animations (portieres, montee a moto, mains sur le guidon), virages moins brutaux, supermarche par rayons, etals
-  coherents avec ce que crie le vendeur, carburant et pompistes, trafic plus dense, monuments restants (Bio Guera au
-  carrefour Erevan, l'Amazone, place du Souvenir, parc), Android (le chargement echoue, le nouvel APK affiche la raison).
+ETAT ACTUEL (22/10/2026)
+- Le jeu est jouable du lancement (ecran titre au logo anime, Nouvelle partie) a la fin de l'acte 1 ("A suivre"). Plein ecran par
+  defaut. Exports Windows, Linux et Android (APK de debug) dans builds/ : a refaire apres les derniers lots.
+- Systemes ajoutes depuis le 16/10 (tous testes par godot/tests/test_*.gd) :
+  - Monde : carte de 7 081 x 2 321 m en 81 tuiles streamees (monde.gd), cache de la carte (tests/outil_cache_carte.gd a relancer
+    apres chaque import), mini-carte plafonnee a 8192 px. Chargement ~67 s a l'export a optimiser. Raccords de routes coupees :
+    blender/tools/ponts_manquants.py (genere refs/osm/ponts-manquants.osm, fusionne dans zone-gtb-complet.osm).
+  - Commandes reaffectables (menus.gd, partie.gd TOUCHES_REGLABLES : actions creees par le code avec touche par defaut).
+  - Vehicules : marques parodiques (docs/LEGAL.md 6 bis), direction progressive, carburant (reservoir, panne seche), degats,
+    feu puis explosion (feu_vehicule.gd, explosion.gd), epaves, portes articulees des voitures (modele : percer_portes dans
+    blender/tools/build_vehicles.py ; voiture.gd ouvrir_porte), sortie sans traverser un mur.
+  - Stations-service "Bon Plein" (stations.gd), supermarche par rayons (commerce.gd rayon_*), etals par marchandise
+    (build_props.py etal_*, props.gd vendor_types, dialogues vendeuse_*).
+  - Zem a heler (zem_taxi.gd, touche H) : arrive par les rues, trajet en direct ; le joueur passager = player.enter_vehicle(v, true).
+  - Avion leger pilotable (avion_leger.gd, avion_camera.gd, modele build_avion_leger.py) pose a l'aeroport ; avions de ligne
+    pas encore pilotables.
+  - PNJ : vendeuses de vrais personnages assis, cortege reactif sans fanfare, evitement des objets, densite avec recyclage
+    autour du joueur (pedestrians.gd / traffic.gd _recycler), cris selon la marchandise.
+  - Aeroport : une seule piste 06/24 de 2 400 m, avions sur les vrais taxiways OSM (air_traffic.gd).
+  - Monuments : Place Calvaire (monuments.gd), Bio Guera (monument_bio_guera.gd, rond-point en (679, -30)).
+  - Missions : objectifs recales sur le sol libre (histoire.gd _degager).
+- En cours : import des routes raccordees (osm_import.py sur zone-gtb-complet.osm), puis relancer tests/outil_cache_carte.gd,
+  test_zones_missions, test_circulation, test_densite ; reexporter.
+- A faire (liste complete a jour dans la roadmap, section "Retours d'Olympe du 21/10/2026") : glitch de la main (poche), tenue (motif
+  wax), logo en haute resolution, ETIPECH (EPITECH Benin est a Seme City, ~20 km a l'est : progression par paliers, voir la roadmap),
+  monuments restants (l'Amazone, place du Souvenir, parc), animations (montee a moto, passagers PNJ), avions de ligne pilotables,
+  revue de la carte morceau par morceau (batiments, murs, vegetation), Android (le chargement echoue ; l'APK affiche la raison),
+  temps de chargement, vehicules de la circulation abimables.
 - Taches d'Olympe (ne pas les faire a sa place) : docs/a_faire_olympe.md (jouer, retours, photos dont ETIPECH, tests Android).
-- Outils : Godot 4.7.2 (exe sur le Bureau : Godot_v4.7.2-stable_win64.exe, lancer en --headless --path godot --script
-  res://tests/xxx.gd) ; modeles d'export dans %APPDATA%/Godot/export_templates/4.7.2.stable ; Blender 5.2 via
-  %LOCALAPPDATA%/Microsoft/WindowsApps/blender-launcher.exe -b --python ... ; Python geo dans WSL (~/.venvs/geo) ;
-  Python Windows absent : utiliser wsl.exe -e python3. Envoi git : git Windows (git -c safe.directory=* push depuis Git
-  Bash), jamais de ligne Co-Authored-By.
-- Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; noms fictifs pour les lieux,
-  marques et personnes (monuments et statues publics gardent leur nom reel) ; donnees ouvertes seulement ; 70 images/s
-  dehors et 60 en interieur ; tests au vert a chaque commit ; roadmap et ce prompt mis a jour a chaque travail fini.
+- Outils : Godot 4.7.2 (exe sur le Bureau : Godot_v4.7.2-stable_win64.exe, --headless --path godot --script res://tests/xxx.gd ;
+  ajouter --resolution 1280x720 sans --headless pour les captures tests/capture_*.gd) ; modeles d'export dans
+  %APPDATA%/Godot/export_templates/4.7.2.stable ; Blender 5.2 via PowerShell : & "$env:LOCALAPPDATA\Microsoft\WindowsApps\blender-launcher.exe"
+  -b --python script -- args (le lanceur n'affiche rien : utiliser blender/tools/run_logged.py pour un journal) ; Python geo dans
+  WSL (~/.venvs/geo) ; Python Windows absent : wsl.exe -e python3 ; ecrire les scripts Python avec l'outil Write (les heredocs
+  multiples avec apostrophes cassent le shell). Envoi git : git -c safe.directory=* push depuis Git Bash, jamais de ligne Co-Authored-By.
+- Regles d'Olympe : tout ce qui n'est pas fidele a Cotonou est corrige ou supprime ; noms fictifs pour les lieux, marques et
+  personnes (monuments et statues publics gardent leur nom reel) ; donnees ouvertes seulement ; 70 images/s dehors et 60 en
+  interieur ; tests au vert a chaque commit ; roadmap et ce prompt mis a jour a chaque travail fini.
 - Attention mesures : arreter les Blender / Godot restes en fond avant perf_fps.gd.
 - Bloquants : aucun. Si l'editeur Godot est ouvert pendant qu'on modifie project.godot, le fermer et rouvrir le projet.
 
