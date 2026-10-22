@@ -8,7 +8,10 @@
 ## - vendeurs / clients assis aux etals, kpayos et maquis (poses fixes fusionnees, MultiMesh : tres leger).
 ## Les pietons lointains sont caches et ne sont plus animes (performances).
 
-@export var walker_count := 36
+@export var walker_count := 90          # la carte fait 7 x 2,3 km : plus de passants (retour d'Olympe du 21/10/2026)
+## Recyclage : un passant trop loin du joueur reapparait sur un trottoir proche, hors de vue (densite constante autour du joueur).
+@export var recycle_dist := 260.0
+@export var recycle_zone := Vector2(80.0, 200.0)
 @export var promenade_share := 0.25
 @export var props_path: NodePath = ^"../Props"
 @export var player_path: NodePath = ^"../Player"
@@ -250,6 +253,47 @@ func _place(w: Dictionary) -> void:
 	w["pos"] = Vector3(0, GROUND_Y, 0)
 
 
+func _recycler(ppos: Vector3) -> void:
+	## Replace jusqu'a 2 passants trop loin sur un trottoir proche du joueur (pas sur l'ecran, ni vendeurs, ni promenade).
+	var pp := Vector2(ppos.x, ppos.z)
+	var cam := get_viewport().get_camera_3d()
+	var faits := 0
+	for w in _walkers:
+		if faits >= 2:
+			return
+		if w.has("chaise") or w.get("prom", false) or w["state"] != "walk" or w.has("ragdoll") or w.get("cross", false):
+			continue
+		if (w["pos"] as Vector3).distance_to(ppos) < recycle_dist:
+			continue
+		for essai in 8:
+			var ang := _rng.randf() * TAU
+			var q := pp + Vector2(cos(ang), sin(ang)) * _rng.randf_range(recycle_zone.x, recycle_zone.y)
+			var nr := _carte.nearest_on_network(q)
+			if nr.is_empty():
+				continue
+			var e: int = nr["edge"]
+			var ed: Dictionary = _carte.edges[e]
+			var from: int = ed["a"] if _rng.randf() < 0.5 else ed["b"]
+			_set_edge(w, e, from, 1.0 if _rng.randf() < 0.5 else -1.0)
+			var tot: float = float(nr["along"]) if from == ed["a"] else float(ed["len"]) - float(nr["along"])
+			var pts: PackedVector2Array = w["pts"]
+			var i := 0
+			var s := tot
+			while i < pts.size() - 2 and s > pts[i].distance_to(pts[i + 1]):
+				s -= pts[i].distance_to(pts[i + 1])
+				i += 1
+			w["i"] = i
+			w["s"] = s
+			var pt := _walk_point(w)
+			var pw := Vector3(pt.x, GROUND_Y, pt.y)
+			if not _carte.walkable(pt) or (cam != null and not cam.is_position_behind(pw) and cam.is_position_in_frustum(pw)):
+				continue
+			w["pos"] = pw
+			(w["node"] as Node3D).global_position = pw
+			faits += 1
+			break
+
+
 func _place_promenade(w: Dictionary) -> void:
 	var total := 0.0
 	for i in _promenade.size() - 1:
@@ -359,6 +403,8 @@ func _physics_process(delta: float) -> void:
 		pv = null
 	if _tick % 10 == 0:
 		_vendor_calls(ppos, pv)
+	if _tick % 40 == 0:
+		_recycler(ppos)
 	_voisins.clear()
 	for w in _walkers:
 		if not w.get("far", false):

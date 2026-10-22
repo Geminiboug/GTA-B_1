@@ -40,6 +40,8 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 @export var max_reverse := 6.0
 @export var max_steer := 0.62          # rad aux roues, a l'arret
 @export var steer_speed := 2.6
+@export var braquage_progressif := 3.0   # 1/s : vitesse de montee de l'entree de direction (3 : 0,33 s pour le braquage plein)
+var _steer_in_s := 0.0
 @export var grip := 0.92               # adherence laterale maximale (en g)
 @export var drag := 0.0011             # trainee aerodynamique (par metre)
 @export var roll_factor := 0.012
@@ -824,9 +826,12 @@ func _physics_process(delta: float) -> void:
 		# braquage utile max : virage a la limite d'adherence (R = v2 / mu.g) + derive des pneus, avec une marge
 		var utile := _wheelbase * mu * G / (nl * nl) + mu * G * masse / maxf(rigidite_avant * masse * G, 1.0)
 		steer_limit = minf(steer_limit, utile * braquage_marge)
-	var steer_goal := steer_in * steer_limit
-	# volant qui revient seul au centre plus vite qu'il ne braque
-	var rate := steer_speed * (1.6 if absf(steer_goal) < absf(_steer) else 1.0)
+	# l'entree de direction monte progressivement (une touche de clavier valait tout de suite le braquage maxi : virages
+	# brutaux, retour d'Olympe du 22/10/2026) ; plus vite pour revenir au centre
+	_steer_in_s = move_toward(_steer_in_s, steer_in, delta * (braquage_progressif if absf(steer_in) > absf(_steer_in_s) else braquage_progressif * 1.8))
+	var steer_goal := _steer_in_s * steer_limit
+	# volant qui revient seul au centre plus vite qu'il ne braque, et qui braque moins vite quand on roule vite
+	var rate := steer_speed / (1.0 + absf(nl) * 0.03) * (1.6 if absf(steer_goal) < absf(_steer) else 1.0)
 	_steer = move_toward(_steer, steer_goal, rate * delta)
 	var L := _wheelbase
 	var la := L * (1.0 - repartition_avant)     # CG -> essieu avant

@@ -7,8 +7,12 @@ extends Node3D
 ## - bruit de moteur (boucle synthetisee) dont la hauteur suit la vitesse, klaxons synthetises ;
 ## - corps physiques (on ne passe pas a travers), phares allumes la nuit.
 
-@export var zem_count := 32
-@export var car_count := 14
+@export var zem_count := 60             # la carte fait 7 x 2,3 km : plus dense qu'avant (retour d'Olympe du 21/10/2026, carte deserte)
+@export var car_count := 36
+## Recyclage : un vehicule trop loin du joueur reapparait dans une rue proche, hors de vue, pour que la densite autour du
+## joueur reste la meme sur toute la carte.
+@export var recycle_dist := 320.0
+@export var recycle_zone := Vector2(90.0, 230.0)
 @export var player_path: NodePath = ^"../Player"
 @export var seed_value := 77
 @export var turn_radius_car := 5.3     # m : rayon de braquage mini d'une berline
@@ -293,6 +297,59 @@ func _place_random(a: Dictionary) -> void:
 		return
 
 
+func _recycler(ppos: Vector3) -> void:
+	## Replace jusqu'a 2 vehicules trop loin sur une rue proche du joueur (hors du champ de la camera).
+	if _player == null or ppos.x > 1e8:
+		return
+	var pp := Vector2(ppos.x, ppos.z)
+	var cam := get_viewport().get_camera_3d()
+	var faits := 0
+	for a in _agents:
+		if faits >= 2:
+			return
+		if not a.get("active", true) or (a["vis_pos"] as Vector3).distance_to(ppos) < recycle_dist:
+			continue
+		for essai in 8:
+			var ang := _rng.randf() * TAU
+			var q := pp + Vector2(cos(ang), sin(ang)) * _rng.randf_range(recycle_zone.x, recycle_zone.y)
+			var nr := _carte.nearest_on_network(q)
+			if nr.is_empty():
+				continue
+			var e: int = nr["edge"]
+			var ed: Dictionary = _carte.edges[e]
+			if a["kind"] == "voiture" and ed["kind"] == "track":
+				continue
+			var from: int = ed["a"]
+			if not ed["oneway"] and _rng.randf() < 0.5:
+				from = ed["b"]
+			var pts := _carte.edge_pts_from(e, from)
+			var best_i := 0
+			var best_d := INF
+			for i in pts.size() - 1:
+				var d := Geometry2D.get_closest_point_to_segment(nr["point"], pts[i], pts[i + 1]).distance_to(nr["point"])
+				if d < best_d:
+					best_d = d
+					best_i = i
+			var libre := true
+			for b in _agents:
+				if not is_same(b, a) and Vector2(b["vis_pos"].x, b["vis_pos"].z).distance_to(pts[best_i]) < 10.0:
+					libre = false
+					break
+			var pw := Vector3(pts[best_i].x, GROUND_Y, pts[best_i].y)
+			if not libre or (cam != null and not cam.is_position_behind(pw) and cam.is_position_in_frustum(pw)):
+				continue
+			_set_edge(a, e, from)
+			a["i"] = best_i
+			var p := _lane_point(a)
+			a["vis_pos"] = Vector3(p.x, GROUND_Y, p.y)
+			var dd := pts[best_i + 1] - pts[best_i]
+			a["vis_yaw"] = atan2(-dd.x, -dd.y)
+			a["speed"] = 0.0
+			a["stuck"] = 0.0
+			faits += 1
+			break
+
+
 func _set_edge(a: Dictionary, e: int, from: int) -> void:
 	a.erase("next_edge")
 	a["edge"] = e
@@ -419,6 +476,8 @@ func _physics_process(delta: float) -> void:
 		ppos = (pv as Node3D).global_position if pv else _player.global_position
 	_obstacles = get_tree().get_nodes_in_group("vehicules") + get_tree().get_nodes_in_group("obstacles_route")
 	_tick += 1
+	if _tick % 45 == 0:
+		_recycler(ppos)
 	for a in _agents:
 		if a.get("active", true):
 			# loin du joueur : mis a jour un pas sur lod_pas, avec le temps cumule (budget CPU, phase 11)

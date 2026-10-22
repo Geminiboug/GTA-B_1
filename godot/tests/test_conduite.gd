@@ -55,12 +55,19 @@ func _spawn() -> void:
 func _physics_process(_d: float) -> bool:
 	frame += 1
 	if frame == 60:
-		scene.get_node("Player").global_position = Vector3(0, -50, 0)
+		# le decor charge par tuiles autour du joueur : on l'amene sur la piste (a l'ecart de la trajectoire) et on attend
+		var rw: Array = Carte.zone().data["runways"][0]
+		var a := Vector2(float(rw[1][0]), float(rw[1][1]))
+		var b := Vector2(float(rw[2][0]), float(rw[2][1]))
+		var dir := (b - a).normalized()
+		var cote := a + Vector2(-dir.y, dir.x) * 40.0
+		scene.get_node("Player").global_position = Vector3(cote.x, 1.0, cote.y)
 		scene.get_node("Player").set_physics_process(false)
+	if frame == 400:
 		_spawn()
 		step = 0
 		t0 = frame
-	if frame <= 60 or car == null:
+	if frame <= 400 or car == null:
 		return false
 	var id: String = ids[idx]
 	var lim: Array = MODELES[id]

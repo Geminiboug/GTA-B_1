@@ -120,29 +120,17 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 ### Retours d'Olympe du 21/10/2026 : coherence et realisme (prioritaire, avant l'acte 2)
 Bugs de coherence d'abord, nouvelles fonctions ensuite.
 
-En cours (code ecrit, tests en cours, pas encore commite) :
-- [ ] URGENT : pistes de l'aeroport conformes au vrai DBBB (piste unique 06/24, 2 400 m). Fait : faux taxiway parallele, bande d'herbe et fausses bretelles de horizon.gd supprimes ; les avions roulent sur les vrais taxiways OSM (bretelles A a 652 m et B a 986 / 1 104 m, raquettes aux deux seuils, piste remontee). test_avion 06 et 24 : 47 controles sur 48 (un seul echec de mesure de hauteur, non reproduit au decollage suivant) ; reste a verifier visuellement
-- [ ] Ecran "Preparation du quartier" anime : fait (photo qui zoome, barre de progression), a verifier en jeu
-- [ ] Vendeuses de vrais personnages assis sur les chaises de leur etal, qui reagissent aux coups puis se rassoient : fait, test_vendeurs a 162 / 163 (une vendeuse egaree a corriger)
-- [ ] Cortege (blanc et noir) qui reagit aux coups et aux chocs de vehicule : fait, test d'un coup sur le cortege a ecrire
-- [ ] PNJ qui contournent objets et batiments et ne se traversent plus entre eux : code ecrit, non teste ; test_vie a corriger (passants qui ne s'arretent plus)
+A verifier par Olympe en jeu (fait, teste automatiquement) : pistes de l'aeroport (piste unique 06/24 de 2 400 m, taxiways OSM), ecran de preparation anime, vendeuses assises sur les vraies chaises, cortege qui reagit sans fanfare, PNJ qui contournent objets et passants, repliques plus lentes, plein ecran par defaut, escalade jusqu'a 2,8 m, pieds plantes pendant un coup, sortie de vehicule sans traverser un mur (et degats des chocs contre les murs hauts), perso droit dans les virages, tenue de depart (t-shirt blanc a logo GTB, pantalon wax, baskets), logo anime (proposition 2), zones jaunes des missions recalees, feu puis explosion des voitures et des motos, zem a heler (H) avec trajet en direct.
 
-Nouvelles demandes du 22/10/2026 (a traiter vite, avant le reste) :
-- [x] (fait, a verifier en jeu) Cinematiques : repliques plus lentes (duree selon la longueur du texte, histoire.gd secondes_par_caractere)
-- [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche : toujours pas regle
-- [ ] Retirer le son effrayant qu'on entend en approchant des gens en blanc et noir (cortege)
-- [ ] Plein ecran par defaut au lancement du jeu
-- [ ] Escalade : pouvoir franchir des murs et objets plus hauts que le personnage
-- [ ] Tenue du joueur : t-shirt blanc et pantalon, d'apres la planche d'habits dans Telechargements
-- [ ] Frappe : le personnage glisse sur le sol quand on frappe en maintenant une touche de deplacement
-- [ ] Sortie de vehicule collee a un batiment : le personnage se retrouve de l'autre cote du mur (chercher une sortie libre, sinon rester dans le vehicule)
-- [ ] Tenue du joueur : planche "GTB Character Texture Reference Sheet" (Telechargements) : t-shirt blanc avec logo GTB noir sur la poitrine, pantalon en wax (jaune ocre, bleu nuit, rouge), baskets blanches ; image de reference seulement, texturer a notre facon (pagne procedural et logo peint sur les UV du modele)
-- [ ] Nouveau logo : planche "GTB Brand Board_ Benin Game Logo Concepts" (Telechargements) : logo ocre #FFC629 avec skyline de Cotonou et palmiers, "Gbe Town Benin" en script, variantes (blanche, compacte, icone ronde, icone d'app), palette noir charbon #0B0B0F / orange terre #E67E22 / blanc casse #F5F5F5, 3 animations proposees (trace au pinceau 3 s, fondu lumineux 2,5 s, ambiance de ville 4 s). A integrer : ecran titre, chargement, menu, HUD, icone ; choix de l'animation a demander a Olympe. Verifier que la skyline ne reproduit pas un batiment protege (docs/LEGAL.md)
+En cours ou a corriger :
+- [ ] Vendeuse egaree : test_vendeurs donne 162 / 163 (une vendeuse hors tuile chargee)
+- [ ] Logo : la planche donne une image de 444 px ; fournir le fichier en bonne resolution (assets/ui/logo_gtb.png), variantes et icone ; ecran de chargement et menu a finir
+- [ ] Tenue : motif wax a affiner (celui du jeu ressemble a des rayures), logo GTB en vrai texte sur la poitrine a verifier de pres, baskets
+- [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche : toujours pas regle (pas de clip "poche" trouve, a diagnostiquer avec captures)
+- [ ] Explosion : rendu a polir (flammes plus vives), vehicules de la circulation pas encore abimables
+
 
 A faire :
-- [ ] Missions : zone jaune parfois inaccessible (dans un mur, un batiment, hors d'atteinte)
-- [ ] Vehicules (motos, voitures, minibus...) : degats aux chocs, feu, puis explosion realiste
-- [ ] Zem : on le hele au bord de la voie, on monte, on choisit la destination, le trajet se fait en direct (pas de teleportation)
 - [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos)
 - [ ] Carte jusqu'a EPITECH Benin, batiment visitable (photos d'Olympe), sous le nom ETIPECH (docs/LEGAL.md)
 - [ ] Pilotage d'avions, d'abord de petits appareils pour de courts trajets

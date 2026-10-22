@@ -16,6 +16,8 @@ signal rider_changed(has_rider: bool)
 @export var wheelbase := 1.37
 @export var max_steer := 0.6           # rad au guidon a l'arret
 @export var steer_speed := 3.0         # rad/s pour tourner le guidon
+@export var braquage_progressif := 3.5   # 1/s : vitesse de montee de l'entree de direction
+var _steer_in_s := 0.0
 @export var max_lean := 0.6            # rad (~35 degres)
 @export var wheel_radius := 0.30
 ## Bequille centrale (piv_bequille, blender/tools/build_zem.py) : posee a l'arret sans conducteur, repliee des qu'on
@@ -99,7 +101,9 @@ func _physics_process(delta: float) -> void:
 
 	# --- Direction : le guidon braque moins quand on va vite ---
 	var steer_limit: float = max_steer / (1.0 + abs(speed) * 0.22)
-	_steer = move_toward(_steer, steer_in * steer_limit, steer_speed * (adresse if has_rider else 1.0) * delta)
+	# entree de direction progressive (virages moins brutaux, retour d'Olympe du 22/10/2026)
+	_steer_in_s = move_toward(_steer_in_s, steer_in, delta * (braquage_progressif if absf(steer_in) > absf(_steer_in_s) else braquage_progressif * 1.8))
+	_steer = move_toward(_steer, _steer_in_s * steer_limit, steer_speed * (adresse if has_rider else 1.0) * delta)
 	# modele bicyclette : vitesse de lacet = v * tan(braquage) / empattement
 	var yaw_rate := speed * tan(_steer) / wheelbase
 	if rear_brake and abs(speed) > 4.0:
