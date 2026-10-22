@@ -10,6 +10,8 @@ uniform vec3 col_b = vec3(0.95, 0.75, 0.1);   // motif principal
 uniform vec3 col_c = vec3(0.1, 0.2, 0.5);     // details
 uniform int motif = 0;
 uniform float scale = 14.0;                    // motifs par metre
+uniform sampler2D motif_tex : source_color, repeat_enable, filter_linear_mipmap;   // motif 5 : pagne de la planche de reference
+uniform vec2 tex_taille = vec2(0.5, 0.23);   // metres couverts par une image du pagne
 
 varying vec3 opos;
 
@@ -39,6 +41,10 @@ void fragment() {
 		float w = sin(p.x * 3.0 + sin(p.y * 2.2) * 1.6);
 		col = mix(col, col_b, smoothstep(0.25, 0.4, w));
 		col = mix(col, col_c, step(length(cell - vec2(0.25, -0.25)), 0.09));
+	} else if (motif == 5) {
+		// pagne photographique (assets/textures/pagne_gtb.png, planche de reference d'Olympe), repete en miroir
+		vec2 uv = vec2(atan(opos.x, opos.z) * 0.17, opos.y) / tex_taille;
+		col = pow(texture(motif_tex, uv).rgb, vec3(1.0 / 2.2));
 	} else if (motif == 4) {
 		// grandes fleurs a six petales et coeur (fond bleu nuit, petales jaunes, coeur rouge) : tissu de la tenue de depart
 		vec2 q = fract(p * 0.5) - 0.5;

@@ -127,7 +127,7 @@ func _hele() -> void:
 		if nq.is_empty():
 			continue
 		var s: Vector2 = nq["point"]
-		var r := _carte.route(s, but, true)
+		var r := _vers_bord(_carte.route(s, but, true), but, pp, int(near["edge"]))
 		if r.size() < 2:
 			continue
 		var L := 0.0
@@ -147,6 +147,23 @@ func _hele() -> void:
 	etat = "arrive"
 	_t = 0.0
 	Partie.notifier(tr("Tu hèles un zem : il arrive."))
+
+
+func _vers_bord(r: PackedVector2Array, but: Vector2, vers: Vector2, edge: int) -> PackedVector2Array:
+	## Le zem se gare sur le cote de la chaussee, du cote de `vers` (le client), au lieu de s'arreter au milieu de la rue :
+	## les derniers metres du trajet glissent progressivement vers le bord.
+	if r.size() < 2 or edge < 0:
+		return r
+	var demi: float = float(_carte.edges[edge]["width"]) / 2.0
+	var d := vers - but
+	if d.length() < 0.5:
+		return r
+	var decalage := d.normalized() * minf(maxf(demi - 1.3, 0.0), d.length())
+	var out := PackedVector2Array()
+	for q in r:
+		var w := clampf(1.0 - q.distance_to(but) / 16.0, 0.0, 1.0)
+		out.append(q + decalage * w)
+	return out
 
 
 func _a_l_ecran(p: Vector3) -> bool:
@@ -215,8 +232,12 @@ func _conduire(delta: float, arret: float) -> bool:
 		var libre := maxf(reste - arret, 0.0)
 		but = minf(but, sqrt(2.0 * 2.2 * libre) + 0.5)
 		fini = reste <= arret + 0.8 and absf(v) < 0.6
-	var freine := v > but + 1.0 or (arret > 0.0 and reste <= arret)
-	z.set("ai_input", Vector3(0.0 if freine or v > but else clampf((but - v) / 3.0, 0.25, 1.0), 1.0 if freine else 0.0, clampf(-ang * 2.0, -1.0, 1.0)))
+	# le frein ne s'applique qu'en roulant : a l'arret il ferait reculer le zem (marche arriere du frein)
+	var freine := v > 0.4 and (v > but + 1.0 or (arret > 0.0 and reste <= arret))
+	var gaz := 0.0 if freine or v > but else clampf((but - v) / 3.0, 0.25, 1.0)
+	if arret > 0.0 and reste <= arret + 0.8:
+		gaz = 0.0
+	z.set("ai_input", Vector3(gaz, 1.0 if freine else 0.0, clampf(-ang * 2.0, -1.0, 1.0)))
 	# coince longtemps (mur, voiture en travers) : replace un peu plus loin sur le trajet, en dernier recours
 	if absf(v) < 0.7 and not fini and not (arret > 0.0 and reste <= arret + 1.5) and libre_devant > 6.0:
 		_coince += delta
@@ -341,6 +362,8 @@ func _partir(i: int) -> void:
 	var near := _carte.nearest_on_network(Vector2(pos.x, pos.z))
 	var but: Vector2 = near["point"] if not near.is_empty() else Vector2(pos.x, pos.z)
 	var r := _carte.route(cp, but, true)
+	if not near.is_empty():
+		r = _vers_bord(r, but, Vector2(pos.x, pos.z), int(near["edge"]))
 	if r.size() < 2:
 		Partie.argent += p        # aucun itineraire : rembourse
 		Partie.argent_change.emit(Partie.argent, p)

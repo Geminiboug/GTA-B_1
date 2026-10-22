@@ -202,7 +202,7 @@ void fragment() {
 		col = mix(col, col * 0.6, clamp(joint, 0.0, 1.0) * fine);
 		col = mix(col, col * 0.7, smoothstep(0.6, 0.8, fbm(p * 0.3)) * 0.5);
 	}
-	if (avec_texture && mode <= 5) {
+	if (avec_texture && (mode <= 5 || mode == 6)) {
 		vec2 uv = p / tex_taille;
 		// deux lectures (la seconde tournee et a une autre echelle), melangees par un bruit lent : pas de repetition
 		vec3 a = texture(tex_sol, uv).rgb;

@@ -172,6 +172,17 @@ static func wax(palette: Array, motif: int) -> Material:
 	return _mat_cache[key]
 
 
+static func pagne_planche() -> Material:
+	## Pantalon de la tenue de depart : le tissu de la planche de reference d'Olympe (jaune ocre, bleu nuit, rouge).
+	if not _mat_cache.has("pagne_planche"):
+		var m := ShaderMaterial.new()
+		m.shader = WAX
+		m.set_shader_parameter("motif", 5)
+		m.set_shader_parameter("motif_tex", load("res://assets/textures/pagne_gtb.png"))
+		_mat_cache["pagne_planche"] = m
+	return _mat_cache["pagne_planche"]
+
+
 static var _face_deltas := {}
 
 

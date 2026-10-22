@@ -52,11 +52,7 @@ var etape := "chargement"                # chargement, mise_en_place, fini, erre
 var progression := 0.0                   # 0..1, -1 = inconnue
 var _ui: CanvasLayer
 var _cadre: Control
-var _img: Array[TextureRect] = []
-var _cur := 0
-var _diapo := 0
-var _t_diapo := 0.0
-var _lieu: Label
+var _aube: AubeCotonou
 var _astuce: Label
 var _etat: Label
 var _pct: Label
@@ -89,7 +85,6 @@ func _ready() -> void:
 		budget_ms = maxf(budget_ms, budget_ms_ordinateur)
 	_rng.randomize()
 	_construire_ui()
-	_montrer(0, true)
 	_astuce.text = tr(ASTUCES[_rng.randi() % ASTUCES.size()])
 	if ResourceLoader.load_threaded_request(scene_jeu, "", sous_fils) != OK:
 		_echec("demande de chargement refusee : %s" % scene_jeu)
@@ -261,47 +256,8 @@ func _echec(raison := "") -> void:
 	push_error("Chargement : impossible de charger %s" % scene_jeu)
 
 
-# ------------------------------------------------------------------ carrousel
-func _texture(d: Dictionary) -> Texture2D:
-	var t: Texture2D = load(d["img"])
-	if d.has("zone"):
-		var a := AtlasTexture.new()
-		a.atlas = t
-		a.region = d["zone"]
-		return a
-	return t
-
-
-func _montrer(i: int, direct := false) -> void:
-	_diapo = i
-	_t_diapo = 0.0
-	var d: Dictionary = DIAPOS[i]
-	var dessous := _img[_cur]
-	_cur = 1 - _cur
-	var dessus := _img[_cur]
-	dessus.texture = _texture(d)
-	dessus.scale = Vector2.ONE
-	dessus.move_to_front()
-	_lieu.text = tr(d["lieu"])
-	if direct:
-		dessus.modulate.a = 1.0
-		dessous.modulate.a = 0.0
-		return
-	dessus.modulate.a = 0.0
-	var tw := create_tween()
-	tw.tween_property(dessus, "modulate:a", 1.0, duree_fondu)
-	tw.tween_callback(func() -> void: dessous.modulate.a = 0.0)
-
-
+# ------------------------------------------------------------------ animation
 func _animer(delta: float) -> void:
-	# une etape de mise en place lente donne un grand delta : le zoom ralentit au lieu de sauter
-	_t_diapo += minf(delta, 1.0 / 30.0)
-	var u := minf(_t_diapo / (duree_diapo + duree_fondu), 1.0)
-	var img := _img[_cur]
-	img.pivot_offset = img.size * 0.5
-	img.scale = Vector2.ONE * (1.0 + zoom_diapo * u * (2.0 - u))
-	if _t_diapo >= duree_diapo and DIAPOS.size() > 1:
-		_montrer((_diapo + 1) % DIAPOS.size())
 	_roue.rotation += delta * 3.0
 	_barre.queue_redraw()
 
@@ -350,15 +306,9 @@ func _construire_ui() -> void:
 	fond.color = NUIT
 	fond.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_cadre.add_child(fond)
-	for i in 2:
-		var t := TextureRect.new()
-		t.set_anchors_preset(Control.PRESET_FULL_RECT)
-		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		t.modulate.a = 0.0
-		fond.add_child(t)
-		_img.append(t)
+	_aube = AubeCotonou.new()
+	_aube.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fond.add_child(_aube)
 	# degrade sombre en bas pour la lisibilite du bandeau
 	var ombre := TextureRect.new()
 	var g := GradientTexture2D.new()
@@ -373,44 +323,6 @@ func _construire_ui() -> void:
 	ombre.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	ombre.offset_top = -260
 	_cadre.add_child(ombre)
-
-	# logo (haut gauche) : panneau biseaute nuit, GTB en jaune contour noir comme le titre du jeu, filet vert
-	var logo := _panneau(Color(NUIT, 0.88), -0.18)
-	logo.position = Vector2(-40, 0)
-	logo.size = Vector2(430, 250)
-	_cadre.add_child(logo)
-	var gtb := LogoGtb.new()
-	gtb.position = Vector2(60, 6)
-	gtb.size = Vector2(300, 190)
-	logo.add_child(gtb)
-	var filet := ColorRect.new()
-	filet.color = VERT
-	filet.position = Vector2(78, 204)
-	filet.size = Vector2(250, 5)
-	logo.add_child(filet)
-	var filet2 := ColorRect.new()
-	filet2.color = ZEM
-	filet2.position = Vector2(78, 212)
-	filet2.size = Vector2(150, 3)
-	logo.add_child(filet2)
-
-	# lieu (haut droite)
-	var badge := _panneau(Color(NUIT, 0.88), -0.25)
-	badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	badge.offset_left = -360
-	badge.offset_right = 30
-	badge.offset_top = 0
-	badge.offset_bottom = 74
-	_cadre.add_child(badge)
-	var pin := ColorRect.new()
-	pin.color = LATERITE_CLAIRE
-	pin.position = Vector2(40, 30)
-	pin.size = Vector2(12, 12)
-	pin.rotation = PI / 4
-	badge.add_child(pin)
-	_lieu = _label(26, ZEM)
-	_lieu.position = Vector2(66, 18)
-	badge.add_child(_lieu)
 
 	# bandeau du bas : astuce, etat, barre, pourcentage
 	var bas := _panneau(Color(NUIT, 0.92))
@@ -471,6 +383,8 @@ func _dessiner_barre() -> void:
 	_barre.draw_rect(Rect2(Vector2.ZERO, s), Color(POUSSIERE, 0.45))
 	if progression >= 0.0:
 		_barre.draw_rect(Rect2(Vector2.ZERO, Vector2(s.x * progression, s.y)), ZEM)
+		var x := s.x * progression
+		_barre.draw_colored_polygon(PackedVector2Array([Vector2(x + 18, s.y * 0.5), Vector2(x - 8, -1), Vector2(x - 3, s.y * 0.5), Vector2(x - 8, s.y + 1)]), SABLE)
 	else:
 		# progression inconnue : segment qui va et vient (pas de faux pourcentage)
 		var t := Time.get_ticks_msec() / 1000.0

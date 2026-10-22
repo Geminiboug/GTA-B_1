@@ -126,9 +126,11 @@ En cours ou a corriger :
 - [ ] Vendeuse egaree : test_vendeurs donne 162 / 163 (une vendeuse hors tuile chargee)
 - [ ] Logo : image de 444 px seulement (assets/ui/logo_gtb.png) ; fournir le fichier en haute resolution, variantes et icone ; menu et chargement a verifier
 - [ ] Tenue : motif wax a affiner, logo GTB a verifier de pres, baskets
-- [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche (aucun clip "poche" trouve, diagnostic par captures a faire)
+- [x] Glitch de la main / avant-bras qui se plisse bras leve : torsion de l'avant-bras transferee a la main (anim_ctrl._detordre_bras, 22/10) ; a verifier en jeu
+- [x] Tenue : pagne et logo GTB de la planche d'Olympe appliques (assets/textures/pagne_gtb.png, logo_tshirt_gtb.png) ; textures de l'aeroport (piste, parking, tarmac) et de l'epave (assets/textures/aeroport, epave)
 - [ ] Explosion : flammes plus vives ; vehicules de la circulation pas encore abimables
-- [ ] Avion leger : portes du pilote et du passager a animer a la montee (le modele les a), cockpit a habiller, atterrissage a regler sur le terrain, ecole de pilotage, avions de ligne pilotables plus tard
+- [ ] Avion leger : portes du pilote et du passager a animer a la montee (le modele les a), cockpit a habiller, atterrissage a regler sur le terrain, ecole de pilotage, puis helicopteres pilotables (decision d'Olympe 22/10 : seuls de petits avions et des helicopteres sont pilotables, jamais les avions de ligne)
+- [ ] Lag et chutes brutales d'images (retour d'Olympe 22/10) : tests/perf_saccades.gd (marche le long de la route) montre 189 images > 33 ms, jusqu'a 600 ms ; elles disparaissent (22 restantes) sans les vendeurs assis poses par tuile (pedestrians.gd _vendeurs_spots : ~50 noeuds par vendeur et 400 ms par image, cause exacte pas encore isolee ; ni l'attente du fil de travail, ni l'habillage, ni la fusion ne sont en cause). A traiter ensuite : densite 90 / 60 / 36 trop lourde ?
 - [ ] Voitures : portes arriere et cote passager pour les passagers PNJ ; motos : montee avec enjambement et mains sur le guidon a affiner
 - [ ] Stations-service : icone sur la mini-carte, essence pour l'avion
 
@@ -144,6 +146,14 @@ A faire :
 - [ ] Temps de chargement : 67 s contre 35 s avant l'extension de la carte
 - [ ] Reexporter Windows, Linux et Android apres ce lot
 
+
+### Retours d'Olympe du 22/10/2026 (apres-midi) : realisme visuel (prioritaire apres le lag)
+- [ ] Epave de la plage : refaire d'apres le TriStar de reference (refs/modeles/l1011_cotty, CC-BY-4.0 lourencolaio543, credit dans docs/LEGAL.md et l'ecran de credits ; pas de livree ni de nom reels) : fuselage et ailes de TriStar, moteur de queue et entree d'air en S, empennage, train, escalier de bois, cabine visitable (porte avant gauche decoupee), textures de planche. L'epave actuelle est un biréacteur etroit sans moteur de queue.
+- [ ] Tous les vehicules plus realistes (voitures, minibus, pickup, 4x4, zems, vehicules de police, avion leger) : formes, proportions, vitrages, optiques, pare-chocs, jantes, interieurs, saletes et usures de Cotonou, comparer aux photos de refs/ ; un vehicule a la fois, avec capture avant / apres.
+- [ ] Personnages : geometrie plus fine (mains, visage, epaules, vetements), realisme de la peau, des cheveux et des tissus, plis ; comparer a la planche de personnage ; plusieurs morphologies.
+- [x] Nouvelle animation de debut et de chargement : "Aube sur Cotonou" (maquette validee par Olympe le 22/10, scripts/aube_cotonou.gd) utilisee a l'ecran de chargement, a l'ecran titre (menu qui apparait apres 5 s ou sur une touche) et a la preparation du quartier ; carrousel de captures retire ; a verifier en jeu par Olympe
+- [ ] Textures des murs et toits de la planche de l'aeroport (enduits, tole, toit-terrasse : extraits dans assets/textures/aeroport/, pas encore appliques) ; interieur de l'epave (hublots, plafond, moquette) d'apres la planche d'interieur.
+- [ ] ETIPECH = palier final de progression (pas de campus pose d'un coup).
 ### Phase 18 : Acte 2 "Sous les ailes" (v0.3)
 - [ ] Ecriture complete de l'acte 2 dans docs/histoire.md (15 a 20 missions), validee par Olympe avant production
 - [ ] Zone cargo de l'aeroport en interieur et exterieur (hangars, entrepots, controles, chariots, camions)
@@ -320,7 +330,7 @@ ETAT ACTUEL (22/10/2026)
   test_zones_missions, test_circulation, test_densite ; reexporter.
 - A faire (liste complete a jour dans la roadmap, section "Retours d'Olympe du 21/10/2026") : glitch de la main (poche), tenue (motif
   wax), logo en haute resolution, ETIPECH (EPITECH Benin est a Seme City, ~20 km a l'est : progression par paliers, voir la roadmap),
-  monuments restants (l'Amazone, place du Souvenir, parc), animations (montee a moto, passagers PNJ), avions de ligne pilotables,
+  monuments restants (l'Amazone, place du Souvenir, parc), animations (montee a moto, passagers PNJ), helicopteres pilotables,
   revue de la carte morceau par morceau (batiments, murs, vegetation), Android (le chargement echoue ; l'APK affiche la raison),
   temps de chargement, vehicules de la circulation abimables.
 - Taches d'Olympe (ne pas les faire a sa place) : docs/a_faire_olympe.md (jouer, retours, photos dont ETIPECH, tests Android).

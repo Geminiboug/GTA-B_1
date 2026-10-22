@@ -1,0 +1,11 @@
+Model Information:
+* title:	Delta+ Airlines+L-1011
+* source:	https://sketchfab.com/3d-models/delta-airlinesl-1011-12d1941fe51b42cabc0fdff2d74367d5
+* author:	lourencolaio543 (https://sketchfab.com/lourencolaio543)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Delta+ Airlines+L-1011" (https://sketchfab.com/3d-models/delta-airlinesl-1011-12d1941fe51b42cabc0fdff2d74367d5) by lourencolaio543 (https://sketchfab.com/lourencolaio543) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

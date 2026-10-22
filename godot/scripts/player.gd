@@ -179,7 +179,7 @@ func _player_look(g: String) -> Dictionary:
 			"cloth": w, "show": ["chr_haut", "chr_pagne_long", "chr_semelle", "chr_foulard"]}
 	# tenue de depart (planche d'Olympe, 22/10/2026) : t-shirt blanc a logo GTB, pantalon en wax jaune ocre, bleu nuit et rouge,
 	# baskets blanches
-	var wax_gtb := PnjUtil.wax([Color(0.08, 0.11, 0.3), Color(0.92, 0.62, 0.05), Color(0.6, 0.08, 0.12)], 4)
+	var wax_gtb := PnjUtil.pagne_planche()
 	return {"skin": PnjUtil.SKINS[0], "top": PnjUtil.plain(Color(0.96, 0.96, 0.95)), "legs": wax_gtb,
 		"cloth": wax_gtb, "shoes_mat": PnjUtil.plain(Color(0.94, 0.94, 0.92)), "show": ["chr_haut", "chr_pantalon", "chr_chaussures", "chr_cheveux"]}
 
@@ -197,7 +197,7 @@ func _dress(model: Node, g: String) -> void:
 
 
 var _logo_att: BoneAttachment3D
-var _logo_lbl: Label3D
+var _logo_lbl: Sprite3D
 
 
 func _logo_poitrine(model: Node, voulu: bool) -> void:
@@ -219,12 +219,9 @@ func _logo_poitrine(model: Node, voulu: bool) -> void:
 	_logo_att.name = "LogoPoitrine"
 	_logo_att.bone_name = os
 	sk.add_child(_logo_att)
-	_logo_lbl = Label3D.new()
-	_logo_lbl.text = "GTB"
-	_logo_lbl.font_size = 96
-	_logo_lbl.pixel_size = 0.0015
-	_logo_lbl.outline_size = 0
-	_logo_lbl.modulate = Color(0.04, 0.04, 0.05)
+	_logo_lbl = Sprite3D.new()
+	_logo_lbl.texture = load("res://assets/textures/logo_tshirt_gtb.png")      # logo noir de la planche d'Olympe
+	_logo_lbl.pixel_size = 0.00065
 	_logo_lbl.shaded = false
 	_logo_lbl.double_sided = false
 	_logo_lbl.top_level = true
@@ -237,7 +234,7 @@ func _maj_logo_poitrine() -> void:
 	var b := body.global_transform.basis.orthonormalized()
 	var devant := -b.z
 	_logo_lbl.visible = vehicle == null or vehicle.get("kind") == "zem"
-	_logo_lbl.global_transform = Transform3D(b.rotated(Vector3.UP, PI), _logo_att.global_position + devant * 0.15 + Vector3.UP * -0.17)
+	_logo_lbl.global_transform = Transform3D(b.rotated(Vector3.UP, PI), _logo_att.global_position + devant * 0.15 + Vector3.UP * -0.06)
 
 
 signal modele_change

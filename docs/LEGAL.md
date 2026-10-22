@@ -100,3 +100,9 @@ Avant toute sortie commerciale : validation par un avocat en propriete intellect
 | Fiyegnon-Jacquot (quartier) | Fiyegnan-Jacot |
 
 Nouveaux lieux : meme principe, un nom proche a l oreille mais different, sans logo ni charte graphique reelle.
+
+## Modeles 3D de tiers (licence a respecter)
+
+| Modele | Auteur et licence | Usage dans GTB |
+|---|---|---|
+| "Delta+ Airlines+L-1011" (https://sketchfab.com/3d-models/delta-airlinesl-1011-12d1941fe51b42cabc0fdff2d74367d5), telecharge le 22/10/2026, copie locale dans refs/modeles/l1011_cotty/ | lourencolaio543 (https://sketchfab.com/lourencolaio543), CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) : l'auteur doit etre credite, usage commercial permis | Reference de forme pour l'epave de la plage (trireacteur facon TriStar). Si la geometrie est reprise dans le jeu : livree et inscriptions d'une compagnie reelle retirees (blanchie a la chaux), et ce credit repris dans l'ecran de credits : "Cette oeuvre est basee sur "Delta+ Airlines+L-1011" par lourencolaio543, sous licence CC-BY-4.0." |

@@ -30,7 +30,7 @@ func _process(_d: float) -> bool:
 			progs.append(ch.progression)
 		if ch.etape == "mise_en_place":
 			mep.append(ch.progression)
-		diapos[ch._diapo] = true
+		diapos[int(ch._aube.t * 2.0)] = true
 	var z := current_scene
 	if z != null and z.name == "ZoneAeroport" or (z != null and z.has_node("Player")):
 		if not etapes.has("zone"):
@@ -39,7 +39,7 @@ func _process(_d: float) -> bool:
 		if frame == int(etapes["zone"]) + 5:
 			_check(progs.size() >= 2 and progs[-1] >= progs[0], "progression reelle croissante (%d mesures, %.0f %% -> %.0f %%)" % [progs.size(), progs[0] * 100.0 if progs.size() else 0.0, progs[-1] * 100.0 if progs.size() else 0.0])
 			_check(is_instance_valid(ch) and ch.etape == "mise_en_place", "mise en place etalee en cours, ecran affiche")
-			_check(diapos.size() >= 2, "le carrousel a change d'image pendant le chargement (%d images)" % diapos.size())
+			_check(diapos.size() >= 2, "l aube sur Cotonou s anime pendant le chargement (%d instants)" % diapos.size())
 			var m := z.get_node_or_null("Menus")
 			_check(m == null or m.get("_root").visible, "ecran titre ouvert comme au lancement direct")
 		if not is_instance_valid(ch) and not etapes.has("fin"):

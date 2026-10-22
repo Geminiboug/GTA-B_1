@@ -42,6 +42,13 @@ func _physics_process(_d: float) -> bool:
 		cam.current = true
 		var an: Node = ch
 		print("DBG methodes: ", an.has_method("play_clips"), " ", ch.get_class())
+	if frame > 100 and cam != null:
+		cam.current = true
+		cam.global_position = Vector3(43.7 - 1.3, 1.45, 6.0 - 0.1)
+		cam.look_at(Vector3(43.7, 1.4, 6.0))
+		for n in scene.get_children():
+			if n is CanvasLayer:
+				n.visible = false
 	if frame == 110 and ch.has_method("play_clips"):
 		ch.play_clips([[clip, 8.0]], true)
 	if frame == 160:

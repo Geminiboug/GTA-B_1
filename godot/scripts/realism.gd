@@ -58,6 +58,7 @@ func _ready() -> void:
 				_add_avoid(mi, avoid)
 				_sol_plage(mi))
 	Partie.chantier(_build_sea)
+	Partie.chantier(_texturer_epave)
 	# tuiles chargees plus tard (monde.gd dynamique) : memes materiaux et surfaces a eviter
 	if zone is Monde:
 		zone.tuile_chargee.connect(func(_cle: Vector2i, n: Node3D) -> void:
@@ -74,6 +75,47 @@ func _ready() -> void:
 				if is_instance_valid(b):
 					(b as Node).queue_free()
 			_evitement.erase(cle))
+
+
+## Epave de la plage : textures des planches d'Olympe (assets/textures/epave/), en triplanaire par nom de materiau :
+## materiau -> [texture, metres couverts par une image].
+const TEXTURES_EPAVE := {
+	"mat_avion_peinture": ["metal_decolore", 3.0], "mat_avion_livree_1": ["metal_decolore", 3.0],
+	"mat_avion_livree_2": ["metal_decolore", 3.0], "mat_avion_ventre": ["coulures", 3.0],
+	"mat_avion_aile": ["aluminium", 3.0], "mat_avion_levre": ["aluminium", 3.0],
+	"mat_epave_rouille": ["rouille", 2.5], "mat_epave_coulure": ["coulures", 3.0],
+	"mat_epave_acier": ["rivets", 2.0], "mat_epave_sable": ["sable_sec", 3.0],
+}
+
+
+func _texturer_epave() -> void:
+	var reperes := get_node_or_null("../zone_aeroport_reperes")
+	if reperes == null or not textures_matieres:
+		return
+	var cache := {}
+	for mi in reperes.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		var p: Node = m.get_parent()
+		while p != null and p != reperes and not String(p.name).begins_with("rep_epave"):
+			p = p.get_parent()
+		if p == null or p == reperes:
+			continue
+		for s in m.mesh.get_surface_count():
+			var orig := m.mesh.surface_get_material(s)
+			if not (orig is BaseMaterial3D) or not TEXTURES_EPAVE.has(orig.resource_name):
+				continue
+			var cfg: Array = TEXTURES_EPAVE[orig.resource_name]
+			if not cache.has(orig.resource_name):
+				var nm := (orig as BaseMaterial3D).duplicate() as BaseMaterial3D
+				nm.albedo_texture = load("res://assets/textures/epave/%s.png" % cfg[0])
+				nm.albedo_color = nm.albedo_color.lerp(Color(1, 1, 1), 0.55)    # la texture porte l'essentiel de la teinte
+				nm.uv1_triplanar = true
+				nm.uv1_world_triplanar = false
+				nm.uv1_scale = Vector3.ONE / float(cfg[1])
+				cache[orig.resource_name] = nm
+			m.set_surface_override_material(s, cache[orig.resource_name])
 
 
 func _add_avoid(mi: MeshInstance3D, parent: Node3D) -> void:
@@ -111,6 +153,30 @@ func _ground(mode: int, tint := Color(1, 1, 1)) -> ShaderMaterial:
 		m.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
 		if textures_matieres and TEXTURES_SOL.has(mode):
 			var t: Array = TEXTURES_SOL[mode]
+			m.set_shader_parameter("tex_sol", load(t[0]))
+			m.set_shader_parameter("tex_taille", t[1])
+			m.set_shader_parameter("tex_remplace", t[2])
+			m.set_shader_parameter("tex_moyenne", t[3])
+			m.set_shader_parameter("avec_texture", true)
+		_ground_mats[key] = m
+	return _ground_mats[key]
+
+
+## Sols de l'aeroport : vignettes de la planche de textures de l'aeroport de Cotonou (assets/textures/aeroport/, fournie par
+## Olympe le 22/10/2026) : nom -> [texture, metres couverts, remplace la couleur, couleur moyenne sRGB, mode du sol].
+const TEXTURES_AEROPORT := {
+	"piste": ["res://assets/textures/aeroport/bitume_neuf.png", 4.0, true, Vector3(0.299, 0.281, 0.273), 2],
+	"parking": ["res://assets/textures/aeroport/bitume_ancien.png", 4.0, true, Vector3(0.401, 0.37, 0.351), 2],
+	"tarmac": ["res://assets/textures/aeroport/beton_brut.png", 5.0, false, Vector3(0.506, 0.486, 0.472), 6],
+}
+
+
+func _ground_aeroport(nom: String) -> ShaderMaterial:
+	var key := "aero|" + nom
+	if not _ground_mats.has(key):
+		var t: Array = TEXTURES_AEROPORT[nom]
+		var m := _ground(int(t[4])).duplicate() as ShaderMaterial
+		if textures_matieres:
 			m.set_shader_parameter("tex_sol", load(t[0]))
 			m.set_shader_parameter("tex_taille", t[1])
 			m.set_shader_parameter("tex_remplace", t[2])
@@ -185,11 +251,14 @@ func _apply(mi: MeshInstance3D) -> void:
 		mat = _ground(4)
 	elif (n.begins_with("route_") and n.ends_with("_terre")) or n.begins_with("accotement"):
 		mat = _ground(5)
-	elif n.begins_with("route_") or n.begins_with("zone_parking") or n.begins_with("aeroport_runway") \
-			or n.begins_with("aeroport_taxiway") or n.begins_with("aeroport_stopway"):   # + suffixe de tuile _tX_Y
+	elif n.begins_with("aeroport_runway") or n.begins_with("aeroport_taxiway") or n.begins_with("aeroport_stopway"):
+		mat = _ground_aeroport("piste")          # + suffixe de tuile _tX_Y
+	elif n.begins_with("zone_parking"):
+		mat = _ground_aeroport("parking")
+	elif n.begins_with("route_"):
 		mat = _ground(2)
 	elif n.begins_with("aeroport_tarmac"):
-		mat = _ground(6)
+		mat = _ground_aeroport("tarmac")
 	elif n.begins_with("promenade"):
 		mat = _ground(3)
 	elif n.begins_with("marquage_taxiway"):

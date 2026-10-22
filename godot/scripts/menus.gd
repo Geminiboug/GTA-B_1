@@ -23,6 +23,8 @@ Stick gauche bouger · stick droit caméra · A sprint · X sauter · B frapper 
 Croix droite parler · croix gauche inventaire · Select carte · Start pause · L3 marcher · R3 s'accroupir"""
 
 var _root: Control
+var _aube: AubeCotonou          # fond de l'ecran titre (aube sur Cotonou) ; cache dans le menu pause
+var _centre: CenterContainer
 var _box: VBoxContainer
 var _title: Label
 var _page := ""
@@ -39,7 +41,12 @@ func _ready() -> void:
 	(_root as ColorRect).color = Color(0.02, 0.03, 0.05, 0.62)
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_root)
+	_aube = AubeCotonou.new()
+	_aube.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_aube.visible = false
+	_root.add_child(_aube)
 	var center := CenterContainer.new()
+	_centre = center
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(center)
 	var col := VBoxContainer.new()
@@ -99,14 +106,9 @@ func _preparer(apres: Callable) -> void:
 	ecran.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ecran.mouse_filter = Control.MOUSE_FILTER_STOP
 	ecran.clip_contents = true
-	# photo d'un lieu du jeu qui zoome lentement (comme l'ecran de chargement) : l'ecran ne parait pas fige
-	var diapos: Array = preload("res://scripts/chargement.gd").DIAPOS
-	var photo := TextureRect.new()
-	photo.texture = load(diapos[randi() % diapos.size()]["img"])
+	# aube sur Cotonou (meme image que l'ecran titre et le chargement)
+	var photo := AubeCotonou.new()
 	photo.set_anchors_preset(Control.PRESET_FULL_RECT)
-	photo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	photo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	photo.modulate = Color(0.75, 0.75, 0.75)
 	ecran.add_child(photo)
 	var l := Label.new()
 	l.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -136,8 +138,6 @@ func _preparer(apres: Callable) -> void:
 		stables = stables + 1 if d < 1.0 / preparation_ips else 0
 		# animation au temps reel (les images peuvent etre lentes pendant la preparation)
 		var u := t / preparation_max
-		photo.pivot_offset = photo.size / 2.0
-		photo.scale = Vector2.ONE * (1.0 + 0.08 * u)
 		barre.value = 100.0 * (1.0 - exp(-3.0 * u))
 		l.text = tr("Préparation du quartier") + ".".repeat(1 + int(t * 2.0) % 3)
 		if t > 1.0 and stables >= 30 and Partie.taches_en_attente() == 0:
@@ -151,7 +151,16 @@ func _preparer(apres: Callable) -> void:
 	tw.tween_callback(ecran.queue_free)
 
 
+var _ouverture_tw: Tween
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _mode == "titre" and _page == "titre" and _centre.modulate.a < 0.99 and (event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton) and event.is_pressed():
+		if _ouverture_tw:
+			_ouverture_tw.kill()
+		create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS).tween_property(_centre, "modulate:a", 1.0, 0.3)
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("pause"):
 		if _mode == "pause":
 			if _page == "principal":
@@ -207,9 +216,19 @@ func _button(text: String, cb: Callable, enabled := true) -> Button:
 func _show_title() -> void:
 	_page = "titre"
 	_clear("GTB")
-	_title.visible = false      # le logo anime (planche de marque) remplace le mot GTB
-	var logo := LogoGtb.new()
-	logo.custom_minimum_size = Vector2(560, 330)
+	_title.visible = false      # le logo de l'aube sur Cotonou remplace le mot GTB
+	(_root as ColorRect).color = Color(0.02, 0.03, 0.05, 0.0)
+	_aube.visible = true
+	_aube.logo_y = 0.24
+	_aube.logo_echelle = 0.62
+	_aube.rejouer()
+	_centre.modulate.a = 0.0
+	var tw := create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tw.tween_interval(5.0)
+	tw.tween_property(_centre, "modulate:a", 1.0, 0.8)
+	_ouverture_tw = tw
+	var logo := Control.new()
+	logo.custom_minimum_size = Vector2(560, 200)      # place du logo (dessine par l'aube)
 	_box.add_child(logo)
 	var sub := Label.new()
 	sub.text = "Gbê Town Bénin · Le Dernier Vol"
@@ -231,6 +250,9 @@ func _show_title() -> void:
 func _show_pause() -> void:
 	_page = "principal"
 	_clear("Pause")
+	_aube.visible = false
+	_centre.modulate.a = 1.0
+	(_root as ColorRect).color = Color(0.02, 0.03, 0.05, 0.62)
 	var first := _button("Reprendre", _close)
 	var can_save: bool = Partie.recherche == 0
 	_button("Sauvegarder" if can_save else "Sauvegarder (impossible : recherché)", func() -> void: _show_emplacements(true), can_save)

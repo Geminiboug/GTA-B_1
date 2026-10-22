@@ -403,6 +403,7 @@ func _physics_process(delta: float) -> void:
 		_look = _look.lerp(Vector2(clampf(look_yaw, -1.2, 1.2), clampf(look_pitch, -0.4, 0.6)), 1.0 - exp(-5.0 * delta))
 		if _clip.is_playing():     # os reecrits par le clip a chaque image (pas d'accumulation pendant une attente)
 			_turn_bone("Head", Vector3(-_look.y * 0.8, _look.x * 0.65, 0.0))
+		_detordre_bras()
 		return
 	if _clip_actif:
 		_clip_actif = false
@@ -453,6 +454,25 @@ func _physics_process(delta: float) -> void:
 			_skel.set_bone_pose_rotation(i, (_fondu_poses[i][0] as Quaternion).slerp(_skel.get_bone_pose_rotation(i), u))
 			_skel.set_bone_pose_position(i, (_fondu_poses[i][1] as Vector3).lerp(_skel.get_bone_pose_position(i), u))
 	_overlay(delta)
+	_detordre_bras()
+
+
+func _detordre_bras() -> void:
+	## Les clips tordent l'avant-bras d'environ -90 degres et la main d'autant dans l'autre sens (repere des os du modele) :
+	## le maillage se plisse au coude et au poignet, surtout bras leve (retour d'Olympe du 22/10/2026). La torsion de
+	## l'avant-bras est donnee a la main, dont l'orientation dans le monde ne change pas.
+	for side in ["Left", "Right"]:
+		var fa: int = _bone.get(side + "LowerArm", -1)
+		var ha: int = _bone.get(side + "Hand", -1)
+		if fa < 0 or ha < 0:
+			continue
+		var q := _skel.get_bone_pose_rotation(fa)
+		var tw := Quaternion(0.0, q.y, 0.0, q.w)
+		if tw.length_squared() < 1e-6:
+			continue
+		tw = tw.normalized()
+		_skel.set_bone_pose_rotation(fa, q * tw.inverse())
+		_skel.set_bone_pose_rotation(ha, tw * _skel.get_bone_pose_rotation(ha))
 
 
 @export var tete_cible := 3.0        # degres sous l'horizontale : regard naturel devant soi
