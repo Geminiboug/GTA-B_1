@@ -133,7 +133,7 @@ En cours ou a corriger :
 - [ ] Stations-service : icone sur la mini-carte, essence pour l'avion
 
 A faire :
-- [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos)
+- [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos) (22/10 : 81 vues du dessus produites par tests/capture_carte_tuiles.gd + tools/planche_tuiles.py ; la colonne ouest x=-7 est noire = hors carte ; routes principales continues ; reste a comparer finement les impasses avec OSM)
 - [ ] ETIPECH = palier final de progression (decision d'Olympe 22/10) : le joueur evolue dans la map jusqu'a atteindre son niveau ; pas de campus pose d'un coup. A concevoir : paliers de zones/missions, puis batiment visitable avec les photos d'Olympe (docs/LEGAL.md)
 - [ ] Revue morceau par morceau etendue a tout : batiments, murs, vegetation, routes
 - [ ] Beaucoup plus d'animations pour des mouvements naturels
