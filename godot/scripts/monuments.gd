@@ -6,6 +6,8 @@ extends Node3D
 
 @export var calvaire_pos := Vector3(-1038.4, 0.0, -912.4)   # projection osm_import.py (lat 6.3581270, lon 2.3719941)
 @export var calvaire_yaw := 0.0                              # degres : ouverture des marches vers -Z (nord)
+@export var bio_guera_pos := Vector3(679.0, 0.0, -30.0)    # centre du rond-point (donnees OSM)
+@export var bio_guera_yaw := 180.0                           # degres : le cheval regarde vers -Z (nord)
 
 const BLANC_VIEILLI := Color(0.88, 0.87, 0.82)
 const OCRE := Color(0.82, 0.72, 0.55)
@@ -18,6 +20,7 @@ var _mats := {}
 
 func _ready() -> void:
 	_calvaire()
+	_bio_guera()
 
 
 func _mat(c: Color, rough := 0.9) -> StandardMaterial3D:
@@ -109,3 +112,12 @@ func _calvaire() -> void:
 		l.spot_angle = 22.0
 		p.add_child(l)
 		l.look_at(p.global_position + Vector3(0, h + 2.0, 0) if p.is_inside_tree() else Vector3(0, h + 2.0, 0))
+
+
+func _bio_guera() -> void:
+	var b := Node3D.new()
+	b.name = "BioGuera"
+	b.set_script(preload("res://scripts/monument_bio_guera.gd"))
+	b.position = bio_guera_pos
+	b.rotation.y = deg_to_rad(bio_guera_yaw)
+	add_child(b)

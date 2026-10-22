@@ -120,30 +120,25 @@ Regle pour toutes les phases : test de fluidite automatique (tests/perf_fps.gd) 
 ### Retours d'Olympe du 21/10/2026 : coherence et realisme (prioritaire, avant l'acte 2)
 Bugs de coherence d'abord, nouvelles fonctions ensuite.
 
-A verifier par Olympe en jeu (fait, teste automatiquement) : pistes de l'aeroport (piste unique 06/24 de 2 400 m, taxiways OSM), ecran de preparation anime, vendeuses assises sur les vraies chaises, cortege qui reagit sans fanfare, PNJ qui contournent objets et passants, repliques plus lentes, plein ecran par defaut, escalade jusqu'a 2,8 m, pieds plantes pendant un coup, sortie de vehicule sans traverser un mur (et degats des chocs contre les murs hauts), perso droit dans les virages, tenue de depart (t-shirt blanc a logo GTB, pantalon wax, baskets), logo anime (proposition 2), zones jaunes des missions recalees, feu puis explosion des voitures et des motos, zem a heler (H) avec trajet en direct.
+A verifier par Olympe en jeu (fait et teste automatiquement, 22/10/2026) : pistes de l'aeroport (piste unique 06/24, taxiways OSM), ecran de preparation anime, vendeuses assises, cortege sans fanfare, PNJ qui contournent objets et passants, repliques plus lentes, plein ecran, escalade jusqu'a 2,8 m, pieds plantes pendant un coup, sortie de vehicule sans traverser un mur, chocs contre les murs hauts, perso droit dans les virages, tenue de depart, logo anime (proposition 2), zones jaunes recalees, feu puis explosion des vehicules, zem a heler (H) avec trajet en direct, direction progressive des vehicules, densite de passants et de vehicules avec recyclage, carburant (reservoir, panne seche, stations Bon Plein, pompistes, bouteille du kpayo), supermarche par rayons, etals par marchandise (modele, prix et cris coherents), portes articulees des voitures (ouvrent a la montee et a la descente), avion leger pilotable "Colibri C-4" a l'aeroport (E pour monter, W / S tangage, A / D roulis, Z / X palonnier, gaz avec accelerer / freiner), Bio Guera au rond-point Erevan.
 
 En cours ou a corriger :
 - [ ] Vendeuse egaree : test_vendeurs donne 162 / 163 (une vendeuse hors tuile chargee)
-- [ ] Logo : la planche donne une image de 444 px ; fournir le fichier en bonne resolution (assets/ui/logo_gtb.png), variantes et icone ; ecran de chargement et menu a finir
-- [ ] Tenue : motif wax a affiner (celui du jeu ressemble a des rayures), logo GTB en vrai texte sur la poitrine a verifier de pres, baskets
-- [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche : toujours pas regle (pas de clip "poche" trouve, a diagnostiquer avec captures)
-- [ ] Explosion : rendu a polir (flammes plus vives), vehicules de la circulation pas encore abimables
-
+- [ ] Logo : image de 444 px seulement (assets/ui/logo_gtb.png) ; fournir le fichier en haute resolution, variantes et icone ; menu et chargement a verifier
+- [ ] Tenue : motif wax a affiner, logo GTB a verifier de pres, baskets
+- [ ] Glitch de la main qui se deforme quand le PNJ la sort de la poche (aucun clip "poche" trouve, diagnostic par captures a faire)
+- [ ] Explosion : flammes plus vives ; vehicules de la circulation pas encore abimables
+- [ ] Avion leger : portes du pilote et du passager a animer a la montee (le modele les a), cockpit a habiller, atterrissage a regler sur le terrain, ecole de pilotage, avions de ligne pilotables plus tard
+- [ ] Voitures : portes arriere et cote passager pour les passagers PNJ ; motos : montee avec enjambement et mains sur le guidon a affiner
+- [ ] Stations-service : icone sur la mini-carte, essence pour l'avion
 
 A faire :
 - [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos)
-- [ ] Carte jusqu'a EPITECH Benin, batiment visitable (photos d'Olympe), sous le nom ETIPECH (docs/LEGAL.md)
-- [ ] Pilotage d'avions, d'abord de petits appareils pour de courts trajets
+- [ ] Carte jusqu'a ETIPECH (EPITECH Benin est a Seme City, a ~15 km a l'est de l'aeroport : il faut un long corridor routier, a decider avec Olympe) ; batiment visitable avec les photos d'Olympe (docs/LEGAL.md)
 - [ ] Revue morceau par morceau etendue a tout : batiments, murs, vegetation, routes
 - [ ] Beaucoup plus d'animations pour des mouvements naturels
-- [ ] Voitures : on voit ouvrir la portiere et entrer (joueur et passagers, chacun de son cote)
 - [ ] Motos : montee naturelle, mains sur le guidon, bras qui suivent la direction
-- [ ] Virages moins brutaux (conduite retravaillee)
-- [ ] Supermarche : aller au rayon de l'article pour l'acheter
-- [ ] Etals : marchandise modelisee et coherente avec ce que crie le vendeur
-- [ ] Carburant : stations et vendeurs de bord de route, pompistes PNJ, jauge et ravitaillement
-- [ ] Trafic plus dense (vehicules et pietons), carte moins deserte
-- [ ] Monuments fideles restants : Bio Guera au carrefour Erevan (cavalier a la lance sur cheval cabre, rocher, socle noir poli), l'Amazone, memorial de la place du Souvenir (trois personnages), Parc Cardinal Cotodji
+- [ ] Monuments fideles restants : l'Amazone, memorial de la place du Souvenir (trois personnages), Parc Cardinal Cotodji (photos ou references a fournir)
 - [ ] Vehicules : silhouettes plus fideles, barre de feux arriere de la Koralo invisible, zem Haojin, Landa garee immobile en (95, -934)
 - [ ] Android : le chargement echoue ; le nouvel APK affiche la raison, Olympe teste puis on corrige
 - [ ] Temps de chargement : 67 s contre 35 s avant l'extension de la carte

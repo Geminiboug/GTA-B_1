@@ -103,7 +103,7 @@ func _ready() -> void:
 	_compteur.anchor_right = 1.0
 	_compteur.anchor_top = 1.0
 	_compteur.anchor_bottom = 1.0
-	_compteur.offset_left = -360
+	_compteur.offset_left = -760
 	_compteur.offset_right = -24
 	_compteur.offset_top = -96
 	_compteur.offset_bottom = -24
@@ -199,6 +199,8 @@ func contexte() -> String:
 	var v: Node = _player.get("vehicle") if _player else null
 	if v == null:
 		return "pied"
+	if v.get("kind") == "avion":
+		return "avion"
 	return "zem" if v.get("kind") == "zem" else "voiture"
 
 
@@ -212,6 +214,8 @@ func texte_aide(ctx: String, manette: bool) -> String:
 			"zem":
 				l = ["RT : accélérer   LT : freiner", "Stick gauche : tourner", "RB : frein arrière", "L3 : klaxon",
 					"Y : descendre", "Croix droite : chercher un client", "Croix bas : limiteur 50 km/h"]
+			"avion":
+				l = ["RT : gaz +   LT : gaz - / freins", "Stick gauche : tangage et roulis", "RB : freins de roues", "Y : descendre (à l'arrêt)"]
 			_:
 				l = ["RT : accélérer   LT : freiner / reculer", "Stick gauche : tourner", "RB : frein à main",
 					"Y : descendre", "Croix bas : limiteur 50 km/h"]
@@ -229,6 +233,12 @@ func texte_aide(ctx: String, manette: bool) -> String:
 					t.call(k.call("map"), "carte") + "   " + t.call(k.call("camera_vue"), "vue"),
 					t.call(k.call("inventaire"), "inventaire") + "   " + t.call(k.call("telephone"), "téléphone") + "   " + t.call(k.call("torche"), "torche"),
 					t.call(k.call("arme_suivante"), "arme") + "   " + t.call(k.call("garde"), "viser") + "   " + t.call(k.call("recharger"), "recharger")]
+			"avion":
+				l = [t.call(k.call("accelerate"), "gaz +") + "   " + t.call(k.call("brake"), "gaz - / freins"),
+					t.call(k.call("move_forward"), "piquer") + "   " + t.call(k.call("move_back"), "cabrer"),
+					t.call(k.call("move_left") + " " + k.call("move_right"), "incliner / tourner au sol"),
+					t.call(k.call("lacet_g") + " " + k.call("lacet_d"), "palonnier"), t.call(k.call("handbrake"), "freins de roues"),
+					t.call(k.call("camera_vue"), "vue cockpit"), t.call(k.call("interact"), "descendre (à l'arrêt)")]
 			"zem":
 				l = [t.call(k.call("accelerate"), "accélérer") + "   " + t.call(k.call("brake"), "freiner"),
 					t.call(k.call("move_left") + " " + k.call("move_right"), "tourner"), t.call(k.call("handbrake"), "frein arrière"),
