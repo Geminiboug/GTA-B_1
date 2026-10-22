@@ -50,7 +50,7 @@ func _physics_process(_d: float) -> bool:
 		money0 = partie.argent
 		var com := scene.get_node("Commerce")
 		_check(com.spots.size() > 10, "commerces trouves : %d" % com.spots.size())
-		var ok: bool = com.buy("caisse", 1)
+		var ok: bool = com.buy("rayon_huile", 0)
 		_check(ok and partie.argent == money0 - 1500 and partie.a("Huile (1 litre)"), "achat : %s en poche, huile dans l'inventaire" % partie.fcfa(partie.argent))
 		partie.argent = 100
 		_check(not com.buy("maquis", 0) and partie.argent == 100, "pas assez d'argent : achat refuse")
@@ -63,6 +63,7 @@ func _physics_process(_d: float) -> bool:
 		_check(partie.charger(scene) and partie.argent == 7000 and player.global_position.distance_to(p0) < 0.5,
 			"chargement : argent %s, position retrouvee" % partie.fcfa(partie.argent))
 		# histoire : premiere mission
+		histoire.set("secondes_par_caractere", 0.0)      # le test n'attend pas la lecture lente des repliques
 		histoire.commencer()
 	if frame == 70:
 		var tante: Vector3 = histoire.points["tante"]
@@ -73,7 +74,7 @@ func _physics_process(_d: float) -> bool:
 		_tap("parler")
 	if frame == 260:
 		_check(histoire.step == 1, "etape 2 : acheter le pain (etape %d)" % histoire.step)
-		scene.get_node("Commerce").buy("etal", 3)
+		scene.get_node("Commerce").buy("etal_pain", 0)
 	if frame == 650:
 		_check(partie.a("Pain"), "pain garde pour la tante (pas mange)")
 		_check(histoire.step >= 2, "etape 3 : rapporter le pain (etape %d)" % histoire.step)

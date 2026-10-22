@@ -119,7 +119,7 @@ func _physics_process(delta: float) -> bool:
 		scene.get_node("Lieux")._spawn_home()
 		histoire.set("secondes_par_caractere", 0.0)      # le test n'attend pas la lecture lente des repliques
 		histoire.commencer()
-		_check(com.spots.any(func(s: Dictionary) -> bool: return s["kind"] == "etal"), "etals connus du commerce")
+		_check(com.spots.any(func(s: Dictionary) -> bool: return s["kind"] == "etal_pain"), "etals de pain connus du commerce")
 		var etal: Vector3 = histoire.points["etal"]
 		_check(etal.distance_to(histoire.points["maison"]) > 21.0 or etal.distance_to(histoire.points["maison"]) < 19.0,
 			"etal reel (pas le point par defaut a 20 m de la maison) : %.0f m" % etal.distance_to(histoire.points["maison"]))
@@ -167,25 +167,25 @@ func _physics_process(delta: float) -> bool:
 				phase = "vers_etal"
 		"vers_etal":
 			var d := _walk_to(cible, delta)
-			if not com.get("_near").is_empty() and com.get("_near")["kind"] == "etal" and d < 2.0:
+			if not com.get("_near").is_empty() and com.get("_near")["kind"] == "etal_pain" and d < 2.0:
 				_stop()
 				_tap("parler")
 				phase = "menu"
 		"menu":
-			if com.get("_open") == "etal":
-				_key(KEY_4, true)
+			if com.get("_open") == "etal_pain":
+				_key(KEY_1, true)
 				phase = "lacher"
 		"lacher":
 			hold += 1
 			if hold < 6 or (hold < 60 and not root.get_node("Partie").a("Pain")):
 				if hold % 10 == 0:
-					_key(KEY_4, false)
+					_key(KEY_1, false)
 				elif hold % 10 == 2:
-					_key(KEY_4, true)
+					_key(KEY_1, true)
 				return false
-			_key(KEY_4, false)
+			_key(KEY_1, false)
 			print("  argent ", root.get_node("Partie").argent, " inventaire ", root.get_node("Partie").inventaire, " menu ", com.get("_open"))
-			_check(root.get_node("Partie").a("Pain"), "pain achete au clavier (T puis 4)")
+			_check(root.get_node("Partie").a("Pain"), "pain achete au clavier (T puis 1)")
 			_tap("parler")
 			phase = "retour"
 		"fin":

@@ -44,16 +44,16 @@ func _process(_d: float) -> bool:
 		var com := scene.get_node("Commerce")
 		var s: Dictionary = {}
 		for sp in com.spots:
-			if sp["kind"] == "etal":
+			if sp["kind"] == "etal_pain":
 				s = sp
 				break
 		# rue degagee (teleportation 2 du mode debug), panneau d'achat ouvert comme devant un etal
 		scene.get_node("Debug").teleport(2)
 	if frame == 240:
 		var com := scene.get_node("Commerce")
-		com.set("_near", {"pos": player.global_position, "kind": "etal"})
-		com.set("spots", [{"pos": player.global_position, "kind": "etal"}])
-		com.call("_show", "etal")
+		com.set("_near", {"pos": player.global_position, "kind": "etal_pain"})
+		com.set("spots", [{"pos": player.global_position, "kind": "etal_pain"}])
+		com.call("_show", "etal_pain")
 	if frame == 300:
 		_shot()                                    # achat
 		scene.get_node("Commerce").call("_close")

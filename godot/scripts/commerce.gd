@@ -9,12 +9,21 @@ extends CanvasLayer
 
 # [nom, prix, sante rendue (mange sur place), quantite]
 var ARTICLES := {
-	"etal": [["Eau en sachet (pure water)", 50, 6], ["Arachides grillées", 200, 10], ["Ananas", 500, 15], ["Pain", 150, 12]],
+	# un etal vend une seule marchandise (celle qu'on voit sur le modele et que crie la vendeuse)
+	"etal_pain": [["Pain", 150, 12], ["Pain au lait", 250, 14]],
+	"etal_fruits": [["Ananas", 500, 15], ["Oranges (3)", 300, 10], ["Bananes (5)", 250, 10]],
+	"etal_arachides": [["Arachides grillées", 200, 10], ["Arachides bouillies", 250, 11]],
+	"etal_eau": [["Eau en sachet (pure water)", 50, 6], ["Eau minérale (1,5 l)", 500, 8], ["Jus de gingembre", 300, 9]],
+	"etal_legumes": [["Tomates fraîches", 300, 8], ["Piments", 150, 0], ["Oignons", 200, 0]],
 	"maquis": [["Pâte rouge et poulet", 1500, 60], ["Riz sauce arachide", 1000, 45], ["Akassa et poisson frit", 800, 40], ["Bière locale", 600, 5]],
 	"kpayo": [["Essence (1 litre)", 650, 0]],
 	"cabine": [["Crédit téléphone", 500, 0], ["Carte SIM", 1000, 0]],
-	"caisse": [["Sac de riz (5 kg)", 4500, 0], ["Huile (1 litre)", 1500, 0], ["Boîte de tomate", 300, 0], ["Eau minérale (1,5 l)", 500, 8],
-		["Blouson de moto renforcé", 12000, 0]],
+	# Ararat Hypermarket : chaque article se prend dans son rayon (les caisses ne vendent rien)
+	"rayon_riz": [["Sac de riz (5 kg)", 4500, 0]],
+	"rayon_huile": [["Huile (1 litre)", 1500, 0]],
+	"rayon_conserves": [["Boîte de tomate", 300, 0]],
+	"rayon_boissons": [["Eau minérale (1,5 l)", 500, 8]],
+	"rayon_vrac": [["Blouson de moto renforcé", 12000, 0]],
 	"cafe": [["Café", 700, 5], ["Sandwich", 2000, 35], ["Jus de bissap", 800, 10]],
 	# armes (scripts/armes.gd) : quincaillerie de jour, le Gaou la nuit pres de la plage
 	"salle": [["Séance de musculation", 1000, 0]],
@@ -22,8 +31,10 @@ var ARTICLES := {
 	"gaou": [["Fusil de chasse artisanal", 60000, 0], ["Pistolet", 150000, 0], ["Fusil à pompe", 220000, 0],
 		["Balles 9 mm", 1500, 0, 12], ["Cartouches", 2000, 0, 6]],
 }
-var NOMS := {"etal": "l'étal", "maquis": "le maquis", "kpayo": "le vendeur d'essence", "cabine": "la cabine",
-	"caisse": "la caisse", "cafe": "le café", "quincaillerie": "la quincaillerie", "gaou": "le Gaou",
+var NOMS := {"etal_pain": "l'étal de pain", "etal_fruits": "l'étal de fruits", "etal_arachides": "l'étal d'arachides",
+	"etal_eau": "l'étal d'eau fraîche", "etal_legumes": "l'étal de légumes", "maquis": "le maquis", "kpayo": "le vendeur d'essence", "cabine": "la cabine",
+	"rayon_riz": "le rayon Riz et céréales", "rayon_huile": "le rayon Huiles", "rayon_conserves": "le rayon Conserves",
+	"rayon_boissons": "le rayon Boissons", "rayon_vrac": "le rayon Gros conditionnement", "cafe": "le café", "quincaillerie": "la quincaillerie", "gaou": "le Gaou",
 	"salle": "Gbêkpo Fitness"}
 
 var spots: Array = []          # [{pos, kind}]
@@ -84,6 +95,8 @@ func nearest(p: Vector3) -> Dictionary:
 	var bd := portee
 	for s in spots:
 		var d := Vector2(p.x - s["pos"].x, p.z - s["pos"].z).length()
+		if not ARTICLES.has(s["kind"]):
+			continue           # caisses, rayons sans article a vendre
 		if s.get("nuit", false) and _nuit() < 0.5:
 			continue           # le Gaou ne vend qu'a la nuit tombee
 		if d < bd and absf(p.y - s["pos"].y) < 2.5:
@@ -104,7 +117,7 @@ func _physics_process(delta: float) -> void:
 		_near = nearest(_player.global_position)
 	if _open == "" and not _near.is_empty():
 		if _hud and _hud.has_method("show_hint"):
-			_hud.show_hint(tr("T : ouvrir l'armoire") if _near["kind"] == "armoire" else "T : acheter à %s" % NOMS.get(_near["kind"], "l'étal"))
+			_hud.show_hint(tr("T : ouvrir l'armoire") if _near["kind"] == "armoire" else "T : acheter à %s" % NOMS.get(_near["kind"], "ici"))
 		if Input.is_action_just_pressed("parler"):
 			_show(_near["kind"])
 	elif _open != "":

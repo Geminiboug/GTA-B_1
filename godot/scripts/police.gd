@@ -605,7 +605,7 @@ func _au_marche(p: Vector3) -> bool:
 		return false
 	var n := 0
 	for s in com.spots:
-		if s["kind"] in ["etal", "maquis", "kpayo"] and Vector2(p.x - s["pos"].x, p.z - s["pos"].z).length() < 14.0:
+		if (String(s["kind"]).begins_with("etal") or s["kind"] in ["maquis", "kpayo"]) and Vector2(p.x - s["pos"].x, p.z - s["pos"].z).length() < 14.0:
 			n += 1
 	return n >= 3
 

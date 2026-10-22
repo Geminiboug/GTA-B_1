@@ -57,6 +57,7 @@ func _physics_process(_d: float) -> bool:
 		journal.periode_resume = 1.0
 		partie.save_path = "user://test_sauvegarde.json"
 		partie.nouvelle_partie()
+		histoire.set("secondes_par_caractere", 0.0)
 		histoire.commencer()
 		_check(FileAccess.file_exists(journal.fichier_evenements), "nouvelle partie : %s cree" % journal.fichier_evenements.get_file())
 	if frame == 30:
@@ -71,7 +72,7 @@ func _physics_process(_d: float) -> bool:
 		var perdu: Array = journal.resume["perdu"]
 		_check(perdu.size() >= 1 and perdu[0]["mission"] == "Bonne arrivée" and int(perdu[0]["distance_m"]) > 3,
 			"joueur perdu note : %s" % (str(perdu[0]) if perdu.size() > 0 else "rien"))
-		scene.get_node("Commerce").buy("etal", 3)
+		scene.get_node("Commerce").buy("etal_pain", 0)
 	if frame == 640:
 		_place(histoire.points["tante"] + Vector3(1.0, 0.2, 0.4))
 	if frame == 660:

@@ -41,7 +41,7 @@ func _physics_process(_d: float) -> bool:
 		player.global_position = etal - (to * Vector3(1, 0, 1)).normalized() * 1.4 + Vector3(0, 0.1, 0)
 		player.cam_pivot.rotation.y = atan2(-to.x, -to.z) + 0.9
 	if frame == 330:
-		scene.get_node("Commerce").buy("etal", 3)
+		scene.get_node("Commerce").buy("etal_pain", 0)
 	if frame == 345:
 		_shot("retour_2_achat")
 	if frame == 400:

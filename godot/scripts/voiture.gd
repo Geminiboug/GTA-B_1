@@ -71,6 +71,12 @@ var speed := 0.0         # vitesse longitudinale signee (camera, mini-carte, son
 var throttle := 0.0
 var braking := false
 var health := 100.0
+## Carburant (demande d'Olympe du 21/10/2026) : litres dans le reservoir ; la consommation reelle est multipliee par
+## conso_facteur pour qu'un plein ne dure pas des centaines de kilometres sur une carte de 7 km. Panne seche : moteur coupe.
+@export var reservoir := 45.0
+@export var conso_facteur := 6.0
+var carburant := 28.0
+var _panne_dite := false
 @export var delai_explosion := 12.0         # s entre le debut du feu (sante sous 15 %) et l'explosion
 var epave := false                          # explosee : carbonisee, plus conductible
 var rpm := 900.0
@@ -78,6 +84,8 @@ var rapport := 0                 # rapport engage (0 = premiere), -1 marche arri
 var patine := false              # roues motrices qui patinent (crissement)
 var _passage_t := 0.0
 var _parts: Array = []           # [Node3D, transform au repos] : caisse et details (pas les roues)
+var _portes := {}                # "porte_g0" -> {node, base, angle, ouverte} : portes articulees (charniere a l'avant), g = gauche (conducteur)
+@export var angle_porte := 1.15  # rad : ouverture des portes
 var _susp: Array = []            # [pivot de roue, position au repos, avant ?, gauche ?]
 var _sq := Vector3.ZERO          # caisse : hauteur, tangage, roulis
 var _sv := Vector3.ZERO          # vitesses correspondantes
@@ -175,6 +183,8 @@ func setup(model: Node3D, model_id: String, color: Color) -> void:
 	if front and rear:
 		_wheelbase = absf(front.position.z - rear.position.z)
 		_wheel_r = rear.position.y
+	for p in _visual.find_children("porte_*", "Node3D", true, false):
+		_portes[String(p.name)] = {"node": p, "base": (p as Node3D).transform, "angle": 0.0, "ouverte": false}
 	for c in _visual.get_children():
 		var n := String(c.name)
 		if c is Node3D and not n.begins_with("piv_") and not n.begins_with("pt_"):
@@ -292,6 +302,31 @@ static func _son(cle: String, fabrique: Callable) -> AudioStream:
 	if not _sons.has(cle):
 		_sons[cle] = fabrique.call()
 	return _sons[cle]
+
+
+func a_portes() -> bool:
+	return not _portes.is_empty()
+
+
+func ouvrir_porte(nom: String, ouvrir: bool, duree := 0.4) -> void:
+	## Ouvre ou ferme une porte articulee (porte_g0 : avant gauche, porte_d0 : avant droite, porte_g1 / porte_d1 : arriere).
+	## Le bruit de portiere accompagne le mouvement. Sans porte de ce nom (zem, modele sans portes), seul le bruit est joue.
+	var d: Dictionary = _portes.get(nom, {})
+	if d.is_empty():
+		return
+	if bool(d["ouverte"]) == ouvrir:
+		return
+	d["ouverte"] = ouvrir
+	var cible := (-angle_porte if nom.begins_with("porte_g") else angle_porte) if ouvrir else 0.0
+	if ouvrir:
+		portiere(false)
+	var maj := func(a: float) -> void:
+		d["angle"] = a
+		(d["node"] as Node3D).transform = (d["base"] as Transform3D) * Transform3D(Basis(Vector3.UP, a), Vector3.ZERO)
+	var tw := create_tween()
+	tw.tween_method(maj, float(d["angle"]), cible, duree).set_ease(Tween.EASE_OUT if ouvrir else Tween.EASE_IN)
+	if not ouvrir:
+		tw.tween_callback(func() -> void: portiere(true))
 
 
 func portiere(fermer: bool) -> void:
@@ -458,7 +493,9 @@ func set_rider(value: bool) -> void:
 	has_rider = value
 	rider_changed.emit(value)
 	# contact : demarreur en s'installant, moteur coupe en descendant
-	if value and not moteur and health > 0.0:
+	if value and not moteur and health > 0.0 and carburant <= 0.01 and not ai:
+		get_tree().root.get_node("Partie").call("notifier", tr("Plus d'essence : il faut faire le plein."))
+	elif value and not moteur and health > 0.0:
 		_demarreur_t = 0.9
 		if _fx == null:
 			return
@@ -619,6 +656,15 @@ func _allumer_feu() -> void:
 	FeuVehicule.allumer(self, _feu, _feu_lum, delai_explosion)
 
 
+func faire_le_plein(litres: float) -> float:
+	## Ajoute du carburant (pompe, bouteille du kpayo) ; renvoie les litres vraiment ajoutes.
+	var ajoute := minf(litres, reservoir - carburant)
+	carburant += ajoute
+	if carburant > 0.5:
+		_panne_dite = false
+	return ajoute
+
+
 func reparer() -> void:
 	## Garage (phase 16) : tole redressee, vitres et phares neufs, moteur repare.
 	health = 100.0
@@ -747,6 +793,14 @@ func _physics_process(delta: float) -> void:
 		_demarreur_t -= delta
 		if _demarreur_t <= 0.0:
 			moteur = true
+	if moteur and not ai and has_rider:
+		# consommation : ralenti + charge x vitesse (L/s reels x conso_facteur)
+		carburant = maxf(0.0, carburant - (0.00035 + clampf(throttle, 0.0, 1.0) * absf(speed) * 0.00008) * conso_facteur * delta)
+		if carburant <= 0.0:
+			moteur = false
+			if not _panne_dite:
+				_panne_dite = true
+				get_tree().root.get_node("Partie").call("notifier", tr("Panne sèche !"))
 	if health <= 0.0 or not moteur:
 		acc_in = 0.0
 	_clignotants(steer_in)

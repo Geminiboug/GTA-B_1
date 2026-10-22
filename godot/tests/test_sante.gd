@@ -27,10 +27,10 @@ func _physics_process(_d: float) -> bool:
 		P.argent = 20000
 		var com := scene.get_node("Commerce")
 		var idx := -1
-		for i in com.ARTICLES["caisse"].size():
-			if com.ARTICLES["caisse"][i][0] == "Blouson de moto renforcé":
+		for i in com.ARTICLES["rayon_vrac"].size():
+			if com.ARTICLES["rayon_vrac"][i][0] == "Blouson de moto renforcé":
 				idx = i
-		_check(idx >= 0 and com.buy("caisse", idx), "blouson renforce achete a l'Ararat")
+		_check(idx >= 0 and com.buy("rayon_vrac", idx), "blouson renforce achete a l'Ararat")
 		_check(P.armure == 100.0 and P.argent == 8000, "armure 100, 12 000 F payes (%.0f, %d F)" % [P.armure, P.argent])
 		P.blesser(50.0)
 		_check(is_equal_approx(P.sante, 80.0) and is_equal_approx(P.armure, 70.0), "coup de 50 : sante %.0f, armure %.0f" % [P.sante, P.armure])

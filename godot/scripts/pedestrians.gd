@@ -1486,7 +1486,9 @@ func _vendor_calls(ppos: Vector3, pv: Node3D) -> void:
 			var anchor := Node3D.new()
 			add_child(anchor)
 			anchor.global_position = t.origin
-			Bulle.say(anchor, Dialogues.pick("vendeuse", _rng, _player_genre()), 3.0, 1.55)
+			var type: String = String(props.vendor_types.get(Vector2i(roundi(t.origin.x * 4.0), roundi(t.origin.z * 4.0)), ""))
+			var cat := "vendeuse_" + type if Dialogues.LIGNES.has("vendeuse_" + type) else "vendeuse"
+			Bulle.say(anchor, Dialogues.pick(cat, _rng, _player_genre()), 3.0, 1.55)
 			var tw := anchor.create_tween()
 			tw.tween_interval(3.6)
 			tw.tween_callback(anchor.queue_free)

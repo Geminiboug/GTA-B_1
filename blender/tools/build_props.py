@@ -145,24 +145,84 @@ b.cyl("mat_metal_peint", (-0.3, 0.0, 0.82), 0.08, 0.12, segs=8, r2=0.012)  # ent
 b.cyl("mat_plastique_bleu", (-0.85, -0.3, 0.0), 0.16, 0.42, segs=8)       # tabouret
 finish(b)
 
-# ---------------- Etal de vendeuse sous parasol (3 couleurs) ----------------
-for color in ("rouge", "jaune", "bleu"):
-    b = Builder("prop_etal_" + color)
+# ---------------- Etals de vendeuses sous parasol : un modele par marchandise (retour d'Olympe du 21/10/2026 : ce qui est
+# vendu doit etre modelise et correspondre a ce que crie la vendeuse) ----------------
+def etal_base(b, parasol):
     b.cyl("mat_metal_peint", (0, -0.2, 0), 0.025, 2.4, segs=6)
-    b.cyl("mat_tissu_" + color, (0, -0.2, 2.0), 1.45, 0.45, segs=10, r2=0.05, caps=False)
-    b.cyl("mat_tissu_" + color, (0, -0.2, 2.0), 1.45, 0.001, segs=10, caps=False)
+    b.cyl("mat_tissu_" + parasol, (0, -0.2, 2.0), 1.45, 0.45, segs=10, r2=0.05, caps=False)
+    b.cyl("mat_tissu_" + parasol, (0, -0.2, 2.0), 1.45, 0.001, segs=10, caps=False)
     b.box("mat_bois_clair", (0, 0.35, 0.75), (1.3, 0.75, 0.05))
     for x in (-0.6, 0.6):
         for y in (0.05, 0.65):
             b.box("mat_bois_clair", (x, y, 0.37), (0.05, 0.05, 0.74))
-    # bassines et marchandises (fruits, sachets)
-    for i, (x, m) in enumerate(((-0.4, "mat_plastique_rouge"), (0.0, "mat_plastique_bleu"), (0.4, "mat_plastique_vert"))):
-        b.cyl(m, (x, 0.35, 0.78), 0.18, 0.12, segs=10, r2=0.24)
-        for k in range(5):
-            b.blob("mat_peinture_jaune" if i == 0 else ("mat_peinture_rouge" if i == 1 else "mat_vegetation"),
-                   (x + random.uniform(-0.1, 0.1), 0.35 + random.uniform(-0.1, 0.1), 0.95), 0.05, squash=1.0)
     b.cyl("mat_plastique_bleu", (0.3, -0.45, 0), 0.17, 0.42, segs=8)  # tabouret
+
+
+def etal_pain():
+    b = Builder("prop_etal_pain")
+    etal_base(b, "rouge")
+    b.box("mat_blanc_plastique", (0, 0.35, 0.78), (1.24, 0.7, 0.01))          # nappe
+    for r in range(2):                                                            # baguettes et pains en caisse vitree
+        for i in range(5):
+            b.box("mat_bois", (-0.45 + i * 0.22, 0.2 + r * 0.25, 0.83), (0.16, 0.62, 0.09), rot=(0, 0, random.uniform(-0.05, 0.05)))
+    for i in range(3):
+        b.blob("mat_bois", (-0.4 + i * 0.4, 0.62, 0.84), 0.09, squash=0.6)      # petits pains ronds
+    b.box("mat_verre", (0, 0.35, 0.96), (1.1, 0.62, 0.002))
     finish(b)
+
+
+def etal_fruits():
+    b = Builder("prop_etal_fruits")
+    etal_base(b, "jaune")
+    for i in range(4):                                                            # ananas : corps jaune, panache vert
+        x = -0.45 + i * 0.3
+        b.cyl("mat_peinture_jaune", (x, 0.22, 0.78), 0.075, 0.2, segs=8)
+        b.cyl("mat_vegetation", (x, 0.22, 0.97), 0.05, 0.12, segs=6, r2=0.005)
+    for k in range(7):                                                            # oranges et bananes
+        b.blob("mat_peinture_jaune" if k % 2 else "mat_peinture_rouge", (-0.45 + random.uniform(0, 0.9), 0.5 + random.uniform(-0.05, 0.1), 0.82), 0.055, squash=1.0)
+    b.cyl("mat_plastique_vert", (0.4, 0.55, 0.78), 0.14, 0.08, segs=10, r2=0.18)    # bassine
+    finish(b)
+
+
+def etal_arachides():
+    b = Builder("prop_etal_arachides")
+    etal_base(b, "bleu")
+    for i, x in enumerate((-0.4, 0.0, 0.4)):                                      # bassines d'arachides grillees (tas beiges)
+        b.cyl("mat_plastique_rouge" if i != 1 else "mat_plastique_bleu", (x, 0.35, 0.78), 0.17, 0.1, segs=10, r2=0.22)
+        for k in range(10):
+            b.blob("mat_sable", (x + random.uniform(-0.1, 0.1), 0.35 + random.uniform(-0.1, 0.1), 0.9 + random.uniform(0, 0.05)), 0.045, squash=0.7)
+    for i in range(4):                                                            # petits sachets plastique
+        b.box("mat_blanc_plastique", (-0.5 + i * 0.07, 0.6, 0.82), (0.06, 0.04, 0.1))
+    b.box("mat_metal_peint", (0.0, 0.0, 0.79), (0.14, 0.14, 0.03))              # mesure (boite de conserve)
+    finish(b)
+
+
+def etal_eau():
+    b = Builder("prop_etal_eau")
+    etal_base(b, "bleu")
+    b.box("mat_blanc_plastique", (-0.3, 0.35, 0.88), (0.55, 0.45, 0.25))        # glaciere
+    b.box("mat_plastique_bleu", (-0.3, 0.35, 1.02), (0.57, 0.47, 0.04))
+    for r in range(3):                                                            # sachets d'eau empiles (pure water)
+        for i in range(4):
+            b.box("mat_vitre", (0.15 + i * 0.12, 0.2 + r * 0.02, 0.8 + r * 0.045), (0.1, 0.2, 0.035), rot=(0, 0, random.uniform(-0.1, 0.1)))
+    for i in range(4):                                                            # bouteilles
+        b.cyl("mat_verre", (0.2 + i * 0.1, 0.6, 0.78), 0.033, 0.22, segs=8)
+        b.cyl("mat_plastique_bleu", (0.2 + i * 0.1, 0.6, 0.99), 0.017, 0.03, segs=6)
+    finish(b)
+
+
+def etal_legumes():
+    b = Builder("prop_etal_legumes")
+    etal_base(b, "rouge")
+    for i, (x, m) in enumerate(((-0.42, "mat_peinture_rouge"), (0.0, "mat_vegetation"), (0.42, "mat_peinture_ocre"))):
+        b.cyl("mat_plastique_vert" if i != 1 else "mat_plastique_rouge", (x, 0.35, 0.78), 0.17, 0.1, segs=10, r2=0.22)   # tomates, piments, oignons
+        for k in range(9):
+            b.blob(m, (x + random.uniform(-0.11, 0.11), 0.35 + random.uniform(-0.11, 0.11), 0.9 + random.uniform(0, 0.04)), 0.05, squash=1.0)
+    finish(b)
+
+
+for f in (etal_pain, etal_fruits, etal_arachides, etal_eau, etal_legumes):
+    f()
 
 # ---------------- Tas d'ordures ----------------
 b = Builder("prop_ordures")

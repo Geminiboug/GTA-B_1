@@ -15,6 +15,8 @@
 [ext_resource type="Script" path="res://scripts/ambience.gd" id="14_amb"]
 [ext_resource type="Script" path="res://scripts/air_traffic.gd" id="15_air"]
 [ext_resource type="Script" path="res://scripts/zem_taxi.gd" id="99_zemtaxi"]
+[ext_resource type="Script" path="res://scripts/avion_leger.gd" id="97_avl"]
+[ext_resource type="Script" path="res://scripts/stations.gd" id="98_stations"]
 [ext_resource type="Script" path="res://scripts/weather.gd" id="16_meteo"]
 [ext_resource type="Script" path="res://scripts/hud_carte.gd" id="17_hud"]
 [ext_resource type="Script" path="res://scripts/debug.gd" id="40_debug"]
@@ -162,6 +164,12 @@ script = ExtResource("44_police")
 
 [node name="Menus" type="CanvasLayer" parent="."]
 script = ExtResource("45_menus")
+
+[node name="Stations" type="Node3D" parent="."]
+script = ExtResource("98_stations")
+
+[node name="AvionLeger" type="CharacterBody3D" parent="."]
+script = ExtResource("97_avl")
 
 [node name="ZemTaxi" type="Node3D" parent="."]
 script = ExtResource("99_zemtaxi")

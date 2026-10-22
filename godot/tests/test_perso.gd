@@ -82,7 +82,7 @@ func _physics_process(_d: float) -> bool:
 		var pol := scene.get_node("Police")
 		var marche := false
 		for s in com.spots:
-			if s["kind"] == "etal" and pol._au_marche(s["pos"]):
+			if String(s["kind"]).begins_with("etal") and pol._au_marche(s["pos"]):
 				marche = true
 				break
 		_check(marche, "au milieu des etals : cachette du marche")

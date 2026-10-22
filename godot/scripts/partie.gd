@@ -46,7 +46,7 @@ const TOUCHES_REGLABLES := [["move_forward", "Avancer"], ["move_back", "Reculer"
 	["recharger", "Recharger"], ["map", "Carte"], ["map_pin", "Repère sur la carte"], ["camera_vue", "Changer de vue"],
 	["inventaire", "Inventaire", KEY_I], ["telephone", "Téléphone", KEY_P], ["torche", "Torche", KEY_L],
 	["photo", "Mode photo", KEY_F12], ["accelerate", "Accélérer"], ["brake", "Freiner / reculer"], ["handbrake", "Frein à main"],
-	["horn", "Klaxon"], ["limiteur", "Limiteur de vitesse"], ["bande", "Appeler la bande"], ["heler", "Héler un zem", KEY_H]]
+	["horn", "Klaxon"], ["limiteur", "Limiteur de vitesse"], ["bande", "Appeler la bande"], ["heler", "Héler un zem", KEY_H], ["lacet_g", "Avion : palonnier gauche", KEY_Z], ["lacet_d", "Avion : palonnier droit", KEY_X]]
 var _touches_defaut := {}      # action -> evenements clavier / souris d'origine (pour "Touches par defaut")
 var journal: Node              # journal de partie automatique (scripts/journal.gd, user://logs/)
 ## Mise en place etalee (ecran de chargement) : pendant le chargement, les scripts lourds confient leurs etapes a

@@ -19,6 +19,7 @@ import bmesh
 import math
 import os
 import sys
+from mathutils import Matrix, Vector
 
 args = sys.argv[sys.argv.index("--") + 1:]
 OUT_BLEND_DIR, OUT_GLB_DIR = args[:2]
@@ -302,6 +303,58 @@ def cut_arches(ob, wheels, r, W):
         bpy.data.objects.remove(cy, do_unlink=True)
 
 
+def percer_portes(shell, root, M, sp, hw, belt_at):
+    """Portes articulees (demande d'Olympe du 22/10/2026 : on doit voir le joueur ouvrir la portiere) : pour chaque porte
+    (entre deux joints de door_lines, de chaque cote), la peau de la carrosserie dans ce volume devient un objet
+    porte_g<k> / porte_d<k> dont l'origine est la charniere (bord avant) ; la carrosserie est percee, l'interieur
+    (sieges) se voit par l'ouverture. Godot pivote porte_* autour de Y (voiture.gd, ouvrir_porte)."""
+    lines = sp["door_lines"]
+    for side in (-1, 1):
+        for k in range(len(lines) - 1):
+            y0, y1 = lines[k], lines[k + 1]
+            ym = (y0 + y1) / 2
+            c = belt_at(ym)
+            cab = c["roof"] - c["belt"] > 0.12
+            zlo = c["zb"] + 0.15
+            zhi = c["roof"] - 0.09 if cab else c["belt"] + 0.04
+            x_out, x_in = side * (hw + 0.35), side * 0.1
+            bpy.ops.mesh.primitive_cube_add(size=1.0, location=((x_out + x_in) / 2, ym, (zlo + zhi) / 2))
+            cut = bpy.context.active_object
+            cut.scale = (abs(x_out - x_in), y0 - y1 - 0.02, zhi - zlo)
+            cut.data.materials.append(M["inside"])
+            bpy.context.view_layer.objects.active = cut
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            nom = "porte_%s%d" % ("g" if side < 0 else "d", k)
+            door = shell.copy()
+            door.data = shell.data.copy()
+            door.name = nom
+            bpy.context.scene.collection.objects.link(door)
+            for md_name, op, target in (("porte", "INTERSECT", door), ("trou", "DIFFERENCE", shell)):
+                md = target.modifiers.new(md_name, "BOOLEAN")
+                md.operation = op
+                md.object = cut
+                if hasattr(md, "solver"):
+                    md.solver = "EXACT"
+                if hasattr(md, "material_mode"):
+                    md.material_mode = "TRANSFER"
+                bpy.context.view_layer.objects.active = target
+                bpy.ops.object.modifier_apply(modifier=md.name)
+            # la porte n'est que la peau : on retire les faces de decoupe (materiau interieur)
+            bm = bmesh.new()
+            bm.from_mesh(door.data)
+            idx = [i for i, m in enumerate(door.data.materials) if m and m.name == "mat_interieur"]
+            bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index in idx], context="FACES")
+            bm.to_mesh(door.data)
+            bm.free()
+            bpy.data.objects.remove(cut, do_unlink=True)
+            pivot = Vector((side * (hw * 0.97), y0, (zlo + zhi) / 2))
+            door.data.transform(Matrix.Translation(-pivot))
+            door.location = pivot
+            door.parent = root
+            for p in door.data.polygons:
+                p.use_smooth = True
+
+
 def cut_bed(ob, M, y0, y1, hw, floor_z):
     """Plateau ouvert du pick-up : on evide le dessus de la caisse arriere (parois de 5 cm, plancher a floor_z) ;
     les faces de la decoupe prennent le revetement noir du plateau."""
@@ -441,6 +494,8 @@ def vehicle(name, sp):
                 t = (y - a["y"]) / max(b["y"] - a["y"], 1e-4)
                 return {k: a[k] + (b[k] - a[k]) * t for k in ("zb", "belt", "roof", "hw", "rw")}
         return st[-1] if y > yf else st[0]
+
+    percer_portes(shell, root, M, sp, hw, belt_at)
 
     # doublures des passages de roue (noir, epousent la roue)
     for y in (wb / 2, -wb / 2):
@@ -670,6 +725,21 @@ def preview(name, L):
     sc.render.resolution_x = 1000
     sc.render.resolution_y = 650
     bpy.data.materials["mat_carrosserie"].diffuse_color = [to_linear(c) for c in (0.75, 0.12, 0.1)] + [1.0]
+    for ob in bpy.data.objects:
+        if ob.name.startswith("porte_g"):
+            ob.rotation_euler.z = -1.1
+    c0 = bpy.data.cameras.new("po")
+    c0.lens = 40
+    o0 = bpy.data.objects.new("po", c0)
+    sc.collection.objects.link(o0)
+    o0.location = (-L * 1.2, L * 0.9, 1.7)
+    o0.rotation_euler = [math.radians(a) for a in (72, 0, -140)]
+    sc.camera = o0
+    sc.render.filepath = os.path.join(PREVIEW_DIR, f"{name}_porte_ouverte.png")
+    bpy.ops.render.render(write_still=True)
+    for ob in bpy.data.objects:
+        if ob.name.startswith("porte_g"):
+            ob.rotation_euler.z = 0.0
     for nm, loc, rot_ in (("trois_quart", (L * 1.1, L * 1.2, 1.9), (78, 0, 137)), ("arriere", (-L * 0.95, -L * 1.25, 1.8), (80, 0, -37)),
                           ("profil", (-L * 1.75, 0, 1.0), (88, 0, -90))):
         c = bpy.data.cameras.new(nm)

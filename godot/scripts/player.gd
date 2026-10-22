@@ -457,6 +457,8 @@ func _start_pre(v: Node3D) -> void:
 	velocity = Vector3.ZERO
 	var clip_name := "Push" if _carjack else "Interact"
 	var dur := geste_vol if _carjack else geste_portiere
+	if car and v.has_method("ouvrir_porte"):
+		v.call("ouvrir_porte", "porte_g0", true, dur * 0.8)      # la portiere s'ouvre pendant le geste
 	if anim and anim.has_method("play_clips"):
 		anim.play_clips([[clip_name, 0.0]], true)
 	_pre = {"v": v, "t": 0.0, "len": dur}
@@ -518,7 +520,12 @@ func enter_vehicle(v: Node3D, en_passager := false) -> void:
 	velocity = Vector3.ZERO
 	if not en_passager:
 		v.set_rider(true)
-	if v.has_method("portiere"):
+	if v.has_method("a_portes") and v.a_portes():
+		v.call("ouvrir_porte", "porte_g0", true, 0.2)
+		get_tree().create_timer(enter_time * 1.1).timeout.connect(func() -> void:
+			if is_instance_valid(v):
+				v.call("ouvrir_porte", "porte_g0", false, 0.3))      # on referme la portiere une fois assis
+	elif v.has_method("portiere"):
 		v.portiere(true)
 	v.get_node("CamRig").activate(true)
 	if anim:
@@ -565,7 +572,12 @@ func exit_vehicle(force := false) -> void:
 		v.set_rider(false)
 	pillion = false
 	pillion_libre = false
-	if v.has_method("portiere"):
+	if v.has_method("a_portes") and v.a_portes():
+		v.call("ouvrir_porte", "porte_g0", true, 0.25)
+		get_tree().create_timer(1.3).timeout.connect(func() -> void:
+			if is_instance_valid(v):
+				v.call("ouvrir_porte", "porte_g0", false, 0.35))      # la portiere se referme derriere le conducteur
+	elif v.has_method("portiere"):
 		v.portiere(false)
 	v.get_node("CamRig").activate(false)
 	$CamPivot/SpringArm3D/Camera3D.current = true
@@ -614,8 +626,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if Input.is_action_just_pressed("interact"):
 		if vehicle:
-			if not pillion or pillion_libre:
+			if (not pillion or pillion_libre) and (not vehicle.has_method("peut_descendre") or vehicle.peut_descendre()):
 				exit_vehicle()
+			elif vehicle.has_method("peut_descendre"):
+				Partie.notifier(tr("On ne descend pas en vol : pose l'avion et arrête-toi."))
 			return
 		_carjack = false
 		var v := _nearest_vehicle()

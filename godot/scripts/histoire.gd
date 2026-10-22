@@ -148,7 +148,7 @@ func _nearest_shop(kind: String, from: Vector3, min_d := 0.0) -> Vector3:
 	if com:
 		for s in com.spots:
 			var d: float = (s["pos"] as Vector3).distance_to(from)
-			if s["kind"] == kind and d < bd and d >= min_d:
+			if (s["kind"] == kind or (kind == "etal" and String(s["kind"]).begins_with("etal"))) and d < bd and d >= min_d:
 				bd = d
 				best = s["pos"]
 	return best if best != Vector3.INF else from + Vector3(20, 0, 0)
@@ -159,7 +159,7 @@ func _setup() -> void:
 	await get_tree().physics_frame
 	var com := get_node_or_null("../Commerce")
 	for _i in 600:
-		if com == null or com.spots.any(func(s: Dictionary) -> bool: return s["kind"] == "etal"):
+		if com == null or com.spots.any(func(s: Dictionary) -> bool: return s["kind"] == "etal_pain"):
 			break
 		await get_tree().physics_frame      # etals et maquis connus du commerce (scripts/commerce.gd)
 	var lieux := get_node_or_null("../Lieux")
@@ -172,8 +172,10 @@ func _setup() -> void:
 		fwd = Vector3(-sin(yaw), 0, -cos(yaw))
 	points["tante"] = home + fwd * 2.2 + fwd.cross(Vector3.UP) * 1.2
 	_vendeuse_de_pain(lieux)
-	points["etal"] = _nearest_shop("etal", home)
+	points["etal"] = _nearest_shop("etal_pain", home)
 	points["caisse"] = _nearest_shop("caisse", home)
+	for rc in ["rayon_riz", "rayon_huile", "rayon_conserves", "rayon_boissons"]:
+		points[rc] = _nearest_shop(rc, home)
 	points["codjo"] = _nearest_shop("maquis", home) + Vector3(1.6, 0, 1.0)
 	points["colis"] = _nearest_shop("etal", home, 250.0)
 	points["aerogare"] = _ground(397, -300)
@@ -205,7 +207,7 @@ func _vendeuse_de_pain(lieux: Node) -> void:
 	var side := out.cross(Vector3.UP)
 	var pos: Vector3 = _ground(exits[1].x + side.x * etal_decalage + out.x * 0.5, exits[1].z + side.z * etal_decalage + out.z * 0.5)
 	var xf := Transform3D(Basis.looking_at(out, Vector3.UP), pos)   # avant (-Z) vers la rue, vendeuse derriere
-	var mesh: Mesh = (props.get("_meshes") as Dictionary).get("prop_etal_jaune")
+	var mesh: Mesh = (props.get("_meshes") as Dictionary).get("prop_etal_pain")
 	if mesh:
 		var mi := MeshInstance3D.new()
 		mi.mesh = mesh
@@ -225,7 +227,7 @@ func _vendeuse_de_pain(lieux: Node) -> void:
 	PnjUtil.dress_random(v, _rng)
 	PnjUtil.pose_vendor(v, _rng)
 	v.global_transform = xf * Transform3D(Basis.IDENTITY, Vector3(0.3, 0, 0.45))
-	com.spots.append({"pos": pos, "kind": "etal"})
+	com.spots.append({"pos": pos, "kind": "etal_pain"})
 
 
 # ------------------------------------------------------------------ missions
@@ -244,7 +246,7 @@ func _build_missions() -> void:
 				["tante", "Tiens, 5 000 francs : va me chercher un sac de riz à l'Ararat."]]}]},
 		{"titre": "Le zem de papa", "donneur": "tante", "rec": 500, "etapes": [
 			{"t": "monter", "obj": "Monte sur le zem de ton père (E)"},
-			{"t": "acheter", "article": "Sac de riz (5 kg)", "ou": "caisse", "obj": "Achète un sac de riz à l'Ararat Hypermarket"},
+			{"t": "acheter", "article": "Sac de riz (5 kg)", "ou": "rayon_riz", "obj": "Achète un sac de riz à l'Ararat Hypermarket"},
 			{"t": "aller", "ou": "tante", "r": 3.0, "obj": "Rapporte le riz à la maison", "avec": "Sac de riz (5 kg)"},
 			{"t": "parler", "qui": "tante", "obj": "Donne le riz (T)", "retirer": ["Sac de riz (5 kg)"], "lignes": [
 				["tante", "Bien ! Va voir Vieux Codjo au maquis du coin, il cherche quelqu'un pour des livraisons."]]}]},
@@ -265,8 +267,8 @@ func _build_missions() -> void:
 			{"t": "parler", "qui": "tante", "obj": "Parle à tante Mireille", "argent": 2000, "lignes": [
 				["tante", "Il me faut de l'huile et une boîte de tomate pour la sauce. Va à l'Ararat."],
 				["tante", "Voilà 2 000 francs pour les courses."]]},
-			{"t": "acheter", "article": "Huile (1 litre)", "ou": "caisse", "obj": "Achète de l'huile"},
-			{"t": "acheter", "article": "Boîte de tomate", "ou": "caisse", "obj": "Achète une boîte de tomate"},
+			{"t": "acheter", "article": "Huile (1 litre)", "ou": "rayon_huile", "obj": "Achète de l'huile"},
+			{"t": "acheter", "article": "Boîte de tomate", "ou": "rayon_conserves", "obj": "Achète une boîte de tomate"},
 			{"t": "aller", "ou": "tante", "r": 3.0, "obj": "Rentre à la maison", "avec": "Boîte de tomate"},
 			{"t": "parler", "qui": "tante", "obj": "Donne les courses (T)", "retirer": ["Huile (1 litre)", "Boîte de tomate"], "lignes": [
 				["tante", "Merci. Écoute... j'ai gardé quelque chose de ton père."],
@@ -296,8 +298,8 @@ func _build_missions() -> void:
 			{"t": "parler", "qui": "patronne", "obj": "Parle à Maman Fifi, la patronne du maquis", "argent": 2000, "lignes": [
 				["patronne", "C'est toi le petit de Codjo ? Le maquis ouvre ce soir et je n'ai plus d'huile ni d'eau !"],
 				["patronne", "Voilà 2 000 francs pour les courses. File à l'Ararat et reviens vite, je te paierai bien."]]},
-			{"t": "acheter", "article": "Huile (1 litre)", "ou": "caisse", "obj": "Achète de l'huile à l'Ararat"},
-			{"t": "acheter", "article": "Eau minérale (1,5 l)", "ou": "caisse", "obj": "Achète de l'eau minérale"},
+			{"t": "acheter", "article": "Huile (1 litre)", "ou": "rayon_huile", "obj": "Achète de l'huile à l'Ararat"},
+			{"t": "acheter", "article": "Eau minérale (1,5 l)", "ou": "rayon_boissons", "obj": "Achète de l'eau minérale"},
 			{"t": "aller", "ou": "patronne", "r": 3.0, "obj": "Rapporte les courses au maquis de Haie Verte", "avec": "Huile (1 litre)"},
 			{"t": "parler", "qui": "patronne", "obj": "Donne les courses (T)", "retirer": ["Huile (1 litre)", "Eau minérale (1,5 l)"], "lignes": [
 				["patronne", "Ah, tu es rapide ! Reviens quand tu veux, il y a toujours du travail ici."]]}]},
@@ -560,7 +562,7 @@ func _boulots(_delta: float, pv: Node3D, ppos: Vector3) -> void:
 			if Input.is_action_just_pressed("parler"):
 				var a := ppos + Vector3(_rng.randf_range(-60, 60), 0, _rng.randf_range(-60, 60))
 				var from := _ground(a.x, a.z)
-				var dest := _nearest_shop(["etal", "maquis", "caisse", "cabine"][_rng.randi() % 4], ppos, 300.0)
+				var dest := _nearest_shop(["etal", "maquis", "rayon_riz", "cabine"][_rng.randi() % 4], ppos, 300.0)
 				_boulot = {"from": from, "to": dest, "picked": false}
 				_client_walker = _make_npc(PnjUtil.random_genre(_rng), "", from, 0.0)
 				_set_marker(from)

@@ -309,7 +309,14 @@ func _process(delta: float) -> void:
 	_compteur.visible = veh != null and Partie.get("en_jeu") != false
 	if _compteur.visible:
 		var kmh := roundi(absf(float(veh.get("speed"))) * 3.6)
-		_compteur.text = "%d km/h" % kmh + ("
+		var jauge := ""
+		if veh.get("carburant") != null:
+			var pc := roundi(100.0 * float(veh.get("carburant")) / maxf(float(veh.get("reservoir")), 1.0))
+			jauge = "   " + tr("Essence %d %%") % pc + (" !" if pc < 15 else "")
+		if veh.has_method("info_hud"):
+			_compteur.text = veh.info_hud()
+		else:
+			_compteur.text = "%d km/h" % kmh + jauge + ("
 " + tr("LIMITEUR %d (K)") % roundi(Limiteur.vitesse_kmh) if Limiteur.actif else "
 " + tr("K : limiteur"))
 		_compteur.add_theme_color_override("font_color", Color(0.55, 0.95, 0.55) if Limiteur.actif else Color(1, 1, 1))

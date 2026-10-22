@@ -319,6 +319,8 @@ func _text(e: Node3D, n: String) -> void:
 		txt = "Caisse %d" % (int(parts[parts.size() - 1]) + 1)
 		size = 0.18
 	elif n.begins_with("texte_ararat_rayon"):
+		# chaque rayon vend ses articles : il faut aller au rayon pour acheter (retour d'Olympe du 21/10/2026)
+		shop_spots.append({"pos": e.global_position, "kind": "rayon_" + String(parts[3])})
 		txt = RAYONS.get(parts[3], parts[3].capitalize())
 		size = 0.22
 	elif n.begins_with("texte_terminal_enseigne"):

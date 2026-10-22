@@ -82,6 +82,14 @@ func _physics_process(delta: float) -> void:
 		brake_in = ai_input.y
 		steer_in = ai_input.z
 
+	# --- Carburant : panne seche = plus de couple (zem du joueur seulement, ni police ni zem-taxi) ---
+	if has_rider and not ai:
+		carburant = maxf(0.0, carburant - (0.0002 + throttle * absf(speed) * 0.00003) * conso_facteur * delta)
+		if carburant <= 0.0:
+			accel_in = 0.0
+			if not _panne_dite:
+				_panne_dite = true
+				get_tree().root.get_node("Partie").call("notifier", tr("Panne sèche !"))
 	# --- Longitudinal ---
 	throttle = move_toward(throttle, accel_in, delta * 4.0)
 	if accel_in > 0.0 and speed >= -0.1:
@@ -172,6 +180,20 @@ func seat_transform() -> Transform3D:
 # interface commune avec voiture.gd (joueur, circulation, mini-carte)
 var kind := "zem"
 var health := 100.0
+@export var reservoir := 12.0               # L ; consommation reelle x conso_facteur (voir voiture.gd)
+@export var conso_facteur := 6.0
+var carburant := 9.0
+var _panne_dite := false
+
+
+func faire_le_plein(litres: float) -> float:
+	var ajoute := minf(litres, reservoir - carburant)
+	carburant += ajoute
+	if carburant > 0.3:
+		_panne_dite = false
+	return ajoute
+
+
 @export var delai_explosion := 10.0          # s entre le debut du feu (sante sous 15 %) et l'explosion
 var epave := false                           # explosee : carbonisee, plus conductible
 

@@ -60,6 +60,8 @@ var lamp_positions := PackedVector3Array()
 const CAR_KINDS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup"]
 var _chunk_nodes := {}
 var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
+var vendor_types := {}                     # Vector2i(x * 4, z * 4) d'une place de vendeur -> marchandise (pain, fruits, arachides, eau, legumes, kpayo, maquis)
+const ETALS := [["pain", 0.26], ["fruits", 0.22], ["arachides", 0.18], ["eau", 0.2], ["legumes", 0.14]]
 var vendor_spots: Array[Transform3D] = []   # tabourets / chaises ou s'assoient les vendeurs (pedestrians.gd)
 var shops: Array = []                        # commerces ou acheter (scripts/commerce.gd) : {pos, kind}
 var placed := false
@@ -643,8 +645,18 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 			parked.append({"model": "zem", "xf": zxf, "color": Color.WHITE, "slot": _add("zem_gare", zxf), "shape": null})
 			_occupy(q, 1.0)
 		return
+	var marchandise := ""
 	if kind == "prop_etal":
-		kind = ["prop_etal_rouge", "prop_etal_jaune", "prop_etal_bleu"][_rng.randi() % 3]
+		# une marchandise par etal (modele, prix et cris de la vendeuse coherents)
+		var tirage := _rng.randf()
+		marchandise = "legumes"
+		var cumul := 0.0
+		for e in ETALS:
+			cumul += float(e[1])
+			if tirage < cumul:
+				marchandise = String(e[0])
+				break
+		kind = "prop_etal_" + marchandise
 		# petits marches de rue : les etals se groupent (2 ou 3 voisins le long de la rue)
 		if not _en_grappe and _rng.randf() < grappe_chance:
 			_en_grappe = true
@@ -654,16 +666,25 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 	var xf := Transform3D(basis.rotated(Vector3.UP, _rng.randf_range(-0.25, 0.25)), Vector3(pos.x, y, pos.y))
 	_add(kind, xf)
 	# vendeur assis sur le tabouret, face a la route (positions locales du modele, Godot = Blender (x, z, -y))
+	var place: Transform3D
 	if kind == "prop_kpayo":
-		vendor_spots.append(xf * Transform3D(Basis.IDENTITY, Vector3(-0.85, 0, 0.3)))
+		place = xf * Transform3D(Basis.IDENTITY, Vector3(-0.85, 0, 0.3))
+		vendor_spots.append(place)
+		vendor_types[_cle_vendeur(place)] = "kpayo"
 	elif kind.begins_with("prop_etal"):
-		vendor_spots.append(xf * Transform3D(Basis.IDENTITY, Vector3(0.3, 0, 0.45)))
+		place = xf * Transform3D(Basis.IDENTITY, Vector3(0.3, 0, 0.45))
+		vendor_spots.append(place)
+		vendor_types[_cle_vendeur(place)] = marchandise
 	elif kind == "prop_maquis" and _rng.randf() < 0.7:
-		vendor_spots.append(xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0, -0.85)))
+		place = xf * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0, -0.85))
+		vendor_spots.append(place)
+		vendor_types[_cle_vendeur(place)] = "maquis"
 		if _rng.randf() < 0.5:
-			vendor_spots.append(xf * Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(0.85, 0, 0)))
+			place = xf * Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(0.85, 0, 0))
+			vendor_spots.append(place)
+			vendor_types[_cle_vendeur(place)] = "maquis"
 	if kind.begins_with("prop_etal") or kind == "prop_maquis" or kind == "prop_kpayo" or kind == "prop_cabine":
-		shops.append({"pos": xf.origin, "kind": kind.trim_prefix("prop_").get_slice("_", 0)})
+		shops.append({"pos": xf.origin, "kind": ("etal_" + marchandise) if kind.begins_with("prop_etal") else kind.trim_prefix("prop_").get_slice("_", 0)})
 	if kind == "prop_cabine":
 		_box_col(xf, Vector3(1.6, 2.3, 1.3), 1.15)
 		_label(xf * Transform3D(Basis.IDENTITY, Vector3(0, 1.85, -0.7)), "TRANSFERT D'ARGENT - CREDIT", 1.4, Color(0.1, 0.1, 0.1))
@@ -671,6 +692,10 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 		_box_col(xf, Vector3(1.2, 0.8, 0.8), 0.4)
 	elif kind == "prop_pneus":
 		_cyl_col(xf.origin, 0.4, 0.8)
+
+
+static func _cle_vendeur(t: Transform3D) -> Vector2i:
+	return Vector2i(roundi(t.origin.x * 4.0), roundi(t.origin.z * 4.0))
 
 
 func _place_billboards(routes: Array) -> void:
