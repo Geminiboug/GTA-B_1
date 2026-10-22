@@ -21,6 +21,7 @@ var _dest := Vector3.ZERO
 var _dest_nom := ""
 var _t := 0.0
 var _coince := 0.0
+var _immobile := 0.0       # secondes sans avancer en route, quelle qu en soit la raison (obstacle compris)
 var _hint_t := 0.0
 var _hint := false
 var _rng := RandomNumberGenerator.new()
@@ -56,6 +57,13 @@ func _physics_process(delta: float) -> void:
 				_t = 0.0
 				_dire("Ça va ?", 1.6)
 				Partie.notifier(tr("Le zem s'arrête : %s pour monter derrière.") % Partie.nom_touche("interact"))
+			elif _zem and absf(float(_zem.get("speed"))) < 0.3 and _immobile > 5.0 \
+					and Vector2(_zem.global_position.x - _player.global_position.x, _zem.global_position.z - _player.global_position.z).length() < 16.0:
+				# arrete a quelques metres (obstacle devant) : le client fait les derniers pas, au lieu d'attendre 90 s puis de voir le zem repartir
+				etat = "pret"
+				_t = 0.0
+				_dire("Viens, je t'attends !", 2.0)
+				Partie.notifier(tr("Le zem t'attend un peu plus loin : approche-toi pour monter."))
 			elif _t > 90.0:
 				_renvoyer()
 		"pret":
@@ -174,6 +182,7 @@ func _a_l_ecran(p: Vector3) -> bool:
 func _fabriquer(at: Vector2, chemin: PackedVector2Array) -> Node3D:
 	var z := ZEM_SCENE.instantiate() as Node3D
 	z.name = "ZemTaxi"
+	z.set_meta("taxi_zem", true)      # E ne le prend pas comme un vehicule libre : on monte derriere, en passager (player.gd _nearest_vehicle)
 	add_child(z)
 	var dir := (chemin[1] - chemin[0]).normalized() if chemin.size() > 1 else Vector2.DOWN
 	var yaw := atan2(-dir.x, -dir.y)
@@ -243,6 +252,14 @@ func _conduire(delta: float, arret: float) -> bool:
 		_coince += delta
 	else:
 		_coince = maxf(0.0, _coince - delta)
+	# immobile longtemps meme devant un obstacle (poteau, etal, vehicule gare sur le trajet) : on ne reste pas la 90 s, retour d'Olympe
+	if absf(v) < 0.7 and not fini and not (arret > 0.0 and reste <= arret + 1.5):
+		_immobile += delta
+	else:
+		_immobile = 0.0
+	if _immobile > 12.0 and _route.size() > 0:
+		_coince = 10.0
+		_immobile = 0.0
 	if _coince > 9.0 and _route.size() > 0:
 		var nxt: Vector2 = _route[0] if _route.size() == 1 else _route[1]
 		var dv := (nxt - cp).normalized() if nxt.distance_to(cp) > 1.0 else fwd

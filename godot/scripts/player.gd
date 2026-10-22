@@ -197,7 +197,7 @@ func _dress(model: Node, g: String) -> void:
 
 
 var _logo_att: BoneAttachment3D
-var _logo_lbl: Sprite3D
+var _logo_lbl: Decal
 
 
 func _logo_poitrine(model: Node, voulu: bool) -> void:
@@ -219,11 +219,13 @@ func _logo_poitrine(model: Node, voulu: bool) -> void:
 	_logo_att.name = "LogoPoitrine"
 	_logo_att.bone_name = os
 	sk.add_child(_logo_att)
-	_logo_lbl = Sprite3D.new()
-	_logo_lbl.texture = load("res://assets/textures/logo_tshirt_gtb.png")      # logo noir de la planche d'Olympe
-	_logo_lbl.pixel_size = 0.00065
-	_logo_lbl.shaded = false
-	_logo_lbl.double_sided = false
+	# decalque projete sur le t-shirt (avant : un sprite flottant devant le torse, decolle du tissu)
+	_logo_lbl = Decal.new()
+	var tex := load("res://assets/textures/logo_tshirt_gtb.png") as Texture2D      # logo noir de la planche d'Olympe
+	_logo_lbl.texture_albedo = tex
+	_logo_lbl.size = Vector3(tex.get_width() * 0.00065, 0.3, tex.get_height() * 0.00065)
+	_logo_lbl.upper_fade = 0.2
+	_logo_lbl.lower_fade = 0.2
 	_logo_lbl.top_level = true
 	_logo_att.add_child(_logo_lbl)
 
@@ -234,7 +236,9 @@ func _maj_logo_poitrine() -> void:
 	var b := body.global_transform.basis.orthonormalized()
 	var devant := -b.z
 	_logo_lbl.visible = vehicle == null or vehicle.get("kind") == "zem"
-	_logo_lbl.global_transform = Transform3D(b.rotated(Vector3.UP, PI), _logo_att.global_position + devant * 0.15 + Vector3.UP * -0.06)
+	# le decalque projette selon son -Y : il regarde le torse (axe Y = devant), puis se pose juste devant l'os de la poitrine
+	var base := Basis(-b.x, devant, -b.y)
+	_logo_lbl.global_transform = Transform3D(base, _logo_att.global_position + devant * 0.1 + Vector3.UP * -0.06)
 
 
 signal modele_change
@@ -408,7 +412,7 @@ func _nearest_vehicle() -> Node3D:
 	var best: Node3D = null
 	var best_d := ENTER_DISTANCE
 	for v in get_tree().get_nodes_in_group("vehicules"):
-		if v.get("has_rider") or v.get("epave"):
+		if v.get("has_rider") or v.get("epave") or v.has_meta("taxi_zem"):      # le zem a heler se prend par scripts/zem_taxi.gd (passager)
 			continue
 		var ep: Vector3 = v.entry_point() if v.has_method("entry_point") else v.global_position
 		var d: float = global_position.distance_to(ep)
@@ -607,7 +611,7 @@ func _ride(_delta: float) -> void:
 		target = _enter_from.interpolate_with(target, k).translated(Vector3.UP * sin(k * PI) * (0.28 if vehicle.get("kind") == "zem" else 0.12))
 	global_transform = target
 	if pillion:
-		_clear_ik()
+		_pillion_ik(seat)
 	else:
 		_ride_ik()
 	body.rotation = Vector3.ZERO
@@ -942,6 +946,17 @@ func _ride_ik() -> void:
 		var side2 := pedals.global_transform.basis.x.normalized()
 		t["LeftFoot"] = pedals.global_position - side2 * 0.12 + vx.basis.y * 0.08
 		t["RightFoot"] = pedals.global_position + side2 * 0.08 + vx.basis.y * 0.08
+
+
+func _pillion_ik(seat: Transform3D) -> void:
+	## Passager de zem : les deux mains tiennent le conducteur a la taille (avant : bras tendus dans le vide, mains ouvertes).
+	_clear_ik()
+	if anim == null or not ("ik_targets" in anim):
+		return
+	var t: Dictionary = anim.ik_targets
+	var taille := seat.origin + seat.basis.y * 0.3 + seat.basis.z * 0.02
+	t["LeftHand"] = taille - seat.basis.x * 0.2
+	t["RightHand"] = taille + seat.basis.x * 0.2
 
 
 func _clear_ik() -> void:

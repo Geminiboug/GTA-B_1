@@ -7,7 +7,7 @@ var out_dir := "user://"
 var cam: Camera3D
 var player: CharacterBody3D
 # angle (deg), distance, hauteur camera, hauteur visee
-var vues := [[0.0, 0.7, 1.6, 1.56], [35.0, 1.1, 0.45, 0.1], [180.0, 1.5, 1.0, 0.95], [0.0, 3.0, 1.3, 0.9]]
+var vues := [[0.0, 0.7, 1.6, 1.56], [35.0, 1.1, 0.45, 0.1], [180.0, 1.5, 1.0, 0.95], [0.0, 1.3, 1.25, 1.2], [60.0, 1.3, 1.25, 1.2]]
 var k := 0
 
 

@@ -780,12 +780,12 @@ func _place_shop_signs(lot: Array) -> void:
 		var n: Vector2 = best[1]
 		var width: float = min(float(best[2]) * 0.75, 5.0)
 		_devantures.append([mid, n, float(best[2]), bi])
-		var pos := mid + n * 0.12
+		var pos := mid + n * 0.03      # le mur est exactement sur le contour (tests/mesure_murs.gd) : panneau colle, avant 0,12 m de vide
 		var xf := Transform3D(_facing(n), Vector3(pos.x, 2.75, pos.y))
 		var bg: Color = SIGN_COLORS[_rng.randi() % SIGN_COLORS.size()]
 		_panel(xf, Vector2(width, 0.75), bg)
 		var fg := Color(0.05, 0.05, 0.05) if bg.get_luminance() > 0.5 else Color(1, 1, 1)
-		_label(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0, -0.04)), SHOP_NAMES[_rng.randi() % SHOP_NAMES.size()], width * 0.92, fg, 0.42)
+		_label(xf * Transform3D(Basis.IDENTITY, Vector3(0, 0, -0.035)), SHOP_NAMES[_rng.randi() % SHOP_NAMES.size()], width * 0.92, fg, 0.42)
 		counts["enseigne"] = counts.get("enseigne", 0) + 1
 
 
@@ -817,7 +817,7 @@ func _place_wall_texts(lot: Array) -> void:
 		var b: Vector2 = seg[1]
 		var t := (b - a).normalized()
 		var n := Vector2(-t.y, t.x) * (1.0 if _rng.randf() < 0.5 else -1.0)
-		var mid := a.lerp(b, 0.5) + n * 0.13
+		var mid := a.lerp(b, 0.5) + n * 0.108      # mur de 0,2 m sur l'axe : sa face est a 0,1 m
 		var xf := Transform3D(_facing(n), Vector3(mid.x, 1.3, mid.y))
 		var col: Color = [Color(0.1, 0.1, 0.1), Color(0.6, 0.05, 0.05), Color(0.05, 0.2, 0.5)][_rng.randi() % 3]
 		_label(xf, WALL_TEXTS[_rng.randi() % WALL_TEXTS.size()], min(a.distance_to(b) * 0.8, 4.0), col, 0.3)
@@ -1020,19 +1020,45 @@ func _place_toits(lot: Array) -> void:
 		for q in pts:
 			c += _v2(q)
 		c /= pts.size()
+		var poly := PackedVector2Array()
+		for q in pts:
+			poly.append(_v2(q))
 		if _rng.randf() < 0.5:
 			var coin := _v2(pts[_rng.randi() % pts.size()])
-			var p := c.lerp(coin, _rng.randf_range(0.3, 0.6))
-			_add("toit_citerne", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(p.x, h, p.y)))
+			var p := _sur_toit(poly, c, coin, _rng.randf_range(0.3, 0.6), 1.2)
+			if p != Vector2.INF:
+				_add("toit_citerne", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(p.x, h, p.y)))
 		if h > 5.0 and _rng.randf() < 0.3:
 			for i in range(0, mini(pts.size(), 4)):
-				var q := _v2(pts[i]).lerp(c, 0.12 / maxf(_v2(pts[i]).distance_to(c), 0.5))
-				_add("toit_fers", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(q.x, h, q.y)))
+				var q := _sur_toit(poly, c, _v2(pts[i]), 1.0 - 0.12 / maxf(_v2(pts[i]).distance_to(c), 0.5), 0.3)
+				if q != Vector2.INF:
+					_add("toit_fers", Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), Vector3(q.x, h, q.y)))
 		if _rng_kit.randf() < parabole_chance:
 			# parabole pres d'un bord du toit, tournee vers le sud (satellites geostationnaires, presque a la verticale)
 			var bord := _v2(pts[_rng_kit.randi() % pts.size()])
-			var q2 := bord.lerp(c, 0.8 / maxf(bord.distance_to(c), 0.9))
-			_add("toit_parabole", Transform3D(Basis(Vector3.UP, PI + _rng_kit.randf_range(-0.5, 0.5)), Vector3(q2.x, h, q2.y)))
+			var q2 := _sur_toit(poly, c, bord, 1.0 - 0.8 / maxf(bord.distance_to(c), 0.9), 0.5)
+			if q2 != Vector2.INF:
+				_add("toit_parabole", Transform3D(Basis(Vector3.UP, PI + _rng_kit.randf_range(-0.5, 0.5)), Vector3(q2.x, h, q2.y)))
+
+
+func _sur_toit(poly: PackedVector2Array, c: Vector2, coin: Vector2, t: float, marge: float) -> Vector2:
+	## Point c.lerp(coin, t) ramene vers le centre jusqu'a tomber sur le toit (dans le contour, a 'marge' des facades) ;
+	## Vector2.INF si le batiment (forme en L, en U) n'en offre pas : l'objet flottait dans le vide au-dela du toit.
+	var i := 0
+	while i < 6:
+		var p := c.lerp(coin, t * (1.0 - 0.18 * i))
+		if Geometry2D.is_point_in_polygon(p, poly):
+			var ok := true
+			for k in poly.size():
+				var a := poly[k]
+				var b := poly[(k + 1) % poly.size()]
+				if (Geometry2D.get_closest_point_to_segment(p, a, b)).distance_to(p) < marge:
+					ok = false
+					break
+			if ok:
+				return p
+		i += 1
+	return Vector2.INF
 
 
 # ---------------------------------------------------------------- kit d'objets de rue (audit Cotonou)

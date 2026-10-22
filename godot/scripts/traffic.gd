@@ -680,7 +680,67 @@ func take_over(i: int, by: Node3D) -> Node3D:
 	return v
 
 
+## Phares des vehicules de la circulation (retour d'Olympe du 23/10/2026) : de vraies lumieres pour les plus proches de la
+## camera la nuit, reaffectees cinq fois par seconde (les autres gardent seulement leurs glaces allumees, lampe.gdshader).
+@export var phares_max := 12
+@export var portee_phare_voiture := 60.0       # feu de croisement : 50 a 70 m utiles
+@export var portee_phare_moto := 45.0
+var _phares: Array[SpotLight3D] = []
+var _phares_t := 0.0
+var _jour_nuit: Node
+
+
+func _maj_phares(delta: float) -> void:
+	_phares_t -= delta
+	if _phares_t > 0.0:
+		return
+	_phares_t = 0.2
+	if _jour_nuit == null:
+		_jour_nuit = get_parent().get_node_or_null("JourNuit")
+	var nuit: float = float(_jour_nuit.get("night")) if _jour_nuit else 0.0
+	if _phares.is_empty():
+		for i in phares_max:
+			var l := SpotLight3D.new()
+			l.spot_angle = 27.0
+			l.spot_attenuation = 0.8
+			l.light_color = Color(1.0, 0.95, 0.82)
+			l.shadow_enabled = false
+			l.light_energy = 0.0
+			l.visible = false
+			add_child(l)
+			_phares.append(l)
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var cand: Array = []
+	if nuit > 0.05:
+		for a in _agents:
+			if not a.get("active", true):
+				continue
+			var d := cam.global_position.distance_squared_to((a["body"] as Node3D).global_position)
+			if d < 120.0 * 120.0:
+				cand.append([d, a])
+		cand.sort_custom(func(x, y): return x[0] < y[0])
+	for i in _phares.size():
+		var l := _phares[i]
+		if i >= cand.size():
+			l.visible = false
+			continue
+		var a: Dictionary = cand[i][1]
+		var body: Node3D = a["body"]
+		var moto: bool = a["kind"] != "voiture"
+		var fwd := -body.global_transform.basis.z
+		fwd.y = 0.0
+		fwd = fwd.normalized()
+		var origine := body.global_position + fwd * (0.9 if moto else 2.0) + Vector3.UP * (0.95 if moto else 0.75)
+		l.global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP) * Basis(Vector3.RIGHT, -0.05), origine)
+		l.spot_range = portee_phare_moto if moto else portee_phare_voiture
+		l.light_energy = (6.0 if moto else 9.0) * nuit
+		l.visible = true
+
+
 func _process(delta: float) -> void:
+	_maj_phares(delta)
 	# les vehicules pris par le joueur sont remplaces, loin de lui, pour garder une circulation constante
 	for a in _agents:
 		if a.get("active", true) or not a.has("respawn"):

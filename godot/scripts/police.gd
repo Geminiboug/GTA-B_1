@@ -634,9 +634,9 @@ func _batir_hopital() -> void:
 	var cyl := CylinderMesh.new()
 	cyl.top_radius = 0.06
 	cyl.bottom_radius = 0.06
-	cyl.height = 3.2
+	cyl.height = 3.9      # monte jusqu'a la croix (avant : 3,2 m, la croix flottait au-dessus du poteau)
 	poteau.mesh = cyl
-	poteau.position.y = 1.6
+	poteau.position.y = 1.95
 	root.add_child(poteau)
 	var croix_mat := StandardMaterial3D.new()
 	croix_mat.albedo_color = Color(0.1, 0.7, 0.3)
@@ -651,15 +651,27 @@ func _batir_hopital() -> void:
 		b.mesh = bm
 		b.position.y = 3.5
 		root.add_child(b)
-	var enseigne := Label3D.new()
-	enseigne.text = "CENTRE DE SANTÉ GBÊKPO"
-	enseigne.font_size = 64
-	enseigne.pixel_size = 0.006
-	enseigne.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-	enseigne.modulate = Color(1, 1, 1)
-	enseigne.outline_size = 12
-	enseigne.position.y = 2.7
-	root.add_child(enseigne)
+	# enseigne : planche fixee au poteau, texte colle sur ses deux faces (avant : un texte flottant sans support)
+	var planche := MeshInstance3D.new()
+	var pm := BoxMesh.new()
+	pm.size = Vector3(3.2, 0.5, 0.08)
+	var pmat := StandardMaterial3D.new()
+	pmat.albedo_color = Color(0.08, 0.5, 0.25)
+	pm.material = pmat
+	planche.mesh = pm
+	planche.position.y = 2.75
+	root.add_child(planche)
+	for sens in [1.0, -1.0]:
+		var enseigne := Label3D.new()
+		enseigne.text = "CENTRE DE SANTÉ GBÊKPO"
+		enseigne.font_size = 64
+		enseigne.pixel_size = 0.0034
+		enseigne.shaded = false
+		enseigne.modulate = Color(1, 1, 1)
+		enseigne.outline_size = 0
+		enseigne.position = Vector3(0, 2.75, 0.045 * sens)
+		enseigne.rotation.y = 0.0 if sens > 0.0 else PI
+		root.add_child(enseigne)
 
 
 func _teleport(p: Vector3, place: String) -> void:

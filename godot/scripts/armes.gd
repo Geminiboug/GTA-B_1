@@ -510,13 +510,22 @@ func _vendeurs() -> void:
 			toit.material_override = _mat(Color(0.6, 0.62, 0.65), 0.6, 0.5)
 			toit.position = Vector3(0, 2.3, 0)
 			kiosque.add_child(toit)
-			var enseigne := Label3D.new()
-			enseigne.text = v[2]
-			enseigne.font_size = 48
-			enseigne.pixel_size = 0.006
-			enseigne.outline_size = 10
-			enseigne.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-			enseigne.position = Vector3(0, 2.6, 0)
-			kiosque.add_child(enseigne)
+			# enseigne : planche posee sur le toit, texte colle sur ses deux faces (avant : un texte flottant au-dessus du toit)
+			var planche := MeshInstance3D.new()
+			planche.mesh = _boite(Vector3(2.0, 0.5, 0.06))
+			planche.material_override = _mat(Color(0.08, 0.2, 0.12), 0.0, 0.8)
+			planche.position = Vector3(0, 2.325 + 0.25, 0)
+			kiosque.add_child(planche)
+			for sens in [1.0, -1.0]:
+				var enseigne := Label3D.new()
+				enseigne.text = v[2]
+				enseigne.font_size = 48
+				enseigne.pixel_size = 0.0035
+				enseigne.outline_size = 0
+				enseigne.shaded = false
+				enseigne.modulate = Color(1, 1, 1)
+				enseigne.position = Vector3(0, 2.575, 0.035 * sens)
+				enseigne.rotation.y = 0.0 if sens > 0.0 else PI
+				kiosque.add_child(enseigne)
 		if com:
 			com.spots.append({"pos": p, "kind": v[0], "nuit": v[0] == "gaou"})

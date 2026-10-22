@@ -256,8 +256,12 @@ func _ready() -> void:
 	_fumee_pneus = _particules(Color(0.85, 0.85, 0.85, 0.4), 40, 1.3, Vector3(0, 0.2, 1.4), 1.0)
 	for side in [-0.6, 0.6]:
 		var l := SpotLight3D.new()
-		l.spot_range = 34.0
-		l.spot_angle = 32.0
+		l.spot_range = 70.0       # feu de croisement reel : 50 a 70 m utiles (avant 34 m)
+		l.spot_angle = 26.0
+		l.spot_attenuation = 0.8
+		l.distance_fade_enabled = true
+		l.distance_fade_begin = 80.0
+		l.distance_fade_length = 30.0
 		l.light_energy = 0.0
 		l.light_color = Color(1.0, 0.95, 0.85)
 		l.shadow_enabled = false
@@ -1055,7 +1059,7 @@ func _update_visual(delta: float, slip: float) -> void:
 	_tail_mat.emission_energy_multiplier = (2.5 if braking else 0.0) + night * 0.8
 	for i in _lights.size():
 		var l := _lights[i]
-		l.light_energy = 0.0 if _phares_casses[i] else (6.0 * night if has_rider or speed != 0.0 else 0.0)
+		l.light_energy = 0.0 if _phares_casses[i] else (9.0 * night if has_rider or speed != 0.0 else 0.0)
 	if _feu_lum:
 		_feu_lum.light_energy = 1.6 + randf() * 0.9
 	_recul.light_energy = 2.5 if rapport < 0 and absf(speed) > 0.05 and has_rider else 0.0

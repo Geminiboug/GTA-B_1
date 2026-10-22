@@ -49,9 +49,49 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var bequille: Node3D = visual.find_child("piv_bequille", true, false)
 
 
+## Phare avant (retour d'Olympe du 23/10/2026 : les motos n'avaient pas de phare, on ne voyait rien la nuit). Un feu de
+## croisement de moto eclaire utilement a 40-50 m : spot de 55 m, pose sur la glace du phare du modele.
+@export var phare_portee := 55.0
+@export var phare_energie := 7.0
+var _phare: SpotLight3D
+var _jour_nuit: Node
+
+
+func _poser_phare() -> void:
+	_phare = SpotLight3D.new()
+	_phare.spot_range = phare_portee
+	_phare.spot_angle = 24.0
+	_phare.spot_attenuation = 0.8
+	_phare.light_energy = 0.0
+	_phare.light_color = Color(1.0, 0.95, 0.8)
+	_phare.shadow_enabled = false
+	_phare.distance_fade_enabled = true       # les phares lointains s'eteignent (cout des lumieres)
+	_phare.distance_fade_begin = 70.0
+	_phare.distance_fade_length = 25.0
+	visual.add_child(_phare)
+	var pos := visual.global_transform * Vector3(0, 0.95, -0.9)
+	for mi in visual.find_children("*", "MeshInstance3D", true, false):
+		for s in (mi as MeshInstance3D).mesh.get_surface_count():
+			var m: Material = (mi as MeshInstance3D).mesh.surface_get_material(s)
+			if m and m.resource_name == "veh_phare":
+				pos = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb().get_center()
+	_phare.global_transform = Transform3D(visual.global_transform.basis * Basis(Vector3.RIGHT, -0.05), pos + visual.global_transform.basis * Vector3(0, 0, -0.1))
+
+
+func _maj_phare() -> void:
+	if _phare == null:
+		return
+	if _jour_nuit == null or not is_instance_valid(_jour_nuit):
+		_jour_nuit = get_tree().root.find_child("JourNuit", true, false)      # le zem-taxi a pour parent le noeud ZemTaxi
+	var nuit: float = float(_jour_nuit.get("night")) if _jour_nuit else 0.0
+	_phare.light_energy = phare_energie * nuit if (has_rider or ai or absf(speed) > 0.1) and not epave else 0.0
+
+
 func _ready() -> void:
 	_yaw = rotation.y
 	_last_safe = global_position
+
+	_poser_phare()
 
 
 func set_rider(value: bool) -> void:
@@ -60,6 +100,7 @@ func set_rider(value: bool) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_maj_phare()
 	if epave:
 		speed = 0.0
 		velocity = Vector3.ZERO

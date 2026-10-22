@@ -13,7 +13,8 @@ extends Node3D
 @export var sun_path: NodePath = ^"../Sun"
 @export var env_path: NodePath = ^"../WorldEnvironment"
 @export var props_path: NodePath = ^"../Props"
-@export var light_pool_size := 14
+@export var light_pool_size := 40        # vraies lumieres sous les lampadaires les plus proches (avant 14)
+@export var portee_halos := 300.0        # tous les lampadaires dans ce rayon eclairent la chaussee d une tache de lumiere
 @export var power_cut_chance_per_hour := 0.3
 
 var hour := 16.0
@@ -47,7 +48,7 @@ func _ready() -> void:
 	add_child(_moon)
 	for i in light_pool_size:
 		var l := SpotLight3D.new()
-		l.spot_range = 20.0
+		l.spot_range = 24.0
 		l.spot_angle = 68.0
 		l.spot_attenuation = 0.9
 		l.light_energy = 0.0
@@ -56,6 +57,7 @@ func _ready() -> void:
 		l.rotation_degrees = Vector3(-90, 0, 0)  # eclaire vers le bas
 		add_child(l)
 		_pool.append(l)
+	_faire_halos()
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	_clock = Label.new()
@@ -143,8 +145,63 @@ func _update(delta: float) -> void:
 		_assign_pool()
 	for l in _pool:
 		l.light_energy = 7.0 * on if l.visible else 0.0
+	if _halos:
+		_halos.visible = on > 0.02
+		_halo_mat.albedo_color.a = 0.8 * on
 
 	_clock.text = "%02d:%02d%s" % [int(hour), int(fmod(hour, 1.0) * 60.0), "  (delestage)" if _cut_left > 0.0 and night > 0.5 else ""]
+
+
+var _halos: MultiMeshInstance3D
+var _halo_mat: StandardMaterial3D
+
+
+func _faire_halos() -> void:
+	## Tache de lumiere chaude sur la chaussee sous CHAQUE lampadaire proche (les vraies lumieres, couteuses, ne couvrent que
+	## les plus proches de la camera) : en ville, tous les lampadaires eclairent, meme ceux du fond de la rue.
+	var q := QuadMesh.new()
+	q.size = Vector2(18.0, 18.0)
+	q.orientation = PlaneMesh.FACE_Y
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.78, 0.45, 1.0))
+	g.set_color(1, Color(1.0, 0.7, 0.35, 0.0))
+	g.add_point(0.35, Color(1.0, 0.76, 0.42, 0.45))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.width = 128
+	tex.height = 128
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	_halo_mat = StandardMaterial3D.new()
+	_halo_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_halo_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	_halo_mat.albedo_texture = tex
+	_halo_mat.albedo_color = Color(1, 1, 1, 0.0)
+	_halo_mat.disable_fog = true
+	q.material = _halo_mat
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = q
+	mm.instance_count = 0
+	_halos = MultiMeshInstance3D.new()
+	_halos.name = "HalosLampadaires"
+	_halos.multimesh = mm
+	_halos.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_halos.visible = false
+	add_child(_halos)
+
+
+func _maj_halos(c: Vector3, lamps: PackedVector3Array) -> void:
+	var liste := []
+	for p in lamps:
+		if c.distance_squared_to(p) < portee_halos * portee_halos:
+			liste.append(Transform3D(Basis.IDENTITY, Vector3(p.x, p.y - 8.1 + 0.05, p.z)))
+	var mm := _halos.multimesh
+	mm.instance_count = liste.size()
+	for i in liste.size():
+		mm.set_instance_transform(i, liste[i])
 
 
 func _assign_pool() -> void:
@@ -156,11 +213,13 @@ func _assign_pool() -> void:
 	if props == null:
 		return
 	var lamps: PackedVector3Array = props.lamp_positions
+	if _halos and night * power > 0.02:
+		_maj_halos(c, lamps)
 	# les plus proches (selection partielle simple)
 	var best: Array = []
 	for p in lamps:
 		var d := c.distance_squared_to(p)
-		if d > 120.0 * 120.0:
+		if d > 140.0 * 140.0:
 			continue
 		best.append([d, p])
 	best.sort_custom(func(a, b): return a[0] < b[0])
