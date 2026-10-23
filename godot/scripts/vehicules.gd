@@ -4,7 +4,8 @@ class_name Vehicules
 
 const MODELS := {"veh_berline": "res://assets/models/veh_berline.glb", "veh_4x4": "res://assets/models/veh_4x4.glb",
 	"veh_minibus": "res://assets/models/veh_minibus.glb", "veh_pickup": "res://assets/models/veh_pickup.glb",
-	"veh_pejo": "res://assets/models/veh_pejo.glb", "veh_mersede": "res://assets/models/veh_mersede.glb"}
+	"veh_pejo": "res://assets/models/veh_pejo.glb", "veh_mersede": "res://assets/models/veh_mersede.glb",
+	"veh_camion": "res://assets/models/veh_camion.glb"}
 ## Berlines (memes reglages de camera, de son et d usure que la berline d origine) : Toyoda Koralo, Pejo 460, Mersede 109
 const BERLINES := ["veh_berline", "veh_pejo", "veh_mersede"]
 
@@ -34,6 +35,10 @@ const TUNING := {
 		"regime_couple": 2300.0, "regime_max": 4500.0, "rapports": [4.3, 2.35, 1.45, 1.0, 0.82], "pont": 4.1,
 		"part_motrice": 0.45, "trainee": 0.95, "repartition_avant": 0.58, "hauteur_cg": 0.72,
 		"rigidite_avant": 10.0, "rigidite_arriere": 11.0},
+	"veh_camion": {"max_speed": 26.0, "grip": 0.7, "roll_factor": 0.03, "masse": 4800.0, "couple_max": 330.0,
+		"regime_couple": 1800.0, "regime_max": 3600.0, "rapports": [6.2, 3.4, 2.0, 1.3, 1.0], "pont": 4.6,
+		"part_motrice": 0.6, "trainee": 2.4, "repartition_avant": 0.45, "hauteur_cg": 1.3,
+		"rigidite_avant": 8.0, "rigidite_arriere": 10.0},
 	"veh_pejo": {"max_speed": 50.0, "grip": 0.97, "roll_factor": 0.011, "masse": 1300.0, "couple_max": 170.0,
 		"regime_couple": 4200.0, "regime_max": 6300.0, "rapports": [3.42, 1.81, 1.28, 0.98, 0.77], "pont": 4.06,
 		"part_motrice": 0.6, "trainee": 0.65, "repartition_avant": 0.62, "hauteur_cg": 0.55},

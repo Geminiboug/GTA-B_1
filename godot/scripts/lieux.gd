@@ -427,17 +427,25 @@ func _physics_process(delta: float) -> void:
 		var body: AnimatableBody3D = d["body"]
 		var center: Vector3 = d["pos"]   # porte fermee : le vantail s'eloigne en s'ouvrant
 		var want := false
+		var proche := Vector3.ZERO
+		var dmin: float = d["range"]
 		for p in movers:
-			if (p as Vector3).distance_to(center) < d["range"]:
+			var dd := (p as Vector3).distance_to(center)
+			if dd < dmin:
 				want = true
-				break
+				dmin = dd
+				proche = p
+		if want and not d["sliding"] and d["open"] < 0.001:
+			# le battant s'ouvre toujours en s'ecartant de celui qui arrive (dedans comme dehors), pas dans un seul sens
+			var n3 := (body.get_parent() as Node3D).global_transform.basis.z
+			d["flip"] = -1.0 if (proche - center).dot(n3) < 0.0 else 1.0
 		d["open"] = move_toward(d["open"], 1.0 if want else 0.0, delta * (1.6 if d["sliding"] else 1.1))
 		var k := smoothstep(0.0, 1.0, d["open"])
 		var closed: Transform3D = d["closed"]
 		if d["sliding"]:
 			body.transform = closed.translated_local(d["slide"] * k)
 		else:
-			body.transform = closed * Transform3D(Basis(Vector3.UP, d["angle"] * k), Vector3.ZERO)
+			body.transform = closed * Transform3D(Basis(Vector3.UP, d["angle"] * float(d.get("flip", 1.0)) * k), Vector3.ZERO)
 	# lumieres de la maison : le soir, ou quand on est dedans
 	var night: float = _day.get("night") if _day else 0.0
 	var inside := _zone_at(ppos)

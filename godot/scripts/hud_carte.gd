@@ -409,6 +409,16 @@ func _draw_blips() -> void:
 		if rq.length() < R * 0.9:
 			_blips.draw_rect(Rect2(c + rq - Vector2(5, 5), Vector2(10, 10)), Color(0, 0, 0, 0.85))
 			_blips.draw_rect(Rect2(c + rq - Vector2(3.8, 3.8), Vector2(7.6, 7.6)), n.get_meta("couleur", Color.WHITE))
+	# stations-service "Bon Plein" (scripts/stations.gd) : pastille orange, vue seulement dans le rayon de la mini-carte
+	var stations := get_node_or_null("../Stations")
+	if stations and "stations" in stations:
+		for s in stations.stations:
+			var sp: Vector3 = s["pos"]
+			var sq := _to_mini(Vector2(sp.x, sp.z), pp, h, R)
+			if sq.length() < R * 0.9:
+				_blips.draw_circle(c + sq, 6.0, Color(0, 0, 0, 0.85))
+				_blips.draw_circle(c + sq, 4.8, Color(0.96, 0.55, 0.1))
+				_blips.draw_rect(Rect2(c + sq - Vector2(1.6, 2.6), Vector2(3.2, 5.2)), Color(0.1, 0.1, 0.1))
 	# maison du joueur (toujours indiquee, collee au bord si loin)
 	if _home != Vector2.INF:
 		var hq := _to_mini(_home, pp, h, R)

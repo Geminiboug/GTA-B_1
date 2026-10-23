@@ -880,7 +880,24 @@ MERSEDE = dict(L=4.42, W=1.68, wb=2.66, r=0.3, track=1.44, tire_w=0.19, spokes=8
     seat_rows=[0.0, -0.95], seat_z=0.47, dash_y=0.75, bumper_mat="black",
     grille="upright", grille_w=0.4, grille_dz=0.03, lamp_hug=True, lamp_w=0.38, lamp_sweep=0.0, badge="etoile", badge_r=0.05,
     badge_dz=0.17, brand="MERSEDE", model="109")
-MODELES = {"veh_berline": SEDAN, "veh_4x4": SUV, "veh_minibus": MINIBUS, "veh_pickup": PICKUP, "veh_pejo": PEJO, "veh_mersede": MERSEDE}
+# Camion de livraison a caisse fermee (7,10 x 2,20 x 3,00 m, empattement 4,10 m), cabine avancee : le camion de
+# 3 a 5 tonnes qui ravitaille les marches et les boutiques de Cotonou. Caisse sans vitre, cabine avec pare-brise.
+CAMION = dict(L=7.1, W=2.2, wb=4.1, r=0.42, track=1.86, tire_w=0.28, spokes=6, bumper_mat="black", stations=[
+    S(-3.55, 0.62, 2.86, 2.96, 1.04, 0.98),
+    S(-3.47, 0.56, 2.9, 3.0, 1.09, 1.02),
+    S(0.92, 0.56, 2.9, 3.0, 1.09, 1.02),                          # avant de la caisse
+    S(1.0, 0.52, 1.6, 2.72, 1.07, 0.96),                          # arriere de la cabine
+    S(1.45, 0.52, 1.6, 2.74, 1.07, 0.96),
+    S(1.55, 0.52, 1.6, 2.74, 1.07, 0.96, win=True),               # vitre de porte
+    S(2.65, 0.52, 1.6, 2.74, 1.07, 0.96, win=True),
+    S(3.1, 0.52, 1.55, 2.72, 1.06, 0.95, win=True, top="glass"),  # haut du pare-brise
+    S(3.42, 0.56, 1.25, 1.35, 1.03, 0.92),                        # bas du pare-brise
+    S(3.55, 0.62, 1.0, 1.05, 0.96, 0.86),
+], bumper_z=0.66, bumper_h=0.26, lamp_z=0.98, lamp_h=0.17, grille_h=0.34, tail_z=1.0, tail_h=0.28, rear_plate_z=0.82,
+    mirror_y=2.9, wiper_y=3.15, doors=[2.15], door_lines=[2.95, 1.4], strip_z=1.0,
+    seat_rows=[2.3], seat_z=0.98, dash_y=3.1,
+    grille="wide", grille_w=1.1, lamp_hug=True, lamp_w=0.4, lamp_sweep=0.0, badge_r=0.07, brand="TOYODA", model="CAMIO")
+MODELES = {"veh_camion": CAMION, "veh_berline": SEDAN, "veh_4x4": SUV, "veh_minibus": MINIBUS, "veh_pickup": PICKUP, "veh_pejo": PEJO, "veh_mersede": MERSEDE}
 CHOIX = os.environ.get("GTB_VEH", "")   # noms separes par des virgules (vide = tous)
 for nm, sp in MODELES.items():
     if CHOIX and nm not in CHOIX.split(","):

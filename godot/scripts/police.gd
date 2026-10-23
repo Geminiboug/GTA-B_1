@@ -31,7 +31,7 @@ extends Node3D
 @export var rattrapage := false          # patrouille avancee hors champ quand elle traine (desactive : on la voit venir)
 
 const DELITS := {"vol": 1, "agression": 1, "renverse": 1, "choc_police": 1, "evasion": 1, "arme_blanche": 2, "tir": 2,
-	"tir_police": 3}
+	"tir_police": 3, "braquage": 3}
 const COMPOSITION := [[], ["pied"], ["pied", "berline"], ["berline", "berline"], ["berline", "special", "special"],
 	["special", "special", "moto", "moto"]]
 const ZEM_SCENE := preload("res://scenes/zem.tscn")

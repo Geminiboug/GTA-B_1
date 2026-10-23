@@ -29,7 +29,7 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 0.71, 0.72), Color(0.08, 0.08, 0.09),
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
-const CAR_MODELS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup"]
+const CAR_MODELS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup", "veh_camion"]
 const DRIVERS_PER_MODEL := 4
 @export var zem_number_pos := Vector3(0, 1.17, 0.29)   # dos du conducteur assis (repere du zem)
 @export var zem_number_tilt := -0.25                  # buste penche en avant
@@ -177,7 +177,7 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 	if kind == "voiture":
 		# berlines d'occasion surtout, des 4x4, et les minibus "tokpa-tokpa" qui font le transport en commun
 		var roll := _rng.randf()
-		var model := Vehicules.berline(roll / 0.5) if roll < 0.5 else ("veh_4x4" if roll < 0.7 else ("veh_pickup" if roll < 0.82 else "veh_minibus"))
+		var model := Vehicules.berline(roll / 0.44) if roll < 0.44 else ("veh_4x4" if roll < 0.6 else ("veh_pickup" if roll < 0.7 else ("veh_minibus" if roll < 0.84 else "veh_camion")))
 		mi.mesh = meshes[model]
 		var dk := "drv_%s_%d" % [model, _rng.randi() % DRIVERS_PER_MODEL]
 		var drv := MeshInstance3D.new()
@@ -209,10 +209,11 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 		var aabb: AABB = mi.mesh.get_aabb()
 		box.size = Vector3(aabb.size.x - 0.15, aabb.size.y - 0.04, aabb.size.z - 0.1)
 		cs.position = Vector3(0, aabb.position.y + 0.02 + box.size.y / 2.0, aabb.get_center().z)
-		a["max_big"] = _rng.randf_range(11.0, 15.0) * (0.85 if model == "veh_minibus" else 1.0)
+		a["max_big"] = _rng.randf_range(11.0, 15.0) * (0.85 if model == "veh_minibus" else (0.75 if model == "veh_camion" else 1.0))
 		a["max_small"] = _rng.randf_range(6.0, 8.5)
 		a["lane"] = 0.27
 		a["length"] = aabb.size.z
+		a["feu_ar"] = Vector3(aabb.size.x * 0.5 - 0.22, FEU_HAUTEUR.get(model, 0.85), aabb.get_center().z + aabb.size.z * 0.5)
 	else:
 		var pool := ZEM_VARIANTS.filter(func(v: String) -> bool: return v.begins_with("zem_passager") == (kind == "zem_passager"))
 		var variant: String = pool[_rng.randi() % pool.size()]
@@ -237,12 +238,14 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 		a["max_small"] = _rng.randf_range(6.0, 9.0)
 		a["lane"] = 0.36  # les zems serrent le bord droit
 		a["length"] = 2.0
+		a["feu_ar"] = Vector3(0.0, 0.8, 1.05)
 	cs.shape = box
 	body.add_child(cs)
 	body.collision_layer = 1
 	body.collision_mask = 0
 	add_child(body)
 	body.add_child(mi)
+	_feux_stop(a, body)
 	var snd := AudioStreamPlayer3D.new()
 	snd.stream = _snd_car if kind == "voiture" else _snd_moto
 	snd.unit_size = 4.0
@@ -353,6 +356,63 @@ func _recycler(ppos: Vector3) -> void:
 			a["stuck"] = 0.0
 			faits += 1
 			break
+
+
+## Part des vehicules en circulation selon l'heure de jeu : [heure, part]. Pointes du matin (7 h a 9 h) et du soir (16 h a 19 h) :
+## tout le monde roule, donc des bouchons naturels aux carrefours ; creux de la nuit : un tiers seulement.
+@export var densite_horaire: Array[Vector2] = [Vector2(0, 0.3), Vector2(5, 0.3), Vector2(6.5, 0.7), Vector2(7.5, 1.0),
+	Vector2(9, 1.0), Vector2(10.5, 0.7), Vector2(15, 0.75), Vector2(16.5, 1.0), Vector2(19, 1.0), Vector2(21, 0.6),
+	Vector2(23, 0.35), Vector2(24, 0.3)]
+
+
+func part_circulation(heure: float) -> float:
+	for k in densite_horaire.size() - 1:
+		var a := densite_horaire[k]
+		var b := densite_horaire[k + 1]
+		if heure >= a.x and heure <= b.x:
+			return lerpf(a.y, b.y, (heure - a.x) / maxf(b.x - a.x, 0.001))
+	return 1.0
+
+
+func _densite_horaire(ppos: Vector3) -> void:
+	## Met au repos (ou remet en route) des vehicules selon l'heure, uniquement hors du champ de la camera et a plus de
+	## 80 m du joueur : jamais d'apparition ni de disparition devant lui.
+	if _jour_nuit == null:
+		_jour_nuit = get_parent().get_node_or_null("JourNuit")
+	if _jour_nuit == null:
+		return
+	var part := part_circulation(float(_jour_nuit.get("hour")))
+	var cam := get_viewport().get_camera_3d()
+	var n := float(_agents.size())
+	for a in _agents:
+		var rang := float(a["id"]) / n
+		var repos: bool = a.get("repos", false)
+		if repos == (rang >= part):
+			continue
+		var vp: Vector3 = a["vis_pos"]
+		var pw := vp + Vector3(0, 1, 0)
+		var visible_cam: bool = cam != null and not cam.is_position_behind(pw) and cam.is_position_in_frustum(pw)
+		if vp.distance_to(ppos) < 80.0 or visible_cam:
+			continue
+		var body := a["body"] as Node3D
+		if rang >= part:
+			if not a.get("active", true):
+				continue                       # epave ou vehicule pris : on n'y touche pas
+			a["repos"] = true
+			a["active"] = false
+			a["speed"] = 0.0
+			_release(a)
+			body.visible = false
+			a["couche"] = (body as CollisionObject3D).collision_layer
+			(body as CollisionObject3D).collision_layer = 0
+			(a["snd"] as AudioStreamPlayer3D).stop()
+		else:
+			a["repos"] = false
+			a["active"] = true
+			a["stuck"] = 0.0
+			body.visible = true
+			(body as CollisionObject3D).collision_layer = int(a.get("couche", 1))
+			(a["snd"] as AudioStreamPlayer3D).play()
 
 
 func _set_edge(a: Dictionary, e: int, from: int) -> void:
@@ -483,6 +543,8 @@ func _physics_process(delta: float) -> void:
 	_tick += 1
 	if _tick % 45 == 0:
 		_recycler(ppos)
+	if _tick % 60 == 0:
+		_densite_horaire(ppos)
 	for a in _agents:
 		if a.get("active", true) and (a["body"] as Node).has_meta("epave"):
 			a["active"] = false          # explose : epave immobile
@@ -566,6 +628,10 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 		blocked_by_player = true
 	# acceleration / freinage
 	var acc := 3.0 if vmax > a["speed"] else 8.0
+	var freine: bool = vmax < a["speed"] - 0.3 or bool(a.get("au_feu", false)) or (a["speed"] < 0.5 and vmax < 0.5)
+	if freine != a.get("freine", false):
+		a["freine"] = freine
+		(a["feux"] as Node3D).visible = freine
 	a["speed"] = move_toward(a["speed"], vmax, acc * delta)
 	_advance(a, a["speed"] * delta)
 	# klaxon si bloque par le joueur (ou bouchon qui dure)
@@ -858,3 +924,35 @@ func reclaim(v: Node3D) -> bool:
 	(a["snd"] as AudioStreamPlayer3D).play()
 	v.queue_free()
 	return true
+
+
+## Feux de freinage : deux lumignons rouges a l'arriere (un seul pour une moto), visibles quand le vehicule freine ou attend.
+const FEU_HAUTEUR := {"veh_berline": 0.8, "veh_pejo": 0.86, "veh_mersede": 0.8, "veh_4x4": 1.0, "veh_minibus": 0.95,
+	"veh_pickup": 0.9, "veh_camion": 1.0}
+static var _feu_mesh: BoxMesh
+static var _feu_mat: StandardMaterial3D
+
+
+func _feux_stop(a: Dictionary, body: Node3D) -> void:
+	if _feu_mesh == null:
+		_feu_mat = StandardMaterial3D.new()
+		_feu_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_feu_mat.albedo_color = Color(1.0, 0.08, 0.05)
+		_feu_mat.emission_enabled = true
+		_feu_mat.emission = Color(1.0, 0.05, 0.02)
+		_feu_mat.emission_energy_multiplier = 2.5
+		_feu_mesh = BoxMesh.new()
+		_feu_mesh.size = Vector3(0.3, 0.13, 0.04)
+		_feu_mesh.material = _feu_mat
+	var feux := Node3D.new()
+	feux.visible = false
+	var pos: Vector3 = a["feu_ar"]
+	for s in ([-1.0, 1.0] if a["kind"] == "voiture" else [0.0]):
+		var m := MeshInstance3D.new()
+		m.mesh = _feu_mesh
+		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		m.visibility_range_end = 90.0
+		m.position = Vector3(s * pos.x, pos.y, pos.z + 0.03)
+		feux.add_child(m)
+	body.add_child(feux)
+	a["feux"] = feux

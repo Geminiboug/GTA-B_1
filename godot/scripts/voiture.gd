@@ -902,8 +902,9 @@ func _physics_process(delta: float) -> void:
 	var h := delta / n_sub
 	var hand_on := hand and absf(vx) > 2.0
 	for _k in n_sub:
-		if absf(vx) < 2.5:
-			# manoeuvre : geometrie d'Ackermann, glissade laterale amortie
+		if absf(vx) < 2.5 or vx < -0.5:
+			# manoeuvre (et toute la marche arriere, ou le modele de pneus devient instable : la voiture derapait en
+			# reculant) : geometrie d'Ackermann, glissade laterale amortie
 			var rk := vx * tan(_steer) / L
 			r = lerpf(r, rk, 1.0 - exp(-12.0 * h))
 			vy = move_toward(vy, 0.0, mu * G * h)

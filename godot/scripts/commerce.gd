@@ -5,6 +5,7 @@ extends CanvasLayer
 ## l'inventaire. Prix reels de Cotonou (FCFA, 2026).
 
 @export var player_path: NodePath = ^"../Player"
+const BRAQUAGE := preload("res://scripts/braquage.gd")
 @export var portee := 2.2          # m
 
 # [nom, prix, sante rendue (mange sur place), quantite]
@@ -52,6 +53,9 @@ func _ready() -> void:
 	layer = 6
 	_player = get_node_or_null(player_path)
 	_hud = get_node_or_null("../HUD")
+	var braquage := BRAQUAGE.new()
+	braquage.name = "Braquage"
+	add_child(braquage)
 	_panel = PanelContainer.new()
 	_panel.anchor_left = 0.5
 	_panel.anchor_right = 0.5

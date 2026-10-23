@@ -57,7 +57,8 @@ func _physics_process(_d: float) -> bool:
 	if etape == 1:
 		if zt.etat == "pret":
 			var d: float = player.global_position.distance_to(zt._zem.global_position)
-			_check(d < 10.0, "le zem s'arrete pres du joueur (%.1f m)" % d)
+			# jusqu a 16 m : derriere une file arretee a un feu ou un STOP, le client fait les derniers pas (zem_taxi.gd)
+			_check(d < 16.0, "le zem s arrete pres du joueur (%.1f m)" % d)
 			player.global_position = zt._zem.global_position + Vector3(1.2, 0.3, 0)
 			zt._monter()
 			_check(player.vehicle == zt._zem and player.pillion, "le joueur est monte derriere en passager")

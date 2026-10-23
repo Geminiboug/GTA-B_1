@@ -132,7 +132,7 @@ En cours ou a corriger :
 - [ ] Avion leger : portes du pilote et du passager a animer a la montee (le modele les a), cockpit a habiller, atterrissage a regler sur le terrain, ecole de pilotage, puis helicopteres pilotables (decision d'Olympe 22/10 : seuls de petits avions et des helicopteres sont pilotables, jamais les avions de ligne)
 - [x] Lag et chutes brutales d'images (retour d'Olympe 22/10) : cause isolee et corrigee (22/10). Chaque nouveau passant avec AnimCtrl reecrivait loop_mode sur les clips partages (anim_ctrl.gd _ready) : l'Animation emettait "changed" et tous les lecteurs deja en scene reconstruisaient leurs caches (400 a 500 ms par vendeur dans une foule). Garde `if loop_mode != LINEAR`. Vendeurs poses un par image sans fil de travail (pedestrians.gd _vendeur_cree), dix morphologies prechargees au chargement. tests/perf_saccades.gd : pire image 500-730 ms -> ~200 ms, restent des images de 34-50 ms dans les zones denses (~25 i/s) et des pics 100-200 ms a l'arrivee des grosses tuiles (a reduire : budget des taches de tuile, densite 90 / 60 / 36). Outils : tests/mesure_pnj.gd, liste_noeuds.gd, perf_saccades.gd (argument court + nom de noeud a retirer).
 - [ ] Voitures : portes arriere et cote passager pour les passagers PNJ ; motos : montee avec enjambement et mains sur le guidon a affiner
-- [ ] Stations-service : icone sur la mini-carte, essence pour l'avion
+- [ ] Stations-service : icone sur la mini-carte (faite le 23/10), essence pour l avion
 
 A faire :
 - [ ] Voies qui ne menent nulle part ou s'arretent bizarrement : revue de la carte morceau par morceau contre les references (OSM, satellite, photos) (22/10 : 81 vues du dessus produites par tests/capture_carte_tuiles.gd + tools/planche_tuiles.py ; la colonne ouest x=-7 est noire = hors carte ; routes principales continues ; reste a comparer finement les impasses avec OSM)
@@ -192,7 +192,7 @@ A faire :
 - [ ] Route cotiere et routes de campagne (villages, palmeraies, barrages de police, stations de carburant en bord de route)
 - [ ] Une ville historique facon Ouidah et une capitale facon Porto-Novo, sous noms fictifs
 - [ ] Village lacustre facon Ganvie : pirogues et bateaux pilotables, missions sur l'eau
-- [ ] Nouveaux vehicules : camions, bus, bateaux, avion leger
+- [ ] Nouveaux vehicules : camions (fait le 23/10 : veh_camion), bus, bateaux, avion leger
 - [ ] Jalon : trois "villes" et de la campagne, comme San Andreas, a notre sauce
 
 ### Phase 24 : Finition et sortie v1.0
@@ -205,6 +205,27 @@ A faire :
 - [ ] Jalon : GTB 1.0 publie
 
 Option plus tard : multijoueur (balade et courses de zems entre amis, puis missions en cooperation).
+
+## 4 bis. Mission technique du 23/10/2026 (collisions, circulation, personnage, nouveautes)
+Etat apres le premier passage de l'agent (tests dans godot/tests/, tous verts sauf mention) :
+- [x] Marqueur de police : les agents a pied clignotent sur la mini-carte comme les patrouilles (police.gd, hud_carte.gd) ; verification a l'oeil a faire
+- [x] Eau : plans d'eau, bassins et piscines praticables en pataugeant (vitesse x0,45, corps enfonce de 0,6 m) au lieu d'etre des sols (carte.gd dans_eau, player.gd, test_eau) ; nage complete a faire
+- [x] Vehicules de la circulation qui renversent les passants, points de vie retires aux passants touches (pedestrians.gd _trafic_heurte, test_pieton_heurte)
+- [x] Passants jamais dans un batiment ou un mur, tous etats confondus (pedestrians.gd _eviter, test_pieton_batiment)
+- [x] Feux tricolores (121 carrefours) et STOP (256 branches) sur le reseau : scripts/signalisation.gd, lus par traffic.gd, test_feux ; emplacements calcules par le reseau (voies principales), a verifier a l'oeil
+- [x] Trafic variable selon l'heure (nuit un tiers, pointes 7 h a 9 h et 16 h a 19 h : tout le monde roule), sans apparition devant le joueur (traffic.gd _densite_horaire, test_densite_horaire)
+- [x] Feux de freinage des vehicules de la circulation (traffic.gd _feux_stop) ; phares de zem, voitures et lampadaires (voir journal du 23/10)
+- [x] Camions : veh_camion.glb (blender/tools/build_vehicles.py CAMION), dans la circulation et conduisible (test_camions)
+- [x] Braquage des commerces (caisse, cafe, maquis, quincaillerie) : arme a feu en joue, E, 5 s, butin, delit "braquage" +3, temoins, recharge de 8 min (scripts/braquage.gd, test_braquage) ; reaction des passants a ajouter
+- [x] Taxis et zems refusent le joueur pendant une recherche de police (deja en place : taxi.gd, zem_taxi.gd)
+- [ ] Evitement d'obstacles par contournement et demi-tours injustifies : a faire
+- [ ] Priorites aux passages pietons, panneaux de limitation de vitesse, sens interdits, marquages au sol : a faire
+- [x] Marche arriere des voitures : derapage supprime (voiture.gd, test_marche_arriere) ; virages a mesurer
+- [ ] Deplacements du personnage (recul, lateral, arret, saut, rotation, bras, reaction aux degats) : a mesurer un par un
+- [ ] Montee, position et descente de moto (mains sur le guidon) : a affiner
+- [x] Portails battants qui s ouvrent en s ecartant de la personne (lieux.gd, test_portail_sens)
+- [ ] Aeroport (hangars, passerelles, parkings, cloture), vegetation moins geometrique, facades : a faire (references de terrain)
+- [ ] Animations d'inactivite variees (telephone, etirements, pompes) : une partie existe deja (player.gd _prochain_geste)
 
 ## 5. Journal d'avancement
 
@@ -284,6 +305,7 @@ Option plus tard : multijoueur (balade et courses de zems entre amis, puis missi
 - 19/10/2026 : chargement par morceaux etape 3 : decor (poteaux, cables, commerces, enseignes, kit de rue, toits, vegetation) pose tuile par tuile avec une graine par objet ; les cables passent d'une tuile a l'autre ; les etals se groupent en petits marches (props.gd grappe_chance, la cachette du marche de la police en depend). Donnees de Fidjrosse telechargees (OSM, Overture 15 439 batiments, Open Buildings 2.5D, littoral Sentinel-2 ; scripts parametres par GTB_BBOX).
 - 20/10/2026 : textures de sols et de murs tirees des refs generees (blender/tools/textures_planches.py, melangees au detail procedural dans sol et facade). Rodage sous l'ecran de chargement (la 3D tourne cachee jusqu'a des images stables, 12 s au plus) : plus de lag au debut de partie. Pietons : le geste s'arrete quand ils repartent (plus de glissade), cortege dans le bon sens (test_pietons_anim). Main qui se dechire de la tante : amplitude des gestes de dialogue reduite (geste_amplitude). Tete des PNJ redressee vers l'horizontale (test_tete). Tous les PNJ a pied ont un corps solide (PnjUtil.ajouter_corps). Avions et epave : collisions double face et montants ronds aux portes (plus de joueur coince dans la carlingue, passages en biais dans test_cabine), vitres du poste plaquees sur la coque, cloisons au contour du fuselage. test_prologue contourne les PNJ, test_vie rapproche deux marcheurs, test_decor compte les tuiles de depart.
 - 23/10/2026 : correctifs des 5 captures d'Olympe : zone de prise d'article du supermarche a hauteur atteignable (lieux.gd), toits qui flottent recales sur le polygone (props.gd, tests/mesure_toits.gd), logo du maillot et textes des murs colles au support (player.gd, tests/mesure_murs.gd), zem a heler : appel, montee et arrivee corriges, la touche E ne fait plus monter le joueur conducteur (zem_taxi.gd, meta taxi_zem, test_zem_entrees). Nuit : phares de zem (zem.gd), phares de voiture plus longs (voiture.gd, 70 m), phares de la circulation en pool de 12 (traffic.gd), 40 vraies lumieres de lampadaires plus taches de lumiere au sol sur TOUS les lampadaires dans 300 m (day_night.gd). Tests OK : jeu, zem_entrees, zem_taxi, decor, densite, tuiles, pietons_anim, perso, circulation.
+- 23/10/2026 (mission technique) : eau praticable en pataugeant (carte.gd dans_eau, player.gd), vehicules de la circulation qui renversent les passants avec perte de points de vie (pedestrians.gd), filet anti-batiment pour tous les etats des passants, feux tricolores (121) et STOP (256) lus par la circulation (scripts/signalisation.gd), trafic variable selon l'heure (traffic.gd _densite_horaire), feux de freinage des PNJ, camion veh_camion (Blender CAMION) dans la circulation et conduisible, braquage des commerces (scripts/braquage.gd), marche arriere des voitures sans derapage (voiture.gd : geometrie d'Ackermann des qu'on recule, derive 0,40 rad -> 0,00 mesuree par test_marche_arriere), portails battants qui s'ouvrent en s'ecartant de la personne (lieux.gd), policiers a pied clignotants sur la mini-carte, stations-service sur la mini-carte. Nouveaux tests : test_eau, test_pieton_heurte, test_pieton_batiment, test_feux, test_densite_horaire, test_camions, test_braquage, test_marche_arriere, test_portail_sens.
 
 ## 6. PROMPT DE PASSATION (a copier tel quel dans un autre Claude ou agent IA)
 
@@ -307,7 +329,7 @@ CONVENTIONS
 - Tout son est synthetise (godot/scripts/audio_synth.gd) jusqu'a la Phase 19 ; tout modele est fait par script Blender (blender/tools/)
 
 ETAT ACTUEL (23/10/2026)
-- 23/10 : nuit eclairee (phares zem/voitures/circulation, tous les lampadaires allumes), bugs zem, supermarche, toits et textes corriges (voir journal) ; a refaire : exports Windows/Linux/Android, mesure de fluidite de nuit, test_tenue et test_circulation sans ligne RESULTAT.
+- 23/10 : nuit eclairee, bugs zem/supermarche/toits/textes, puis mission technique (section 4 bis de la roadmap) : eau, collisions PNJ/vehicules, feux tricolores et STOP, trafic horaire, camions, feux de freinage, braquage des commerces, marche arriere, portails. Reste de la section 4 bis a faire (evitement par contournement, passages pietons, limitations, deplacements du personnage, moto, aeroport, vegetation, facades). A refaire : exports apres ce lot, mesure de fluidite de nuit, test_tenue et test_circulation sans ligne RESULTAT.
 - Le jeu est jouable du lancement (ecran titre au logo anime, Nouvelle partie) a la fin de l'acte 1 ("A suivre"). Plein ecran par
   defaut. Exports Windows (0.7.1), Linux et Android (APK de debug 0.1.5, code 7) refaits le 22/10 apres le correctif de lag ; icone = nouveau logo GTB (godot/icone.png). Amelioration des personnages (visage, baskets, fesses) : maquette validee mais integration abandonnee par Olympe le 22/10 (resultat juge pire dans le jeu), scripts gardes dans blender/tools/maquette_perso*.py, modeles du jeu inchanges. test_tenue (voitures) ne se termine pas : a examiner.
 - Systemes ajoutes depuis le 16/10 (tous testes par godot/tests/test_*.gd) :
