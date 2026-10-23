@@ -275,10 +275,8 @@ func _apply(mi: MeshInstance3D) -> void:
 		mat = _ground_mats["terre_plein"]
 	elif n.begins_with("zone_herbe") or n.begins_with("zone_humide"):
 		mat = _ground(8)
-	elif n.begins_with("zone_piscine"):
-		mat = _ground(9, Color(0.3, 0.68, 0.78))
-	elif n.begins_with("zone_eau"):
-		mat = _ground(9, Color(0.3, 0.4, 0.38))
+	elif n.begins_with("zone_piscine") or n.begins_with("zone_eau"):
+		mat = _eau(n.begins_with("zone_eau"))
 	elif n == "mer":
 		mi.visible = false
 		return
@@ -315,3 +313,20 @@ func _sol_plage(mi: MeshInstance3D) -> void:
 	cs.shape = mi.mesh.create_trimesh_shape()
 	body.add_child(cs)
 	mi.add_child(body)
+
+
+const EAU_BASSIN := preload("res://shaders/eau_bassin.gdshader")
+var _eaux := {}
+
+
+func _eau(trouble: bool) -> ShaderMaterial:
+	## Piscine claire ou bassin de retention vaseux : eau transparente animee (shaders/eau_bassin.gdshader).
+	if not _eaux.has(trouble):
+		var m := ShaderMaterial.new()
+		m.shader = EAU_BASSIN
+		m.set_shader_parameter("trouble", 0.85 if trouble else 0.0)
+		m.set_shader_parameter("couleur_peu_profonde", Color(0.32, 0.38, 0.28) if trouble else Color(0.25, 0.75, 0.82))
+		m.set_shader_parameter("couleur_profonde", Color(0.12, 0.2, 0.15) if trouble else Color(0.03, 0.3, 0.46))
+		m.render_priority = 1
+		_eaux[trouble] = m
+	return _eaux[trouble]

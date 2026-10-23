@@ -174,6 +174,10 @@ func _frapper() -> void:
 		var cibles := get_tree().get_nodes_in_group("pnj_interieur") + get_tree().get_nodes_in_group("cibles_coups")
 		if _peds:
 			cibles.append(_peds)
+		for nom_c in ["Circulation", "Police"]:
+			var extra := get_parent().get_node_or_null(nom_c)
+			if extra:
+				cibles.append(extra)
 		for tg in cibles:
 			if is_instance_valid(tg) and tg.player_attack(_player.global_position, fwd, 2, float(a["degats"]) * (0.6 if violence_reduite else 1.0), float(a["portee"]), true):
 				touche = true

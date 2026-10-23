@@ -560,8 +560,17 @@ def vehicle(name, sp):
     for s in (-1, 1):
         lx = s * (gw / 2 + lw / 2 + 0.02) if sp.get("lamp_hug") else s * (cf["hw"] - 0.25)
         lh = sp["lamp_h"]
-        det.box(M["black"], (lx, yf - 0.025, fz), (lw + 0.03, 0.1, lh + 0.04), rz=-s * sweep)
-        det.box(M["lamp"], (lx, yf + 0.024, fz), (lw, 0.012, lh * 0.92), rz=-s * sweep)     # glace (s'allume la nuit)
+        # boitier enfonce dans la caisse (il ne depasse presque pas) ; glace en dome : une rangee de lentilles bombees dans une
+        # collerette chromee, comme une vraie optique (et non une planche collee sur le pare-chocs)
+        det.box(M["black"], (lx, yf - 0.05, fz), (lw + 0.03, 0.1, lh + 0.04), rz=-s * sweep, smooth=True)
+        r_l = lh * 0.46
+        n_l = max(1, int(round(lw / (lh * 0.95))))
+        for q in range(n_l):
+            dx = (q - (n_l - 1) / 2) * (lw - 2 * r_l) / max(n_l - 1, 1) if n_l > 1 else 0.0
+            cx = lx + dx
+            cz = fz - dx * math.tan(-s * sweep) * 0.0
+            det.lathe_y(M["chrome"], (cx, yf + 0.0, cz), [(0.0, r_l * 1.1), (0.016, r_l * 1.1), (0.016, r_l * 0.97)], 16, cap=False)
+            det.lathe_y(M["lamp"], (cx, yf + 0.0, cz), [(0.0, r_l), (0.012, r_l * 0.98), (0.024, r_l * 0.78), (0.03, r_l * 0.4), (0.032, 0.0)], 16)   # glace bombee (s'allume la nuit)
         det.box(M["chrome"], (lx, yf + 0.03, fz + lh * 0.5), (lw + 0.01, 0.014, 0.012), rz=-s * sweep)
         det.box(M["chrome"], (lx, yf + 0.03, fz - lh * 0.5), (lw + 0.01, 0.014, 0.012), rz=-s * sweep)
         det.box(M["lamp"], (lx + s * lw * 0.44, yf - 0.02, fz - lh * 0.3), (0.05, 0.01, 0.015), rz=-s * sweep)
@@ -897,9 +906,129 @@ CAMION = dict(L=7.1, W=2.2, wb=4.1, r=0.42, track=1.86, tire_w=0.28, spokes=6, b
     mirror_y=2.9, wiper_y=3.15, doors=[2.15], door_lines=[2.95, 1.4], strip_z=1.0,
     seat_rows=[2.3], seat_z=0.98, dash_y=3.1,
     grille="wide", grille_w=1.1, lamp_hug=True, lamp_w=0.4, lamp_sweep=0.0, badge_r=0.07, brand="TOYODA", model="CAMIO")
-MODELES = {"veh_camion": CAMION, "veh_berline": SEDAN, "veh_4x4": SUV, "veh_minibus": MINIBUS, "veh_pickup": PICKUP, "veh_pejo": PEJO, "veh_mersede": MERSEDE}
+# Citadine a hayon (3,95 x 1,68 x 1,50 m, empattement 2,45 m) : les petites voitures d'occasion importees d'Europe, tres
+# courantes a Cotonou (compacte a hayon, 5 portes). Hayon quasi vertical, capot court.
+HATCH = dict(L=3.95, W=1.68, wb=2.45, r=0.29, track=1.44, tire_w=0.18, spokes=5, stations=[
+    S(-1.97, 0.38, 0.9, 1.05, 0.74, 0.6),
+    S(-1.9, 0.3, 0.98, 1.45, 0.82, 0.64, win=True),
+    S(-1.3, 0.26, 0.98, 1.5, 0.84, 0.66, win=True),
+    S(-0.5, 0.25, 0.97, 1.52, 0.84, 0.66),
+    S(-0.4, 0.25, 0.97, 1.52, 0.84, 0.66, win=True),
+    S(0.3, 0.25, 0.96, 1.5, 0.84, 0.66, win=True, top="glass"),
+    S(1.0, 0.26, 0.9, 0.93, 0.84, 0.7),
+    S(1.6, 0.27, 0.8, 0.82, 0.82, 0.68),
+    S(1.9, 0.3, 0.72, 0.73, 0.76, 0.6),
+    S(1.98, 0.36, 0.64, 0.65, 0.68, 0.5),
+], bumper_z=0.42, bumper_h=0.2, lamp_z=0.64, lamp_h=0.11, grille_h=0.1, tail_z=0.9, tail_h=0.2, rear_plate_z=0.66,
+    mirror_y=0.8, wiper_y=0.9, doors=[0.1, -0.7], door_lines=[0.9, -0.3, -1.1], strip_z=0.55,
+    seat_rows=[-0.05, -0.85], seat_z=0.47, dash_y=0.62,
+    grille="oval", grille_w=0.44, lamp_hug=True, lamp_w=0.4, lamp_sweep=0.2, brand="NIPPA", model="MIKRA")
+
+# Monospace familial (4,80 x 1,82 x 1,75 m, empattement 2,90 m) : taxi collectif et voiture de famille (type Previa / Sienna).
+MONOSPACE = dict(L=4.8, W=1.82, wb=2.9, r=0.32, track=1.56, tire_w=0.2, spokes=6, stations=[
+    S(-2.4, 0.4, 1.0, 1.55, 0.88, 0.76),
+    S(-2.34, 0.34, 1.05, 1.68, 0.92, 0.8, win=True),
+    S(-1.4, 0.3, 1.06, 1.72, 0.92, 0.8),
+    S(-1.3, 0.3, 1.06, 1.72, 0.92, 0.8, win=True),
+    S(-0.4, 0.3, 1.05, 1.72, 0.92, 0.8),
+    S(-0.3, 0.3, 1.05, 1.72, 0.92, 0.8, win=True),
+    S(0.5, 0.3, 1.02, 1.68, 0.92, 0.8, win=True, top="glass"),
+    S(1.25, 0.3, 0.95, 0.98, 0.9, 0.78),
+    S(2.0, 0.32, 0.85, 0.88, 0.86, 0.7),
+    S(2.4, 0.4, 0.75, 0.77, 0.8, 0.62),
+], bumper_z=0.45, bumper_h=0.22, lamp_z=0.72, lamp_h=0.12, grille_h=0.12, tail_z=0.95, tail_h=0.24, rear_plate_z=0.7,
+    mirror_y=1.05, wiper_y=1.15, doors=[0.35, -0.5], door_lines=[1.0, -0.1, -1.0], strip_z=0.6,
+    seat_rows=[0.2, -0.7, -1.5], seat_z=0.6, dash_y=1.0,
+    grille="oval", grille_w=0.5, lamp_hug=True, lamp_w=0.44, lamp_sweep=0.3, brand="TOYODA", model="PREVIA")
+
+# Camion a plateau (6,40 x 2,20 x 2,60 m, empattement 3,90 m) : transport de materiaux, sacs, parpaings, bois.
+PLATEAU = dict(L=6.4, W=2.2, wb=3.9, r=0.42, track=1.86, tire_w=0.28, spokes=6, bumper_mat="black", bed=(-3.1, 0.65, 1.05), stations=[
+    S(-3.2, 0.62, 1.02, 1.06, 1.0, 0.94),
+    S(-3.12, 0.56, 1.05, 1.1, 1.08, 1.0),
+    S(0.6, 0.56, 1.05, 1.1, 1.08, 1.0),
+    S(0.7, 0.52, 1.5, 2.55, 1.06, 0.94, win=True),
+    S(1.1, 0.52, 1.5, 2.58, 1.06, 0.94),
+    S(1.2, 0.52, 1.5, 2.58, 1.06, 0.94, win=True),
+    S(2.0, 0.52, 1.48, 2.55, 1.05, 0.93, win=True, top="glass"),
+    S(2.5, 0.56, 1.2, 1.3, 1.03, 0.9),
+    S(2.65, 0.62, 1.0, 1.05, 0.96, 0.84),
+], bumper_z=0.66, bumper_h=0.26, lamp_z=0.98, lamp_h=0.17, grille_h=0.34, tail_z=1.0, tail_h=0.26, rear_plate_z=0.82,
+    mirror_y=1.9, wiper_y=2.1, doors=[1.55], door_lines=[2.1, 0.9], strip_z=1.0,
+    seat_rows=[1.35], seat_z=0.98, dash_y=2.0,
+    grille="wide", grille_w=1.1, lamp_hug=True, lamp_w=0.4, lamp_sweep=0.0, badge_r=0.07, brand="TOYODA", model="DINO")
+
+# Autobus urbain (10,40 x 2,50 x 3,10 m, empattement 5,50 m) : grands cars de ligne et de ramassage, une vitre par rangee.
+_bus_st = [S(-5.2, 0.5, 1.05, 2.9, 1.2, 1.1, top=None), S(-5.1, 0.45, 1.1, 3.0, 1.25, 1.12, win=True)]
+for _y in (-4.0, -2.7, -1.4, -0.1, 1.2, 2.5):
+    _bus_st.append(S(_y, 0.45, 1.1, 3.0, 1.25, 1.12))
+    _bus_st.append(S(_y + 0.1, 0.45, 1.1, 3.0, 1.25, 1.12, win=True))
+_bus_st += [S(3.6, 0.45, 1.1, 3.0, 1.25, 1.12, win=True, top="glass"), S(4.9, 0.5, 1.0, 1.15, 1.22, 1.1), S(5.2, 0.6, 0.9, 0.95, 1.12, 0.98)]
+BUS = dict(L=10.4, W=2.5, wb=5.5, r=0.5, track=2.1, tire_w=0.3, spokes=8, stations=_bus_st,
+    bumper_z=0.6, bumper_h=0.3, lamp_z=0.85, lamp_h=0.18, grille_h=0.3, tail_z=1.0, tail_h=0.4, rear_plate_z=0.8,
+    mirror_y=4.3, wiper_y=4.5, doors=[3.9], door_lines=[4.5, 3.2], strip_z=1.0,
+    seat_rows=[4.0], seat_z=1.0, dash_y=4.4,
+    grille="bars", grille_w=1.0, lamp_hug=True, lamp_w=0.42, lamp_sweep=0.0, brand="TOYODA", model="COASTA")
+
+
+def tube(det, m, a, b, t):
+    """Tube entre deux points du plan de symetrie (y, z) du velo, epaisseur t : boite alignee par rotation autour de X."""
+    dy, dz = b[0] - a[0], b[1] - a[1]
+    length = math.hypot(dy, dz)
+    ang = math.atan2(dz, dy) - math.pi / 2          # la boite a son grand axe le long de Y local : on le tourne vers (dy, dz)
+    ang = -(math.pi / 2 - math.atan2(dz, dy)) if False else math.atan2(dz, dy)
+    det.box(m, (0.0, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2), (t, length, t), rx=ang)
+
+
+def velo():
+    """Velo de ville a roues de 28 pouces (1,75 m de long), cadre en acier, porte-bagages : le deux-roues le plus courant apres
+    le zem, pour les ecoliers, les vendeurs ambulants et les travailleurs. Repères : poignee_-1 / poignee_1 (mains),
+    cale_pied_-1 / cale_pied_1 (pedales)."""
+    reset()
+    M = mats()
+    root = empty("veh_velo", (0, 0, 0))
+    det = Mesh("veh_velo_details")
+    cadre = M["black"]
+    ft = 0.032
+    ra, fa = (-0.55, 0.34), (0.55, 0.34)             # axes des roues (y, z)
+    bb, selle, tete_h, tete_b = (0.0, 0.3), (-0.14, 0.9), (0.4, 0.88), (0.46, 0.68)
+    tube(det, cadre, bb, selle, ft)
+    tube(det, cadre, selle, tete_h, ft)
+    tube(det, cadre, bb, tete_b, ft * 1.2)
+    tube(det, cadre, tete_h, tete_b, ft * 1.3)
+    tube(det, cadre, bb, ra, ft * 0.8)
+    tube(det, cadre, selle, ra, ft * 0.8)
+    for s in (-1, 1):
+        det.box(cadre, (s * 0.05, (tete_b[0] + fa[0]) / 2, (tete_b[1] + fa[1]) / 2), (ft, math.hypot(fa[0] - tete_b[0], fa[1] - tete_b[1]), ft), rx=math.atan2(fa[1] - tete_b[1], fa[0] - tete_b[0]))
+    # potence, guidon, poignees, selle, porte-bagages, garde-boue, pedales
+    tube(det, cadre, tete_h, (0.38, 1.0), ft)
+    det.box(M["chrome"], (0.0, 0.38, 1.02), (0.56, 0.025, 0.025))
+    for s in (-1, 1):
+        det.box(M["tire"], (s * 0.29, 0.38, 1.02), (0.1, 0.035, 0.035))
+        det.box(M["chrome"], (s * 0.1, 0.0, 0.3), (0.1, 0.1, 0.025))                 # pedale
+    det.box(M["tire"], (0.0, selle[0] - 0.02, selle[1] + 0.03), (0.15, 0.27, 0.06), smooth=True)   # selle
+    det.box(M["rack"], (0.0, -0.62, 0.72), (0.18, 0.34, 0.02))                     # porte-bagages
+    for s in (-1, 1):
+        det.box(M["rack"], (s * 0.07, -0.6, 0.52), (0.02, 0.02, 0.42), rx=0.0)
+        det.box(M["rack"], (s * 0.06, 0.52, 0.34), (0.02, 0.035, 0.012))
+    det.lathe_x(M["chrome"], (0.0, 0.0, 0.3), [(-0.07, 0.07), (0.07, 0.07)], 10)    # boitier de pedalier
+    det.lathe_y(M["black"], (0.0, 0.5, 0.82), [(0.0, 0.03), (0.04, 0.03)], 8)         # jeu de direction
+    det.lathe_y(M["lamp"], (0.0, 0.42, 0.98), [(0.0, 0.035), (0.03, 0.03), (0.05, 0.0)], 10)   # petit phare
+    det.obj(root)
+    for tag, (y, z) in (("ar", ra), ("av", fa)):
+        piv = empty("piv_roue_" + tag, (0.0, y, z), root)
+        wheel(M, "veh_velo_roue_" + tag, piv, 0.34, 0.04, 1, 14)
+    for s in (-1, 1):
+        empty("poignee_%d" % s, (s * 0.29, 0.38, 1.02), root)
+        empty("cale_pied_%d" % s, (s * 0.12, 0.0, 0.3), root)
+    empty("pt_conducteur", (0.0, selle[0], selle[1] + 0.05), root)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_BLEND_DIR, "veh_velo.blend"))
+    bpy.ops.export_scene.gltf(filepath=os.path.join(OUT_GLB_DIR, "veh_velo.glb"), export_format="GLB", export_apply=True, export_yup=True)
+    print("Velo : ok")
+MODELES = {"veh_hatch": HATCH, "veh_monospace": MONOSPACE, "veh_plateau": PLATEAU, "veh_bus": BUS, "veh_camion": CAMION, "veh_berline": SEDAN, "veh_4x4": SUV, "veh_minibus": MINIBUS, "veh_pickup": PICKUP, "veh_pejo": PEJO, "veh_mersede": MERSEDE}
 CHOIX = os.environ.get("GTB_VEH", "")   # noms separes par des virgules (vide = tous)
 for nm, sp in MODELES.items():
     if CHOIX and nm not in CHOIX.split(","):
         continue
     vehicle(nm, sp)
+if not CHOIX or "veh_velo" in CHOIX.split(","):
+    velo()

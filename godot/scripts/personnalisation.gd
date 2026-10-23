@@ -86,6 +86,14 @@ func Partie_wax_count() -> int:
 
 func _placer() -> void:
 	## Boutiques et proprietes au bord de la rue la plus proche : auvent, enseigne ; points d'achat du commerce.
+	# garde-robe de depart : quelques vetements dans l armoire de la maison des le premier jour (une seule fois)
+	if not Partie.drapeaux.get("garde_robe_depart", false):
+		Partie.drapeaux["garde_robe_depart"] = true
+		var gr: Array = Partie.drapeaux.get("garde_robe", [])
+		for nom in ["T-shirt %s" % TSHIRTS.keys()[0], "T-shirt %s" % TSHIRTS.keys()[mini(1, TSHIRTS.size() - 1)], "Jean délavé", "Sandales", "Baskets", "Boubou wax sur mesure (motif 1)"]:
+			if not gr.has(nom):
+				gr.append(nom)
+		Partie.drapeaux["garde_robe"] = gr
 	var com := get_node_or_null("../Commerce")
 	var carte := Carte.zone()
 	var tout := {}

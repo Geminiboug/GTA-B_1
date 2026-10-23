@@ -197,6 +197,7 @@ func _fabriquer(at: Vector2, chemin: PackedVector2Array) -> Node3D:
 	PnjUtil.apply(pilote, PnjUtil.random_look(pilote, _rng, "zem"))
 	PnjUtil.pose_seated(pilote)
 	pilote.position = Vector3(0, -0.05, 0.12)
+	pilote.tree_entered.connect(func() -> void: Squelette.poser_sur_moto(pilote, z), CONNECT_ONE_SHOT)
 	return z
 
 

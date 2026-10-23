@@ -69,3 +69,9 @@ Coche au fur et à mesure (`[x]`). Tout est rangé du plus utile au moins urgent
 
 - Agrandir la carte (validé le 18/10/2026) : d'abord Fidjrossè à l'ouest, puis le centre avec le grand marché, et avant ça le chargement par morceaux. Je m'y mets après avoir fini les tâches en cours des Phases 11 et 12.
  QW26P0-K
+## 4 quater. Photos et verifications demandees par le travail du 23/10/2026
+- Photos du monument aux Amazones (face, profil, dos, socle) dans refs/monuments/amazone/ : la statue actuelle est une forme simplifiee.
+- Photos d'EPITECH Benin / Seme City (batiments, entree, routes d'acces) dans refs/etipech/ ; coordonnees exactes du campus (clic droit sur la carte).
+- Photos des feux tricolores, STOP, ralentisseurs et marquages de Fidjrosse (refs/rues/) pour affiner la signalisation.
+- Regarder en jeu : le camion, la citadine, le monospace, l'autobus, les motos civiles et les velos ; les poteaux de feux et leurs emplacements ; les phares de nuit ;
+  l'interieur de la maison (lit, armoire, cuisine) ; la mort du joueur (chute et ralenti) ; l'eau des bassins.

@@ -21,7 +21,10 @@ const INVENTAIRE_DEPART := {"Smartphone": 1, "Torche": 1}   # dans les poches au
 var missions_faites: Array = []
 var chapitre := "prologue"     # prologue, acte1, fin_acte1
 var drapeaux := {}             # etapes de l'histoire, rencontres...
-var recherche := 0             # niveau de recherche (0 a 5), pas sauvegarde
+var recherche := 0             # niveau de recherche (0 a 6 etoiles, comme San Andreas), pas sauvegarde
+var points_recherche := 0.0     # "chaleur" accumulee par les delits (police.gd crime) : elle fixe le nombre d etoiles
+var recherche_clignote := false # la police a perdu la trace du joueur : les etoiles clignotent avant de disparaitre
+const SEUILS_RECHERCHE := [1.0, 50.0, 120.0, 230.0, 400.0, 650.0]   # points pour 1 a 6 etoiles
 var police_voit := false       # un agent voit le joueur (les etoiles clignotent)
 var sante := 100.0             # 0 : le joueur s'evanouit et se reveille a l'hopital
 signal sante_change(valeur: float)
@@ -201,6 +204,7 @@ func _ready() -> void:
 	add_child(journal)
 	nouvelle_partie()
 	charger_options()
+	preload("res://scripts/manette.gd").appliquer()      # disposition PlayStation par defaut de la manette
 
 
 func nouvelle_partie() -> void:
@@ -309,8 +313,28 @@ func notifier(texte: String) -> void:
 	notification.emit(texte)
 
 
+func niveau_pour_points(p: float) -> int:
+	var n := 0
+	for s in SEUILS_RECHERCHE:
+		if p >= float(s):
+			n += 1
+	return n
+
+
+func ajouter_points(p: float) -> void:
+	## Un delit ajoute de la chaleur ; les etoiles montent par paliers (plusieurs petits delits valent un gros).
+	points_recherche += p
+	recherche_clignote = false
+	set_recherche(maxi(niveau_pour_points(points_recherche), recherche))
+
+
 func set_recherche(n: int) -> void:
-	n = clampi(n, 0, 5)
+	n = clampi(n, 0, 6)
+	if n == 0:
+		points_recherche = 0.0
+		recherche_clignote = false
+	elif niveau_pour_points(points_recherche) != n:
+		points_recherche = float(SEUILS_RECHERCHE[n - 1])
 	if n != recherche:
 		recherche = n
 		recherche_change.emit(n)

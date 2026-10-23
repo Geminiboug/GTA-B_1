@@ -57,7 +57,7 @@ var _roads: Array = []
 var _signs: Node3D
 var counts := {}
 var lamp_positions := PackedVector3Array()
-const CAR_KINDS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup"]
+const CAR_KINDS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup", "veh_hatch", "veh_monospace"]
 var _chunk_nodes := {}
 var parked: Array = []                      # voitures garees {model, xf, color} (conduites par le joueur)
 var vendor_types := {}                     # Vector2i(x * 4, z * 4) d'une place de vendeur -> marchandise (pain, fruits, arachides, eau, legumes, kpayo, maquis)
@@ -81,7 +81,7 @@ var _devantures: Array = []   # [milieu, normale vers la rue, longueur, batiment
 signal placement_done  # tetes de lampadaires (lues par day_night.gd pour l'eclairage de nuit)
 
 const VIS := {"prop_poteau": 450.0, "prop_poteau_transfo": 450.0, "prop_lampadaire": 450.0, "toit_citerne": 350.0, "toit_fers": 200.0, "toit_parabole": 220.0, "veh_berline": 300.0, "veh_pejo": 300.0, "veh_mersede": 300.0,
-	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0,
+	"veh_4x4": 300.0, "veh_minibus": 300.0, "veh_pickup": 300.0, "veh_hatch": 300.0, "veh_monospace": 300.0, "prop_panneau_pub": 600.0, "zem_gare": 200.0,
 	"rue_parasol": 160.0, "rue_sable": 140.0, "rue_parpaings": 140.0}
 
 
@@ -437,7 +437,12 @@ func _facing(dir2: Vector2) -> Basis:
 
 
 # ---------------------------------------------------------------- reseau electrique et eclairage
+var _poteaux_tuile: Array = []      # poteaux poses dans la tuile en cours (pour relier les bouts de ligne)
+var _liens := {}                     # paires de poteaux deja reliees par des cables (cle triee)
+
+
 func _place_poles_and_lamps(routes: Array) -> void:
+	_poteaux_tuile = []
 	for ri in routes:
 		var r: Dictionary = _roads[ri]
 		var kind: String = r["kind"]
@@ -471,6 +476,7 @@ func _place_poles_and_lamps(routes: Array) -> void:
 			for x in [-0.75, 0.0, 0.75]:
 				attach.append(xf * Vector3(x, 8.55, 0))
 			_poteaux[Vector2i(ri, k)] = attach
+			_poteaux_tuile.append(Vector2i(ri, k))
 			for voisin in [k - 1, k + 1]:
 				var autre: Array = _poteaux.get(Vector2i(ri, voisin), [])
 				if autre.size() == 3:
@@ -502,6 +508,7 @@ func _place_poles_and_lamps(routes: Array) -> void:
 				_cyl_col(xf.origin, 0.2, 8.5)
 				lamp_positions.append(xf * Vector3(0, 8.1, -1.75))
 			)
+	_raccorder_lignes()
 
 
 func _place_promenade_lamps(prom: Array) -> void:
@@ -615,7 +622,7 @@ func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -
 			_occupy(pos, radius)
 			var dir := t if _rng.randf() < 0.5 else -t
 			var r := _rng.randf()
-			var model := Vehicules.berline(r / 0.55) if r < 0.55 else ("veh_4x4" if r < 0.78 else ("veh_pickup" if r < 0.9 else "veh_minibus"))
+			var model := Vehicules.berline(r / 0.42) if r < 0.42 else ("veh_hatch" if r < 0.55 else ("veh_4x4" if r < 0.68 else ("veh_monospace" if r < 0.78 else ("veh_pickup" if r < 0.9 else "veh_minibus"))))
 			var xf := Transform3D(_facing(dir), Vector3(pos.x, y, pos.y))
 			var col: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
 			var slot := _add(model, xf, col)
@@ -1222,3 +1229,41 @@ func _place_chantiers(lot: Array) -> void:
 			n = -n
 		if _pose_kit("rue_sable", mid + n * 1.6, t, 1.0):
 			_pose_kit("rue_parpaings", mid + n * 0.9 + t * 2.0, n, 0.7)
+
+
+func _raccorder_lignes() -> void:
+	## Aucun cable ne part dans le vide : le bout d'une ligne (carrefour, poteau voisin manquant) est relie au poteau d'une
+	## autre ligne le plus proche (moins de 45 m), comme un reseau reel qui se continue au carrefour.
+	for cle in _poteaux_tuile:
+		var attach: Array = _poteaux.get(cle, [])
+		if attach.size() != 3:
+			continue
+		var voisins := 0
+		for v in [cle.y - 1, cle.y + 1]:
+			if _poteaux.has(Vector2i(cle.x, v)):
+				voisins += 1
+		if voisins >= 2:
+			continue
+		var pos: Vector3 = attach[1]
+		var meilleur := Vector2i(-1, -1)
+		var bd := 45.0
+		for autre in _poteaux:
+			if autre.x == cle.x:
+				continue
+			var a2: Array = _poteaux[autre]
+			if a2.size() != 3:
+				continue
+			var d := pos.distance_to(a2[1])
+			if d < bd and d > 3.0:
+				bd = d
+				meilleur = autre
+		if meilleur.x < 0:
+			continue
+		var paire := [cle, meilleur]
+		paire.sort()
+		if _liens.has(paire):
+			continue
+		_liens[paire] = true
+		var a3: Array = _poteaux[meilleur]
+		for i in 3:
+			_wire(attach[i], a3[i])

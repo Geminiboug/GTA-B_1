@@ -663,6 +663,42 @@ def build_maison(info):
     deco.box((2.3, by0 + 2.0, z0 + 0.762), (0.9, 0.6, 0.004), mat("mat_toile_ciree", (0.85, 0.75, 0.3), 0.4))
     for cyy, crz in ((by0 + 1.35, math.pi), (by0 + 2.65, 0.0)):
         chair_wood(fur, 2.3, cyy, crz, M["wood"], z0)
+    # --- details de vie (qualite de la maison, demande d'Olympe du 23/10/2026) : tables de chevet et lampe, vetements ranges et poses,
+    # sandales, evier avec robinet, etagere de vaisselle, hotte, tapis ---
+    tissus = [mat("mat_vet_rouge", (0.8, 0.15, 0.1), 0.9), mat("mat_vet_bleu", (0.15, 0.3, 0.7), 0.9), mat("mat_vet_jaune", (0.9, 0.75, 0.15), 0.9),
+              mat("mat_vet_vert", (0.15, 0.5, 0.25), 0.9), mat("mat_vet_blanc", (0.92, 0.92, 0.9), 0.9)]
+    for sx in (-1.12, 1.12):
+        fur.rbox((bxc + sx, by1 - 0.3, z0 + 0.25), (0.42, 0.36, 0.5), M["wood_light"], 0.0, bevel=0.01)       # table de chevet
+        vis.box((bxc + sx, by1 - 0.3 - 0.185, z0 + 0.32), (0.32, 0.008, 0.14), M["wood"])                     # tiroir
+        vis.box((bxc + sx, by1 - 0.3 - 0.19, z0 + 0.32), (0.08, 0.012, 0.012), M["steel"])                    # poignee
+    deco.cyl((bxc - 1.12, by1 - 0.3, z0 + 0.5), 0.07, 0.03, M["white_plastic"], 10)                          # pied de lampe
+    deco.cyl((bxc - 1.12, by1 - 0.3, z0 + 0.53), 0.022, 0.22, M["steel"], 8)
+    deco.cyl((bxc - 1.12, by1 - 0.3, z0 + 0.75), 0.11, 0.14, M["fabric_blue"], 10, 0.07)                    # abat-jour
+    deco.cyl((bxc + 1.12, by1 - 0.3, z0 + 0.53), 0.06, 0.06, M["yellow_plastic"], 10)                        # reveil / verre d'eau
+    # vetements : pile pliee au pied du lit, chemise jetee sur le lit, sandales sous le lit
+    for k, t in enumerate(tissus[:4]):
+        deco.rbox((bxc + 0.42, by1 - 2.0, z0 + 0.57 + k * 0.035), (0.34, 0.26, 0.032), t, 0.1 * k, bevel=0.008, soft=True)
+    deco.rbox((bxc - 0.35, by1 - 1.6, z0 + 0.56), (0.5, 0.42, 0.03), tissus[1], 0.35, bevel=0.01, soft=True)
+    for sxp in (-0.12, 0.12):
+        deco.rbox((bxc - 0.2 + sxp, by1 - 2.5, z0 + 0.03), (0.1, 0.26, 0.03), M["steel"], 0.1, bevel=0.01)
+    # tringle a vetements fixee au mur a cote de l'armoire, avec cintres et habits
+    tx = 1.12
+    vis.box((tx, by0 + 2.9, z0 + 1.7), (0.02, 1.0, 0.02), M["steel"])
+    for k in range(5):
+        yy = by0 + 2.5 + k * 0.2
+        vis.box((tx, yy, z0 + 1.66), (0.02, 0.02, 0.06), M["steel"])
+        deco.rbox((tx + 0.0, yy, z0 + 1.38), (0.04, 0.34, 0.5), tissus[k % 5], 0.0, bevel=0.01, soft=True)       # habit suspendu
+    # cuisine : evier + robinet, etagere, vaisselle, hotte, tapis
+    deco.rbox((kx0 + 1.0, by0 + 3.2, z0 + 0.9), (0.5, 0.4, 0.02), M["steel"], 0.0, bevel=0.004)             # bac d'evier
+    deco.cyl((kx0 + 1.0, by0 + 3.4, z0 + 1.0), 0.015, 0.2, M["steel"], 8)                                      # robinet
+    deco.box((kx0 + 1.0, by0 + 3.34, z0 + 1.1), (0.02, 0.1, 0.02), M["steel"])
+    fur.box((kx0 + 1.05, by0 + 3.42, z0 + 1.62), (1.7, 0.2, 0.03), M["wood"])                                   # etagere
+    for k in range(5):
+        deco.cyl((kx0 + 0.45 + k * 0.3, by0 + 3.42, z0 + 1.7), 0.09, 0.03, M["white_plastic"], 12)             # assiettes
+    deco.cyl((kx0 + 0.45, by0 + 3.42, z0 + 1.7), 0.09, 0.12, M["white_plastic"], 12)
+    deco.box((kx0 + 0.6, by0 + 3.34, z0 + 1.95), (0.75, 0.4, 0.14), M["white_plastic"])                      # hotte
+    deco.cyl((kx0 + 0.6, by0 + 3.2, z0 + 1.55), 0.015, 0.0 + 0.001, M["steel"], 6)
+    deco.rbox((2.3, by0 + 2.0, z0 + 0.008), (1.3, 0.8, 0.012), tissus[2], 0.0, bevel=0.004)                  # tapis sous la table
     empty("lumiere_neon_cuisine", (3.2, by0 + 1.8, bh - 0.2), root)
     empty("lumiere_ampoule_veranda", (0, by0 - 1.2, 2.85), root)
     # cour : chaises et table en plastique, fil a linge, compteur electrique, manguier (en pot... non : en terre)
@@ -1235,9 +1271,10 @@ def build_terminal(info, landside_target):
                               ("hall", (P(-18, 3)[0], P(-18, 3)[1], 4.5), (78, 0, math.degrees(ang) - 35), 22)])
 
 
-if "maison" in LIEUX:
+SEL = os.environ.get("GTB_LIEUX", "")       # noms separes par des virgules (vide = tous)
+if "maison" in LIEUX and (not SEL or "maison" in SEL.split(",")):
     build_maison(LIEUX["maison"])
-if "ararat" in LIEUX:
+if "ararat" in LIEUX and (not SEL or "ararat" in SEL.split(",")):
     build_ararat(LIEUX["ararat"], bl((620.0, 20.0)))          # entree face au parking (grande facade nord)
-if "terminal" in LIEUX:
+if "terminal" in LIEUX and (not SEL or "terminal" in SEL.split(",")):
     build_terminal(LIEUX["terminal"], bl((397.0, -300.0)))    # cote ville (parvis et auvent)

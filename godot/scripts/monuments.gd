@@ -8,6 +8,8 @@ extends Node3D
 @export var calvaire_yaw := 0.0                              # degres : ouverture des marches vers -Z (nord)
 @export var bio_guera_pos := Vector3(679.0, 0.0, -30.0)    # centre du rond-point (donnees OSM)
 @export var bio_guera_yaw := 180.0                           # degres : le cheval regarde vers -Z (nord)
+@export var amazone_pos := Vector3(2890.0, 0.0, 109.0)     # monument aux Amazones (lat 6,3489 N, lon 2,4075 E), esplanade des Amazones
+@export var amazone_yaw := 0.0                               # degres : la statue regarde vers -Z (nord, le palais de la Marina)
 
 const BLANC_VIEILLI := Color(0.88, 0.87, 0.82)
 const OCRE := Color(0.82, 0.72, 0.55)
@@ -21,6 +23,7 @@ var _mats := {}
 func _ready() -> void:
 	_calvaire()
 	_bio_guera()
+	_amazone()
 
 
 func _mat(c: Color, rough := 0.9) -> StandardMaterial3D:
@@ -121,3 +124,12 @@ func _bio_guera() -> void:
 	b.position = bio_guera_pos
 	b.rotation.y = deg_to_rad(bio_guera_yaw)
 	add_child(b)
+
+
+func _amazone() -> void:
+	var a := Node3D.new()
+	a.name = "Amazone"
+	a.set_script(preload("res://scripts/monument_amazone.gd"))
+	a.position = amazone_pos
+	a.rotation.y = deg_to_rad(amazone_yaw)
+	add_child(a)

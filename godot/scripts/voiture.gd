@@ -991,6 +991,7 @@ func _physics_process(delta: float) -> void:
 				enfoncer(c.get_position(), n, impact)
 				crashed.emit(impact, c.get_collider())
 				get_tree().call_group("circulation", "on_vehicle_hit", c.get_collider(), impact)
+				get_tree().call_group("collisions_vehicules", "choc_vehicule", self, c.get_collider(), n2, before, c.get_position(), impact)
 	# filet de securite : jamais sous la carte (retour au dernier endroit sur, a l'arret)
 	# (sous le fond marin des limites du monde, -1,2 m : l estran de la plage descend jusque-la)
 	if global_position.y < -2.0:

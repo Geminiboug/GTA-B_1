@@ -5,7 +5,8 @@ class_name Vehicules
 const MODELS := {"veh_berline": "res://assets/models/veh_berline.glb", "veh_4x4": "res://assets/models/veh_4x4.glb",
 	"veh_minibus": "res://assets/models/veh_minibus.glb", "veh_pickup": "res://assets/models/veh_pickup.glb",
 	"veh_pejo": "res://assets/models/veh_pejo.glb", "veh_mersede": "res://assets/models/veh_mersede.glb",
-	"veh_camion": "res://assets/models/veh_camion.glb"}
+	"veh_camion": "res://assets/models/veh_camion.glb", "veh_hatch": "res://assets/models/veh_hatch.glb",
+	"veh_monospace": "res://assets/models/veh_monospace.glb", "veh_plateau": "res://assets/models/veh_plateau.glb", "veh_bus": "res://assets/models/veh_bus.glb"}
 ## Berlines (memes reglages de camera, de son et d usure que la berline d origine) : Toyoda Koralo, Pejo 460, Mersede 109
 const BERLINES := ["veh_berline", "veh_pejo", "veh_mersede"]
 
@@ -35,6 +36,23 @@ const TUNING := {
 		"regime_couple": 2300.0, "regime_max": 4500.0, "rapports": [4.3, 2.35, 1.45, 1.0, 0.82], "pont": 4.1,
 		"part_motrice": 0.45, "trainee": 0.95, "repartition_avant": 0.58, "hauteur_cg": 0.72,
 		"rigidite_avant": 10.0, "rigidite_arriere": 11.0},
+	# vraies caracteristiques (ordres de grandeur des fiches constructeur) : citadine 1,0 l 69 ch, monospace 2,4 l 135 ch,
+	# camion a plateau 3,0 l diesel 150 ch (3,3 t a vide), autobus 4,2 l diesel (8,5 t)
+	"veh_hatch": {"max_speed": 44.0, "grip": 0.93, "roll_factor": 0.012, "masse": 1000.0, "couple_max": 95.0,
+		"regime_couple": 4000.0, "regime_max": 6300.0, "rapports": [3.54, 1.91, 1.31, 0.97, 0.82], "pont": 4.2,
+		"part_motrice": 0.62, "trainee": 0.6, "repartition_avant": 0.62, "hauteur_cg": 0.52},
+	"veh_monospace": {"max_speed": 44.0, "grip": 0.85, "roll_factor": 0.017, "masse": 1750.0, "couple_max": 200.0,
+		"regime_couple": 3200.0, "regime_max": 5600.0, "rapports": [3.8, 2.2, 1.4, 1.0, 0.85], "pont": 4.1,
+		"part_motrice": 0.6, "trainee": 0.9, "repartition_avant": 0.56, "hauteur_cg": 0.72,
+		"rigidite_avant": 9.5, "rigidite_arriere": 11.0},
+	"veh_plateau": {"max_speed": 31.0, "grip": 0.7, "roll_factor": 0.028, "masse": 3300.0, "couple_max": 370.0,
+		"regime_couple": 2200.0, "regime_max": 3600.0, "rapports": [5.4, 3.1, 1.9, 1.3, 1.0], "pont": 4.6,
+		"part_motrice": 0.62, "trainee": 2.0, "repartition_avant": 0.5, "hauteur_cg": 1.1,
+		"rigidite_avant": 8.0, "rigidite_arriere": 10.0},
+	"veh_bus": {"max_speed": 27.0, "grip": 0.66, "roll_factor": 0.032, "masse": 8500.0, "couple_max": 800.0,
+		"regime_couple": 1800.0, "regime_max": 3000.0, "rapports": [6.4, 3.6, 2.1, 1.4, 1.0], "pont": 4.9,
+		"part_motrice": 0.65, "trainee": 4.0, "repartition_avant": 0.42, "hauteur_cg": 1.4,
+		"rigidite_avant": 7.5, "rigidite_arriere": 9.5},
 	"veh_camion": {"max_speed": 26.0, "grip": 0.7, "roll_factor": 0.03, "masse": 4800.0, "couple_max": 330.0,
 		"regime_couple": 1800.0, "regime_max": 3600.0, "rapports": [6.2, 3.4, 2.0, 1.3, 1.0], "pont": 4.6,
 		"part_motrice": 0.6, "trainee": 2.4, "repartition_avant": 0.45, "hauteur_cg": 1.3,

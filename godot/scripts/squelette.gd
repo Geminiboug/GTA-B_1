@@ -91,3 +91,65 @@ static func pose(root: Node, angles: Dictionary) -> void:
 			e = arm_rest(e + Vector3(0, 0, -0.07 if bone.ends_with("G") else 0.07), bone.right(1), inf["_arm"])
 		apply(skel, inf, bone, e)
 	skel.force_update_all_bone_transforms()
+
+
+static func ik_deux_os(skel: Skeleton3D, haut: String, bas: String, bout: String, cible_monde: Vector3, pole_monde := Vector3.ZERO) -> void:
+	## IK analytique a deux os sur un squelette fige (conducteur de moto : mains au guidon, pieds aux repose-pieds). Meme
+	## calcul que anim_ctrl._two_bone_ik, sans animation : le coude / genou pointe vers pole_monde s'il est donne.
+	var iu := skel.find_bone(haut)
+	var il := skel.find_bone(bas)
+	var ie := skel.find_bone(bout)
+	if iu < 0 or il < 0 or ie < 0:
+		return
+	var t := skel.global_transform.affine_inverse() * cible_monde
+	var gu := skel.get_bone_global_pose(iu)
+	var gl := skel.get_bone_global_pose(il)
+	var ge := skel.get_bone_global_pose(ie)
+	var a := gu.origin
+	var b := gl.origin
+	var c := ge.origin
+	var l1 := (b - a).length()
+	var l2 := (c - b).length()
+	var to_t := t - a
+	var d := clampf(to_t.length(), absf(l1 - l2) + 0.01, l1 + l2 - 0.005)
+	var dir := to_t.normalized()
+	var pole := (b - a) - dir * (b - a).dot(dir)
+	if pole_monde != Vector3.ZERO:
+		var pw := skel.global_transform.basis.inverse() * pole_monde
+		pole = pw - dir * pw.dot(dir)
+	if pole.length() < 1e-4:
+		pole = Vector3.UP.cross(dir) if absf(dir.y) < 0.9 else Vector3.RIGHT
+	pole = pole.normalized()
+	var cos_a := clampf((l1 * l1 + d * d - l2 * l2) / (2.0 * l1 * d), -1.0, 1.0)
+	var b2 := a + dir * (l1 * cos_a) + pole * (l1 * sqrt(1.0 - cos_a * cos_a))
+	var r1 := Quaternion((b - a).normalized(), (b2 - a).normalized())
+	var parent := skel.get_bone_parent(iu)
+	var pu := skel.get_bone_global_pose(parent).basis.get_rotation_quaternion() if parent >= 0 else Quaternion.IDENTITY
+	var new_gu := r1 * gu.basis.get_rotation_quaternion()
+	var lu := (pu.inverse() * new_gu).normalized()
+	skel.set_bone_pose_rotation(iu, lu)
+	var gl2 := skel.get_bone_global_pose(il)
+	var ge2 := skel.get_bone_global_pose(ie)
+	var r2 := Quaternion((ge2.origin - gl2.origin).normalized(), (a + dir * d - gl2.origin).normalized())
+	var ll := (new_gu.inverse() * (r2 * gl2.basis.get_rotation_quaternion())).normalized()
+	skel.set_bone_pose_rotation(il, ll)
+
+
+static func poser_sur_moto(personnage: Node, moto: Node3D) -> void:
+	## Mains aux deux poignees du guidon et pieds sur les repose-pieds de la moto (nœuds poignee_-1 / poignee_1,
+	## cale_pied_-1 / cale_pied_1 du modele), coudes et genoux vers l'exterieur. A appeler apres PnjUtil.pose_seated.
+	var skel := find(personnage)
+	if skel == null:
+		return
+	skel.force_update_all_bone_transforms()
+	var cote := {"Left": -1, "Right": 1}
+	for s in cote:
+		var poignee := moto.find_child("poignee_%d" % cote[s], true, false) as Node3D
+		var cale := moto.find_child("cale_pied_%d" % cote[s], true, false) as Node3D
+		var ext: Vector3 = moto.global_transform.basis.x * float(cote[s])          # vers l exterieur de la moto
+		var avant: Vector3 = -moto.global_transform.basis.z
+		if poignee:
+			ik_deux_os(skel, s + "UpperArm", s + "LowerArm", s + "Hand", poignee.global_position, ext + Vector3.DOWN * 0.3)
+		if cale:
+			ik_deux_os(skel, s + "UpperLeg", s + "LowerLeg", s + "Foot", cale.global_position + Vector3.UP * 0.05, ext + avant * 0.3)
+	skel.force_update_all_bone_transforms()

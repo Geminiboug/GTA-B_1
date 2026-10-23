@@ -1,38 +1,68 @@
 extends SceneTree
-## Verifie que les evenements manette arrivent bien sur les actions (sticks, gachettes analogiques, boutons).
-## Lancement : godot --headless --path godot --script res://tests/test_manette.gd
+## Manette : disposition PlayStation par defaut. Chaque action du jeu a un bouton (sauf le mode photo : Share + Options, gere
+## par mode_photo.gd), et deux actions d'un meme contexte (a pied, en vehicule, en avion) n'ont jamais le meme bouton.
 
-func _send_axis(axis: int, value: float) -> void:
-	var e := InputEventJoypadMotion.new()
-	e.axis = axis
-	e.axis_value = value
-	Input.parse_input_event(e)
+var frame := 0
+var scene: Node
+var fails := 0
+const CONTEXTES := {
+	"a pied": ["move_forward", "move_back", "move_left", "move_right", "look_left", "look_right", "look_up", "look_down", "sprint", "jump",
+		"attaque", "interact", "garde", "arme_suivante", "recharger", "crouch", "parler", "inventaire", "telephone", "camera_vue", "map",
+		"map_pin_hors", "pause", "heler", "torche"],
+	"en vehicule": ["move_left", "move_right", "accelerate", "brake", "handbrake", "horn", "limiteur", "interact", "parler", "camera_vue", "map", "pause",
+		"look_left", "look_right", "look_up", "look_down"],
+	"en avion": ["accelerate", "brake", "handbrake", "lacet_g", "lacet_d", "interact", "camera_vue", "map", "pause", "move_forward", "move_back",
+		"move_left", "move_right"],
+}
+const SANS_MANETTE := ["photo", "walk"]   # photo : Share + Options (mode_photo.gd) ; marche lente : inclinaison du stick
 
 
-func _send_button(index: int, pressed: bool) -> void:
-	var e := InputEventJoypadButton.new()
-	e.button_index = index
-	e.pressed = pressed
-	Input.parse_input_event(e)
+func _check(ok: bool, msg: String) -> void:
+	print(("OK    " if ok else "ECHEC ") + msg)
+	if not ok:
+		fails += 1
 
 
 func _initialize() -> void:
-	var lines: Array[String] = []
-	_send_axis(JOY_AXIS_LEFT_Y, -0.8)
-	_send_axis(JOY_AXIS_LEFT_X, 0.5)
-	_send_axis(JOY_AXIS_RIGHT_X, -1.0)
-	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.5)
-	_send_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
-	_send_button(JOY_BUTTON_A, true)
-	_send_button(JOY_BUTTON_X, true)
-	_send_button(JOY_BUTTON_Y, true)
-	Input.flush_buffered_events()
-	lines.append("stick gauche avant 0.8 -> move_forward %.2f" % Input.get_action_strength("move_forward"))
-	lines.append("stick gauche droite 0.5 -> move_right %.2f" % Input.get_action_strength("move_right"))
-	lines.append("stick droit gauche -> look_left %.2f" % Input.get_action_strength("look_left"))
-	lines.append("RT a moitie -> accelerate %.2f" % Input.get_action_strength("accelerate"))
-	lines.append("LT a fond -> brake %.2f" % Input.get_action_strength("brake"))
-	lines.append("A -> sprint %s, X -> jump %s, Y -> interact %s" % [Input.is_action_pressed("sprint"), Input.is_action_pressed("jump"), Input.is_action_pressed("interact")])
-	for l in lines:
-		print("TEST ", l)
-	quit()
+	scene = load("res://scenes/zone_aeroport.tscn").instantiate()
+	root.add_child(scene)
+
+
+func _boutons(a: String) -> Array:
+	var out := []
+	for ev in InputMap.action_get_events(a):
+		if ev is InputEventJoypadButton:
+			out.append("b%d" % (ev as InputEventJoypadButton).button_index)
+		elif ev is InputEventJoypadMotion:
+			out.append("a%d%+.0f" % [(ev as InputEventJoypadMotion).axis, (ev as InputEventJoypadMotion).axis_value])
+	return out
+
+
+func _physics_process(_d: float) -> bool:
+	frame += 1
+	if frame < 120:
+		return false
+	var sans := []
+	for a in InputMap.get_actions():
+		var s := String(a)
+		if s.begins_with("ui_") or s.begins_with("spatial_editor") or s.contains("/") or s in SANS_MANETTE:
+			continue
+		if _boutons(s).is_empty():
+			sans.append(s)
+	_check(sans.is_empty(), "toutes les actions ont un bouton de manette (sans : %s)" % ",".join(sans))
+	for ctx in CONTEXTES:
+		var vus := {}
+		var conflits := []
+		for a in CONTEXTES[ctx]:
+			if not InputMap.has_action(a):
+				continue
+			for b in _boutons(a):
+				if vus.has(b) and vus[b] != a:
+					conflits.append("%s/%s (%s)" % [vus[b], a, b])
+				vus[b] = a
+		_check(conflits.is_empty(), "%s : aucun bouton partage (%s)" % [ctx, ",".join(conflits)])
+	var ps := _boutons("sprint") == ["b0"] and _boutons("jump") == ["b2"] and _boutons("interact") == ["b3"]
+	_check(ps, "disposition PlayStation : Croix courir, Carre sauter, Triangle monter")
+	print("RESULTAT test_manette : %s" % ("OK" if fails == 0 else "%d ECHEC(S)" % fails))
+	quit(1 if fails else 0)
+	return true

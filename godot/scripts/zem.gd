@@ -189,6 +189,7 @@ func _physics_process(delta: float) -> void:
 		if abs(n.y) < 0.5 and fwd.dot(n) < -0.5:
 			if absf(speed) > 3.0:
 				get_tree().call_group("circulation", "on_vehicle_hit", get_slide_collision(i).get_collider(), absf(speed))
+				get_tree().call_group("collisions_vehicules", "choc_vehicule", self, get_slide_collision(i).get_collider(), Vector2(n.x, n.z).normalized(), Vector2(fwd.x, fwd.z) * speed, get_slide_collision(i).get_position(), absf(speed))
 			if absf(speed) > 6.0:
 				damage((absf(speed) - 6.0) * 3.0)
 			speed *= 0.2

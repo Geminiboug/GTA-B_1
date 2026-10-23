@@ -187,8 +187,8 @@ func _input(event: InputEvent) -> void:
 		_manette = true
 	elif event is InputEventKey or event is InputEventMouseButton:
 		_manette = false
-	var bascule: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == aide_touche) \
-		or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_DPAD_UP)
+	# a la manette l'aide s'efface seule (la croix haut ouvre le telephone)
+	var bascule: bool = event is InputEventKey and event.pressed and not event.echo and event.keycode == aide_touche
 	if bascule:
 		_aide_on = not _aide_on
 		_aide_t = 0.0 if _aide_on else _aide_t
@@ -209,16 +209,18 @@ func texte_aide(ctx: String, manette: bool) -> String:
 	if manette:
 		match ctx:
 			"pied":
-				l = ["Stick gauche : marcher", "Stick droit : caméra", "A (tapoter) : courir", "X : sauter / escalader",
-					"R3 : s'accroupir", "Y : monter dans un véhicule", "Croix droite : parler / acheter", "Select : carte   Croix bas : vue", "Croix gauche : inventaire (téléphone, torche)", "RB : arme   LB : viser   L3 : recharger"]
+				l = ["Stick gauche : marcher (l'inclinaison règle l'allure)", "Stick droit : caméra", "Croix : courir (tapoter)", "Carré : sauter / escalader",
+					"R3 : s'accroupir", "Triangle : monter / descendre d'un véhicule", "Rond ou R2 : frapper / tirer", "L1 ou L2 : viser / se protéger",
+					"R1 : arme suivante   L3 : recharger", "Croix directionnelle : haut téléphone, gauche inventaire, droite parler, bas vue",
+					"Share : carte   Options : pause", "Pavé tactile : héler un zem   Misc1 : torche"]
 			"zem":
-				l = ["RT : accélérer   LT : freiner", "Stick gauche : tourner", "RB : frein arrière", "L3 : klaxon",
-					"Y : descendre", "Croix droite : chercher un client", "Croix bas : limiteur 50 km/h"]
+				l = ["R2 : accélérer   L2 : freiner", "Stick gauche : tourner", "R1 : frein arrière", "L3 : klaxon",
+					"Triangle : descendre", "Droite : chercher un client", "L1 : limiteur 50 km/h", "Bas : changer de vue"]
 			"avion":
-				l = ["RT : gaz +   LT : gaz - / freins", "Stick gauche : tangage et roulis", "RB : freins de roues", "Y : descendre (à l'arrêt)"]
+				l = ["R2 : gaz +   L2 : gaz - / freins", "Stick gauche : tangage et roulis", "Gauche / droite : palonnier", "R1 : freins de roues", "Triangle : descendre (à l'arrêt)"]
 			_:
-				l = ["RT : accélérer   LT : freiner / reculer", "Stick gauche : tourner", "RB : frein à main",
-					"Y : descendre", "Croix bas : limiteur 50 km/h"]
+				l = ["R2 : accélérer   L2 : freiner / reculer", "Stick gauche : tourner", "R1 : frein à main", "L3 : klaxon",
+					"Triangle : descendre", "L1 : limiteur 50 km/h", "Bas : changer de vue"]
 	else:
 		# touches reelles (Options > Commandes : elles peuvent avoir ete changees)
 		var k := func(a: String) -> String: return Partie.nom_touche(a)
@@ -250,7 +252,6 @@ func texte_aide(ctx: String, manette: bool) -> String:
 					t.call(k.call("horn"), "klaxon"), t.call(k.call("interact"), "descendre"), t.call(k.call("limiteur"), "limiteur 50 km/h")]
 		l.append("F2" + tr(" : cacher l'aide"))
 		return "\n".join(l)
-	l.append(tr("Croix haut") + tr(" : cacher l'aide"))
 	for i in l.size():
 		l[i] = tr(l[i])
 	return "\n".join(l)
@@ -276,7 +277,7 @@ func _on_argent(total: int, delta: int) -> void:
 
 
 func _on_recherche(n: int) -> void:
-	_etoiles.text = "★".repeat(n) + "☆".repeat(5 - n) if n > 0 else ""
+	_etoiles.text = "★".repeat(n) + "☆".repeat(6 - n) if n > 0 else ""
 
 
 func notifier(texte: String) -> void:
@@ -351,7 +352,7 @@ func _process(delta: float) -> void:
 	_annonce_t = maxf(0.0, _annonce_t - delta)
 	_annonce.visible = _annonce_t > 0.0
 	_sous.visible = _annonce_t > 0.0
-	# etoiles qui clignotent tant que la police a le joueur en vue
+	# comme San Andreas : etoiles fixes tant qu on est poursuivi, qui clignotent vite quand la police a perdu la trace
 	_clign += delta
 	if Partie.recherche > 0:
-		_etoiles.modulate.a = 0.55 + 0.45 * absf(sin(_clign * 4.0)) if Partie.get("police_voit") else 1.0
+		_etoiles.modulate.a = (1.0 if int(_clign * 6.0) % 2 == 0 else 0.15) if Partie.recherche_clignote else 1.0

@@ -451,6 +451,7 @@ var _meteo: Node = null
 const PAUSES := [["Idle_FoldArms", 3.0], ["MX_Idle_Regarde", 1.0], ["Idle_TalkingPhone_Loop", 5.0], ["Yes", 1.5],
 	["MX_Idle_Content", 1.0]]
 const CAUSETTE := [["Idle_Talking", 2.5], ["Yes", 0.6], ["Idle_No", 0.6], ["Idle_Talking", 1.5], ["Idle_FoldArms", 1.0]]
+@export var virage_pieton := 3.4              # rad/s maxi de rotation d un passant qui marche
 @export var pause_chance := 0.012      # par controle (~2/s) : un passant s'arrete toutes les ~40 s
 @export var causette_chance := 0.03    # chance de chercher quelqu'un a qui parler
 
@@ -463,6 +464,7 @@ func _rain_now() -> float:
 
 func _walk(w: Dictionary, delta: float, ppos: Vector3) -> void:
 	var speed: float = w["speed"] * (1.25 if _rain_now() > 0.5 else 1.0)   # sous l'averse on presse le pas
+	speed *= float(w.get("virage", 1.0))        # on ralentit dans un virage (le corps tourne avant d avancer)
 	if w["pause"] > 0.0:
 		w["pause"] -= delta
 		speed = 0.0
@@ -527,7 +529,11 @@ func _walk(w: Dictionary, delta: float, ppos: Vector3) -> void:
 					me2 = me2.lerp(target, 1.0 - exp(-5.0 * delta))
 					face = me2 - prev
 	if face.length() > 0.001:
-		w["yaw"] = lerp_angle(w["yaw"], atan2(-face.x, -face.y), 1.0 - exp(-6.0 * delta))
+		# le cap tourne a vitesse limitee (pas de pivot sec sur un angle de trottoir) et la marche ralentit selon l ecart
+		var voulu := atan2(-face.x, -face.y)
+		var ecart := absf(angle_difference(w["yaw"], voulu))
+		w["yaw"] = rotate_toward(w["yaw"], voulu, virage_pieton * delta)
+		w["virage"] = clampf(1.0 - ecart / PI * 0.8, 0.3, 1.0)
 	w["pos"] = Vector3(me2.x, GROUND_Y, me2.y)
 	var ch: Node3D = w["node"]
 	ch.global_transform = Transform3D(Basis(Vector3.UP, w["yaw"]), w["pos"])

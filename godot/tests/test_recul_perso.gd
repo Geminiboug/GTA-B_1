@@ -1,6 +1,6 @@
 extends SceneTree
-## Marche en retrait : Alt + arriere / gauche / droite deplace le personnage sans le retourner
-## (cap conserve), dans la bonne direction, a vitesse de marche reduite.
+## Reculer (S) et pas de cote (Q / D) sur les touches normales : le personnage ne se retourne pas, il se deplace dans la
+## bonne direction (par rapport a la camera) a vitesse de marche.
 
 var frame := 0
 var scene: Node
@@ -40,7 +40,6 @@ func _physics_process(_d: float) -> bool:
 		(pl.get("cam_pivot") as Node3D).rotation.y = float(pl.get("_facing"))
 		p0 = (pl as Node3D).global_position
 		cap0 = float(pl.get("_facing"))
-		Input.action_press("walk")
 		Input.action_press(e[0])
 	if k == 100:
 		var p := (pl as Node3D).global_position
@@ -58,5 +57,4 @@ func _physics_process(_d: float) -> bool:
 			"droite":
 				_check(d.dot(droite) > 0.8, "droite : le deplacement va a droite (%.1f m)" % d.dot(droite))
 		Input.action_release(e[0])
-		Input.action_release("walk")
 	return false

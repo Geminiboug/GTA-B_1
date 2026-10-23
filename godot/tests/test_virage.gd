@@ -9,7 +9,7 @@ var p0 := Vector3.ZERO
 var vu := {}
 var derive := 0.0
 var etape := 0
-const ESSAIS := [["move_left", "MX_Tourne_G90"], ["move_right", "MX_Tourne_D90"], ["move_back", "MX_DemiTour_Marche"]]
+const ESSAIS := [[PI / 2.0, "MX_Tourne_G90"], [-PI / 2.0, "MX_Tourne_D90"], [PI, "MX_DemiTour_Marche"]]   # camera tournee de ... puis avancer
 func _check(ok: bool, msg: String) -> void:
 	print(("ok   " if ok else "ECHEC ") + msg)
 	if not ok:
@@ -35,20 +35,20 @@ func _physics_process(_d: float) -> bool:
 	var e: Array = ESSAIS[i]
 	if k == 0:
 		# la camera regarde comme le joueur : gauche / droite / arriere = 90 / 90 / 180 degres
-		(pl.get("cam_pivot") as Node3D).rotation.y = float(pl.get("_facing"))
+		(pl.get("cam_pivot") as Node3D).rotation.y = float(pl.get("_facing")) + float(e[0])
 		p0 = (pl as Node3D).global_position
-		Input.action_press(e[0])
+		Input.action_press("move_forward")
 	if k > 0 and k < 60:
 		if an.call("clip_position", e[1]) >= 0.0:
 			vu[e[1]] = true
 		var p := (pl as Node3D).global_position
 		derive = maxf(derive, Vector2(p.x - p0.x, p.z - p0.z).length())
 	if k == 12:
-		Input.action_release(e[0])     # on lache : le pas tourne va au bout
+		Input.action_release("move_forward")     # on lache : le pas tourne va au bout
 	if k == 100:
 		var cam: float = (pl.get("cam_pivot") as Node3D).rotation.y
-		var voulu: float = cam + {"move_left": PI / 2.0, "move_right": -PI / 2.0, "move_back": PI}[e[0]]
+		var voulu: float = cam
 		var ecart := rad_to_deg(absf(angle_difference(float(pl.get("_facing")), voulu)))
-		_check(vu.has(e[1]), "%s joue %s" % [e[0], e[1]])
-		_check(ecart < 12.0, "%s : tourne vers la direction demandee (ecart %.0f degres)" % [e[0], ecart])
+		_check(vu.has(e[1]), "camera a %.0f degres : joue %s" % [rad_to_deg(float(e[0])), e[1]])
+		_check(ecart < 12.0, "camera a %.0f degres : tourne vers l avant de la camera (ecart %.0f degres)" % [rad_to_deg(float(e[0])), ecart])
 	return false

@@ -29,7 +29,7 @@ const LAMP_MAT := preload("res://shaders/lampe_material.tres")
 const CAR_COLORS := [Color(0.92, 0.92, 0.9), Color(0.92, 0.92, 0.9), Color(0.7, 0.71, 0.72), Color(0.08, 0.08, 0.09),
 	Color(0.1, 0.18, 0.4), Color(0.55, 0.08, 0.06), Color(0.75, 0.68, 0.55)]
 const GROUND_Y := 0.02
-const CAR_MODELS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup", "veh_camion"]
+const CAR_MODELS := ["veh_berline", "veh_pejo", "veh_mersede", "veh_4x4", "veh_minibus", "veh_pickup", "veh_camion", "veh_hatch", "veh_monospace", "veh_plateau", "veh_bus"]
 const DRIVERS_PER_MODEL := 4
 @export var zem_number_pos := Vector3(0, 1.17, 0.29)   # dos du conducteur assis (repere du zem)
 @export var zem_number_tilt := -0.25                  # buste penche en avant
@@ -37,6 +37,13 @@ const DRIVERS_PER_MODEL := 4
 @export var lod_pas := 4
 var _tick := 0
 const ZEM_VARIANTS := ["zem_a", "zem_b", "zem_c", "zem_passager_h", "zem_passager_f", "zem_passager_f2"]
+## Motos de particuliers (pas des zems : civils, motos de toutes couleurs) et velos de ville
+const MOTO_VARIANTS := ["moto_a", "moto_b", "moto_c", "moto_d"]
+const MOTO_COULEURS := [Color(0.12, 0.22, 0.55), Color(0.07, 0.07, 0.08), Color(0.9, 0.9, 0.88), Color(0.15, 0.4, 0.22)]
+const VELO_VARIANTS := ["velo_a", "velo_b", "velo_c"]
+const VELO_SCENE := preload("res://assets/models/veh_velo.glb")
+@export var moto_count := 16
+@export var velo_count := 10
 var _looks := {}   # variante de zem -> [[genre, morphologie, tenue]] du conducteur et du passager
 
 var _rng := RandomNumberGenerator.new()
@@ -59,6 +66,7 @@ var _horn_car: AudioStreamWAV
 func _ready() -> void:
 	_rng.seed = seed_value
 	add_to_group("circulation")
+	add_to_group("collisions_vehicules")
 	_player = get_node_or_null(player_path)
 	_carte = Carte.zone()
 	# sons synthetises : etapes de la mise en place etalee (avant les vehicules qui les utilisent)
@@ -75,6 +83,10 @@ func _ready() -> void:
 	# etale sur plusieurs images pendant l'ecran de chargement (Partie.chantier)
 	for i in zem_count:
 		Partie.chantier(_spawn.bind("zem_passager" if _rng.randf() < 0.35 else "zem", meshes))
+	for i in moto_count:
+		Partie.chantier(_spawn.bind("moto", meshes))
+	for i in velo_count:
+		Partie.chantier(_spawn.bind("velo", meshes))
 	for i in car_count:
 		Partie.chantier(_spawn.bind("voiture", meshes))
 	print("Circulation : %d zems, %d voitures, %d troncons, %d carrefours" % [zem_count, car_count, _carte.edges.size(), _carte.nodes.size()])
@@ -84,8 +96,9 @@ func _ready() -> void:
 func _build_meshes() -> Dictionary:
 	var out := {}
 	# zem + conducteur en chemise jaune (+ passager ou passagere), poses puis fusionnes en un seul mesh
-	for variant in ZEM_VARIANTS:
+	for variant in ZEM_VARIANTS + MOTO_VARIANTS:
 		await Partie.respirer()
+		var civil: bool = variant.begins_with("moto")
 		var asm := Node3D.new()
 		add_child(asm)
 		var z := ZEM_SCENE.instantiate()
@@ -94,14 +107,17 @@ func _build_meshes() -> Dictionary:
 		if bq:
 			bq.rotation.x = ZEM.BEQUILLE_REPLIEE   # moto qui roule : bequille relevee
 		_lamp_surfaces(z, "veh_phare")
+		if civil:
+			_peindre_moto(z, MOTO_COULEURS[MOTO_VARIANTS.find(variant)])
 		var driver := PnjUtil.make("homme", false)
 		asm.add_child(driver)
-		var dl := PnjUtil.random_look(driver, _rng, "zem")
+		var dl := PnjUtil.random_look(driver, _rng) if civil else PnjUtil.random_look(driver, _rng, "zem")
 		PnjUtil.apply(driver, dl)
 		_looks[variant] = [["homme", "homme", dl]]
 		driver.scale = Vector3.ONE
 		PnjUtil.pose_seated(driver)
 		driver.position = Vector3(0, -0.05, 0.12)
+		Squelette.poser_sur_moto(driver, z)         # les deux mains au guidon, pieds sur les repose-pieds
 		if variant.begins_with("zem_passager"):
 			var genre := "femme" if variant.contains("_f") else "homme"
 			var pas := PnjUtil.make(PnjUtil.random_variant(_rng, genre), false)
@@ -139,10 +155,26 @@ func _build_meshes() -> Dictionary:
 			var key := "drv_%s_%d" % [model, n]
 			out[key] = asm2
 			_looks[key] = [[genre, dr.get_meta("variante", genre), look]]
+	for variant in VELO_VARIANTS:
+		await Partie.respirer()
+		var asm_v := Node3D.new()
+		add_child(asm_v)
+		var vel := VELO_SCENE.instantiate()
+		asm_v.add_child(vel)
+		var cycliste := PnjUtil.make("homme" if _rng.randf() < 0.75 else "femme", false)
+		asm_v.add_child(cycliste)
+		var vl := PnjUtil.random_look(cycliste, _rng)
+		PnjUtil.apply(cycliste, vl)
+		_looks[variant] = [[cycliste.get_meta("genre", "homme"), cycliste.get_meta("variante", "homme"), vl]]
+		cycliste.scale = Vector3.ONE
+		PnjUtil.pose_seated(cycliste)
+		cycliste.position = Vector3(0, 0.12, 0.2)
+		Squelette.poser_sur_moto(cycliste, vel)
+		out[variant] = asm_v
 	# la pose assise du squelette n'est appliquee au maillage qu'a l'image suivante : on fusionne apres
 	await get_tree().process_frame
 	await get_tree().process_frame
-	for variant in ZEM_VARIANTS:
+	for variant in ZEM_VARIANTS + MOTO_VARIANTS + VELO_VARIANTS:
 		await Partie.respirer()
 		var asm: Node3D = out[variant]
 		out[variant] = PnjUtil.merge(asm)
@@ -177,7 +209,8 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 	if kind == "voiture":
 		# berlines d'occasion surtout, des 4x4, et les minibus "tokpa-tokpa" qui font le transport en commun
 		var roll := _rng.randf()
-		var model := Vehicules.berline(roll / 0.44) if roll < 0.44 else ("veh_4x4" if roll < 0.6 else ("veh_pickup" if roll < 0.7 else ("veh_minibus" if roll < 0.84 else "veh_camion")))
+		# repartition du parc de Cotonou : berlines d occasion surtout, citadines, 4x4, monospaces, minibus, utilitaires et poids lourds
+		var model := Vehicules.berline(roll / 0.34) if roll < 0.34 else ("veh_hatch" if roll < 0.46 else ("veh_4x4" if roll < 0.57 else ("veh_monospace" if roll < 0.66 else ("veh_pickup" if roll < 0.73 else ("veh_minibus" if roll < 0.83 else ("veh_plateau" if roll < 0.89 else ("veh_camion" if roll < 0.95 else "veh_bus")))))))
 		mi.mesh = meshes[model]
 		var dk := "drv_%s_%d" % [model, _rng.randi() % DRIVERS_PER_MODEL]
 		var drv := MeshInstance3D.new()
@@ -209,43 +242,58 @@ func _spawn(kind: String, meshes: Dictionary) -> void:
 		var aabb: AABB = mi.mesh.get_aabb()
 		box.size = Vector3(aabb.size.x - 0.15, aabb.size.y - 0.04, aabb.size.z - 0.1)
 		cs.position = Vector3(0, aabb.position.y + 0.02 + box.size.y / 2.0, aabb.get_center().z)
-		a["max_big"] = _rng.randf_range(11.0, 15.0) * (0.85 if model == "veh_minibus" else (0.75 if model == "veh_camion" else 1.0))
+		a["max_big"] = _rng.randf_range(11.0, 15.0) * (0.85 if model == "veh_minibus" else (0.75 if model in ["veh_camion", "veh_plateau"] else (0.65 if model == "veh_bus" else 1.0)))
 		a["max_small"] = _rng.randf_range(6.0, 8.5)
 		a["lane"] = 0.27
 		a["length"] = aabb.size.z
-		a["feu_ar"] = Vector3(aabb.size.x * 0.5 - 0.22, FEU_HAUTEUR.get(model, 0.85), aabb.get_center().z + aabb.size.z * 0.5)
 	else:
-		var pool := ZEM_VARIANTS.filter(func(v: String) -> bool: return v.begins_with("zem_passager") == (kind == "zem_passager"))
+		var pool: Array
+		match kind:
+			"moto":
+				pool = MOTO_VARIANTS
+			"velo":
+				pool = VELO_VARIANTS
+			_:
+				pool = ZEM_VARIANTS.filter(func(v: String) -> bool: return v.begins_with("zem_passager") == (kind == "zem_passager"))
 		var variant: String = pool[_rng.randi() % pool.size()]
-		# numero de zemidjan peint dans le dos de la chemise jaune (fictif : GT = Gbe Town)
-		var num := Label3D.new()
-		num.text = "GT %04d" % _rng.randi_range(1, 9999)
-		num.font_size = 44
-		num.pixel_size = 0.0016
-		num.modulate = Color(0.08, 0.08, 0.1)
-		num.outline_size = 0
-		num.position = zem_number_pos
-		num.rotation.x = zem_number_tilt
-		num.visibility_range_end = 25.0
-		num.double_sided = false            # lisible seulement de dos (pas en miroir de face)
-		mi.add_child(num)
+		if kind == "zem" or kind == "zem_passager":
+			# numero de zemidjan peint dans le dos de la chemise jaune (fictif : GT = Gbe Town)
+			var num := Label3D.new()
+			num.text = "GT %04d" % _rng.randi_range(1, 9999)
+			num.font_size = 44
+			num.pixel_size = 0.0016
+			num.modulate = Color(0.08, 0.08, 0.1)
+			num.outline_size = 0
+			num.position = zem_number_pos
+			num.rotation.x = zem_number_tilt
+			num.visibility_range_end = 25.0
+			num.double_sided = false            # lisible seulement de dos (pas en miroir de face)
+			mi.add_child(num)
 		mi.mesh = meshes[variant]
-		a["model"] = "zem"
 		a["riders"] = _looks.get(variant, [["homme", "homme", {}]])   # memes personnes (et memes habits) a l'ejection
-		box.size = Vector3(0.6, 1.5, 2.0)
-		cs.position = Vector3(0, 0.75, 0)
-		a["max_big"] = _rng.randf_range(10.0, 14.0)
-		a["max_small"] = _rng.randf_range(6.0, 9.0)
-		a["lane"] = 0.36  # les zems serrent le bord droit
-		a["length"] = 2.0
-		a["feu_ar"] = Vector3(0.0, 0.8, 1.05)
+		if kind == "velo":
+			a["model"] = "velo"
+			box.size = Vector3(0.5, 1.5, 1.8)
+			cs.position = Vector3(0, 0.75, 0)
+			a["max_big"] = _rng.randf_range(3.5, 5.5)          # 12 a 20 km/h
+			a["max_small"] = _rng.randf_range(3.0, 4.5)
+			a["lane"] = 0.5                                     # les cyclistes serrent le bord de la chaussee
+			a["length"] = 1.8
+		else:
+			a["model"] = "zem" if kind != "moto" else "moto"
+			box.size = Vector3(0.6, 1.5, 2.0)
+			cs.position = Vector3(0, 0.75, 0)
+			a["max_big"] = _rng.randf_range(10.0, 14.0) if kind != "moto" else _rng.randf_range(11.0, 16.0)
+			a["max_small"] = _rng.randf_range(6.0, 9.0)
+			a["lane"] = 0.36  # les deux-roues serrent le bord droit
+			a["length"] = 2.0
 	cs.shape = box
 	body.add_child(cs)
 	body.collision_layer = 1
 	body.collision_mask = 0
 	add_child(body)
 	body.add_child(mi)
-	_feux_stop(a, body)
+	_feux_stop(a, mi)
 	var snd := AudioStreamPlayer3D.new()
 	snd.stream = _snd_car if kind == "voiture" else _snd_moto
 	snd.unit_size = 4.0
@@ -606,6 +654,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
+	if a.get("knock_t", 0.0) > 0.0 and _knock_step(a, delta):
+		return
 	var pts: PackedVector2Array = a["pts"]
 	var i: int = a["i"]
 	var fwd2 := (pts[i + 1] - pts[i]).normalized()
@@ -688,7 +738,7 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 	var freine: bool = vmax < a["speed"] - 0.3 or bool(a.get("au_feu", false)) or (a["speed"] < 0.5 and vmax < 0.5)
 	if freine != a.get("freine", false):
 		a["freine"] = freine
-		(a["feux"] as Node3D).visible = freine
+		_feu_arriere(a, freine)
 	a["speed"] = move_toward(a["speed"], vmax, acc * delta)
 	_advance(a, a["speed"] * delta)
 	# klaxon si bloque par le joueur (ou bouchon qui dure)
@@ -785,7 +835,7 @@ func nearest_agent(p: Vector3, max_dist: float) -> Dictionary:
 	var best := {}
 	var bd := max_dist
 	for a in _agents:
-		if not a.get("active", true) or a["speed"] > 4.0:
+		if not a.get("active", true) or a["speed"] > 4.0 or a["kind"] == "velo":
 			continue
 		var body: Node3D = a["body"]
 		var left := -body.global_transform.basis.x
@@ -808,7 +858,11 @@ func take_over(i: int, by: Node3D) -> Node3D:
 	body.visible = false
 	body.collision_layer = 0
 	(a["snd"] as AudioStreamPlayer3D).stop()
-	var v := Vehicules.create(a["model"], a.get("color", Color.WHITE))
+	var v: Node3D = null
+	if a["model"] != "velo":
+		v = Vehicules.create("zem" if a["model"] == "moto" else a["model"], a.get("color", Color.WHITE))
+	else:
+		v = Node3D.new()      # un velo ne se conduit pas : le cycliste tombe, le velo disparait avec lui
 	v.transform = xf  # avant l'entree dans l'arbre : le vehicule part avec le bon cap
 	get_parent().add_child(v)
 	v.set("_yaw", a["vis_yaw"])
@@ -820,6 +874,8 @@ func take_over(i: int, by: Node3D) -> Node3D:
 		var r: Array = riders[k] if riders[k].size() > 2 else [riders[k][0], "", {}]
 		driver_ejected.emit(pos, a["vis_yaw"], riders[k][0], by, r + [k])
 	a["respawn"] = 25.0
+	if a["model"] == "velo":
+		v.queue_free()
 	return v
 
 
@@ -914,14 +970,8 @@ func alert(pos: Vector3, radius: float) -> void:
 
 func on_vehicle_hit(collider: Object, impact: float) -> void:
 	## Le joueur a percute un vehicule de la circulation : il pile, klaxonne, le conducteur l'engueule.
-	for a in _agents:
-		if a["body"] == collider and a.get("active", true):
-			_abimer(a, impact)
-			a["stunned"] = _rng.randf_range(4.0, 8.0)
-			a["speed"] = 0.0
-			(a["horn"] as AudioStreamPlayer3D).play()
-			Bulle.say(a["body"], Dialogues.pick("choc_voiture", _rng, _pgenre()), 3.0, 2.0)
-			return
+	## (la reaction du percute est calculee par choc_vehicule, plus bas : impulsion, rotation, degats)
+	pass
 
 
 func _abimer(a: Dictionary, impact: float) -> void:
@@ -983,33 +1033,184 @@ func reclaim(v: Node3D) -> bool:
 	return true
 
 
-## Feux de freinage : deux lumignons rouges a l'arriere (un seul pour une moto), visibles quand le vehicule freine ou attend.
-const FEU_HAUTEUR := {"veh_berline": 0.8, "veh_pejo": 0.86, "veh_mersede": 0.8, "veh_4x4": 1.0, "veh_minibus": 0.95,
-	"veh_pickup": 0.9, "veh_camion": 1.0}
-static var _feu_mesh: BoxMesh
-static var _feu_mat: StandardMaterial3D
+## Feux de freinage integres au vehicule : les surfaces "feu arriere" du modele (mat_feu_arriere, veh_feu_rouge) changent de
+## materiau selon que le vehicule freine ou non (feu de position sombre, feu stop vif). Plus de pieces rapportees.
+static var _feu_sombre: StandardMaterial3D
+static var _feu_vif: StandardMaterial3D
 
 
-func _feux_stop(a: Dictionary, body: Node3D) -> void:
-	if _feu_mesh == null:
-		_feu_mat = StandardMaterial3D.new()
-		_feu_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_feu_mat.albedo_color = Color(1.0, 0.08, 0.05)
-		_feu_mat.emission_enabled = true
-		_feu_mat.emission = Color(1.0, 0.05, 0.02)
-		_feu_mat.emission_energy_multiplier = 2.5
-		_feu_mesh = BoxMesh.new()
-		_feu_mesh.size = Vector3(0.3, 0.13, 0.04)
-		_feu_mesh.material = _feu_mat
-	var feux := Node3D.new()
-	feux.visible = false
-	var pos: Vector3 = a["feu_ar"]
-	for s in ([-1.0, 1.0] if a["kind"] == "voiture" else [0.0]):
-		var m := MeshInstance3D.new()
-		m.mesh = _feu_mesh
-		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		m.visibility_range_end = 90.0
-		m.position = Vector3(s * pos.x, pos.y, pos.z + 0.03)
-		feux.add_child(m)
-	body.add_child(feux)
-	a["feux"] = feux
+func _feux_stop(a: Dictionary, mi: MeshInstance3D) -> void:
+	if _feu_sombre == null:
+		_feu_sombre = StandardMaterial3D.new()
+		_feu_sombre.albedo_color = Color(0.4, 0.03, 0.03)
+		_feu_sombre.emission_enabled = true
+		_feu_sombre.emission = Color(0.5, 0.02, 0.02)
+		_feu_sombre.emission_energy_multiplier = 0.35
+		_feu_vif = StandardMaterial3D.new()
+		_feu_vif.albedo_color = Color(1.0, 0.06, 0.03)
+		_feu_vif.emission_enabled = true
+		_feu_vif.emission = Color(1.0, 0.04, 0.02)
+		_feu_vif.emission_energy_multiplier = 3.5
+	var surfaces := []
+	for s in mi.mesh.get_surface_count():
+		var m: Material = mi.mesh.surface_get_material(s)
+		if m and (m.resource_name == "mat_feu_arriere" or m.resource_name == "veh_feu_rouge"):
+			surfaces.append(s)
+			mi.set_surface_override_material(s, _feu_sombre)
+	a["mi"] = mi
+	a["feu_surfs"] = surfaces
+
+
+func _feu_arriere(a: Dictionary, freine: bool) -> void:
+	var mi := a["mi"] as MeshInstance3D
+	for s in a["feu_surfs"]:
+		mi.set_surface_override_material(s, _feu_vif if freine else _feu_sombre)
+
+
+func player_attack(origin: Vector3, dir: Vector3, coup := 0, _degats := -1.0, portee := 1.6, arme := false) -> bool:
+	## Coup du joueur sur le conducteur d'un vehicule de la circulation (motard, zem, automobiliste) : le vehicule s'arrete,
+	## le conducteur proteste et la police l'apprend ; au troisieme coup (ou avec une arme) il est jete a terre et on peut
+	## prendre son vehicule (meme chaine que le vol de vehicule).
+	var meilleur := -1
+	var bd := INF
+	for i in _agents.size():
+		var a: Dictionary = _agents[i]
+		if not a.get("active", true):
+			continue
+		var rel: Vector3 = (a["vis_pos"] as Vector3) - origin
+		rel.y = 0.0
+		var d := rel.length()
+		var demi := 1.3 if a["kind"] == "voiture" else 0.8
+		if d > 0.01 and d - demi < portee and rel.normalized().dot(dir) > 0.3 and d < bd:
+			bd = d
+			meilleur = i
+	if meilleur < 0:
+		return false
+	var v: Dictionary = _agents[meilleur]
+	v["stunned"] = 4.0
+	Bulle.say(v["body"], ["Hé ! Qu'est-ce que tu fais ?!", "Tu es fou ou quoi ?!", "Au secours !"][_rng.randi() % 3], 2.2, 1.5)
+	get_tree().call_group("police", "crime", "agression", v["vis_pos"])
+	if coup >= 2 or arme:
+		take_over(meilleur, _player)
+	return true
+
+
+# ------------------------------------------------------------ chocs entre vehicules (impulsion, masses, rotation)
+const MASSES := {"veh_berline": 1150.0, "veh_pejo": 1300.0, "veh_mersede": 1250.0, "veh_4x4": 1950.0, "veh_minibus": 1800.0,
+	"veh_pickup": 1650.0, "veh_camion": 4800.0, "veh_hatch": 1000.0, "veh_monospace": 1750.0, "veh_plateau": 3300.0, "veh_bus": 8500.0, "zem": 300.0, "moto": 260.0, "velo": 100.0}
+@export var restitution := 0.22          # 0 : choc mou, 1 : rebond parfait (carrosseries froissees : faible)
+@export var frottement_choc := 6.0       # m/s2 : un vehicule projete ralentit (roues bloquees, sol)
+
+
+func _agent_de(corps: Object) -> int:
+	for i in _agents.size():
+		if _agents[i]["body"] == corps and _agents[i].get("active", true):
+			return i
+	return -1
+
+
+func choc_vehicule(who: Node3D, collider: Object, n2: Vector2, vitesse_avant: Vector2, contact: Vector3, impact: float) -> void:
+	## Choc du vehicule du joueur (who) contre un vehicule de la circulation : conservation de la quantite de mouvement
+	## (masses reelles, restitution faible), projection et rotation du vehicule percute selon le point d'impact, degats
+	## proportionnels a la variation de vitesse de chacun (et non plus une baisse de sante differee).
+	var i := _agent_de(collider)
+	if i < 0 or impact < 1.0:
+		return
+	var a: Dictionary = _agents[i]
+	var m1 := float(who.get("masse")) if who.get("masse") != null else (300.0 if who.get("kind") == "zem" else 1200.0)
+	var m2: float = MASSES.get(a["model"], 1200.0)
+	var yaw: float = a["vis_yaw"]
+	var va := Vector2(-sin(yaw), -cos(yaw)) * float(a["speed"]) + (a.get("knock", Vector2.ZERO) as Vector2)
+	var vn := (vitesse_avant - va).dot(n2)         # n2 : de l'obstacle vers le joueur ; negatif = on se rapproche
+	if vn >= -0.5:
+		return
+	var j := -(1.0 + restitution) * vn / (1.0 / m1 + 1.0 / m2)
+	var dv2 := j / m2                              # variation de vitesse du percute
+	var dv1 := j / m1                              # variation de vitesse du joueur
+	# le joueur : rebond selon son impulsion (pas de rebond magique)
+	if who.get("_vel") != null:
+		who.set("_vel", vitesse_avant + n2 * dv1)
+	elif who.get("speed") != null:
+		who.set("speed", float(who.get("speed")) * clampf(1.0 - dv1 / maxf(absf(vn), 0.1), 0.0, 1.0))
+	# le percute : projete dans le sens oppose a n2, tourne autour de son centre selon le bras de levier du choc
+	var centre: Vector3 = a["vis_pos"]
+	var r := Vector2(contact.x - centre.x, contact.z - centre.z)
+	var imp := -n2 * j
+	var inertie := m2 * 2.4
+	a["knock"] = (a.get("knock", Vector2.ZERO) as Vector2) + imp / m2
+	a["spin"] = float(a.get("spin", 0.0)) + clampf((r.x * imp.y - r.y * imp.x) / inertie, -3.0, 3.0)
+	a["knock_t"] = 1.0
+	a["stunned"] = _rng.randf_range(4.0, 8.0)
+	(a["horn"] as AudioStreamPlayer3D).play()
+	Bulle.say(a["body"], Dialogues.pick("choc_voiture", _rng, _pgenre()), 3.0, 2.0)
+	_abimer(a, 3.0 + dv2 * 1.6)
+	# un motard percute violemment est jete a terre (son deux-roues devient libre)
+	if a["kind"] != "voiture" and dv2 > 3.5:
+		take_over(i, who)
+	# degats du joueur selon sa variation de vitesse
+	if who.has_method("damage"):
+		who.call("damage", maxf(0.0, dv1 - 1.5) * 5.0)
+
+
+func _knock_step(a: Dictionary, delta: float) -> bool:
+	## Vehicule projete par un choc : il glisse et tourne en perdant sa vitesse, sans suivre sa voie ; une fois arrete il
+	## se replace sur la rue la plus proche (ou reste en travers si aucune rue n'est a portee).
+	var k: Vector2 = a["knock"]
+	var vp: Vector3 = a["vis_pos"]
+	var np := vp + Vector3(k.x, 0.0, k.y) * delta
+	if _carte.in_building(Vector2(np.x, np.z)):
+		k = Vector2.ZERO
+		np = vp
+	a["vis_pos"] = np
+	a["vis_yaw"] = wrapf(float(a["vis_yaw"]) + float(a.get("spin", 0.0)) * delta, -PI, PI)
+	a["knock"] = k.move_toward(Vector2.ZERO, frottement_choc * delta)
+	a["spin"] = move_toward(float(a.get("spin", 0.0)), 0.0, 3.0 * delta)
+	a["speed"] = 0.0
+	(a["body"] as Node3D).global_transform = Transform3D(Basis(Vector3.UP, a["vis_yaw"]), np)
+	if (a["knock"] as Vector2).length() < 0.15 and absf(float(a["spin"])) < 0.1:
+		a["knock"] = Vector2.ZERO
+		a["spin"] = 0.0
+		a["knock_t"] = 0.0
+		_recaler(a)
+	return true
+
+
+func _recaler(a: Dictionary) -> void:
+	## Replace un vehicule apres un choc sur l'arete la plus proche, dans le sens ou il pointe.
+	var vp: Vector3 = a["vis_pos"]
+	var nr := _carte.nearest_on_network(Vector2(vp.x, vp.z))
+	if nr.is_empty() or Vector2(vp.x, vp.z).distance_to(nr["point"]) > 9.0:
+		return                      # reste la, en travers (obstacle) : il redemarrera quand le recycleur le replacera
+	var e: int = nr["edge"]
+	var ed: Dictionary = _carte.edges[e]
+	var cap := Vector2(-sin(a["vis_yaw"]), -cos(a["vis_yaw"]))
+	var from: int = ed["a"]
+	var pts := _carte.edge_pts_from(e, from)
+	if (pts[1] - pts[0]).dot(cap) < 0.0 and not ed["oneway"]:
+		from = ed["b"]
+	pts = _carte.edge_pts_from(e, from)
+	var best_i := 0
+	var best_d := INF
+	for k in pts.size() - 1:
+		var d := Geometry2D.get_closest_point_to_segment(nr["point"], pts[k], pts[k + 1]).distance_to(nr["point"])
+		if d < best_d:
+			best_d = d
+			best_i = k
+	_set_edge(a, e, from)
+	a["i"] = best_i
+	a["s"] = pts[best_i].distance_to(nr["point"])
+	a["stunned"] = maxf(float(a.get("stunned", 0.0)), 2.5)
+
+
+func _peindre_moto(z: Node, couleur: Color) -> void:
+	## Moto de particulier : meme modele que le zem, autre peinture (reservoir et garde-boues).
+	var peinture := StandardMaterial3D.new()
+	peinture.albedo_color = couleur
+	peinture.roughness = 0.35
+	peinture.metallic = 0.3
+	for mi in z.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		for si in m.mesh.get_surface_count():
+			var mat: Material = m.mesh.surface_get_material(si)
+			if mat and mat.resource_name == "veh_peinture_rouge":
+				m.set_surface_override_material(si, peinture)

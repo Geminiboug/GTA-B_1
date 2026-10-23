@@ -18,9 +18,11 @@ I inventaire · P téléphone · L torche · F12 mode photo
 EN VÉHICULE
 Z accélérer · S freiner / reculer · Q D tourner · Espace frein à main · H klaxon · E descendre
 
-MANETTE
-Stick gauche bouger · stick droit caméra · A sprint · X sauter · B frapper · Y véhicule
-Croix droite parler · croix gauche inventaire · Select carte · Start pause · L3 marcher · R3 s'accroupir"""
+MANETTE (disposition PlayStation)
+Stick gauche bouger · stick droit caméra · Croix courir · Carré sauter · Rond ou R2 frapper · Triangle véhicule
+L1 ou L2 viser · R1 arme suivante · L3 recharger · R3 s'accroupir · Haut téléphone · Gauche inventaire · Droite parler
+Bas changer de vue · Share carte · Options pause · Pavé tactile héler un zem · Misc1 torche
+En véhicule : R2 accélérer · L2 freiner · R1 frein à main · L3 klaxon · L1 limiteur"""
 
 var _root: Control
 var _aube: AubeCotonou          # fond de l'ecran titre (aube sur Cotonou) ; cache dans le menu pause

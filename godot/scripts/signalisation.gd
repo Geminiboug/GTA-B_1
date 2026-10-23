@@ -103,14 +103,14 @@ func _construire() -> void:
 	poteau.height = 1.0
 	poteau.radial_segments = 8
 	var pm := StandardMaterial3D.new()
-	pm.albedo_color = Color(0.2, 0.21, 0.23)
-	pm.roughness = 0.7
+	pm.albedo_color = Color(0.16, 0.24, 0.19)        # vert fonce use, comme les feux des references (refs/generees/signalisation/)
+	pm.roughness = 0.75
 	poteau.material = pm
 	var boitier := BoxMesh.new()
 	boitier.size = Vector3(0.38, 1.08, 0.3)
 	var bm := StandardMaterial3D.new()
-	bm.albedo_color = Color(0.05, 0.05, 0.06)
-	bm.roughness = 0.5
+	bm.albedo_color = Color(0.07, 0.1, 0.08)
+	bm.roughness = 0.6
 	boitier.material = bm
 	var visiere := BoxMesh.new()                 # petit auvent au-dessus de chaque feu
 	visiere.size = Vector3(0.3, 0.03, 0.14)
@@ -215,6 +215,7 @@ func _construire() -> void:
 		var dir: Vector2 = stops[j][1]
 		mp.set_instance_transform(nf + j, Transform3D(Basis.from_scale(Vector3(1, 2.3, 1)), Vector3(q.x, 1.15, q.y)))
 		var yaw := atan2(-dir.x, -dir.y)
+		_panneaux_liste.append(["STOP", Vector3(q.x, 2.5, q.y) + Vector3(sin(yaw), 0, cos(yaw)) * 0.1, yaw])      # texte du panneau (pool de Label3D)
 		# panneau octogonal face aux vehicules : le cylindre (axe Y) est couche sur +Z puis tourne vers le conducteur
 		ms.set_instance_transform(j, Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, PI / 2.0), Vector3(q.x, 2.5, q.y) + Vector3(sin(yaw), 0, cos(yaw)) * 0.06))
 	for mm in [mp, mb, mv, ml, ms]:
@@ -287,7 +288,7 @@ func _marquages(approches: Array) -> void:
 
 # ------------------------------------------------------------ panneaux (limitation, sens interdit, stationnement)
 @export var limite_kmh := 50                 # voies principales (les petites rues : 30, sans panneau)
-@export var pool_textes := 24
+@export var pool_textes := 40
 @export var portee_textes := 70.0
 var _panneaux_liste: Array = []       # [texte, position Vector3, yaw] : chiffres posés par un pool de Label3D
 var _pool_labels: Array[Label3D] = []
@@ -446,6 +447,8 @@ func _maj_textes() -> void:
 		if i < proches.size():
 			var p: Array = proches[i][1]
 			l.text = p[0]
+			l.modulate = Color(1, 1, 1) if p[0] == "STOP" else Color(0.05, 0.05, 0.05)
+			l.font_size = 44 if p[0] == "STOP" else 72
 			l.global_transform = Transform3D(Basis(Vector3.UP, float(p[2])), p[1])
 			l.visible = true
 		else:

@@ -21,8 +21,8 @@ extends CharacterBody3D
 @export var ground_accel := 9.0      # m/s2 au demarrage
 @export var ground_decel := 18.0     # m/s2 au freinage (arret en 0,4 s depuis le trot)
 @export var air_accel := 1.5         # tres peu de controle en l'air
-@export var turn_speed_slow := 12.0  # rad/s, demi-tour quasi immediat a l'arret
-@export var turn_speed_fast := 4.5   # virages plus larges en sprint
+@export var turn_speed_slow := 8.0   # rad/s, demi-tour en un peu plus d une demi-seconde a l arret (avant 12 : pivot sec)
+@export var turn_speed_fast := 3.4   # virages plus larges en sprint
 @export var mouse_sensitivity := 0.0025
 @export var zoom_min := 2.0
 @export var zoom_max := 12.0
@@ -101,6 +101,8 @@ func _ready() -> void:
 
 
 var _punch_cd := 0.0
+var _coup_lock := 0.0
+@export var coup_immobile := 0.55    # s pieds plantes apres un coup de poing (le clip dure 0,9 a 1 s : on le coupe quand on repart)
 var menus := {}               # menus ouverts (achat, inventaire...) : le joueur ne bouge plus, les fleches servent au menu
 
 
@@ -657,6 +659,10 @@ func _physics_process(delta: float) -> void:
 	_cam_offset.y = move_toward(_cam_offset.y, 1.15 if crouched else 1.6, 2.0 * delta)
 	# coup de poing / bousculade (F, clic gauche, manette B) : les passants reagissent (scripts/pedestrians.gd)
 	_punch_cd = maxf(0.0, _punch_cd - delta)
+	if _coup_lock > 0.0:
+		_coup_lock = maxf(0.0, _coup_lock - delta)
+		if _coup_lock <= 0.0 and anim and anim.has_method("stop_clips") and anim.has_method("playing_clip") and anim.playing_clip() and _move_input().length() > 0.2:
+			anim.stop_clips()          # fin de la phase d appui du coup : le reste du clip (retour de garde) glissait les pieds
 	_combo_t = maxf(0.0, _combo_t - delta)
 	_roll_t = maxf(0.0, _roll_t - delta)
 	var was_guard := garde
@@ -667,6 +673,7 @@ func _physics_process(delta: float) -> void:
 		anim.stop_clips()
 	if Input.is_action_just_pressed("attaque") and is_on_floor() and _punch_cd <= 0.0 and not garde and _roll_t <= 0.0 and _combat_ok() and arme == "":
 		_punch_cd = 0.38
+		_coup_lock = coup_immobile
 		combo = (combo + 1) % COUPS.size() if _combo_t > 0.0 else 0
 		_combo_t = combo_fenetre
 		var coup := combo
@@ -679,6 +686,10 @@ func _physics_process(delta: float) -> void:
 		var peds := get_parent().get_node_or_null("Pietons")
 		if peds:
 			targets.append(peds)
+		for nom in ["Circulation", "Police"]:
+			var extra := get_parent().get_node_or_null(nom)
+			if extra:
+				targets.append(extra)      # motards, automobilistes et agents de police sont frappables aussi
 		var fwd := Vector3(-sin(_facing), 0.0, -cos(_facing))
 		get_tree().create_timer(0.18 + 0.06 * coup).timeout.connect(func() -> void:
 			for tg in targets:
@@ -751,7 +762,8 @@ func _physics_process(delta: float) -> void:
 	var dans_eau := Carte.zone().dans_eau(global_position.x, global_position.z)
 	target_speed *= eau_lenteur if dans_eau else 1.0
 	body.position.y = move_toward(body.position.y, -eau_enfoncement if dans_eau else 0.0, 2.5 * delta)
-	if _punch_cd > 0.0 and arme == "":
+	_maj_eclaboussures(dans_eau, Vector2(velocity.x, velocity.z).length())
+	if (_punch_cd > 0.0 or _coup_lock > 0.0) and arme == "":
 		target_speed = 0.0      # pieds plantes pendant un coup : le clip est sur place, sinon le personnage glisse
 
 	var hvel := Vector2(velocity.x, velocity.z)
@@ -763,7 +775,8 @@ func _physics_process(delta: float) -> void:
 		if _land_t > 0.0:
 			hvel = hvel.move_toward(Vector2.ZERO, ground_decel * delta)
 		elif _retrait(dir):
-			# marche lente (Alt ou stick a moitie incline) vers l arriere ou le cote : le corps garde son cap, il ne se retourne pas
+			# reculer ou aller de cote (touches normales) : le corps ne se retourne pas, il se met peu a peu face a la camera
+			_facing = rotate_toward(_facing, cam_pivot.rotation.y, turn_speed_slow * 0.6 * delta)
 			var voulu := Vector2(dir.x, dir.z).normalized()
 			var but := minf(target_speed, walk_speed) * (retrait_recul if absf(_retrait_rel) > deg_to_rad(115.0) else retrait_cote)
 			hspeed = move_toward(hspeed, but, (ground_accel if but > hspeed else ground_decel) * delta)
@@ -778,7 +791,7 @@ func _physics_process(delta: float) -> void:
 			# on avance dans la direction du corps : virages en courbe, pas en glissade
 			var fwd := Vector2(-sin(_facing), -cos(_facing))
 			var align: float = clamp(cos(angle_difference(_facing, want)), 0.0, 1.0)
-			var goal := target_speed * (0.35 + 0.65 * align)
+			var goal := target_speed * (0.25 + 0.75 * align)
 			hspeed = move_toward(hspeed, goal, (ground_accel if goal > hspeed else ground_decel) * delta)
 			hvel = fwd * hspeed
 		else:
@@ -794,7 +807,7 @@ func _physics_process(delta: float) -> void:
 	if _roll_t > 0.0:
 		hvel = _roll_dir * roulade_vitesse * (0.4 + 0.6 * _roll_t / roulade_duree)
 		_facing = atan2(-_roll_dir.x, -_roll_dir.y)
-	if _punch_cd > 0.0 and arme == "" and is_on_floor():
+	if (_punch_cd > 0.0 or _coup_lock > 0.0) and arme == "" and is_on_floor():
 		hvel = Vector2.ZERO
 	velocity.x = hvel.x
 	velocity.z = hvel.y
@@ -947,10 +960,24 @@ func _ride_ik() -> void:
 		var grip_r := vehicle.find_child("poignee_1", true, false) as Node3D
 		var peg_l := vehicle.find_child("cale_pied_-1", true, false) as Node3D
 		var peg_r := vehicle.find_child("cale_pied_1", true, false) as Node3D
-		t["LeftHand"] = grip_l.global_position
-		t["RightHand"] = grip_r.global_position if grip_r else Vector3.INF
-		t["LeftFoot"] = peg_l.global_position + vx.basis.y * 0.05 if peg_l else Vector3.INF
-		t["RightFoot"] = peg_r.global_position + vx.basis.y * 0.05 if peg_r else Vector3.INF
+		var k := smoothstep(0.0, 1.0, _enter_t) if _enter_t < 1.0 else 1.0
+		var cote_entree := signf((_enter_from.origin - vx.origin).dot(vx.basis.x))      # +1 : on monte par la droite de la moto
+		# enfourchement : la jambe du cote oppose a l'entree passe par-dessus la selle (arc), l'autre monte aux repose-pieds ;
+		# les mains attrapent le guidon dans la seconde moitie du mouvement
+		var foot_l: Vector3 = peg_l.global_position + vx.basis.y * 0.05 if peg_l else Vector3.INF
+		var foot_r: Vector3 = peg_r.global_position + vx.basis.y * 0.05 if peg_r else Vector3.INF
+		if k < 1.0:
+			var depart := _enter_from.origin + (vx.origin - _enter_from.origin).normalized() * 0.15
+			if foot_l != Vector3.INF:
+				var arc_l := 0.7 if cote_entree > 0.0 else 0.12
+				foot_l = depart.lerp(foot_l, k) + Vector3.UP * sin(k * PI) * arc_l
+			if foot_r != Vector3.INF:
+				var arc_r := 0.7 if cote_entree < 0.0 else 0.12
+				foot_r = depart.lerp(foot_r, k) + Vector3.UP * sin(k * PI) * arc_r
+		t["LeftHand"] = grip_l.global_position if k > 0.55 else Vector3.INF
+		t["RightHand"] = (grip_r.global_position if grip_r else Vector3.INF) if k > 0.55 else Vector3.INF
+		t["LeftFoot"] = foot_l
+		t["RightFoot"] = foot_r
 		return
 	var wheel := vehicle.find_child("pt_volant", true, false) as Node3D
 	var pedals := vehicle.find_child("pt_pedales", true, false) as Node3D
@@ -1044,17 +1071,19 @@ var _retrait_actif := false
 
 
 func _retrait(dir: Vector3) -> bool:
-	## Alt (ou stick a moitie incline) + direction arriere ou laterale : on se deplace sans se retourner. Pas de retrait
-	## en course, accroupi, en garde, en visee (la visee marche deja dans toutes les directions), roulade ou menu.
+	## Reculer (S) et pas de cote (Q / D, ou stick vers l'arriere et les cotes) : ces directions, par rapport a la camera, ne
+	## retournent pas le personnage ; il garde le cap de la camera, marche en arriere ou de cote, et se tourne doucement
+	## vers l'avant de la camera. Pas en accroupi, en garde, en visee (deja libre), roulade, menu ni pendant un pas tourne.
 	_retrait_actif = false
-	if dir.length() < 0.2 or crouched or visee or garde or _roll_t > 0.0 or not menus.is_empty() or sprint_level > 0.0 \
-			or not _virage.is_empty():
+	if dir.length() < 0.2 or crouched or visee or garde or _roll_t > 0.0 or not menus.is_empty() or not _virage.is_empty():
 		return false
-	if not (Input.is_action_pressed("walk") or dir.length() < 0.6):
-		return false
+	var cam := cam_pivot.rotation.y
+	var vers_camera := Vector2(-sin(cam), -cos(cam))
+	if Vector2(dir.x, dir.z).normalized().dot(vers_camera) > 0.3:
+		return false                       # on avance (au moins en diagonale) : deplacement normal
 	_retrait_rel = angle_difference(_facing, atan2(-dir.x, -dir.z))
-	_retrait_actif = absf(_retrait_rel) > deg_to_rad(65.0)
-	return _retrait_actif
+	_retrait_actif = true
+	return true
 
 
 func _retrait_decalage() -> float:
@@ -1062,3 +1091,41 @@ func _retrait_decalage() -> float:
 	if not _retrait_actif or absf(_retrait_rel) > deg_to_rad(115.0):
 		return 0.0
 	return clampf(_retrait_rel * 0.45, -0.7, 0.7)
+
+
+# ------------------------------------------------------------ eclaboussures dans l'eau (bassins, piscines)
+var _eclaboussures: GPUParticles3D
+
+
+func _maj_eclaboussures(dans_eau: bool, vitesse: float) -> void:
+	if _eclaboussures == null:
+		if not dans_eau:
+			return
+		_eclaboussures = GPUParticles3D.new()
+		_eclaboussures.amount = 36
+		_eclaboussures.lifetime = 0.7
+		_eclaboussures.local_coords = false
+		var pm := ParticleProcessMaterial.new()
+		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		pm.emission_sphere_radius = 0.35
+		pm.direction = Vector3.UP
+		pm.spread = 40.0
+		pm.initial_velocity_min = 1.0
+		pm.initial_velocity_max = 2.2
+		pm.gravity = Vector3(0, -7.0, 0)
+		pm.scale_min = 0.6
+		pm.scale_max = 1.3
+		pm.color = Color(0.85, 0.93, 0.97, 0.8)
+		_eclaboussures.process_material = pm
+		var q := QuadMesh.new()
+		q.size = Vector2(0.07, 0.07)
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.vertex_color_use_as_albedo = true
+		q.material = mat
+		_eclaboussures.draw_pass_1 = q
+		_eclaboussures.position = Vector3(0, 0.15, 0)
+		add_child(_eclaboussures)
+	_eclaboussures.emitting = dans_eau and vitesse > 0.5

@@ -31,9 +31,11 @@ extends Node3D
 @export var rattrapage := false          # patrouille avancee hors champ quand elle traine (desactive : on la voit venir)
 
 const DELITS := {"vol": 1, "agression": 1, "renverse": 1, "choc_police": 1, "evasion": 1, "arme_blanche": 2, "tir": 2,
-	"tir_police": 3, "braquage": 3}
+	"tir_police": 3, "braquage": 3, "agression_police": 2}   # niveaux equivalents (ancien systeme, reference)
+const POINTS := {"vol": 20.0, "agression": 25.0, "renverse": 30.0, "choc_police": 40.0, "evasion": 30.0, "arme_blanche": 50.0, "tir": 60.0,
+	"tir_police": 150.0, "braquage": 130.0, "agression_police": 90.0}      # chaleur par delit (partie.gd SEUILS_RECHERCHE)
 const COMPOSITION := [[], ["pied"], ["pied", "berline"], ["berline", "berline"], ["berline", "special", "special"],
-	["special", "special", "moto", "moto"]]
+	["special", "special", "moto", "moto"], ["special", "special", "special", "moto", "moto", "moto"]]
 const ZEM_SCENE := preload("res://scenes/zem.tscn")
 @export var barrage_distance := 150.0    # m devant le joueur
 
@@ -42,6 +44,8 @@ var _player: Node3D
 var _carte: Carte
 var _rng := RandomNumberGenerator.new()
 var _hors_vue := 0.0
+var _clignote_t := 0.0
+@export var duree_clignote := 9.0       # s d etoiles clignotantes (trace perdue) avant que la recherche tombe a zero
 var _arrest_t := 0.0
 var _route_t := 0.0
 var _ticket_cd := 0.0
@@ -69,12 +73,12 @@ func _ready() -> void:
 func crime(kind: String, _where: Vector3) -> void:
 	if _busy:
 		return
-	var add: int = DELITS.get(kind, 1)
+	var add: float = POINTS.get(kind, 20.0)
 	var avant := Partie.recherche
 	var temoin := _witness()
 	Partie.journal.delit(kind, temoin)
 	# deja recherche : un nouveau delit fait monter le niveau
-	Partie.set_recherche(maxi(Partie.recherche, 0) + add)
+	Partie.ajouter_points(add)
 	_hors_vue = 0.0
 	if temoin:
 		appel_t = 0.0
@@ -112,6 +116,7 @@ func on_vehicle_hit(collider: Object, impact: float) -> void:
 func _on_level(n: int) -> void:
 	if n == 0:
 		appel_t = 0.0
+		_clignote_t = 0.0
 		for u in units:
 			_release(u)
 		units.clear()
@@ -194,10 +199,19 @@ func _physics_process(delta: float) -> void:
 			_arrivee = true
 	if seen or not _arrivee:
 		_hors_vue = 0.0          # tant qu'aucune patrouille n'est arrivee, on ne peut pas la semer
+		if Partie.recherche_clignote and seen:
+			Partie.recherche_clignote = false      # repere de nouveau : les etoiles reviennent fixes
 	else:
 		# cache au marche (au milieu des etals et des maquis) : la police perd la trace trois fois plus vite
 		_hors_vue += delta * (3.0 if pv == null and _au_marche(ppos) else 1.0)
-		if _hors_vue > perte_vue + 4.0 * Partie.recherche:
+		if _hors_vue > perte_vue + 4.0 * Partie.recherche and not Partie.recherche_clignote:
+			# comme San Andreas : la police a perdu la trace, les etoiles clignotent un moment avant de disparaitre
+			Partie.recherche_clignote = true
+			_clignote_t = duree_clignote
+			Partie.notifier("Ils ont perdu ta trace... reste caché")
+	if Partie.recherche_clignote:
+		_clignote_t -= delta
+		if _clignote_t <= 0.0:
 			Partie.journal.compter("police_semee", 1, {"niveau": Partie.recherche})
 			Partie.set_recherche(0)
 			Partie.notifier("Tu as semé la police")
@@ -301,6 +315,7 @@ func _make_moto(at: Vector3, yaw: float) -> Node3D:
 	PnjUtil.apply(rider, PnjUtil.uniform_look("police", "homme", _rng))
 	PnjUtil.pose_seated(rider)
 	rider.position = Vector3(0, -0.05, 0.12)
+	rider.tree_entered.connect(func() -> void: Squelette.poser_sur_moto(rider, z), CONNECT_ONE_SHOT)
 	var bar := Node3D.new()
 	bar.name = "Gyrophare"
 	visual.add_child(bar)
@@ -588,14 +603,33 @@ func _arrest() -> void:
 
 
 func _malaise() -> void:
+	## Mort du joueur (sante a zero) : il s'effondre en chute physique (ragdoll), le temps ralentit un instant, "MORT" s'affiche
+	## puis fondu au noir et reveil au centre de sante (soins factures, recherche effacee).
 	if _busy:
 		return
 	_busy = true
 	Partie.journal.compter("morts", 1, {"recherche": Partie.recherche})
 	var hj := get_tree().get_first_node_in_group("hud_jeu")
 	if hj:
-		hj.annonce("ÉVANOUI", "Centre de santé Gbêkpo : %s de soins" % Partie.fcfa(Partie.frais_hopital), 3.5)
+		hj.annonce("MORT", "Centre de santé Gbêkpo : %s de soins" % Partie.fcfa(Partie.frais_hopital), 3.5)
+	var modele := _player.get_node_or_null("Body/Model") as Node3D
+	var sim: PhysicalBoneSimulator3D = null
+	_player.menus["mort"] = true                     # plus de commandes pendant la chute
+	if modele:
+		var f := float(_player.get("_facing"))
+		var chute := Vector3(sin(f), 2.2, cos(f)) * 1.8       # il tombe en arriere
+		if _player.get("vehicle") == null:
+			sim = Ragdoll.start(modele, chute)
+		var anim_p: Node = _player.get("anim")
+		if sim == null and anim_p and anim_p.has_method("play_clips"):
+			anim_p.play_clips([["Death01", 0.0]], true)       # repli : chute captee si la simulation n'est pas disponible
+	Engine.time_scale = 0.4
+	get_tree().create_timer(1.8, true, false, true).timeout.connect(func() -> void: Engine.time_scale = 1.0)
 	_fade_then(func() -> void:
+		Engine.time_scale = 1.0
+		if sim and modele:
+			Ragdoll.stop(modele, sim)
+		_player.menus.erase("mort")
 		if _player.get("vehicle"):
 			_player.exit_vehicle(true)
 		Partie.prelever(Partie.frais_hopital, "Soins")
@@ -703,3 +737,16 @@ func _fade_then(cb: Callable) -> void:
 	tw.tween_interval(1.0)
 	tw.tween_property(_fade, "color:a", 0.0, 1.0)
 	tw.tween_callback(func() -> void: _busy = false)
+
+
+func player_attack(origin: Vector3, dir: Vector3, _coup := 0, _degats := -1.0, portee := 1.6, _arme := false) -> bool:
+	## Coup du joueur sur un agent de police a pied : delit grave (la recherche monte), l'agent reste debout et poursuit.
+	for u in units:
+		var o: Node3D = u.get("officer")
+		if o and is_instance_valid(o):
+			var rel := o.global_position - origin
+			rel.y = 0.0
+			if rel.length() < portee + 0.4 and rel.normalized().dot(dir) > 0.3:
+				crime("agression_police", o.global_position)
+				return true
+	return false
