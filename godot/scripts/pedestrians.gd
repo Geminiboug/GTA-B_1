@@ -408,6 +408,8 @@ func _physics_process(delta: float) -> void:
 		_vendor_calls(ppos, pv)
 	if _tick % 40 == 0:
 		_recycler(ppos)
+	if _tick % 4 == 0:
+		_trafic_heurte(ppos)
 	_voisins.clear()
 	for w in _walkers:
 		if not w.get("far", false):
@@ -1270,6 +1272,7 @@ func _triggers(w: Dictionary, delta: float, ppos: Vector3, pv: Node3D) -> void:
 		var hl := 2.5 if car else 1.05
 		if st != "down" and vs > 2.5 and lx < hw + 0.25 and lz < hl + 0.25 and absf(rel.y) < 2.0:
 			var fwd := -vx.basis.z * signf(float(pv.get("speed")))
+			w["pv"] = float(w.get("pv", 100.0)) - vs * degats_vehicule
 			_knock_down(w, Vector2(fwd.x, fwd.z) * minf(vs * 0.6, 9.0) + Vector2(rel.x, rel.z).normalized() * 1.5,
 				"angry" if vs < 9.0 else "angry")
 			w["line_after"] = "renverse"
@@ -1308,6 +1311,49 @@ func _triggers(w: Dictionary, delta: float, ppos: Vector3, pv: Node3D) -> void:
 		Bulle.say(w["node"], Dialogues.greeting(_hour(), _rng, _player_genre()))
 		w["talk_cd"] = 20.0
 		_greet_cd = 3.0
+
+
+@export var trafic_portee := 45.0          # m : seuls les vehicules de la circulation proches du joueur heurtent les passants
+@export var degats_vehicule := 7.0         # points de vie perdus par m/s de vitesse au choc
+
+
+func _trafic_heurte(ppos: Vector3) -> void:
+	## Les vehicules de la circulation renversent aussi les passants (avant, seul le vehicule du joueur le faisait) :
+	## chute, points de vie perdus, crime si un agent de police est la.
+	var traffic := get_node_or_null("../Circulation")
+	if traffic == null:
+		return
+	for a in traffic._agents:
+		if not a.get("active", true):
+			continue
+		var vs: float = absf(float(a["speed"]))
+		var vp: Vector3 = a["vis_pos"]
+		if vs < 2.5 or vp.distance_squared_to(ppos) > trafic_portee * trafic_portee:
+			continue
+		var yaw: float = a["vis_yaw"]
+		var fwd := Vector2(-sin(yaw), -cos(yaw))
+		var side := Vector2(-fwd.y, fwd.x)
+		var car: bool = a["kind"] == "voiture"
+		var hw := 1.05 if car else 0.45
+		var hl := 2.5 if car else 1.05
+		for w in _walkers:
+			if w.get("far", false) or w.has("ragdoll") or w["state"] == "down" or w["state"] == "assis":
+				continue
+			var me: Vector3 = w["pos"]
+			if absf(me.y - vp.y) > 2.0:
+				continue
+			var rel := Vector2(me.x - vp.x, me.z - vp.z)
+			var along := rel.dot(fwd)
+			if absf(rel.dot(side)) < hw + 0.25 and along > -hl and along < hl + 0.25:
+				var push := fwd * minf(vs * 0.6, 9.0) + side * signf(rel.dot(side)) * 1.5
+				w["pv"] = float(w.get("pv", 100.0)) - vs * degats_vehicule
+				_knock_down(w, push, "flee" if w["pv"] > 0.0 else "angry")
+				w["line_after"] = "renverse"
+				_incident(Vector2(me.x, me.z), "temoin_accident", 30.0)
+				var b: Node3D = a["body"]
+				if b and b.has_method("damage"):
+					b.call("damage", minf(vs * 0.15, 3.0))
+				a["speed"] = float(a["speed"]) * 0.6
 
 
 func _vehicle_hit(v: Node3D, vs: float) -> void:

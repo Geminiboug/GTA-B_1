@@ -53,6 +53,8 @@ extends CharacterBody3D
 @onready var body: Node3D = $Body
 @onready var anim: Node = get_node_or_null("Body/Model")
 
+@export var eau_lenteur := 0.45        # part de la vitesse conservee dans l'eau
+@export var eau_enfoncement := 0.6      # m : le corps s'enfonce dans l'eau
 var _land_t := 0.0
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _cam_offset := Vector3(0, 1.6, 0)
@@ -743,6 +745,10 @@ func _physics_process(delta: float) -> void:
 	if tilt < 0.98 and sprint_level <= 0.0:
 		target_speed = lerpf(walk_speed * 0.6, target_speed, smoothstep(0.15, 0.95, tilt))
 	target_speed *= minf(tilt * 4.0, 1.0)
+	# plan d'eau, bassin ou piscine : on y patauge (lent, enfonce) au lieu de marcher dessus
+	var dans_eau := Carte.zone().dans_eau(global_position.x, global_position.z)
+	target_speed *= eau_lenteur if dans_eau else 1.0
+	body.position.y = move_toward(body.position.y, -eau_enfoncement if dans_eau else 0.0, 2.5 * delta)
 	if _punch_cd > 0.0 and arme == "":
 		target_speed = 0.0      # pieds plantes pendant un coup : le clip est sur place, sinon le personnage glisse
 

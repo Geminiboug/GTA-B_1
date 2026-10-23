@@ -423,7 +423,7 @@ func _draw_blips() -> void:
 		_diamond(_blips, c + q, 7.0, COL_WAYPOINT)
 	# patrouilles de police (scripts/police.gd) : point rouge / bleu qui clignote, colle au bord si loin
 	var blink := int(Time.get_ticks_msec() / 300) % 2 == 0
-	for car in get_tree().get_nodes_in_group("police_car"):
+	for car in get_tree().get_nodes_in_group("police_car") + get_tree().get_nodes_in_group("police_agent"):
 		var p3 := (car as Node3D).global_position
 		var pq := _to_mini(Vector2(p3.x, p3.z), pp, h, R)
 		if pq.length() > R * 0.86:

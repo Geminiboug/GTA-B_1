@@ -495,6 +495,7 @@ func _make_officer(at: Vector3) -> Node3D:
 	add_child(ch)
 	PnjUtil.apply(ch, PnjUtil.uniform_look("police", genre, _rng))
 	ch.global_position = at
+	ch.add_to_group("police_agent")      # point clignotant sur la mini-carte (hud_carte.gd), comme les patrouilles
 	Bulle.say(ch, ["Halte ! Police !", "Arrêtez-vous !", "Ne bougez plus !"][_rng.randi() % 3], 2.5)
 	return ch
 

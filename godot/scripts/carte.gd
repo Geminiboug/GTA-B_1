@@ -33,6 +33,30 @@ var _cases_min := Vector2i.ZERO
 var _cases_max := Vector2i.ZERO
 
 
+var _eaux: Array = []          # {rect, pts} : bassins, piscines et plans d'eau de la zone (zones "zone_eau" / "zone_piscine")
+var _eaux_prete := false
+
+
+func dans_eau(x: float, z: float) -> bool:
+	## vrai si le point est sur un plan d'eau, un bassin ou une piscine (l'eau est un aplat sans collision propre)
+	if not _eaux_prete:
+		_eaux_prete = true
+		for zn in data.get("zones", []):
+			if zn["kind"] == "zone_eau" or zn["kind"] == "zone_piscine":
+				var poly := PackedVector2Array()
+				for q in zn["pts"]:
+					poly.append(Vector2(float(q[0]), float(q[1])))
+				var r := Rect2(poly[0], Vector2.ZERO)
+				for q in poly:
+					r = r.expand(q)
+				_eaux.append({"rect": r, "pts": poly})
+	var p := Vector2(x, z)
+	for e in _eaux:
+		if (e["rect"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, e["pts"]):
+			return true
+	return false
+
+
 static func zone() -> Carte:
 	if _zone == null:
 		_zone = Carte.new()
