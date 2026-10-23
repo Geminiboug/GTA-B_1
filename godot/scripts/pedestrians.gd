@@ -1208,6 +1208,14 @@ func _eviter(w: Dictionary, avant: Vector3) -> void:
 			if not _solide(essai) and not _carte.in_building(Vector2(essai.x, essai.z)):
 				me = essai
 				break
+	# filet de securite pour tous les etats (fuite, attroupement, chute, poussee...) : jamais dans un batiment ou un mur
+	if _carte.in_building(Vector2(me.x, me.z)) and not _carte.in_building(Vector2(avant.x, avant.z)):
+		me = avant
+		w["blocage"] = int(w.get("blocage", 0)) + 1
+		if w["blocage"] > 20 and w["state"] != "walk":
+			w["blocage"] = 0
+			_set_state(w, "walk")
+			_resnap(w)
 	if me.distance_to(w["pos"]) > 0.0001:
 		w["pos"] = me
 		(w["node"] as Node3D).global_position = Vector3(me.x, (w["node"] as Node3D).global_position.y, me.z)

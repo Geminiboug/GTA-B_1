@@ -44,6 +44,7 @@ var _carte: Carte
 var _agents: Array = []
 var _player: Node3D
 var _locks := {}              # noeud de carrefour -> id de l'agent engage
+var _signal: Signalisation    # feux tricolores et STOP (scripts/signalisation.gd)
 var _obstacles: Array = []    # vehicules gares ou abandonnes, pietons qui traversent
 
 signal honked(body: Node3D, at_player: bool)
@@ -66,6 +67,10 @@ func _ready() -> void:
 	Partie.chantier(func() -> void:
 		_horn_moto = AudioSynth.klaxon(415.0, 520.0, 0.35)
 		_horn_car = AudioSynth.klaxon(350.0, 440.0, 0.5))
+	_signal = Signalisation.new()
+	_signal.name = "Signalisation"
+	add_child(_signal)
+	Partie.chantier(func() -> void: _signal.monter(_carte))
 	var meshes: Dictionary = await _build_meshes()
 	# etale sur plusieurs images pendant l'ecran de chargement (Partie.chantier)
 	for i in zem_count:
@@ -514,6 +519,21 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 				a["wait"] = a.get("wait", 0.0) + delta
 				if a["wait"] < 6.0:
 					vmax = minf(vmax, maxf(rem - 6.0, 0.0) * 1.5)
+	# feu rouge / orange et STOP : on s'arrete avant la ligne (a 3 m du carrefour), puis on repart
+	a["au_feu"] = false
+	if _signal and rem < 26.0 and rem > 1.5:
+		var etat := _signal.etat(n, fwd2)
+		if etat == 2 or (etat == 1 and rem > a["speed"] * 1.4 + 5.0):
+			vmax = minf(vmax, maxf(rem - 3.5, 0.0) * 1.3)
+			a["au_feu"] = true
+		elif _signal.est_stop(n, a["edge"]) and a.get("stop_ok", -1) != n:
+			vmax = minf(vmax, maxf(rem - 3.0, 0.0) * 1.3)
+			if rem < 5.0 and a["speed"] < 0.4:
+				a["stop_t"] = a.get("stop_t", 0.0) + delta
+				a["au_feu"] = true
+				if a["stop_t"] > 1.4:
+					a["stop_ok"] = n
+					a["stop_t"] = 0.0
 	# accident ou choc tout pres : le conducteur s'arrete un moment
 	if a.get("stunned", 0.0) > 0.0:
 		a["stunned"] -= delta
@@ -561,7 +581,7 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 			Bulle.say(a["body"], Dialogues.pick("klaxon", _rng, _pgenre()), 2.4, 2.0)
 		honked.emit(a["body"], blocked_by_player)
 	# coince trop longtemps (embouteillage sans fin) : il repart ailleurs, loin du joueur
-	if a["stuck"] > 25.0 and not blocked_by_player:
+	if a["stuck"] > 45.0 and not blocked_by_player:
 		_release(a)
 		_place_random(a)
 		a["stuck"] = 0.0
