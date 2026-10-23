@@ -57,6 +57,10 @@ func _process(delta: float) -> void:
 	if _maj_t <= 0.0 and _tetes:
 		_maj_t = 0.4
 		_colorier()
+	_txt_t -= delta
+	if _txt_t <= 0.0:
+		_txt_t = 0.5
+		_maj_textes()
 
 
 func _axe(dir: Vector2) -> int:
@@ -86,21 +90,40 @@ func est_stop(n: int, arete: int) -> bool:
 	return _stops.has(n) and (_stops[n] as Dictionary).has(arete)
 
 
+func _arrive(e: int, n: int) -> bool:
+	## Un vehicule peut-il arriver au noeud n par l'arete e ? (les sorties de rues a sens unique n'ont ni feu ni STOP)
+	return _carte.can_drive(e, _carte.other_end(e, n))
+
+
 func _construire() -> void:
+	# poteau gris fonce, boitier noir a trois feux (rouge en haut, orange, vert en bas) tournes vers les vehicules qui arrivent
 	var poteau := CylinderMesh.new()
-	poteau.top_radius = 0.07
-	poteau.bottom_radius = 0.09
-	poteau.height = 4.2
-	poteau.radial_segments = 6
+	poteau.top_radius = 0.06
+	poteau.bottom_radius = 0.085
+	poteau.height = 1.0
+	poteau.radial_segments = 8
 	var pm := StandardMaterial3D.new()
-	pm.albedo_color = Color(0.18, 0.18, 0.2)
+	pm.albedo_color = Color(0.2, 0.21, 0.23)
+	pm.roughness = 0.7
 	poteau.material = pm
-	var tete := BoxMesh.new()
-	tete.size = Vector3(0.45, 0.45, 0.3)
-	var tm := StandardMaterial3D.new()
-	tm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	tm.vertex_color_use_as_albedo = true
-	tete.material = tm
+	var boitier := BoxMesh.new()
+	boitier.size = Vector3(0.38, 1.08, 0.3)
+	var bm := StandardMaterial3D.new()
+	bm.albedo_color = Color(0.05, 0.05, 0.06)
+	bm.roughness = 0.5
+	boitier.material = bm
+	var visiere := BoxMesh.new()                 # petit auvent au-dessus de chaque feu
+	visiere.size = Vector3(0.3, 0.03, 0.14)
+	visiere.material = bm
+	var lentille := CylinderMesh.new()
+	lentille.top_radius = 0.13
+	lentille.bottom_radius = 0.13
+	lentille.height = 0.04
+	lentille.radial_segments = 14
+	var lm := StandardMaterial3D.new()
+	lm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	lm.vertex_color_use_as_albedo = true
+	lentille.material = lm
 	var panneau := CylinderMesh.new()
 	panneau.top_radius = 0.38
 	panneau.bottom_radius = 0.38
@@ -111,85 +134,111 @@ func _construire() -> void:
 	sm.emission_enabled = true
 	sm.emission = Color(0.5, 0.02, 0.02)
 	panneau.material = sm
-	var poses := []     # [type, position, noeud, axe]
+	var feux := []        # [position (Vector2), dir d'arrivee, noeud, axe, hauteur du poteau]
+	var stops := []       # [position, noeud]
 	var approches := []
 	for n in _feux.keys():
+		var c: Vector2 = _carte.nodes[n]
 		for e in _carte.node_edges[n]:
+			if not _arrive(e, n):
+				continue
 			var p2 := _carte.edge_pts_from(e, n)
 			if p2.size() < 2:
 				continue
 			var dir := -(p2[1] - p2[0]).normalized()       # sens de l'arrivee au carrefour
 			var droite := Vector2(-dir.y, dir.x)
 			var larg: float = float(_carte.edges[e]["width"])
-			var c: Vector2 = _carte.nodes[n]
-			var pos := c - dir * (ligne(larg) + 0.5) + droite * (larg * 0.5 + 0.8)
-			poses.append(["feu", pos, n, _axe(dir)])
+			var lat := larg * 0.5 + 1.0                     # sur le trottoir, a droite de la voie qui arrive
+			# feu de la ligne d'arret (a droite, du cote du conducteur) et feu de l'autre cote du carrefour (visible de loin)
+			feux.append([c - dir * (ligne(larg) + 0.6) + droite * lat, dir, n, _axe(dir), 3.6])
+			feux.append([c + dir * (larg * 0.5 + 2.0) + droite * lat, dir, n, _axe(dir), 4.6])
 			approches.append([n, dir, larg])
 	for n in _stops.keys():
+		var c: Vector2 = _carte.nodes[n]
 		for e in (_stops[n] as Dictionary).keys():
+			if not _arrive(e, n):
+				continue
 			var p2 := _carte.edge_pts_from(e, n)
 			if p2.size() < 2:
 				continue
 			var dir := -(p2[1] - p2[0]).normalized()
 			var droite := Vector2(-dir.y, dir.x)
 			var larg: float = float(_carte.edges[e]["width"])
-			var c: Vector2 = _carte.nodes[n]
-			poses.append(["stop", c - dir * (ligne(larg) + 0.5) + droite * (larg * 0.5 + 0.8), n, _axe(dir)])
+			stops.append([c - dir * (ligne(larg) + 0.6) + droite * (larg * 0.5 + 1.0), dir])
 			approches.append([n, dir, larg])
 	_marquages(approches)
-	var nf := 0
-	var ns := 0
-	for p in poses:
-		if p[0] == "feu":
-			nf += 1
-		else:
-			ns += 1
+	_panneaux()
+	var nf := feux.size()
 	var mp := MultiMesh.new()
 	mp.transform_format = MultiMesh.TRANSFORM_3D
 	mp.mesh = poteau
-	mp.instance_count = poses.size()
-	var mt := MultiMesh.new()
-	mt.transform_format = MultiMesh.TRANSFORM_3D
-	mt.use_colors = true
-	mt.mesh = tete
-	mt.instance_count = nf
+	mp.instance_count = nf + stops.size()
+	var mb := MultiMesh.new()
+	mb.transform_format = MultiMesh.TRANSFORM_3D
+	mb.mesh = boitier
+	mb.instance_count = nf
+	var mv := MultiMesh.new()
+	mv.transform_format = MultiMesh.TRANSFORM_3D
+	mv.mesh = visiere
+	mv.instance_count = nf * 3
+	var ml := MultiMesh.new()
+	ml.transform_format = MultiMesh.TRANSFORM_3D
+	ml.use_colors = true
+	ml.mesh = lentille
+	ml.instance_count = nf * 3
 	var ms := MultiMesh.new()
 	ms.transform_format = MultiMesh.TRANSFORM_3D
 	ms.mesh = panneau
-	ms.instance_count = ns
-	var i := 0
-	var it := 0
-	var isn := 0
+	ms.instance_count = stops.size()
 	_tete_noeud.resize(nf)
 	_tete_axe.resize(nf)
-	for p in poses:
-		var q: Vector2 = p[1]
-		mp.set_instance_transform(i, Transform3D(Basis.IDENTITY, Vector3(q.x, 2.1, q.y)))
-		i += 1
-		if p[0] == "feu":
-			mt.set_instance_transform(it, Transform3D(Basis.IDENTITY, Vector3(q.x, 4.4, q.y)))
-			_tete_noeud[it] = p[2]
-			_tete_axe[it] = p[3]
-			it += 1
-		else:
-			ms.set_instance_transform(isn, Transform3D(Basis(Vector3.RIGHT, PI / 2.0), Vector3(q.x, 2.6, q.y)))
-			isn += 1
-	for mm in [mp, mt, ms]:
+	for i in nf:
+		var f: Array = feux[i]
+		var q: Vector2 = f[0]
+		var dir: Vector2 = f[1]
+		var h: float = f[4]
+		var yaw := atan2(-dir.x, -dir.y)              # +Z local du boitier = vers les vehicules qui arrivent
+		var base := Basis(Vector3.UP, yaw)
+		var haut := h - 0.15                           # le boitier est pose sur le poteau
+		mp.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(1, haut, 1)), Vector3(q.x, haut * 0.5, q.y)))
+		var centre := Vector3(q.x, haut + 0.54, q.y)
+		mb.set_instance_transform(i, Transform3D(base, centre))
+		for k in 3:
+			var dy := 0.34 - k * 0.34                  # rouge en haut, orange, vert en bas
+			var p := centre + base * Vector3(0, dy, 0.16)
+			ml.set_instance_transform(i * 3 + k, Transform3D(base * Basis(Vector3.RIGHT, PI / 2.0), p))
+			mv.set_instance_transform(i * 3 + k, Transform3D(base, p + base * Vector3(0, 0.15, 0.04)))
+		_tete_noeud[i] = f[2]
+		_tete_axe[i] = f[3]
+	for j in stops.size():
+		var q: Vector2 = stops[j][0]
+		var dir: Vector2 = stops[j][1]
+		mp.set_instance_transform(nf + j, Transform3D(Basis.from_scale(Vector3(1, 2.3, 1)), Vector3(q.x, 1.15, q.y)))
+		var yaw := atan2(-dir.x, -dir.y)
+		# panneau octogonal face aux vehicules : le cylindre (axe Y) est couche sur +Z puis tourne vers le conducteur
+		ms.set_instance_transform(j, Transform3D(Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, PI / 2.0), Vector3(q.x, 2.5, q.y) + Vector3(sin(yaw), 0, cos(yaw)) * 0.06))
+	for mm in [mp, mb, mv, ml, ms]:
 		var inst := MultiMeshInstance3D.new()
 		inst.multimesh = mm
 		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(inst)
-		if mm == mt:
+		if mm == ml:
 			_tetes = inst
 	_colorier()
 
 
 func _colorier() -> void:
+	## Un seul feu allume par boitier ; les deux autres restent sombres.
 	if _tetes == null:
 		return
 	var mm := _tetes.multimesh
-	for k in mm.instance_count:
-		mm.set_instance_color(k, COUL[_etat_axe(_tete_noeud[k], _tete_axe[k])])
+	var eteint := [Color(0.08, 0.0, 0.0), Color(0.07, 0.04, 0.0), Color(0.0, 0.07, 0.01)]
+	for i in mm.instance_count / 3:
+		var s := _etat_axe(_tete_noeud[i], _tete_axe[i])        # 0 vert, 1 orange, 2 rouge
+		var allume := 2 - s                                      # position du feu allume : 0 haut (rouge), 1 orange, 2 vert
+		for k in 3:
+			var couleur_allumee: Color = COUL[2 - k]
+			mm.set_instance_color(i * 3 + k, couleur_allumee if k == allume else eteint[k])
 
 
 static func ligne(largeur: float) -> float:
@@ -234,3 +283,170 @@ func _marquages(approches: Array) -> void:
 	inst.multimesh = mm
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(inst)
+
+
+# ------------------------------------------------------------ panneaux (limitation, sens interdit, stationnement)
+@export var limite_kmh := 50                 # voies principales (les petites rues : 30, sans panneau)
+@export var pool_textes := 24
+@export var portee_textes := 70.0
+var _panneaux_liste: Array = []       # [texte, position Vector3, yaw] : chiffres posés par un pool de Label3D
+var _pool_labels: Array[Label3D] = []
+var _txt_t := 0.0
+
+
+func limite_ms(principale: bool) -> float:
+	## Vitesse maximale (m/s) que respectent les vehicules : 50 km/h sur les voies principales, 30 dans les petites rues.
+	return (limite_kmh if principale else 30) / 3.6 * 1.06
+
+
+func _panneaux() -> void:
+	var items := []        # [type, position (Vector2), dir (sens des vehicules concernes)]
+	for e in _carte.edges.size():
+		var ed: Dictionary = _carte.edges[e]
+		if ed["kind"] == "track":
+			continue
+		var larg: float = float(ed["width"])
+		var L: float = float(ed["len"])
+		if ed["major"] and L > 70.0:
+			for depuis in [ed["a"], ed["b"]]:
+				if not _carte.can_drive(e, depuis):
+					continue
+				var p2 := _carte.edge_pts_from(e, depuis)
+				if p2.size() < 2:
+					continue
+				var dir := (p2[1] - p2[0]).normalized()
+				items.append(["limite", p2[0] + dir * (ligne(larg) + 12.0) + Vector2(-dir.y, dir.x) * (larg * 0.5 + 0.9), dir])
+		if ed["oneway"] and L > 25.0 and larg >= 4.0:
+			var sortie: int = ed["b"]                       # bout par lequel on ne peut pas entrer
+			if _carte.node_degree(sortie) >= 3:
+				var p2 := _carte.edge_pts_from(e, sortie)
+				if p2.size() >= 2:
+					var dir := (p2[1] - p2[0]).normalized()     # sens de celui qui s'engagerait a contresens
+					items.append(["sens_interdit", p2[0] + dir * (larg * 0.5 + 3.0) + Vector2(-dir.y, dir.x) * (larg * 0.5 + 0.9), dir])
+	for n in _feux.keys():
+		for e in _carte.node_edges[n]:
+			if not _arrive(e, n):
+				continue
+			var p2 := _carte.edge_pts_from(e, n)
+			if p2.size() < 2:
+				continue
+			var dir := -(p2[1] - p2[0]).normalized()
+			var larg: float = float(_carte.edges[e]["width"])
+			var c: Vector2 = _carte.nodes[n]
+			items.append(["stationnement", c - dir * (ligne(larg) + 9.0) + Vector2(-dir.y, dir.x) * (larg * 0.5 + 0.9), dir])
+	var poteau := CylinderMesh.new()
+	poteau.top_radius = 0.035
+	poteau.bottom_radius = 0.045
+	poteau.height = 1.0
+	poteau.radial_segments = 6
+	var pm := StandardMaterial3D.new()
+	pm.albedo_color = Color(0.5, 0.5, 0.52)
+	poteau.material = pm
+	var disque := CylinderMesh.new()
+	disque.top_radius = 0.34
+	disque.bottom_radius = 0.34
+	disque.height = 0.03
+	disque.radial_segments = 20
+	var dm := StandardMaterial3D.new()
+	dm.vertex_color_use_as_albedo = true
+	dm.roughness = 0.5
+	disque.material = dm
+	var barre := BoxMesh.new()
+	barre.size = Vector3(0.5, 0.02, 0.11)
+	var bm := StandardMaterial3D.new()
+	bm.vertex_color_use_as_albedo = true
+	bm.roughness = 0.5
+	barre.material = bm
+	var nit := items.size()
+	var mp := MultiMesh.new()
+	mp.transform_format = MultiMesh.TRANSFORM_3D
+	mp.mesh = poteau
+	mp.instance_count = nit
+	var md := MultiMesh.new()
+	md.transform_format = MultiMesh.TRANSFORM_3D
+	md.use_colors = true
+	md.mesh = disque
+	md.instance_count = nit * 2                   # bord colore + fond
+	var nb := 0
+	for it in items:
+		if it[0] == "sens_interdit" or it[0] == "stationnement":
+			nb += 1
+	var mb := MultiMesh.new()
+	mb.transform_format = MultiMesh.TRANSFORM_3D
+	mb.use_colors = true
+	mb.mesh = barre
+	mb.instance_count = nb
+	var ib := 0
+	for i in nit:
+		var it: Array = items[i]
+		var q: Vector2 = it[1]
+		var dir: Vector2 = it[2]
+		var yaw := atan2(-dir.x, -dir.y)
+		var base := Basis(Vector3.UP, yaw)
+		var face := base * Vector3(0, 0, 1)
+		var haut := 2.3
+		mp.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(1, haut, 1)), Vector3(q.x, haut * 0.5, q.y)))
+		var centre := Vector3(q.x, haut + 0.2, q.y) + face * 0.05
+		var plat := base * Basis(Vector3.RIGHT, PI / 2.0)       # cylindre couche : la face regarde les vehicules
+		var bord := Color(0.85, 0.05, 0.05)
+		var fond := Color(0.97, 0.97, 0.95)
+		match it[0]:
+			"limite":
+				_panneaux_liste.append([str(limite_kmh), centre + face * 0.035, yaw])
+			"sens_interdit":
+				bord = Color(0.8, 0.04, 0.04)
+				fond = bord
+			"stationnement":
+				bord = Color(0.8, 0.04, 0.04)
+				fond = Color(0.1, 0.3, 0.8)
+				_panneaux_liste.append(["P", centre + face * 0.035, yaw])
+		md.set_instance_transform(i * 2, Transform3D(plat, centre))
+		md.set_instance_color(i * 2, bord)
+		md.set_instance_transform(i * 2 + 1, Transform3D(plat.scaled_local(Vector3(0.78, 1.0, 0.78)), centre + face * 0.012))
+		md.set_instance_color(i * 2 + 1, fond)
+		if it[0] == "sens_interdit":
+			mb.set_instance_transform(ib, Transform3D(base * Basis(Vector3.RIGHT, PI / 2.0), centre + face * 0.03))
+			mb.set_instance_color(ib, Color(1, 1, 1))
+			ib += 1
+		elif it[0] == "stationnement":
+			mb.set_instance_transform(ib, Transform3D(base * Basis(Vector3(0, 0, 1), PI / 4.0) * Basis(Vector3.RIGHT, PI / 2.0), centre + face * 0.03))
+			mb.set_instance_color(ib, Color(0.85, 0.05, 0.05))
+			ib += 1
+	for mm in [mp, md, mb]:
+		var inst := MultiMeshInstance3D.new()
+		inst.multimesh = mm
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(inst)
+	for i in pool_textes:
+		var l := Label3D.new()
+		l.font_size = 72
+		l.pixel_size = 0.004
+		l.modulate = Color(0.05, 0.05, 0.05)
+		l.outline_size = 0
+		l.no_depth_test = false
+		l.visible = false
+		add_child(l)
+		_pool_labels.append(l)
+
+
+func _maj_textes() -> void:
+	## Pose les chiffres (50, P) des panneaux les plus proches de la camera.
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or _pool_labels.is_empty():
+		return
+	var c := cam.global_position
+	var proches := []
+	for p in _panneaux_liste:
+		var d := c.distance_squared_to(p[1])
+		if d < portee_textes * portee_textes:
+			proches.append([d, p])
+	proches.sort_custom(func(x, y): return x[0] < y[0])
+	for i in _pool_labels.size():
+		var l := _pool_labels[i]
+		if i < proches.size():
+			var p: Array = proches[i][1]
+			l.text = p[0]
+			l.global_transform = Transform3D(Basis(Vector3.UP, float(p[2])), p[1])
+			l.visible = true
+		else:
+			l.visible = false

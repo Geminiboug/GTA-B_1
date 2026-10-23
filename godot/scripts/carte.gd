@@ -546,3 +546,50 @@ func _partial(e: int, along: float, to_node: int) -> PackedVector2Array:
 		return after
 	before.reverse()
 	return before
+
+
+# ------------------------------------------------------------ zone reservee de l'aeroport (cote piste)
+@export var marge_piste := 45.0        # m de part et d'autre de l'axe d'une piste
+var _reserve_prete := false
+var _pistes: Array = []                # [[Vector2 a, Vector2 b], ...] segments des pistes
+var _tarmacs: Array = []               # polygones des aires de stationnement d'avions
+var _reserve_aretes := {}
+
+
+func zone_reservee(p: Vector2) -> bool:
+	## Vrai cote piste (pistes, aires de stationnement des avions) : ni vendeurs ambulants, ni zems, ni voitures de particuliers,
+	## ni passants ordinaires (docs/benin-gta-roadmap.md : fidelite de l'aeroport).
+	if not _reserve_prete:
+		_reserve_prete = true
+		for r in data.get("runways", []):
+			for i in range(0, r.size() - 1):
+				_pistes.append([Vector2(float(r[i][0]), float(r[i][1])), Vector2(float(r[i + 1][0]), float(r[i + 1][1])), marge_piste])
+		for aw in data.get("aeroways", []):
+			var demi := marge_piste if aw["kind"] in ["runway", "stopway"] else 25.0
+			var ap: Array = aw["pts"]
+			for i in range(0, ap.size() - 1):
+				_pistes.append([Vector2(float(ap[i][0]), float(ap[i][1])), Vector2(float(ap[i + 1][0]), float(ap[i + 1][1])), demi])
+		for z in data.get("zones", []):
+			if z["kind"] == "aeroport_tarmac":
+				var poly := PackedVector2Array()
+				for q in z["pts"]:
+					poly.append(Vector2(float(q[0]), float(q[1])))
+				_tarmacs.append(poly)
+	for poly in _tarmacs:
+		if Geometry2D.is_point_in_polygon(p, poly):
+			return true
+	for s in _pistes:
+		if Geometry2D.get_closest_point_to_segment(p, s[0], s[1]).distance_to(p) < s[2]:
+			return true
+	return false
+
+
+func arete_reservee(e: int) -> bool:
+	## Une arete (rue) dont le milieu est cote piste.
+	if _reserve_aretes.has(e):
+		return _reserve_aretes[e]
+	var pts: PackedVector2Array = edges[e]["pts"]
+	var m := pts[pts.size() / 2]
+	var r := zone_reservee(m) or zone_reservee(pts[0]) or zone_reservee(pts[pts.size() - 1])
+	_reserve_aretes[e] = r
+	return r

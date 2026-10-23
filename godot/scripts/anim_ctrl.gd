@@ -50,6 +50,7 @@ const MX_MARCHES := ["MX_Marche", "MX_Marche_Standard"]
 @export var lod_steps: Array[float] = [8.0, 20.0, 45.0]   # m : au-dela, une image sur 2, 3, puis 4
 
 var speed := 0.0
+var recul := false            # marche arriere : la boucle de marche est jouee a l envers (pas de capture de recul)
 var on_floor := true
 var vertical_speed := 0.0
 var turn_rate := 0.0
@@ -440,7 +441,7 @@ func _physics_process(delta: float) -> void:
 	_was_floor = on_floor
 	var g := _gait(speed)
 	_tree.set("parameters/loco/blend_position", g)
-	_tree.set("parameters/echelle/scale", foulee_air if not on_floor and _air_moving else (clampf(speed / _natural_speed(g), 0.5, 2.0) if g >= 1.0 else 1.0))
+	_tree.set("parameters/echelle/scale", (foulee_air if not on_floor and _air_moving else (clampf(speed / _natural_speed(g), 0.5, 2.0) if g >= 1.0 else 1.0)) * (-1.0 if recul and on_floor else 1.0))
 	var cn: float = _natural.get("Crouch_Fwd", 0.8) * (_skel.motion_scale if _skel else 1.0)
 	_tree.set("parameters/accroupi/blend_position", clampf(speed / 0.5, 0.0, 1.0))
 	_tree.set("parameters/echelle_accroupi/scale", clampf(speed / cn, 0.6, 1.8) if speed > 0.2 else 1.0)

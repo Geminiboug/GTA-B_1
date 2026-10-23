@@ -11,6 +11,7 @@ extends Node
 @export var recharge := 480.0        # s avant de pouvoir braquer le meme lieu
 @export var temoins_alerte := 5      # passants proches a partir desquels la police est alertee sans delai
 @export var rayon_temoins := 30.0
+@export var rayon_panique := 18.0     # m : les passants dans ce rayon s'enfuient au debut du braquage
 @export var butin := {"caisse": 120000, "cafe": 45000, "maquis": 30000, "quincaillerie": 70000}   # FCFA moyens
 
 const NOMS := {"caisse": "la caisse", "cafe": "le café", "maquis": "le maquis", "quincaillerie": "la quincaillerie"}
@@ -80,6 +81,10 @@ func demarrer(s: Dictionary) -> void:
 	_t = 0.0
 	temoins = _compter_temoins()
 	Partie.notifier("Braquage de %s : tiens-les en joue (%d s) sans t'éloigner." % [NOMS[s["kind"]], roundi(duree)])
+	var peds := _commerce.get_node_or_null("../Pietons")
+	if peds and peds.has_method("_panique"):
+		var c: Vector3 = s["pos"]
+		peds.call("_panique", Vector2(c.x, c.z), rayon_panique)     # les passants proches fuient en criant
 	get_tree().call_group("police", "crime", "braquage", s["pos"])
 	if temoins >= temoins_alerte:
 		for pol in get_tree().get_nodes_in_group("police"):

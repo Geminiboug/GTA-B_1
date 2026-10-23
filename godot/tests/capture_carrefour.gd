@@ -45,8 +45,8 @@ func _process(_d: float) -> bool:
 		pl.global_position = Vector3(c.x, 1.0, c.y + 14.0)
 		pl.reset_physics_interpolation()
 	elif k == 100:
-		cam.global_position = Vector3(c.x + 4.0, 17.0, c.y + 16.0)
-		cam.look_at(Vector3(c.x, 0.0, c.y), Vector3.UP)
+		cam.global_position = Vector3(c.x + 9.0, 8.0, c.y + 20.0)
+		cam.look_at(Vector3(c.x, 2.5, c.y), Vector3.UP)
 		cam.current = true
 	elif k == 140:
 		root.get_viewport().get_texture().get_image().save_png("%s/carrefour_%d.png" % [out_dir, i])

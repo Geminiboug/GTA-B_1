@@ -280,7 +280,7 @@ func _place_random(a: Dictionary) -> void:
 	for attempt in 40:
 		var e := _rng.randi() % _carte.edges.size()
 		var ed: Dictionary = _carte.edges[e]
-		if a["kind"] == "voiture" and ed["kind"] == "track":
+		if (a["kind"] == "voiture" and ed["kind"] == "track") or _carte.arete_reservee(e):
 			continue
 		var from: int = ed["a"]
 		if not ed["oneway"] and _rng.randf() < 0.5:
@@ -558,7 +558,7 @@ func _pick_next(a: Dictionary) -> int:
 		if e == a["edge"] or not _carte.can_drive(e, n):
 			continue
 		var ed: Dictionary = _carte.edges[e]
-		if a["kind"] == "voiture" and ed["kind"] == "track":
+		if (a["kind"] == "voiture" and ed["kind"] == "track") or _carte.arete_reservee(e):
 			continue
 		var p2 := _carte.edge_pts_from(e, n)
 		var straight := in_dir.dot((p2[1] - p2[0]).normalized())
@@ -610,6 +610,8 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 	var i: int = a["i"]
 	var fwd2 := (pts[i + 1] - pts[i]).normalized()
 	var vmax: float = a["max_big"] if a["major"] else a["max_small"]
+	if _signal:
+		vmax = minf(vmax, _signal.limite_ms(a["major"]))      # limitation de vitesse (50 km/h sur les voies principales, 30 ailleurs)
 	var rem := _remaining(a)
 	# virage a l'interieur du troncon
 	if i + 2 < pts.size() and pts[i + 1].distance_to(pts[i]) - a["s"] < 12.0:

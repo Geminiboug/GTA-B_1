@@ -242,6 +242,8 @@ func _place(w: Dictionary) -> void:
 	for attempt in 80:
 		var e := _rng.randi() % _carte.edges.size()
 		var ed: Dictionary = _carte.edges[e]
+		if _carte.arete_reservee(e):
+			continue
 		_set_edge(w, e, ed["a"] if _rng.randf() < 0.5 else ed["b"], 1.0 if _rng.randf() < 0.5 else -1.0)
 		var pts: PackedVector2Array = w["pts"]
 		w["i"] = _rng.randi() % (pts.size() - 1)

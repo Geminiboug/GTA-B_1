@@ -172,7 +172,15 @@ func _free_spot(p: Vector3, radius: float, allow_beach := false) -> float:
 func _add(kind: String, p: Vector3, y: float, scale_range := Vector2(0.8, 1.2), yaw := -1.0) -> void:
 	var s := _rng.randf_range(scale_range.x, scale_range.y)
 	var r := yaw if yaw >= 0.0 else _rng.randf_range(0.0, TAU)
-	var b := Basis(Vector3.UP, r).scaled(Vector3.ONE * s)
+	# silhouette moins geometrique : largeur et hauteur legerement differentes, tronc un peu penche (tirage par la position,
+	# le generateur du reste de la vegetation ne bouge pas)
+	var h := absi(hash(Vector2i(roundi(p.x * 10.0), roundi(p.z * 10.0))))
+	var u1 := float(h % 1000) / 1000.0
+	var u2 := float((h / 1000) % 1000) / 1000.0
+	var u3 := float((h / 1000000) % 1000) / 1000.0
+	var penche := 0.12 if kind == "veg_cocotier" else (0.0 if kind == "veg_buisson" else 0.06)
+	var tilt := Basis(Vector3.RIGHT, (u1 - 0.5) * 2.0 * penche) * Basis(Vector3.BACK, (u2 - 0.5) * 2.0 * penche)
+	var b := Basis(Vector3.UP, r) * tilt * Basis.from_scale(Vector3(s * lerpf(0.88, 1.14, u3), s * lerpf(0.9, 1.15, u1), s * lerpf(0.88, 1.14, u2)))
 	_xforms[kind].append(Transform3D(b, Vector3(p.x, y, p.z)))
 	if not _lot.has(kind):
 		_lot[kind] = []

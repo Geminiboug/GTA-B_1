@@ -599,6 +599,8 @@ func _footprint_ok(pos: Vector2, dir: Vector2, half_w: float, half_l: float) -> 
 
 
 func _place_one(kind: String, radius: float, p: Vector2, t: Vector2, w: float) -> void:
+	if _carte != null and _carte.zone_reservee(p):
+		return          # cote piste : pas de vendeurs, de zems gares ni de voitures de particuliers
 	# bord de route : trottoir / bande de marche jusqu'a ~2 m du bord de chaussee (pietons, poteaux),
 	# puis la bande ou l'on se gare et ou s'installent les commerces
 	var side := 1.0 if _rng.randf() < 0.5 else -1.0

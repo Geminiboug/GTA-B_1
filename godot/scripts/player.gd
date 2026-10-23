@@ -130,7 +130,9 @@ var _roll_t := 0.0
 ## Animations de vie (clips Mixamo et Quaternius) : arret apres une course, gestes d'attente quand on reste immobile.
 @export var attente_geste := Vector2(9.0, 20.0)   # s immobile avant un geste d'attente (tire au hasard)
 const GESTES_ATTENTE := [[["MX_Idle_Regarde", 0.0]], [["Idle_FoldArms", 2.5]], [["MX_Idle_Content", 0.0]],
-	[["MX_Idle_Appui", 0.0]], [["Yes", 0.0]]]
+	[["MX_Idle_Appui", 0.0]], [["Yes", 0.0]],
+	# consulte son telephone, ou se parle a lui-meme en secouant la tete (pas de capture d etirements ni de pompes dans la bibliotheque)
+	[["Idle_TalkingPhone_Loop", 6.0]], [["Idle_TalkingPhone_Loop", 4.0], ["Idle_No", 1.2]], [["Idle_No", 1.5], ["MX_Idle_Content", 0.0]]]
 ## Virages sur place : a l'arret, une direction demandee a plus de virage_seuil degres joue un pas tourne capte
 ## (MX_Tourne_G90 / D90, MX_DemiTour_Marche) ; le corps tourne en suivant la rotation du bassin du clip.
 @export var virage_seuil := 60.0       # degres
@@ -755,10 +757,17 @@ func _physics_process(delta: float) -> void:
 	var hvel := Vector2(velocity.x, velocity.z)
 	var hspeed := hvel.length()
 
+	_retrait_actif = false
 	if is_on_floor():
 		_land_t = maxf(0.0, _land_t - delta)
 		if _land_t > 0.0:
 			hvel = hvel.move_toward(Vector2.ZERO, ground_decel * delta)
+		elif _retrait(dir):
+			# marche lente (Alt ou stick a moitie incline) vers l arriere ou le cote : le corps garde son cap, il ne se retourne pas
+			var voulu := Vector2(dir.x, dir.z).normalized()
+			var but := minf(target_speed, walk_speed) * (retrait_recul if absf(_retrait_rel) > deg_to_rad(115.0) else retrait_cote)
+			hspeed = move_toward(hspeed, but, (ground_accel if but > hspeed else ground_decel) * delta)
+			hvel = voulu * hspeed
 		elif _maj_virage(dir):
 			hvel = Vector2.ZERO           # pas tourne sur place : le clip fait les pieds, le corps suit son bassin
 		elif dir.length() > 0.01:
@@ -790,13 +799,14 @@ func _physics_process(delta: float) -> void:
 	velocity.x = hvel.x
 	velocity.z = hvel.y
 	_animations_vie(delta, dir, hvel.length())
-	body.rotation.y = _facing
+	body.rotation.y = _facing + _retrait_decalage()
 	move_and_slide()
 	_step_up(hvel)
 
 	if anim:
 		var new_hspeed := Vector2(velocity.x, velocity.z).length()
 		anim.speed = new_hspeed
+		anim.recul = _retrait_actif and absf(_retrait_rel) > deg_to_rad(115.0)
 		anim.on_floor = is_on_floor()
 		anim.vertical_speed = velocity.y
 		anim.turn_rate = angle_difference(_prev_facing, _facing) / delta
@@ -1024,3 +1034,31 @@ func _animations_vie(delta: float, dir: Vector3, hspeed: float) -> void:
 	else:
 		_immobile_t = 0.0
 	_vitesse_prec = hspeed
+
+
+# ------------------------------------------------------------ marche en retrait (reculer, pas de cote)
+@export var retrait_recul := 0.55          # part de la vitesse de marche en reculant
+@export var retrait_cote := 0.8            # part de la vitesse de marche en pas de cote
+var _retrait_rel := 0.0                    # angle (rad) entre le cap du corps et la direction demandee, pendant le retrait
+var _retrait_actif := false
+
+
+func _retrait(dir: Vector3) -> bool:
+	## Alt (ou stick a moitie incline) + direction arriere ou laterale : on se deplace sans se retourner. Pas de retrait
+	## en course, accroupi, en garde, en visee (la visee marche deja dans toutes les directions), roulade ou menu.
+	_retrait_actif = false
+	if dir.length() < 0.2 or crouched or visee or garde or _roll_t > 0.0 or not menus.is_empty() or sprint_level > 0.0 \
+			or not _virage.is_empty():
+		return false
+	if not (Input.is_action_pressed("walk") or dir.length() < 0.6):
+		return false
+	_retrait_rel = angle_difference(_facing, atan2(-dir.x, -dir.z))
+	_retrait_actif = absf(_retrait_rel) > deg_to_rad(65.0)
+	return _retrait_actif
+
+
+func _retrait_decalage() -> float:
+	## En pas de cote le buste se tourne a moitie vers le deplacement (pas de pas croises sans capture) ; en recul, droit.
+	if not _retrait_actif or absf(_retrait_rel) > deg_to_rad(115.0):
+		return 0.0
+	return clampf(_retrait_rel * 0.45, -0.7, 0.7)
