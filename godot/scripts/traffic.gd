@@ -417,6 +417,8 @@ func _densite_horaire(ppos: Vector3) -> void:
 
 func _set_edge(a: Dictionary, e: int, from: int) -> void:
 	a.erase("next_edge")
+	a["detour"] = 0.0
+	a["detour_cible"] = 0.0
 	a["edge"] = e
 	a["from"] = from
 	a["to"] = _carte.other_end(e, from)
@@ -440,7 +442,7 @@ func _ahead_point(a: Dictionary, dist: float) -> Vector2:
 	var pts: PackedVector2Array = a["pts"]
 	var i: int = a["i"]
 	var s: float = a["s"] + dist
-	var lane: float = a["lane_off"]
+	var lane: float = a["lane_off"] + a.get("detour", 0.0)
 	while i + 2 < pts.size() and s > pts[i].distance_to(pts[i + 1]):
 		s -= pts[i].distance_to(pts[i + 1])
 		i += 1
@@ -469,7 +471,52 @@ func _lane_point(a: Dictionary) -> Vector2:
 	var i: int = a["i"]
 	var d := pts[i + 1] - pts[i]
 	var f := d / maxf(d.length(), 0.01)
-	return pts[i] + f * a["s"] + Vector2(-f.y, f.x) * a["lane_off"]
+	return pts[i] + f * a["s"] + Vector2(-f.y, f.x) * (a["lane_off"] + a.get("detour", 0.0))
+
+
+@export var contour_attente := 2.0     # s a l'arret derriere un obstacle fixe avant de chercher a le contourner
+@export var contour_largeur := 2.7     # m de decalage lateral pour une voiture (zem : 70 %)
+
+
+func _contourner(a: Dictionary, delta: float, bloque: bool, me: Vector3, fwd3: Vector3, side3: Vector3) -> void:
+	## Contournement d'un vehicule gare ou en panne : apres quelques secondes d'arret derriere lui, si la voie voisine est
+	## libre sur 40 m (ni vehicule en face, ni derriere qui arrive), le vehicule se decale, double, puis reprend sa voie.
+	## Sinon il attend (il ne fait ni demi-tour ni manoeuvre dangereuse).
+	if bloque and a["speed"] < 0.6:
+		a["obs_t"] = a.get("obs_t", 0.0) + delta
+	elif not bloque:
+		a["obs_t"] = maxf(0.0, a.get("obs_t", 0.0) - delta * 2.0)
+	var cible: float = a.get("detour_cible", 0.0)
+	if cible == 0.0:
+		if a.get("obs_t", 0.0) > contour_attente and a["speed"] < 0.6:
+			var ed: Dictionary = _carte.edges[a["edge"]]
+			var demi: float = float(ed["width"]) * 0.5
+			var pas := contour_largeur * (1.0 if a["kind"] == "voiture" else 0.7)
+			var essais := [-pas, pas]
+			for cand in essais:
+				if absf(a["lane_off"] + cand) > demi - 0.7:
+					continue
+				var libre := true
+				for b in _agents:
+					if is_same(b, a) or not b.get("active", true):
+						continue
+					var d: Vector3 = b["vis_pos"] - me
+					var ahead := d.dot(fwd3)
+					if ahead > -12.0 and ahead < 40.0 and absf(d.dot(side3) - cand) < 2.4:
+						libre = false
+						break
+				if libre:
+					a["detour_cible"] = cand
+					a["fin_t"] = 0.0
+					break
+	elif not bloque:
+		# l'obstacle est a cote ou derriere : on attend d'etre bien passe avant de se rabattre
+		a["fin_t"] = a.get("fin_t", 0.0) + delta * (0.6 + a["speed"] * 0.1)
+		if a["fin_t"] > 2.0:
+			a["detour_cible"] = 0.0
+			a["obs_t"] = 0.0
+	if absf(a.get("detour", 0.0) - a.get("detour_cible", 0.0)) > 0.001:
+		a["detour"] = move_toward(a.get("detour", 0.0), a.get("detour_cible", 0.0), 1.4 * delta)
 
 
 func _remaining(a: Dictionary) -> float:
@@ -583,14 +630,17 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 					vmax = minf(vmax, maxf(rem - 6.0, 0.0) * 1.5)
 	# feu rouge / orange et STOP : on s'arrete avant la ligne (a 3 m du carrefour), puis on repart
 	a["au_feu"] = false
-	if _signal and rem < 26.0 and rem > 1.5:
+	if _signal and rem < 34.0 and rem > 1.5:
+		var arret_d := Signalisation.ligne(float(_carte.edges[a["edge"]]["width"])) + 2.0    # centre du vehicule : pare-chocs a la ligne
 		var etat := _signal.etat(n, fwd2)
-		if etat == 2 or (etat == 1 and rem > a["speed"] * 1.4 + 5.0):
-			vmax = minf(vmax, maxf(rem - 3.5, 0.0) * 1.3)
+		if rem < arret_d - 1.5:
+			pass                                  # deja engage au-dela de la ligne : on degage le carrefour
+		elif etat == 2 or (etat == 1 and rem > a["speed"] * 1.4 + 5.0):
+			vmax = minf(vmax, maxf(rem - arret_d, 0.0) * 1.3)
 			a["au_feu"] = true
 		elif _signal.est_stop(n, a["edge"]) and a.get("stop_ok", -1) != n:
-			vmax = minf(vmax, maxf(rem - 3.0, 0.0) * 1.3)
-			if rem < 5.0 and a["speed"] < 0.4:
+			vmax = minf(vmax, maxf(rem - arret_d, 0.0) * 1.3)
+			if rem < arret_d + 2.0 and a["speed"] < 0.4:
 				a["stop_t"] = a.get("stop_t", 0.0) + delta
 				a["au_feu"] = true
 				if a["stop_t"] > 1.4:
@@ -614,12 +664,17 @@ func _drive(a: Dictionary, delta: float, ppos: Vector3) -> void:
 		if ahead > 0.5 and ahead < 9.0 + a["speed"] * 0.6 and absf(d.dot(side3)) < 1.6:
 			vmax = minf(vmax, b["speed"] * 0.9 if ahead > 5.0 else 0.0)
 			brake = true
+	var statique := false
 	for o in _obstacles:
 		var d: Vector3 = (o as Node3D).global_position - me
 		var ahead := d.dot(fwd3)
 		if ahead > 0.5 and ahead < 9.0 + a["speed"] * 0.6 and absf(d.dot(side3)) < 1.8:
 			vmax = 0.0
 			brake = true
+			var vit = o.get("speed")
+			if (o as Node).is_in_group("vehicules") and (vit == null or absf(float(vit)) < 0.5):
+				statique = true            # vehicule gare ou en panne : on peut le contourner
+	_contourner(a, delta, statique and not a.get("au_feu", false), me, fwd3, side3)
 	var dp := ppos - me
 	var pa := dp.dot(fwd3)
 	var block_range := 13.0 if a["speed"] < 1.0 else 12.0  # marge : une fois arrete, il ne repart pas au moindre ecart

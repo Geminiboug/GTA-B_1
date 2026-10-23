@@ -218,8 +218,8 @@ Etat apres le premier passage de l'agent (tests dans godot/tests/, tous verts sa
 - [x] Camions : veh_camion.glb (blender/tools/build_vehicles.py CAMION), dans la circulation et conduisible (test_camions)
 - [x] Braquage des commerces (caisse, cafe, maquis, quincaillerie) : arme a feu en joue, E, 5 s, butin, delit "braquage" +3, temoins, recharge de 8 min (scripts/braquage.gd, test_braquage) ; reaction des passants a ajouter
 - [x] Taxis et zems refusent le joueur pendant une recherche de police (deja en place : taxi.gd, zem_taxi.gd)
-- [ ] Evitement d'obstacles par contournement et demi-tours injustifies : a faire
-- [ ] Priorites aux passages pietons, panneaux de limitation de vitesse, sens interdits, marquages au sol : a faire
+- [x] Contournement d un vehicule gare ou en panne apres 2 s d arret si la voie voisine est libre (traffic.gd _contourner, test_contournement) ; demi-tours injustifies a mesurer
+- [x] Passages pietons et lignes d arret peints aux feux et aux STOP, arret a la ligne selon la largeur de la route (signalisation.gd) ; vehicules deja arretes devant un pieton sur la chaussee (existant) ; limitations de vitesse, sens interdits, interdictions de stationner : a faire
 - [x] Marche arriere des voitures : derapage supprime (voiture.gd, test_marche_arriere) ; virages a mesurer
 - [ ] Deplacements du personnage (recul, lateral, arret, saut, rotation, bras, reaction aux degats) : a mesurer un par un
 - [ ] Montee, position et descente de moto (mains sur le guidon) : a affiner

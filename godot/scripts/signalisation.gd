@@ -112,6 +112,7 @@ func _construire() -> void:
 	sm.emission = Color(0.5, 0.02, 0.02)
 	panneau.material = sm
 	var poses := []     # [type, position, noeud, axe]
+	var approches := []
 	for n in _feux.keys():
 		for e in _carte.node_edges[n]:
 			var p2 := _carte.edge_pts_from(e, n)
@@ -121,8 +122,9 @@ func _construire() -> void:
 			var droite := Vector2(-dir.y, dir.x)
 			var larg: float = float(_carte.edges[e]["width"])
 			var c: Vector2 = _carte.nodes[n]
-			var pos := c - dir * (larg * 0.5 + 4.0) + droite * (larg * 0.5 + 0.8)
+			var pos := c - dir * (ligne(larg) + 0.5) + droite * (larg * 0.5 + 0.8)
 			poses.append(["feu", pos, n, _axe(dir)])
+			approches.append([n, dir, larg])
 	for n in _stops.keys():
 		for e in (_stops[n] as Dictionary).keys():
 			var p2 := _carte.edge_pts_from(e, n)
@@ -132,7 +134,9 @@ func _construire() -> void:
 			var droite := Vector2(-dir.y, dir.x)
 			var larg: float = float(_carte.edges[e]["width"])
 			var c: Vector2 = _carte.nodes[n]
-			poses.append(["stop", c - dir * (larg * 0.5 + 3.0) + droite * (larg * 0.5 + 0.8), n, _axe(dir)])
+			poses.append(["stop", c - dir * (ligne(larg) + 0.5) + droite * (larg * 0.5 + 0.8), n, _axe(dir)])
+			approches.append([n, dir, larg])
+	_marquages(approches)
 	var nf := 0
 	var ns := 0
 	for p in poses:
@@ -186,3 +190,47 @@ func _colorier() -> void:
 	var mm := _tetes.multimesh
 	for k in mm.instance_count:
 		mm.set_instance_color(k, COUL[_etat_axe(_tete_noeud[k], _tete_axe[k])])
+
+
+static func ligne(largeur: float) -> float:
+	## Distance de la ligne d'arret au centre du carrefour (m) : demi-largeur de la chaussee + passage pieton.
+	return largeur * 0.5 + 3.5
+
+
+func _marquages(approches: Array) -> void:
+	## Passages pietons (bandes blanches) et lignes d'arret sur chaque branche qui arrive a un feu ou a un STOP.
+	## approches : [noeud, dir (Vector2, sens d'arrivee), largeur].
+	var bande := BoxMesh.new()
+	bande.size = Vector3(0.45, 0.02, 2.4)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.92, 0.92, 0.9)
+	m.roughness = 0.9
+	bande.material = m
+	var stripes := []
+	for ap in approches:
+		var c: Vector2 = _carte.nodes[ap[0]]
+		var dir: Vector2 = ap[1]
+		var larg: float = ap[2]
+		var yaw := atan2(-dir.x, -dir.y)
+		var base := Basis(Vector3.UP, yaw)
+		var droite := Vector2(-dir.y, dir.x)
+		var l := ligne(larg)
+		var zebra := c - dir * (l - 1.6)            # entre la ligne d'arret et le carrefour
+		var n := int(floor((larg - 1.0) / 0.9))
+		for k in n:
+			var off := (k - (n - 1) * 0.5) * 0.9
+			var q := zebra + droite * off
+			stripes.append(Transform3D(base, Vector3(q.x, 0.05, q.y)))
+		# ligne d'arret : une barre sur la voie d'arrivee (moitie droite de la chaussee)
+		var lq := c - dir * l + droite * (larg * 0.25)
+		stripes.append(Transform3D(base * Basis.from_scale(Vector3(larg, 1.0, 0.18)), Vector3(lq.x, 0.05, lq.y)))
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = bande
+	mm.instance_count = stripes.size()
+	for i in stripes.size():
+		mm.set_instance_transform(i, stripes[i])
+	var inst := MultiMeshInstance3D.new()
+	inst.multimesh = mm
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(inst)
